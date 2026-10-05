@@ -1,5 +1,5 @@
 import type { CosmeticCategory, ConsentType, ImageDto, RequestStatus } from "@/lib/types/common";
-import type { OutOfScopeTopic } from "@/lib/types/ai";
+import type { AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 
 export type RequestDraftDto = {
   id: string;
@@ -12,7 +12,7 @@ export type RequestDraftDto = {
   maxDistanceKm: number;
   images: ImageDto[];
   hasConversation: boolean;
-  aiSummary: null; // udfyldes af AI-opsummeringen (trin 2, AI-flow-agenten)
+  aiSummary: AiSummary | null;
   summaryText: string | null;
   summaryApprovedAt: string | null;
   sentAt: string | null;
@@ -53,6 +53,14 @@ export type ChatTurnResponse = {
   outOfScopeNotice: boolean;
   readyForSummary: boolean;
   messagesLeft: number;
+};
+
+// Svar fra POST /api/requests/{id}/summary (architecture 10.4).
+export type SummaryResponse = {
+  summary: AiSummary | null; // null hvis AI fejlede to gange, eller billeder skal tages om
+  retakeImages: { imageId: string; reason: Exclude<ImageQuality, "ok"> }[];
+  outOfScopeNotice: boolean;
+  fallback: "none" | "write_yourself";
 };
 
 export type ConsentDto = {

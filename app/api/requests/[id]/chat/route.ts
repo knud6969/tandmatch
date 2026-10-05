@@ -9,7 +9,7 @@ import { requireTerms } from "@/server/auth/terms";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, jsonResponse, parseId, readJson, withApi } from "@/server/http/api";
-import { requireOwnRequest } from "@/server/models/requests";
+import { requireOwnRequest, updateDraft } from "@/server/models/requests";
 import { getLatestConsent } from "@/server/models/consents";
 import {
   countUserMessagesLastDay,
@@ -20,7 +20,7 @@ import {
   tryConsumeAnonymousAiCall,
   type MessageRecord,
 } from "@/server/models/chat";
-import { AiTimeoutError, anonymousDailyCap, sendChatTurn } from "@/server/ai/chat";
+import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError, anonymousDailyCap, sendChatTurn } from "@/server/ai/chat";
 import type { AiChatMessageDto, ChatStateDto } from "@/lib/types/requests";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -114,12 +114,16 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   try {
     turn = await sendChatTurn({
       category: record.category,
+      answers: record.answers,
       history: history.map((m) => ({ role: m.role, content: m.content })),
       userMessage: input.message,
     });
   } catch (err) {
     if (err instanceof AiTimeoutError) {
       throw new ApiError(503, "AI_TIMEOUT", `Svaret tog for lang tid (grænse ${AI_TIMEOUT_MS / 1000} sek.). Prøv igen.`);
+    }
+    if (err instanceof AiUnavailableError || err instanceof AiInvalidOutputError) {
+      throw new ApiError(503, "AI_UNAVAILABLE", "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.");
     }
     throw err;
   }
@@ -128,7 +132,7 @@ export const POST = withApi(async (req, ctx: Ctx) => {
     conversationId: conversation.id,
     patientId: session.userId,
     role: "user",
-    content: input.message,
+    content: turn.maskedUserMessage,
     outOfScopeTopics: [],
     blocked: false,
     readyForSummary: false,
@@ -142,6 +146,9 @@ export const POST = withApi(async (req, ctx: Ctx) => {
     blocked: turn.blocked,
     readyForSummary: turn.readyForSummary,
   });
+
+  // En ny besked ændrer grundlaget for opsummeringen, så en tidligere godkendelse nulstilles (architecture 7.1).
+  await updateDraft(supabase, requestId, { summary_approved_at: null });
 
   return jsonResponse(
     {

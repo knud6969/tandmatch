@@ -49,6 +49,13 @@ export async function signedImageUrl(supabase: SupabaseClient, path: string): Pr
   return data.signedUrl;
 }
 
+// Henter billedets bytes via brugerens JWT (storage-policies gælder). Bruges kun server-side til AI-udkast.
+export async function downloadImageObject(supabase: SupabaseClient, path: string): Promise<Buffer> {
+  const { data, error } = await supabase.storage.from(REQUEST_BUCKET).download(path);
+  if (error || !data) throw new ApiError(500, "DOWNLOAD_FAILED", "Billedet kunne ikke hentes. Prøv igen.");
+  return Buffer.from(await data.arrayBuffer());
+}
+
 export async function uploadImageObject(supabase: SupabaseClient, path: string, data: Buffer): Promise<void> {
   const { error } = await supabase.storage
     .from(REQUEST_BUCKET)

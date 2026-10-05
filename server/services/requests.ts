@@ -29,7 +29,7 @@ export async function buildDraftDto(supabase: SupabaseClient, record: RequestRec
     maxDistanceKm: record.maxDistanceKm,
     images: imageDtos,
     hasConversation: conversation !== null,
-    aiSummary: null,
+    aiSummary: record.aiSummary,
     summaryText: record.summaryText,
     summaryApprovedAt: record.summaryApprovedAt,
     sentAt: record.sentAt,

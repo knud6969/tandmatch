@@ -1,11 +1,12 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CosmeticCategory, RequestStatus } from "@/lib/types/common";
+import type { AiSummary } from "@/lib/types/ai";
 import { ApiError, notFound } from "@/server/http/api";
 import { mapDbError } from "@/server/http/db-errors";
 
 const COLUMNS =
-  "id, patient_id, category, answers, questions_version, free_text, postal_code, max_distance_km, summary_text, summary_ai_assisted, summary_approved_at, sharing_consent_id, status, sent_at, expires_at, created_at";
+  "id, patient_id, category, answers, questions_version, free_text, postal_code, max_distance_km, summary_text, summary_ai_assisted, summary_approved_at, ai_summary, sharing_consent_id, status, sent_at, expires_at, created_at";
 
 type RequestRow = {
   id: string;
@@ -19,6 +20,7 @@ type RequestRow = {
   summary_text: string | null;
   summary_ai_assisted: boolean;
   summary_approved_at: string | null;
+  ai_summary: AiSummary | null;
   sharing_consent_id: string | null;
   status: RequestStatus;
   sent_at: string | null;
@@ -39,6 +41,7 @@ export type RequestRecord = {
   summaryText: string | null;
   summaryAiAssisted: boolean;
   summaryApprovedAt: string | null;
+  aiSummary: AiSummary | null;
   status: RequestStatus;
   sentAt: string | null;
   expiresAt: string | null;
@@ -58,6 +61,7 @@ function toRecord(row: RequestRow): RequestRecord {
     summaryText: row.summary_text,
     summaryAiAssisted: row.summary_ai_assisted,
     summaryApprovedAt: row.summary_approved_at,
+    aiSummary: row.ai_summary ?? null,
     status: row.status,
     sentAt: row.sent_at,
     expiresAt: row.expires_at,
