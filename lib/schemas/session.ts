@@ -9,9 +9,5 @@ export const anonymousSessionSchema = z
     aiConsent: z
       .object({ textVersion: z.literal(CONSENT_TEXT_VERSIONS.ai_processing) })
       .strict(),
-    imageConsent: z
-      .object({ textVersion: z.literal(CONSENT_TEXT_VERSIONS.image_upload) })
-      .strict()
-      .optional(),
   })
   .strict();

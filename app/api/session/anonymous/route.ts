@@ -21,12 +21,6 @@ export const POST = withApi(async (req) => {
     textVersion: CONSENT_TEXT_VERSIONS.ai_processing,
     grantedWhileAnonymous: true,
   });
-  const imageRow = (patientId: string): NewConsent => ({
-    patientId,
-    type: "image_upload",
-    textVersion: CONSENT_TEXT_VERSIONS.image_upload,
-    grantedWhileAnonymous: true,
-  });
 
   // Der er allerede en session (requireTerms har kørt, så den har en accept).
   if (gate.userId !== null) {
@@ -43,9 +37,6 @@ export const POST = withApi(async (req) => {
     if (!(await hasActiveConsent(supabase, "ai_processing"))) {
       missing.push(aiRow(existing.userId));
     }
-    if (input.imageConsent && !(await hasActiveConsent(supabase, "image_upload"))) {
-      missing.push(imageRow(existing.userId));
-    }
     if (missing.length > 0) {
       // Vilkårs-accepten er allerede sikret af requireTerms() ovenfor, så den skrives ikke igen her.
       await insertConsents(supabase, missing);
@@ -61,9 +52,7 @@ export const POST = withApi(async (req) => {
 
   try {
     await upsertTermsAcceptance(supabase, userId, gate.terms);
-    const rows = [aiRow(userId)];
-    if (input.imageConsent) rows.push(imageRow(userId));
-    await insertConsents(supabase, rows);
+    await insertConsents(supabase, [aiRow(userId)]);
   } catch (err) {
     // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke. Logger ud, så cookies ryddes.
     // Den anonyme bruger uden data ryddes af oprydningsjobbet (trin 2).
