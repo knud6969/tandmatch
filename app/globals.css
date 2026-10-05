@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+ * TandMatch designsystem. Alle farver, skrifter og radier defineres her.
+ * Komponenter må kun bruge disse tokens (fx bg-brand-600, text-ink), ikke rå hex-værdier.
+ * Kontrast: tekst ink/ink-muted på canvas og surface er mindst 4.5:1, knapper og feltkanter mindst 3:1.
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+
+  /* Primær: dæmpet teal. brand-600 på hvid ca. 5.5:1. */
+  --color-brand-50: #eff9f7;
+  --color-brand-100: #d3f0eb;
+  --color-brand-200: #a8e0d8;
+  --color-brand-300: #6fc8bc;
+  --color-brand-400: #3aaa9e;
+  --color-brand-500: #1f8f85;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #0c5f59;
+  --color-brand-800: #0b4c48;
+  --color-brand-900: #0a3f3c;
+
+  /* Flader og tekst */
+  --color-canvas: #f5f8f7;
+  --color-surface: #ffffff;
+  --color-ink: #1b2e2c;
+  --color-ink-muted: #4b5f5c;
+  --color-line: #d3dfdc;
+  --color-field-border: #6f8784;
+
+  /* Statusfarver: info, advarsel (fx pladsholder, afventer verifikation), fejl, succes */
+  --color-info-bg: #edf5fb;
+  --color-info-line: #9cc3dc;
+  --color-info-ink: #1e4a66;
+  --color-warning-bg: #fff6e0;
+  --color-warning-line: #e0b050;
+  --color-warning-ink: #5c3600;
+  --color-danger-bg: #fdf1f0;
+  --color-danger-line: #d9776d;
+  --color-danger-ink: #8a1c14;
+  --color-success-bg: #edf8f1;
+  --color-success-line: #8fcaa6;
+  --color-success-ink: #155c33;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  /* Synlig fokusring til tastaturnavigation (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 3px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
