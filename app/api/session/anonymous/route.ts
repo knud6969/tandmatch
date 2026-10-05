@@ -12,7 +12,7 @@ import { ApiError, jsonResponse, readJson, withApi } from "@/server/http/api";
 // Trin 1: ingen kladde endnu (requests kommer i trin 2), så kategorien valideres men gemmes ikke endnu.
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
-  const input = await readJson(req, anonymousSessionSchema);
+  await readJson(req, anonymousSessionSchema);
   const supabase = await createSupabaseServerClient();
 
   const aiRow = (patientId: string): NewConsent => ({
