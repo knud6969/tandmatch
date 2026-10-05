@@ -27,10 +27,10 @@ export function errorResponse(error: ApiError): Response {
 }
 
 // Pakker en route-handler, så ApiError bliver til korrekt statuskode og alle andre fejl til 500 uden detaljer.
-export function withApi(handler: (req: Request) => Promise<Response>) {
-  return async (req: Request): Promise<Response> => {
+export function withApi<C = unknown>(handler: (req: Request, ctx: C) => Promise<Response>) {
+  return async (req: Request, ctx: C): Promise<Response> => {
     try {
-      return await handler(req);
+      return await handler(req, ctx);
     } catch (err) {
       if (err instanceof ApiError) {
         return errorResponse(err);
@@ -67,3 +67,15 @@ export async function readJson<T>(req: Request, schema: ZodType<T>): Promise<T> 
   }
   return parsed.data;
 }
+
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+// Ugyldigt id og manglende id giver 404 (architecture 2.4: vi skelner ikke, for ikke at lække eksistens).
+export function parseId(value: string): string {
+  if (!UUID_RE.test(value)) {
+    throw new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede.");
+  }
+  return value;
+}
+
+export const notFound = () => new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede.");

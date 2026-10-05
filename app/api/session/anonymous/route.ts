@@ -1,18 +1,20 @@
 import { anonymousSessionSchema } from "@/lib/schemas/session";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
+import { QUESTIONS_VERSION } from "@/lib/constants/questions";
 import { anonymousExpiresAt } from "@/lib/constants/sessions";
 import { requireTerms } from "@/server/auth/terms";
 import { getSession } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { upsertTermsAcceptance } from "@/server/models/terms";
 import { hasActiveConsent, insertConsents, type NewConsent } from "@/server/models/consents";
+import { findDraftId, insertDraft } from "@/server/models/requests";
 import { ApiError, jsonResponse, readJson, withApi } from "@/server/http/api";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
-// Trin 1: ingen kladde endnu (requests kommer i trin 2), så kategorien valideres men gemmes ikke endnu.
+// Kladden oprettes med den valgte kategori. Der gives kun ai_processing her, aldrig billedsamtykke (se 9.4).
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
-  await readJson(req, anonymousSessionSchema);
+  const input = await readJson(req, anonymousSessionSchema);
   const supabase = await createSupabaseServerClient();
 
   const aiRow = (patientId: string): NewConsent => ({
@@ -32,16 +34,19 @@ export const POST = withApi(async (req) => {
       throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
     }
 
-    // Retry-sikkert: manglende samtykker gemmes nu, før der svares 200.
-    const missing: NewConsent[] = [];
+    // Retry-sikkert: manglende samtykke gemmes nu, før der svares 200.
     if (!(await hasActiveConsent(supabase, "ai_processing"))) {
-      missing.push(aiRow(existing.userId));
-    }
-    if (missing.length > 0) {
       // Vilkårs-accepten er allerede sikret af requireTerms() ovenfor, så den skrives ikke igen her.
-      await insertConsents(supabase, missing);
+      await insertConsents(supabase, [aiRow(existing.userId)]);
     }
-    return jsonResponse({ expiresAt: anonymousExpiresAt(existing.lastActiveAt) }, 200);
+    const requestId =
+      (await findDraftId(supabase, existing.userId)) ??
+      (await insertDraft(supabase, {
+        patientId: existing.userId,
+        category: input.category,
+        questionsVersion: QUESTIONS_VERSION,
+      }));
+    return jsonResponse({ requestId, expiresAt: anonymousExpiresAt(existing.lastActiveAt) }, 200);
   }
 
   const { data, error } = await supabase.auth.signInAnonymously();
@@ -50,13 +55,18 @@ export const POST = withApi(async (req) => {
   }
   const userId = data.user.id;
 
+  let requestId: string;
   try {
     await upsertTermsAcceptance(supabase, userId, gate.terms);
     await insertConsents(supabase, [aiRow(userId)]);
+    requestId = await insertDraft(supabase, {
+      patientId: userId,
+      category: input.category,
+      questionsVersion: QUESTIONS_VERSION,
+    });
   } catch (err) {
-    // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke. Logger ud, så cookies ryddes.
-    // Den anonyme bruger uden data ryddes af oprydningsjobbet (trin 2).
-    // En fejl i signOut må ikke overskrive den oprindelige fejl, så den kastes altid videre.
+    // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke eller kladde. Logger ud lokalt.
+    // Den anonyme bruger uden data ryddes af oprydningsjobbet.
     try {
       const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
       if (signOutError) {
@@ -68,5 +78,6 @@ export const POST = withApi(async (req) => {
     throw err;
   }
 
-  return jsonResponse({ expiresAt: anonymousExpiresAt(new Date().toISOString()) }, 201);
+  const expiresAt = anonymousExpiresAt(new Date().toISOString());
+  return jsonResponse({ requestId, expiresAt }, 201);
 });

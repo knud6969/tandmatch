@@ -28,3 +28,13 @@ export async function createSupabaseServerClient() {
     },
   });
 }
+
+// Fjerner Supabase-cookies, når kontoen er slettet, så browseren ikke beholder en død session.
+export async function clearAuthCookies(): Promise<void> {
+  const cookieStore = await cookies();
+  for (const cookie of cookieStore.getAll()) {
+    if (cookie.name.startsWith("sb-")) {
+      cookieStore.delete(cookie.name);
+    }
+  }
+}
