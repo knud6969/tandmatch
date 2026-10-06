@@ -8,6 +8,7 @@ import { requireOwnRequest } from "@/server/models/requests";
 import { getRecipientRequestStatus } from "@/server/models/inbox";
 import { isOpenForResponses } from "@/lib/domain/request-open";
 import {
+  decideResponse,
   getResponse,
   insertResponse,
   listResponsesForRequest,
@@ -24,6 +25,7 @@ export function toResponseDto(record: ResponseRecord): ResponseDto {
     id: record.id,
     requestId: record.requestId,
     status: record.status,
+    withdrawn: record.status === "withdrawn",
     patientDecision: record.patientDecision,
     assessment: record.assessment,
     priceMin: record.priceMin,
@@ -127,4 +129,16 @@ export async function listResponsesForSession(
   const records = await listResponsesForRequest(supabase, requestId);
   const own = session.role === "dentist" ? records.filter((r) => r.dentistId === session.userId) : records;
   return own.map(toResponseDto);
+}
+
+// Patienten vælger et svar (chosen) eller afviser det (declined). Ejerskab og tilstand kontrolleres i decide_response().
+export async function decideOwnResponse(
+  supabase: SupabaseClient,
+  responseId: string,
+  decision: "chosen" | "declined",
+): Promise<ResponseDto> {
+  await decideResponse(supabase, responseId, decision);
+  const record = await getResponse(supabase, responseId);
+  if (!record) throw notFound();
+  return toResponseDto(record);
 }

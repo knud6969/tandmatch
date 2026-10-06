@@ -1,6 +1,6 @@
 # TandMatch: arkitektur
 
-Version: 0.9 (2026-10-06). Nyt i 0.9: AI-skrivninger via service role (`append_assistant_message()`, `store_ai_summary()`), `summary_text` låst og ændret kun via `approve_summary()`, lofter for opsummering samlet i `consume_summary_generation()`, `QUESTION_DEFINITIONS` som eneste spørgsmålskilde, assistentbeskeder kun via server, og trin 2-migrationer. 0.8 (2026-10-05) afspejlede trin 2 som committet på `feat/skelet` (e5a78da): DB-lofter for chat, storage-regel for kladder, nye tabeller og funktioner, `/api/session/anonymous` uden `imageConsent`, kladde-oprettelse, anonym-blokering af `POST /api/requests`, og markering af endnu ikke implementerede routes.
+Version: 1.0 (2026-10-06). Nyt i 1.0: trin 3 (responses, tandlægeprofil, klinik, indbakke og svar-routes, dentist-views), billeder kun via service role, svarets livscyklus, sikkerhedshærdning (rate limit, consents, cron GET/POST, anon uden EXECUTE) og trin 2-3-migrationer. 0.9 (2026-10-06): AI-skrivninger via service role (`append_assistant_message()`, `store_ai_summary()`), `summary_text` låst og ændret kun via `approve_summary()`, lofter for opsummering samlet i `consume_summary_generation()`, `QUESTION_DEFINITIONS` som eneste spørgsmålskilde, assistentbeskeder kun via server, og trin 2-migrationer. 0.8 (2026-10-05) afspejlede trin 2 som committet på `feat/skelet` (e5a78da): DB-lofter for chat, storage-regel for kladder, nye tabeller og funktioner, `/api/session/anonymous` uden `imageConsent`, kladde-oprettelse, anonym-blokering af `POST /api/requests`, og markering af endnu ikke implementerede routes.
 Tidligere: 0.7 låste beslutninger før trin 2: wizarden ligger under `/start/[requestId]`; billedsamtykke gives kun lige før upload (ikke på `/start`); oprydning af anonyme sessioner via `/api/cron/cleanup-anonymous`; AI-laget placeres i `server/ai/` (`sendChatTurn`).
 Tidligere: 0.6 Ændret i forhold til 0.5: tilpasset reviewer-rettelserne i trin 1 (logout uden vilkårs-gate og med `scope: "local"`, server-side områdevagt `guardArea()`, `AnonymousPatientBanner` på `/start`, samtykker gemmes samlet ved anonym start med oprydning ved fejl og retry).
 Tidligere: 0.5 Ændret i forhold til 0.4: tilpasset den implementerede kode fra trin 1 (proxy springer `/api/*` over, `touch_last_active()`, `clinics.created_by`, tandlægerække oprettes af signup-trigger, påkrævede signup-felter, versionsnavn `v0-prototype`, anonym session uden kladde i trin 1, Supabase-opsætning, validering af `naeste`, udskudte seed-/cron-opgaver).
@@ -285,6 +285,11 @@ moderation_status     = 'pending' | 'approved' | 'rejected'
 
 [PROTOTYPE] Kategorier og ydelser er pladsholdere og implementeres som Postgres-enums nu (besluttet). En senere ændring kræver en migration eller et skift til opslagstabel; det er acceptabelt.
 
+**Svarets og modtagerens livscyklus (v1.0, trin 3):**
+- `response_status`: `sent -> withdrawn`. `withdrawn` er endeligt. Der findes ingen vej tilbage til `sent`.
+- `patient_decision` (`none`, `chosen`, `declined`): når den er `chosen` eller `declined`, er svaret låst, og tandlægen kan ikke ændre det (4.3, 5.4).
+- `recipient_status`: `new -> seen -> responded`. `responded` sættes af trigger, når et svar oprettes, ikke af klienten. Efter tilbagetrækning forbliver den `responded` (4.3).
+
 ### 4.3 Tabeller
 
 #### `profiles`
@@ -376,8 +381,8 @@ Trigger-guarden `dentists_guard()` afviser `is_verified = true` og `clinic_id` v
 | id | uuid PK | |
 | patient_id | uuid FK patients on delete cascade | |
 | type | consent_type | |
-| text_version | text not null | Fx `image_upload@2026-10-01`. Teksten ligger i `lib/constants/consents.ts` |
-| granted_at | timestamptz not null default now() | |
+| text_version | text not null | Fx `image_upload@2026-10-01`. Teksten ligger i `lib/constants/consents.ts`. Kun kendte versioner accepteres, valideret på serveren (v1.0) |
+| granted_at | timestamptz not null default now() | **Sættes server-side** (v1.0), aldrig af klienten |
 | granted_while_anonymous | boolean not null default false | Dokumenterer at samtykket blev givet i en anonym session (og fulgte med ved kontooprettelse) |
 | withdrawn_at | timestamptz null | Tilbagetrækning. Rækker slettes aldrig af brugeren (dokumentation), men slettes sammen med brugeren ved konto-/sessionssletning |
 
@@ -463,6 +468,8 @@ Daglig tæller for AI-kald fra **anonyme** sessioner. Formål: omkostningsloftet
 
 Max 5 billeder pr. forespørgsel (check i API + trigger). Billeder kan kun tilføjes, mens forespørgslen er `draft` (5.4, 9.2).
 
+**Skriverettigheder (v1.0, trin 3):** `request_images` skrives, og rækker slettes, **kun med service role** efter re-encoding (9.3). `authenticated` og `anon` har ingen INSERT-, UPDATE- eller DELETE-rettigheder på tabellen. Tandlæger læser billeder kun via `dentist_request_images()` (5.7), og kun når patientens `image_upload`-samtykke er aktivt.
+
 #### `request_recipients` (matching)
 | Felt | Type | Note |
 |---|---|---|
@@ -492,6 +499,13 @@ Rækker oprettes **kun** af funktionen `send_request()` (5.3).
 | updated_at | timestamptz | |
 
 `request_id` og `dentist_id` er immutable (trigger).
+
+**Livscyklus (v1.0, trin 3):**
+- Ved oprettelse: `status = 'sent'`, `patient_decision = 'none'`. `request_recipients.status` sættes til `'responded'` af trigger, ikke af klienten.
+- Så længe `patient_decision = 'none'`, må tandlægen redigere indholdsfelterne og `status` (5.4). Når patienten har valgt (`chosen`) eller afvist (`declined`), er svaret låst.
+- `withdrawn` er endeligt. Da `UNIQUE (request_id, dentist_id)` gælder, kan en tandlæge heller ikke oprette et nyt svar på samme forespørgsel.
+- Efter tilbagetrækning forbliver `request_recipients.status` som `'responded'` (ny migration i trin 3). Det dokumenterer, at tandlægen har svaret. Trækningen står i `responses.status`.
+- Patienten ændrer kun `patient_decision` via `decide_response()` / `POST /api/responses/{id}/decision` [TRIN 4].
 
 #### `messages` (patient og tandlæge)
 | Felt | Type | Note |
@@ -577,6 +591,8 @@ Bemærk: RLS giver teknisk tandlægen læseadgang til hele `requests`-rækken (i
 6. **Anonyme sessioner** er almindelige `authenticated`-brugere i Postgres (Supabase anonymous sign-in), så alle ejer-regler (`patient_id = uid`) virker uændret: en anonym bruger ser kun sine egne rækker, og ingen andre ser dem. Derudover bruges `is_permanent_user()` (JWT-claim `is_anonymous = false`) til at spærre alt, der rækker ud over egen kladde: afsendelse, delingssamtykke, svar, beskeder, anmeldelser, profiler som tandlæge.
 7. **Service role (0.9).** `createSupabaseAdminClient()` omgår RLS. Den bruges kun til: `append_assistant_message()` og `store_ai_summary()` (AI-skrivninger), sletning ved kontosletning og oprydning, seed og admin-scripts (2.3). De to AI-funktioner er `security definer`, har `revoke execute ... from public, anon, authenticated` og `grant execute ... to service_role`. Begrundelse: patienten må aldrig kunne skrive AI-svar eller AI-opsummeringer selv, og en RLS-policy alene kan ikke skelne serverskrivning fra brugerskrivning, når begge bruger samme JWT-rolle.
 8. **Låst opsummering (0.9).** `requests.summary_text` kan kun ændres via `approve_summary()`. Direkte UPDATE blokeres af RLS og trigger (4.3, 5.4).
+9. **Anon og interne funktioner (v1.0).** `anon` har ingen EXECUTE på interne funktioner: security definer-hjælpere, triggerfunktioner, `consume_rate_limit`, `store_ai_summary` og `append_assistant_message`. `authenticated` har kun EXECUTE på de RPC'er, der er markeret som kaldbare i 5.3.
+10. **Storage uden klientadgang (v1.0).** Hverken `authenticated` eller `anon` har rettigheder på bucket `request-images` eller `request_images` (9.2, 5.4). Alt skrivning og sletning går gennem service role efter serverens tjek.
 
 ### 5.2 Hjælpefunktioner
 
@@ -586,7 +602,7 @@ is_admin()                            -> boolean
 is_request_owner(request_id uuid)     -> boolean     -- requests.patient_id = auth.uid()
 is_request_recipient(request_id uuid) -> boolean     -- findes request_recipients(request_id, auth.uid()) OG request.status <> 'draft'
 is_response_participant(response_id)  -> boolean     -- auth.uid() = responses.dentist_id ELLER ejer af requests via response
-is_verified_dentist()                 -> boolean
+is_verified_dentist()                 -> boolean     -- tjekker ikke is_active (ÅBEN, 12.3 punkt 14)
 has_active_consent(type consent_type) -> boolean
 is_permanent_user()                   -> boolean     -- coalesce((auth.jwt()->>'is_anonymous')::boolean, false) = false
 is_editable_request_text(request_id uuid) -> boolean -- (trin 2) requests.patient_id = auth.uid() OG status = 'draft'. Låser indhold efter afsendelse; bruges i policies (5.4) og storage (9.2)
@@ -607,6 +623,7 @@ patient_user_messages_last_day()      -> integer     -- (trin 2) antal `ai_messa
 | `store_ai_summary(request_id, ...)` | **kun `service_role`** (serveren, efter validering af `AiSummary`) (0.9) | Skriver det validerede AI-udkast (`ai_summary`, `ai_model`, `ai_prompt_version`). Patienten kan ikke kalde den. Skriver **ikke** `summary_text`; det sker først via `approve_summary()` efter patientens godkendelse |
 | `append_assistant_message(conversation_id, ...)` | **kun `service_role`** (serveren, efter `sendChatTurn()` har valideret svaret) (0.9) | Indsætter en `ai_messages`-række med `role='assistant'`: det validerede svar, eller den faste afvisningstekst med `blocked = true`. Patienten har kun insert-policy for `role='user'` (`ai_messages_insert_own_user`) |
 | `consume_summary_generation(request_id)` | patient (+anonym, ejer), kaldes af summary-routen før AI-kaldet (0.9) | Én transaktion: tjekker at forespørgslen er `draft`, forespørgslens loft (5 udkast), patientens døgnloft (20), og for anonyme den globale tæller (`AI_ANON_DAILY_CAP`). Øger tællerne. Fejler et led, rulles alt tilbage. Værdierne står i `ai_limits` (7.6) |
+| `consume_rate_limit(bucket, ip_hash)` | **kun `service_role`** (serveren) (v1.0) | Tæller forsøg pr. time i en bucket, fx oprettelse af anonyme sessioner: maks. 10 pr. time pr. IP. IP lagres kun som hash, aldrig i klartekst. Returnerer boolean. Ikke kaldbar af `anon` eller `authenticated` |
 | `touch_last_active()` | enhver `authenticated` (kaldes af API'et) | **Nyt i 0.5.** Sætter `profiles.last_active_at = now()` for `auth.uid()`, **kun hvis brugeren er anonym**; for andre er den en no-op. Ingen parametre, intet returneret. Eneste skrivevej til `profiles` fra klienten. Udførelse er fjernet fra `anon`/`public` og givet til `authenticated` |
 
 ### 5.4 Policies pr. tabel
@@ -627,9 +644,9 @@ patient_user_messages_last_day()      -> integer     -- (trin 2) antal `ai_messa
 | **ai_conversations** | `patient_id = uid` | `patient_id = uid` og `is_request_owner(request_id)` og request er `draft` og `has_active_consent('ai_processing')` | **ingen** (trin 2: patienter kan ikke ændre `status` eller `user_message_count`; tælleren og lukningen sker kun via trigger `ai_messages_count`) | via cascade |
 | **ai_messages** | `patient_id = uid` | `patient_id = uid` og samtalen tilhører uid og er `active` og `role = 'user'` (policy `ai_messages_insert_own_user`; assistentbeskeder skrives kun af serveren via `append_assistant_message()`, service_role) | ingen | via cascade |
 | ai_usage_daily | ingen | ingen | ingen | ingen (kun via funktioner og service role) |
-| request_images | `patient_id = uid` **eller** `is_request_recipient(request_id)` | `patient_id = uid` og `is_request_owner(request_id)` og `is_editable_request_text(request_id)` (kladde) og `consent_id` peger på et aktivt `image_upload`-samtykke tilhørende uid | ingen | `patient_id = uid` og kladde |
-| request_recipients | `dentist_id = uid` **eller** `is_request_owner(request_id)` | **ingen** (kun `send_request`) | `dentist_id = uid` (kun `status`, `seen_at`; trigger) | ingen |
-| **responses** | `dentist_id = uid` **eller** `is_request_owner(request_id)` | `dentist_id = uid` og `is_verified_dentist()` og `is_request_recipient(request_id)` og request `status='sent'` og `now() < expires_at` | `dentist_id = uid` (trigger: kun indholdsfelter og `status`; ikke `patient_decision`, `request_id`, `dentist_id`) | ingen |
+| request_images | `patient_id = uid` (patient, læsning via server-signerede URL'er). Tandlæger læser kun via `dentist_request_images()` (5.7) | **ingen for `authenticated`**. Indsættes kun af service role efter re-encoding (9.3) | ingen | ingen for `authenticated`. Slettes kun af service role (9.3, 9.4) |
+| request_recipients | `dentist_id = uid` **eller** `is_request_owner(request_id)` | **ingen** (kun `send_request`) | `dentist_id = uid` (kun `status` og `seen_at`; `responded` sættes kun af trigger ved svar) | ingen |
+| **responses** | `dentist_id = uid` **eller** `is_request_owner(request_id)` | `dentist_id = uid` og `is_verified_dentist()` og `is_request_recipient(request_id)` og request `status='sent'` og `now() < expires_at` | `dentist_id = uid` og `patient_decision = 'none'` (trigger: kun indholdsfelter og `status`, og `status` kun `sent -> withdrawn`; ikke `patient_decision`, `request_id`, `dentist_id`) | ingen |
 | messages | `is_response_participant(response_id)` | `sender_id = uid` og `is_permanent_user()` og `is_response_participant(response_id)` | modtager må sætte `read_at` | ingen |
 | **visits** | `patient_id = uid` eller `dentist_id = uid` eller `is_admin()` | **ingen** i MVP (kun seed). [ÅBEN] når verifikationsmetode vælges | ingen | ingen |
 | reviews | `moderation_status='approved'` (også besøgende) **eller** `patient_id = uid` **eller** `is_admin()` | se 8.1 (kræver også `is_permanent_user()`) | kun via `moderate()` | `patient_id = uid` |
@@ -675,6 +692,19 @@ Tilhørende API-tests (ikke RLS, men obligatoriske):
 - Uden gyldig vilkårs-cookie/-accept giver session-oprettende og øvrige ikke-undtagne routes 403 `TERMS_REQUIRED`; en forfalsket eller usigneret cookie afvises.
 - Efter ændring af `TERMS_VERSION` kræves ny accept, og en ny række skrives.
 - **Vilkårs-accept giver ikke samtykke:** en bruger, der har accepteret vilkår, men ikke givet `image_upload`/`ai_processing`, får 403 `CONSENT_REQUIRED` ved upload/chat.
+
+---
+
+### 5.7 Tandlægens læsevisninger (trin 3, v1.0)
+
+Tandlæger læser forespørgsler gennem fire dentist-views/funktioner. Alle kræver to ting: (a) `is_verified_dentist()` (5.2), og (b) en række i `request_recipients` for `auth.uid()` på den pågældende forespørgsel (modtagerskab).
+
+- `dentist_inbox`: forespørgsler tandlægen er modtager af, med kategori, område (postnummer og by), afstand, antal billeder og modtagerstatus. Ingen `patient_id`.
+- `dentist_request_status`: modtagerens status (`new`, `seen`, `responded`, `declined`) og tidspunkter.
+- `dentist_request_detail`: forespørgslens **godkendte** indhold: kategori, svar på faste spørgsmål, `summary_text` (kun efter patientens godkendelse), `summary_ai_assisted`, fritekst, område og afstand. Aldrig chat (`ai_conversations`, `ai_messages`), aldrig andre tandlægers svar og aldrig `patient_id`.
+- `dentist_request_images()`: billeder og billedbeskrivelser, kun når patientens `image_upload`-samtykke er aktivt (`withdrawn_at is null`). Trækker patienten samtykket tilbage, forsvinder billederne også for tandlægen.
+
+Tandlægens DTO indeholder kun tandlægens egen `ownResponse` (5.5). Om views er `security_invoker` eller `security definer`-funktioner, og om de overholder 5.1 regel 3-4, skal security gennemgå (12.3 punkt 17).
 
 ---
 
@@ -889,7 +919,7 @@ Forbudt-indhold-filteret (`server/ai/forbiddenTerms.ts`) indeholder: beløb/valu
 | **Anonym session:** udkast | 3 | 429, UI foreslår at oprette konto |
 | **Anonym session:** billeder / samlet lagring | 5 / 20 MB | 400/413 |
 | **Anonym session:** levetid | 48 timer efter seneste aktivitet | Data slettes (7.7) |
-| Nye anonyme sessioner pr. IP | Supabase' indbyggede rate limit for anonyme logins, sat lavt (fx 10 pr. time) | 429 |
+| Nye anonyme sessioner pr. IP | `consume_rate_limit` (5.3): maks. 10 pr. time pr. IP, IP lagres kun som hash. Supabase' indbyggede rate limit for anonyme logins er et ekstra lag | 429 |
 | AI-kald fra alle anonyme sessioner samlet pr. døgn | `AI_ANON_DAILY_CAP` (fx 300) | 429 "Chatten er travl lige nu. Opret en konto eller prøv igen senere" |
 
 Lofterne tælles i databasen (`user_message_count`, `ai_generation_count`, optælling pr. døgn og en daglig tæller for anonyme AI-kald), så de virker på serverless-hosting uden ekstra infrastruktur. CAPTCHA (Cloudflare Turnstile, som Supabase understøtter ved anonyme logins) er [UDSKUDT] men anbefales før rigtige brugere.
@@ -921,7 +951,7 @@ Begrundelse (frem for egen cookie med tilfældigt id):
 
 **Udløb og sletning af anonyme data (GDPR art. 9):**
 - Levetid: **48 timer efter seneste aktivitet** (`profiles.last_active_at`). Valgt som balance: lang nok til at patienten kan vende tilbage næste dag, kort nok til at minimere opbevaring af helbredsdata.
-- Oprydning: `POST /api/cron/cleanup-anonymous` (beskyttet med `CRON_SECRET`) kaldes **hver time** af et planlagt job (fx Vercel Cron eller Supabase scheduled function, afhænger af hosting). Den finder `profiles` med `is_anonymous = true and last_active_at < now() - interval '48 hours'`, sletter storage-mappen `{uid}/` via Storage API og sletter derefter auth-brugeren (service role), hvilket sletter alle rækker via cascade. Data er dermed væk senest ca. 49 timer efter seneste aktivitet. [PROTOTYPE] Kan køres manuelt i demoen, hvis hosting ikke har scheduler.
+- Oprydning: `GET` eller `POST` `/api/cron/cleanup-anonymous` (beskyttet med `CRON_SECRET`) kaldes **hver time** af et planlagt job (fx Vercel Cron eller Supabase scheduled function, afhænger af hosting). Den finder `profiles` med `is_anonymous = true and last_active_at < now() - interval '48 hours'`, sletter storage-mappen `{uid}/` via Storage API og sletter derefter auth-brugeren (service role), hvilket sletter alle rækker via cascade. Data er dermed væk senest ca. 49 timer efter seneste aktivitet. [PROTOTYPE] Kan køres manuelt i demoen, hvis hosting ikke har scheduler.
 - Patienten kan selv slette alt med det samme: "Slet min samtale og mine billeder" -> `DELETE /api/patients/me` (virker også anonymt; samme sletning som oprydningen).
 - Tilbagetrækning af samtykke virker også anonymt (`POST /api/consents/{id}/withdraw`). Tilbagetrækning af `ai_processing` i en anonym session sletter hele sessionen (det er grundlaget for den); tilbagetrækning af `image_upload` sletter billederne.
 
@@ -930,7 +960,7 @@ Begrundelse (frem for egen cookie med tilfældigt id):
 - Den anonyme patients status (udløb, opret konto, slet) vises på `/start` via `AnonymousPatientBanner`, fordi anonyme ikke kommer ind i `/patient` (6.5).
 - Ingen e-mail, navn, telefon eller postnummer indsamles før kontooprettelse (postnummer spørges først i sendetrinnet).
 - Samme PII-maskering, EXIF-fjernelse og OpenAI-regler som for patienter med konto.
-- Vi gemmer ikke IP-adresser selv. Supabase Auth logger IP for rate limiting (noteres i `docs/security.md`).
+- IP-adresser gemmes ikke i klartekst. `consume_rate_limit` lagrer kun en hash (5.3). Supabase Auth logger selv IP for rate limiting (noteres i `docs/security.md`).
 - Anonyme data er altid `draft` og kan aldrig nå tandlæger.
 
 ---
@@ -999,11 +1029,11 @@ price_accuracy_pct = round(100 * (n_as_quoted * 1.0 + n_slightly_higher * 0.5) /
 
 Sti: `{patient_id}/{request_id}/{image_id}.jpg`. For anonyme er `patient_id` den anonyme brugers id; da id'et bevares ved kontooprettelse, skal filer aldrig flyttes.
 
-Storage-policies på `storage.objects` (bucket = `request-images`):
-- INSERT: `(storage.foldername(name))[1] = auth.uid()::text` og `is_request_owner(((storage.foldername(name))[2])::uuid)` og `is_editable_request_text(((storage.foldername(name))[2])::uuid)` (forespørgslen er kladde, trin 2) og `has_active_consent('image_upload')`.
-- SELECT: ejer (første mappe = uid) **eller** `is_request_recipient(((storage.foldername(name))[2])::uuid)`.
-- DELETE: ejer.
-- UPDATE: ingen.
+Storage (bucket `request-images`, privat), v1.0:
+- **Ingen rettigheder for `authenticated` eller `anon`** på `storage.objects` for denne bucket: hverken INSERT, SELECT, UPDATE eller DELETE. Den tidligere policy, hvor patienten selv uploadede med egen JWT, er udgået.
+- **Upload, sletning og rækkeinsert sker kun med service role**, efter re-encoding og serverens tjek (9.3).
+- **Læsning:** tandlæger via `dentist_request_images()` (5.7), som kun returnerer billeder med aktivt `image_upload`-samtykke. Patienten via serverens signerede URL'er efter ejertjek. Klienten får aldrig direkte bucket-adgang.
+- Serverens tjek omfatter ejerskab, kladde (`is_editable_request_text`), aktivt `image_upload`-samtykke og størrelsesgrænser.
 
 ### 9.3 Upload-flow (`POST /api/requests/{id}/images`)
 
@@ -1011,7 +1041,7 @@ Storage-policies på `storage.objects` (bucket = `request-images`):
 2. Find aktivt `image_upload`-samtykke. Mangler det: 403 `CONSENT_REQUIRED`.
 3. Klienten har nedskaleret billedet før upload (max 2048 px, < 4 MB, pga. request-grænser hos hosting). Serveren validerer størrelse og "magic bytes" (JPEG, PNG, HEIC).
 4. Serveren re-encoder med `sharp` til JPEG. Det fjerner EXIF (GPS, enhed).
-5. Upload til storage med brugerens JWT (storage-policies gælder). Indsæt `request_images` med `consent_id`. `created_at` sættes til upload-tidspunktet og er samtykke-tidspunktet for billedet (4.3).
+5. **Upload og rækkeinsert sker med service role** (v1.0), ikke med brugerens JWT (9.2). Filen skrives til storage, og `request_images` indsættes med `consent_id`. `created_at` sættes til upload-tidspunktet og er samtykke-tidspunktet for billedet (4.3).
 6. Nulstil `summary_approved_at` på forespørgslen.
 7. Returnér `ImageDto` med signeret URL (gyldig 5 min).
 
@@ -1019,10 +1049,10 @@ Visning: signerede URL'er genereres ved hver GET (TTL 5 min) og må ikke logges.
 
 ### 9.4 Samtykke og sletning
 
-- Samtykke gemmes med `granted_at` og `text_version` **før** upload, og hvert billede peger på det samtykke, det blev uploadet under.
+- Samtykke gemmes med `granted_at` og `text_version` **før** upload, og hvert billede peger på det samtykke, det blev uploadet under. `granted_at` sættes **server-side**, aldrig af klienten, og `text_version` skal være en kendt version fra `lib/constants/consents.ts` (v1.0).
 - Tilbagetrækning af `image_upload` sletter patientens billeder (filer og rækker), også på sendte forespørgsler.
 - Samtykket gives før upload også i anonyme sessioner, gemmes med `granted_while_anonymous = true` og følger med ved kontooprettelse (7.7).
-- **Vilkårs-accept erstatter ikke billedsamtykket.** At brugeren har accepteret vilkår og privatlivspolitik (2.5), giver ingen ret til upload. Upload kræver altid et aktivt `image_upload`-samtykke, givet særskilt i billedtrinnet med egen, ikke-forudafkrydset afkrydsning lige før første upload (GDPR art. 9, CLAUDE.md). **Låst i 0.7:** billedsamtykket gives **ikke** på `/start` og ikke sammen med AI-samtykket eller vilkårs-accepten; det indhentes kun via `POST /api/consents` i billedtrinnet. Storage-policyen og API'et tjekker kun `consents`, aldrig `terms_acceptances`.
+- **Vilkårs-accept erstatter ikke billedsamtykket.** At brugeren har accepteret vilkår og privatlivspolitik (2.5), giver ingen ret til upload. Upload kræver altid et aktivt `image_upload`-samtykke, givet særskilt i billedtrinnet med egen, ikke-forudafkrydset afkrydsning lige før første upload (GDPR art. 9, CLAUDE.md). **Låst i 0.7:** billedsamtykket gives **ikke** på `/start` og ikke sammen med AI-samtykket eller vilkårs-accepten; det indhentes kun via `POST /api/consents` i billedtrinnet. Serveren tjekker kun `consents`, aldrig `terms_acceptances`.
 - Kontosletning (`DELETE /api/patients/me`, også for anonyme) sletter storage-mappen `{patient_id}/`, alle rækker inkl. AI-samtaler (cascade) og auth-brugeren (service role).
 - Anonyme billeder slettes automatisk 48 timer efter seneste aktivitet, hvis der ikke er oprettet konto (7.7).
 - Opbevaringsperiode og automatisk sletning for **kontodata**: [UDSKUDT] (forslag 12 mdr. efter `sent_at`).
@@ -1096,7 +1126,7 @@ export type TrustpilotInfo = { url: string; score: number | null; reviewCount: n
 | GET `/api/me` | med session | | `{ id, role, isAnonymous: boolean, displayName: string \| null, anonymousExpiresAt: string \| null, dentistVerified?: boolean }` |
 | GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode? }` | `{ firstName, postalCode }` |
 | DELETE `/api/patients/me` | patient eller anonym patient | `{ confirm: "SLET" }` | 204. Sletter alt (7.7, 9.4) og logger ud |
-| POST `/api/cron/cleanup-anonymous` | intern, ingen session. Kræver header `Authorization: Bearer <CRON_SECRET>`; hemmeligheden læses fra miljøvariablen `CRON_SECRET` (2.3) og sammenlignes i konstant tid. Forkert/manglende: 401. Undtaget fra vilkårs-gaten | | 200 `{ deletedSessions: number }`. Finder `profiles` med `is_anonymous = true and last_active_at < now() - interval '48 hours'`; for hver: sletter storage-mappen `{uid}/` (billeder) via Storage API, derefter auth-brugeren med service role, så alle rækker slettes via cascade (kladde, `ai_conversations`, `ai_messages`, `request_images`, `consents`, `terms_acceptances`, `patients`, `profiles`). Fejler sletning af filer, slettes brugeren ikke (prøves igen næste kørsel). Idempotent. Køres hver time (7.7). Ingen persondata i svar eller logs |
+| GET og POST `/api/cron/cleanup-anonymous` (v1.0: begge metoder, så planlagte jobs med GET virker) | intern, ingen session. Kræver header `Authorization: Bearer <CRON_SECRET>`; hemmeligheden læses fra miljøvariablen `CRON_SECRET` (2.3) og sammenlignes i konstant tid. Forkert/manglende: 401. Undtaget fra vilkårs-gaten | | 200 `{ deletedSessions: number }`. Finder `profiles` med `is_anonymous = true and last_active_at < now() - interval '48 hours'`; for hver: sletter storage-mappen `{uid}/` (billeder) via Storage API, derefter auth-brugeren med service role, så alle rækker slettes via cascade (kladde, `ai_conversations`, `ai_messages`, `request_images`, `consents`, `terms_acceptances`, `patients`, `profiles`). Fejler sletning af filer, slettes brugeren ikke (prøves igen næste kørsel). Idempotent. Køres hver time (7.7). Ingen persondata i svar eller logs |
 
 Alle routes, som anonyme må kalde, opdaterer `profiles.last_active_at` ved at kalde RPC'en `touch_last_active()` (5.3) med brugerens JWT; den er en no-op for permanente brugere. Alle routes undtagen `/api/terms/*`, `/api/cron/*` og `/api/auth/logout` kræver gyldig vilkårs-accept (`requireTerms()`); session-oprettende routes skriver accepten i `terms_acceptances`.
 
@@ -1105,7 +1135,7 @@ Alle routes, som anonyme må kalde, opdaterer `profiles.last_active_at` ved at k
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | GET `/api/consents` | patient eller anonym patient | | `{ consents: { id, type, textVersion, grantedAt, grantedWhileAnonymous, withdrawnAt }[] }` |
-| POST `/api/consents` | patient eller anonym patient | `{ type: ConsentType, textVersion: string }` (skal matche aktuel version). `health_data_sharing` kun for patient | 201 `{ id, type, grantedAt }`; 403 for anonym + `health_data_sharing` |
+| POST `/api/consents` | patient eller anonym patient | `{ type: ConsentType, textVersion: string }` (skal være en kendt version fra `lib/constants/consents.ts`). `granted_at` sættes server-side (v1.0). `health_data_sharing` kun for patient | 201 `{ id, type, grantedAt }`; 403 for anonym + `health_data_sharing` |
 | POST `/api/consents/{id}/withdraw` | patient eller anonym patient. **[TRIN 6]** | | 200 `{ withdrawnAt, deletedImages: number, sessionDeleted: boolean }` (`sessionDeleted` = anonym `ai_processing` trukket tilbage) |
 
 ### 10.4 Forespørgsler (patient)
@@ -1139,7 +1169,7 @@ export type RequestDraftDto = {
 |---|---|---|---|
 | GET `/api/requests` | patient | | `{ requests: { id, category, status, sentAt, expiresAt, responseCount, unreadMessages }[] }` |
 | POST `/api/requests` | **kun patient med konto.** Anonyme får 403 `ANONYMOUS_NOT_ALLOWED`; anonyme får kladden via `/api/session/anonymous` (10.2) | `{ category }` | 201 `RequestDraftDto` |
-| GET `/api/requests/{id}` | patient (+anonym) (ejer). **[TRIN 3]** dentist (modtager): `RequestForDentistDto` (10.6) | | patient: `RequestDraftDto` |
+| GET `/api/requests/{id}` | patient (+anonym) (ejer). dentist (modtager): **flyttet** til `GET /api/inbox/{requestId}` (10.8.1, afvigelse fra planen) | | patient: `RequestDraftDto` |
 | PATCH `/api/requests/{id}` | patient (+anonym), kun `draft` | `{ category?, answers?, freeText?, postalCode?, maxDistanceKm? }` (`freeText` kun med konto) | `RequestDraftDto` (nulstiller godkendelse ved indholdsændring) |
 | DELETE `/api/requests/{id}` | patient (+anonym), kun `draft` | | 204 |
 | POST `/api/requests/{id}/images` | patient (+anonym), `draft`, aktivt `image_upload` | `multipart/form-data` med `file` | 201 `ImageDto` |
@@ -1236,6 +1266,8 @@ export type RequestForDentistDto = {
 
 Ingen chatdata i tandlægens DTO.
 
+**Status (v1.0):** Tabellen ovenfor er planen. De faktiske trin 3-routes og afvigelser står i 10.8.1. Routes der ikke står i 10.8.1, er ikke bekræftet implementeret.
+
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | GET `/api/inbox` | dentist (verificeret) | `?status=new\|seen\|responded\|declined` | `{ items: InboxItemDto[] }` |
@@ -1294,6 +1326,27 @@ export type DentistProfileDto = DentistListItemDto & {
 
 Sortering i MVP sker i API'et (få klinikker). Afstand = haversine mellem patientens postnummer/position og klinikkens `lat/lng`.
 
+### 10.8.1 Trin 3: faktiske routes (v1.0)
+
+Routes og typer der er implementeret i trin 3 (commit `04ff108b`). Afvigelser fra planen i 10.6 og 10.8 er markeret **Afvigelse**.
+
+| Metode og route | Rolle | Input | Output | Note |
+|---|---|---|---|---|
+| PATCH `/api/clinics/me` | dentist (permanent) | `{ name?, address?, postalCode?, city?, phone?, website?, ... }` | klinik-DTO | **Afvigelse:** klinikken oprettes også her, ved første kald for en tandlæge uden klinik. Der er ingen separat POST. `created_by = uid` sættes (4.3). Trustpilot-felter hører til trin 5 (12.3 punkt 15) |
+| GET `/api/dentists/me` | dentist | | `DentistProfileDto & { isVerified, authorizationId }` | Som planlagt |
+| PATCH `/api/dentists/me` | dentist | `{ fullName?, title?, bio?, isActive?, acceptsCosmetic?, cosmeticCategories?, nextAvailableAt? }` | samme som GET | Som planlagt. `authorization_id` og `is_verified` kan ikke ændres af tandlægen (trigger) |
+| GET `/api/inbox` | dentist (verificeret) | `?status=new\|seen\|responded\|declined` | `{ items: InboxItemDto[] }` | Læser `dentist_inbox` (5.7) |
+| GET `/api/inbox/{requestId}` | dentist (modtager) | | `RequestForDentistDto` | **Afvigelse:** tandlægens forespørgselsdetalje ligger her, ikke på `GET /api/requests/{id}` som planlagt i 10.4. Læser `dentist_request_detail`, `dentist_request_status` og `dentist_request_images()` (5.7) |
+| GET `/api/requests/{id}/responses` | patient (ejer) / dentist (modtager) | | `{ responses: ResponseDto[] }` | Tandlæge: kun eget svar |
+| POST `/api/requests/{id}/responses` | dentist (modtager, forespørgsel `sent`, ikke udløbet) | `{ assessment, priceMin, priceMax, priceNote?, firstAvailableAt?, offer?, validUntil? }` | 201 `ResponseDto`; 409 hvis allerede svaret | Sætter `request_recipients.status = 'responded'` via trigger (4.3) |
+| PATCH `/api/responses/{id}` | dentist (forfatter) | samme felter, valgfri, + `status?: "withdrawn"` | `ResponseDto` | Kun når `patient_decision = 'none'`. `withdrawn` er endeligt (4.3) |
+
+**Ikke bekræftet implementeret i trin 3** (planlagt i 10.6-10.8, flyttet eller udestående):
+- `POST /api/inbox/{requestId}/seen` og `POST /api/inbox/{requestId}/decline`: ikke bekræftet. Afklares i 12.3 punkt 16.
+- `POST /api/responses/{id}/decision` (patient, `decide_response`): trin 4.
+- `GET /api/dentists` og `GET /api/dentists/{id}` (offentlig liste og profil): trin 4-5. Se 12.3 punkt 13.
+- `PUT /api/clinics/me/prices` og `POST /api/dentists/me/photo`: trin 5.
+
 ### 10.9 Anmeldelser
 
 ```ts
@@ -1345,6 +1398,10 @@ Start mandag 2026-10-05, fremvisning omkring mandag 2026-11-02 (præcis dato bek
 | 3 (19.-25. okt) | 3 Tandlægeflow + 4 Patientens oversigt | `request_recipients`, `responses`, RLS inkl. testene i 5.6, `/api/inbox`, svar-endpoints, `decide_response`, `/api/dentists/me`, `/api/clinics/me` | Indbakke, forespørgselsvisning, svarformular, tandlægeprofil-redigering, patientens svaroversigt og valg | **Demo-klar milepæl (fre 24. okt):** hele kosmetisk spor fra chat til sammenlignede svar, med bevis for at tandlæger ikke ser hinandens svar |
 | 4 (26. okt-1. nov) | 5 Standard-spor + 6 Beskeder, demodata, finpudsning | `clinic_prices` (seed), `GET /api/dentists`, `visits` (seed), `reviews`, `review_replies`, `dentist_review_stats`, moderation, `messages`, fuld `seed.sql` | `/tandlaeger`, `/tandlaeger/[id]` med Trustpilot, anmeldelser, prisnøjagtighed; anmeldelsesformular; beskedtråd; adminmoderation; tekster og mobil-/desktop-tjek | Alle hovedflows virker med fiktive demodata; security-gennemgang uden kritiske fund |
 
+**Trin 3-migrationer (v1.0):** `20261007120000` til `20261007120300` i `supabase/migrations/`, køres i nummerorden. `20261007120300` kræver `20261007120200`, så `120200` skal være kørt før `120300`.
+
+**Status (v1.0):** Trin 2 og 3 er committet som `04ff108b`. Trin 3 er implementeret efter 10.8.1 og 5.7. Trin 4-6 er ikke startet.
+
 **Trin 2-migrationer (0.9):** `20261006120000` til `20261006120300` i `supabase/migrations/`. De skal køres i nummerorden, fordi de bygger på hinanden (tabeller og triggere før funktioner, og funktioner før de policies der bruger dem). Køres de ud af rækkefølge, er RLS-reglerne forkerte eller migrationen fejler.
 
 **Status efter trin 1 (implementeret, 0.5):** migrationer for `profiles`, `patients`, `terms_acceptances`, `consents`, `clinics`, `postal_codes` (kun tabel), `dentists` og auth-triggers; API: `/api/terms/*`, `/api/auth/*` (signup, login, logout, convert), `/api/session/anonymous` (uden kladde), `/api/me`; `proxy.ts`.
@@ -1386,6 +1443,10 @@ Trin 5 kan påbegyndes parallelt i uge 3 af frontend, da det kun deler `dentists
 | **`ai_usage_daily` og `AI_ANON_DAILY_CAP`** | Global tæller kan lukke chatten for alle anonyme, hvis den misbruges | Loftet er omkostningsværn; det kan kun øges af drift; overvåges manuelt i prototypen |
 | **Service role-skrivninger for AI** (0.9) | Hvis en route kaldes med forkerte parametre, kan den skrive assistentindhold eller udkast på en anden patients forespørgsel | Funktionerne skal tjekke ejerskab og kladde internt (krav til migrationen), kun serveren kalder dem, og det testes i `tests/rls` og `tests/ai` |
 | **Låst `summary_text`** (0.9) | Hvis RLS eller trigger ikke blokerer direkte UPDATE, kan opsummeringen ændres uden patientens godkendelse | Direkte UPDATE blokeres (4.3, 5.4), kun `approve_summary()` ændrer teksten, test i 5.6 |
+| **Tandlægens læsning** (v1.0) | Forespørgsel vises til tandlæge uden modtagerskab, eller billeder vises efter patienten har trukket samtykket tilbage | Alle dentist-views kræver `is_verified_dentist()` og modtagerskab; billeder via `dentist_request_images()` med aktivt samtykke (5.7). Test udvides i 5.6 |
+| **Direkte klientadgang til storage** (v1.0) | Hvis en policy åbnes for `authenticated`, kan billeder skrives eller læses uden om serverens tjek | Ingen rettigheder for `authenticated` eller `anon` på `request_images` og bucketen. Kun service role (9.2, 5.4) |
+| **Misbrug af anonyme sessioner uden IP-begrænsning** (v1.0) | Masseoprettelse af sessioner | `consume_rate_limit` (10 pr. time pr. IP, hash), Supabase-limit som ekstra lag (7.6) |
+| **`is_verified_dentist()` tjekker ikke `is_active`** (v1.0) | Pauserede tandlæger kan stadig se indbakke og svar | Åbent: 12.3 punkt 14 |
 | **Forældreløs anonym bruger** (kendt restrisiko, 0.6): hvis samtykkerne ikke kan gemmes ved anonym start, og `signOut` også fejler, kan der stå en anonym bruger i `auth.users` uden samtykke og uden data | Rest af en bruger uden indhold; ingen helbredsdata | Browseren kan ikke bruge sessionen til noget, der kræver samtykke (API tjekker `has_active_consent`). Oprydningsjobbet (trin 2) sletter anonyme brugere efter 48 timer uanset indhold |
 | Selvudnævnte tandlæger | Uvedkommende får helbredsdata | `is_verified` påkrævet for matching og liste |
 | **Chat glider over i rådgivning.** En fri samtale giver langt flere muligheder for at lokke AI'en til vurderinger end én opsummering | MDR, patientsikkerhed | Lagdelte guardrails pr. besked (7.5), fast afvisningstekst, ingen streaming (intet uvalideret vises), loft på beskeder, provokationstests. Risikoen er højere end i v0.1 |
@@ -1403,6 +1464,14 @@ Trin 5 kan påbegyndes parallelt i uge 3 af frontend, da det kun deler `dentists
 | Next.js 16 (`proxy.ts` i stedet for `middleware.ts`) | Forvirring for agenter trænet på ældre versioner | Verificér mod Next 16-docs i trin 1 |
 
 ### 12.2 Afklaret
+
+I v1.0 (trin 2 og 3 implementeret, `04ff108b`):
+- **Billeder:** upload, rækkeinsert og sletning sker kun med service role efter re-encoding. `authenticated` har ingen skriverettigheder på `request_images` eller storage. Påstanden om upload med brugerens JWT er fjernet (4.3, 5.4, 9.2, 9.3).
+- **Tandlægelæsning:** kun via `dentist_inbox`, `dentist_request_status`, `dentist_request_detail` og `dentist_request_images()`, og kun med aktivt `is_verified_dentist()` og modtagerskab (5.7).
+- **Svarets livscyklus:** svar låses ved `patient_decision`. `withdrawn` er endeligt. `recipient_status` går til `responded` ved svar og forbliver `responded` efter tilbagetrækning (4.2, 4.3, 5.4).
+- **Sikkerhedshærdning:** `consume_rate_limit` (10 pr. time pr. IP, hash). Consents med server-side tidsstempler og kendte versioner. Cron accepterer GET og POST. `anon` har ingen EXECUTE på interne funktioner (5.1, 5.3, 7.6, 10.2, 10.3).
+- **Trin 3-routes:** 10.8.1. Afvigelser: klinik oprettes via `PATCH /api/clinics/me`, og tandlægens forespørgselsdetalje ligger på `GET /api/inbox/{requestId}`.
+- **Migrationer:** `20261007120000` til `20261007120300` i nummerorden, og `20261007120300` kræver `20261007120200` (11).
 
 I v0.9 (efter service role-rettelser i trin 2):
 - **Service role for AI-skrivninger:** `append_assistant_message()` og `store_ai_summary()` kræver `service_role` (kaldes via `createSupabaseAdminClient()`). Begrundelse: patienten må ikke kunne skrive AI-svar eller opsummeringer selv (2.3, 5.1).
@@ -1467,6 +1536,11 @@ I v0.2:
 10. **Format for autorisations-ID** (`^[A-Za-z0-9-]{3,20}$` er en antagelse i DB og API, 4.3). Skal bekræftes mod autorisationsregistret; ændring kræver migration.
 11. **Faste spørgsmål:** `QUESTION_DEFINITIONS` i `lib/constants/questions.ts` er eneste kilde (6.2). Trin 2 validerer `answers` kun generelt (nøgle/værdi og længde). Den endelige liste og valgmulighederne ændres kun i `QUESTION_DEFINITIONS`. Ingen migration kræves, fordi svarene ligger i `jsonb`.
 12. **Security-gennemgang (før trin 2 merges):** `ai_messages_insert_own_user` (kun `role='user'`) bekræftes med test 14. `patient_user_messages_last_day()` (heltal, 5.1) bekræftes at tælle egne rækker (test 16). Rettighederne på `append_assistant_message()`, `store_ai_summary()` og `approve_summary()` bekræftes som beskrevet i 5.1 og 5.3.
+13. **Offentlig tandlægeliste for besøgende (trin 4-5):** besøgende må ikke have direkte læseadgang til `dentists` og `clinics` ud over RLS. Den kræver en `security definer`-læsefunktion, der kun returnerer offentlige felter. Design ikke valgt.
+14. **`is_verified_dentist()` tjekker ikke `is_active`:** skal pauserede tandlæger udelukkes fra indbakke og svar, og hvor skal det tjekkes (i funktionen eller i policyerne)?
+15. **Trustpilot-score og prisnøjagtighed er trin 5.** De er ikke implementeret i trin 3. Dentist-views og offentlige profiler mangler derfor disse felter.
+16. **Visning og `seen`:** afklar om `GET /api/inbox/{requestId}` sætter `recipient_status = 'seen'`, og om `POST /api/inbox/{requestId}/seen` og `/decline` skal implementeres (10.6, 10.8.1).
+17. **Security-gennemgang af tandlægens views (5.7):** bekræft om `dentist_*`-viewsene er `security_invoker`-views eller `security definer`-funktioner, og at de overholder 5.1 regel 3-4 (kun et id ind, ingen rækker for andre modtagere).
 
 Implementeringsnoter fra trin 1 (0.6, til orientering):
 - `POST /api/auth/convert` udfylder `patients.first_name` via `server/models/patients.ts` (ikke direkte i routen).

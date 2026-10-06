@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RequestDraftDto } from "@/lib/types/requests";
 import { listImages } from "@/server/models/images";
 import { getConversation } from "@/server/models/chat";
+import { countSentResponses } from "@/server/models/responses";
 import { signedImageUrl } from "@/server/services/images";
 import type { RequestRecord } from "@/server/models/requests";
 
@@ -34,6 +35,6 @@ export async function buildDraftDto(supabase: SupabaseClient, record: RequestRec
     summaryApprovedAt: record.summaryApprovedAt,
     sentAt: record.sentAt,
     expiresAt: record.expiresAt,
-    responseCount: 0,
+    responseCount: (await countSentResponses(supabase, [record.id])).get(record.id) ?? 0,
   };
 }

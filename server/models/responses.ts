@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PatientDecision, ResponseStatus } from "@/lib/types/responses";
 import { ApiError, notFound } from "@/server/http/api";
+import { mapDbError } from "@/server/http/db-errors";
 
 // Dataadgang for tandlægesvar (architecture 4.3, 5.4). RLS afgør synlighed; API'et tilføjer kun ejerskabstjek.
 // Kolonnenavne forlader ikke denne fil.
@@ -93,6 +94,47 @@ function toRecord(row: ResponseRow): ResponseRecord {
         }
       : null,
   };
+}
+
+// Patientens valg. Al logik ligger i decide_response() (security definer). Fejlkoder oversættes her.
+export async function decideResponse(
+  supabase: SupabaseClient,
+  responseId: string,
+  decision: "chosen" | "declined",
+): Promise<void> {
+  const { error } = await supabase.rpc("decide_response", { p_response_id: responseId, p_decision: decision });
+  mapDbError(
+    error,
+    {
+      NOT_FOUND: notFound(),
+      ALREADY_DECIDED: new ApiError(409, "ALREADY_DECIDED", "Du har allerede valgt for dette svar."),
+      RESPONSE_WITHDRAWN: new ApiError(409, "RESPONSE_WITHDRAWN", "Svaret er trukket tilbage."),
+      REQUEST_CLOSED: new ApiError(409, "REQUEST_CLOSED", "Forespørgslen er lukket eller udløbet."),
+      INVALID_DECISION: new ApiError(400, "INVALID_DECISION", "Ugyldigt valg."),
+      UNAUTHENTICATED: new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind."),
+    },
+    "decide_response fejlede",
+  );
+}
+
+// Antal sendte (ikke trukne) svar pr. forespørgsel. Tælles under kalderens RLS: patienten (ejer) ser alle sine egne,
+// og en tandlæge ser kun sit eget. Der returneres kun tal, aldrig andre tandlægers data.
+export async function countSentResponses(
+  supabase: SupabaseClient,
+  requestIds: string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>(requestIds.map((id) => [id, 0]));
+  if (requestIds.length === 0) return counts;
+  const { data, error } = await supabase
+    .from("responses")
+    .select("request_id")
+    .in("request_id", requestIds)
+    .eq("status", "sent");
+  if (error) throw new Error("responses: count fejlede");
+  for (const row of (data ?? []) as { request_id: string }[]) {
+    counts.set(row.request_id, (counts.get(row.request_id) ?? 0) + 1);
+  }
+  return counts;
 }
 
 // RLS: patienten (ejer) ser alle svar på forespørgslen, tandlægen kun sit eget (0 eller 1).

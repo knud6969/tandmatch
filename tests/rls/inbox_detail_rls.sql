@@ -97,6 +97,8 @@ insert into public.request_recipients (request_id, dentist_id, distance_km) valu
 -- ---------- 1. Tandlæge X ser kun egne sendte forespørgsler ----------
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001101')$$, 1, 'X ser sin sendte forespørgsel');
+select pg_temp.expect_count($$select count(*) from public.dentist_request_status('00000000-0000-4000-8000-000000001101') where request_status = 'sent'$$, 1, 'verificeret modtager X får status sent via dentist_request_status');
+select pg_temp.expect_count($$select image_count::bigint from public.dentist_inbox(null) where request_id = '00000000-0000-4000-8000-000000001101'$$, 1, 'image_count: kun billedet med aktivt samtykke tælles (trukket samtykke tælles ikke)');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001103')$$, 0, 'X kan ikke se forespørgsel sendt til Y');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001102')$$, 0, 'X kan ikke se usendt kladde');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001101') where summary_text = 'Godkendt tekst til X'$$, 1, 'godkendt opsummering vises til modtager');
@@ -160,6 +162,12 @@ select pg_temp.expect_count($$select count(*) from public.dentist_request_images
 -- Tilbagetrækning af svar: modtagerstatus går tilbage til new (ikke responded).
 select pg_temp.expect_updated($$update public.responses set status = 'withdrawn' where request_id = '00000000-0000-4000-8000-000000001101' and dentist_id = '00000000-0000-4000-8000-000000000111'$$, 1, 'modtager X trækker sit svar tilbage');
 select pg_temp.as_db_owner();
-select pg_temp.expect_count($$select count(*) from public.request_recipients where request_id = '00000000-0000-4000-8000-000000001101' and dentist_id = '00000000-0000-4000-8000-000000000111' and status = 'new'$$, 1, 'tilbagetrukket svar sætter modtagerstatus til new');
+select pg_temp.expect_count($$select count(*) from public.request_recipients where request_id = '00000000-0000-4000-8000-000000001101' and dentist_id = '00000000-0000-4000-8000-000000000111' and status = 'responded'$$, 1, 'efter tilbagetrækning er modtagerstatus stadig responded');
+select pg_temp.expect_count($$select count(*) from public.request_recipients where request_id = '00000000-0000-4000-8000-000000001101' and status = 'new'$$, 1, 'tilbagetrukket svar efterlader ingen "Ny" for X (uverificeret U er stadig ny)');
+select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
+select pg_temp.expect_error($$insert into public.responses (request_id, dentist_id, assessment, price_min, price_max) values ('00000000-0000-4000-8000-000000001101', '00000000-0000-4000-8000-000000000111', 'Nyt svar efter tilbagetrækning', 1000, 2000)$$, 'tilbagetrukket svar kan ikke erstattes med nyt svar', '23505');
+select pg_temp.expect_count($$select count(*) from public.dentist_inbox('new') where request_id = '00000000-0000-4000-8000-000000001101'$$, 0, 'indbakken viser ikke "Ny" for X efter tilbagetrækning');
+select pg_temp.expect_count($$select count(*) from public.dentist_inbox(null) where request_id = '00000000-0000-4000-8000-000000001101' and recipient_status = 'responded'$$, 1, 'indbakken viser responded for X efter tilbagetrækning');
+select pg_temp.as_db_owner();
 
 select 'ALLE INBOX-DETALJE-TESTS PASSEDE' as resultat;

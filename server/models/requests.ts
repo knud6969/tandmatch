@@ -95,9 +95,8 @@ export async function insertDraft(
     })
     .select("id")
     .single();
-  if (error || !data) {
-    mapDbError(error, { ANON_DRAFT_LIMIT: new ApiError(409, "DRAFT_EXISTS", "Du har allerede en kladde.") }, "requests: insert fejlede");
-  }
+  mapDbError(error, { ANON_DRAFT_LIMIT: new ApiError(409, "DRAFT_EXISTS", "Du har allerede en kladde.") }, "requests: insert fejlede");
+  if (!data) throw new Error("requests: insert fejlede");
   return data.id as string;
 }
 

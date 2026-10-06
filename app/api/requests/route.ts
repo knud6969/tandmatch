@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/server/db/supabase";
 import { jsonResponse, readJson, withApi } from "@/server/http/api";
 import { getRequest, insertDraft, listOwnRequests } from "@/server/models/requests";
 import { buildDraftDto } from "@/server/services/requests";
+import { countSentResponses } from "@/server/models/responses";
 
 // Egne forespørgsler (kun permanente patienter). Anonyme får deres kladde via /api/session/anonymous.
 export const GET = withApi(async () => {
@@ -13,6 +14,10 @@ export const GET = withApi(async () => {
   await requireRole("patient");
   const supabase = await createSupabaseServerClient();
   const records = await listOwnRequests(supabase);
+  const counts = await countSentResponses(
+    supabase,
+    records.map((r) => r.id),
+  );
   return jsonResponse({
     requests: records.map((r) => ({
       id: r.id,
@@ -20,7 +25,7 @@ export const GET = withApi(async () => {
       status: r.status,
       sentAt: r.sentAt,
       expiresAt: r.expiresAt,
-      responseCount: 0, // svar kommer i trin 3
+      responseCount: counts.get(r.id) ?? 0,
       unreadMessages: 0, // beskeder kommer i trin 6
     })),
   });

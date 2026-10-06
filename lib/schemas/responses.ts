@@ -62,3 +62,9 @@ export const patchResponseSchema = z
     (v) => v.priceMin === undefined || v.priceMax === undefined || v.priceMin <= v.priceMax,
     { message: priceOrderMessage, path: ["priceMax"] },
   );
+
+export const decisionSchema = z
+  .object({
+    decision: z.enum(["chosen", "declined"], "Vælg enten 'chosen' eller 'declined'."),
+  })
+  .strict();

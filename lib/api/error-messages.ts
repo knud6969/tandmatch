@@ -41,6 +41,9 @@ const MESSAGES: Record<string, string> = {
   RESPONSE_WITHDRAWN: "Svaret er trukket tilbage og kan ikke ændres igen.",
   STATE_CHANGED: "Svaret kunne ikke gemmes, fordi forespørgslen er ændret. Vi har hentet de nyeste oplysninger. Prøv igen.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
+  // Patientens valg af svar (trin 4)
+  ALREADY_DECIDED: "Du har allerede truffet et valg for dette svar. Opdater siden for at se den nyeste status.",
+  INVALID_DECISION: "Valget kunne ikke gemmes. Prøv igen.",
 };
 
 // Fejl, der betyder, at visningen er forældet. Siden bør hente data igen.
@@ -50,6 +53,7 @@ export const STALE_STATE_CODES = [
   "RESPONSE_LOCKED",
   "RESPONSE_WITHDRAWN",
   "STATE_CHANGED",
+  "ALREADY_DECIDED",
   "NOT_FOUND",
 ] as const;
 

@@ -79,17 +79,15 @@ export function PatientRequestList() {
               </div>
               <p className="text-base text-ink-muted">
                 {request.sentAt ? `Sendt ${formatDate(request.sentAt)}` : "Ikke sendt endnu"}
+                {request.status !== "draft" && ` · ${responseText(request.responseCount)}`}
               </p>
               {request.status === "draft" ? (
                 <Link href={`/start/${request.id}`} className="text-base font-semibold text-brand-700">
                   Fortsæt forespørgslen
                 </Link>
               ) : (
-                <Link
-                  href={`/patient/forespoergsel/${request.id}/svar`}
-                  className="text-base font-semibold text-brand-700"
-                >
-                  Se svar fra tandlæger
+                <Link href={`/patient/forespoergsel/${request.id}`} className="text-base font-semibold text-brand-700">
+                  Se forespørgslen og svar
                 </Link>
               )}
             </Card>
@@ -101,4 +99,9 @@ export function PatientRequestList() {
       </LinkButton>
     </div>
   );
+}
+
+function responseText(count: number): string {
+  if (count === 0) return "Ingen svar endnu";
+  return count === 1 ? "1 svar" : `${count} svar`;
 }

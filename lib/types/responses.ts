@@ -7,6 +7,7 @@ export type ResponseDto = {
   id: string;
   requestId: string;
   status: ResponseStatus;
+  withdrawn: boolean; // true når tandlægen har trukket svaret tilbage
   patientDecision: PatientDecision;
   assessment: string;
   priceMin: number; // hele kroner
