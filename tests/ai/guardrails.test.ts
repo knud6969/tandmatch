@@ -93,6 +93,7 @@ const forbiddenSamples = [
   "Det kan koste 3.000-5.000 uden kr.",
   "Ca. 3000-5000 for hele forløbet.",
   "Der er tale om 8.000.",
+  "Der er tale om ca. 8.000.",
   // Diagnose, alvorlighed og pris som modellen kan finde på at skrive
   "Det er en alvorlig tilstand, og du bør handle hurtigt.",
   "Det er akut, og du bør komme snart.",
@@ -645,4 +646,114 @@ test("containsAmount: beløb med kontekst findes, årstal og postnumre gør ikke
   assert.equal(containsAmount("2019-2021"), false);
   assert.equal(containsAmount("postnummer 7100"), false);
   assert.equal(containsAmount("12345"), true);
+});
+
+// ---------- Runde 4: alvorlighed, diagnose, egenomsorg, pris, falske positiver og datoer ----------
+
+const round4Blocked: [string, string][] = [
+  ["Det haster.", "severity"],
+  ["Det haster meget.", "severity"],
+  ["Søg tandlæge i dag.", "severity"],
+  ["Søg en tandlæge hurtigst muligt.", "severity"],
+  ["Det er intet at tænke på.", "severity"],
+  ["Det er tandsten.", "diagnosis"],
+  ["Der ses plak på tænderne.", "diagnosis"],
+  ["Skyl med saltvand to gange dagligt.", "selfcare"],
+  ["Børst tænder grundigt om morgenen.", "selfcare"],
+  ["Tag smertestillende efter behov.", "selfcare"],
+  ["Det bliver en stor udgift.", "price"],
+  ["Det er en stor omkostning for dig.", "price"],
+  ["Behandlingen er dyrt.", "price"],
+  ["Det er et problem.", "evaluation"],
+  ["Det er normalt.", "evaluation"],
+  ["Det er ikke farligt.", "severity"],
+  ["Det er akut, og du bør komme snart.", "severity"],
+];
+
+for (const [sample, category] of round4Blocked) {
+  test(`runde 4 blokeres (${category}): ${sample}`, () => {
+    assert.ok(findForbiddenCategories(sample).includes(category as never), `ventede ${category} i: ${sample}`);
+  });
+}
+
+const round4Allowed = [
+  "Hvis det er akut, kan du ringe til din læge.",
+  "Har du ubehag?",
+  "Hvilket problem vil du gerne have hjulpet med?",
+  "Har du haft en skade?",
+  "Hvornår oplevede du det første gang?",
+  "Det var den 12.03.2024.",
+  "Du skrev den 12.03.2024 og igen 13.03.2024.",
+  "Det er ca. 3 uger siden.",
+  "Det er ikke et akut spor.",
+  "Du kan vælge mellem flere kategorier.",
+];
+
+for (const sample of round4Allowed) {
+  test(`runde 4 tilladt: ${sample}`, () => {
+    assert.deepEqual(findForbiddenCategories(sample), []);
+  });
+}
+
+test("containsAmount: punktum-tal blokeres altid, også med afsluttende punktum. Datoer tæller ikke", () => {
+  assert.equal(containsAmount("12.03.2024"), false);
+  assert.equal(containsAmount("Det er 3.000."), true);
+  assert.equal(containsAmount("ca. 3.000"), true);
+  assert.equal(containsAmount("3.000 kr"), true);
+  assert.equal(containsAmount("3.000-5.000"), true);
+});
+
+// ---------- Runde 5: regressioner, \p{L}, hast, egenomsorg og spørgsmål ----------
+
+const round5Blocked: [string, string][] = [
+  ["Det er ikke akut.", "severity"],
+  ["Det er nok akut.", "severity"],
+  ["Det lyder akut.", "severity"],
+  ["Din situation er akut.", "severity"],
+  ["Jeg vurderer at det er akut.", "severity"],
+  ["Er det akut?", "severity"],
+  ["Regn med 8.000.", "price"],
+  ["Behandlingen ligger på 3.000.", "price"],
+  ["Det løber op i 8.000.", "price"],
+  ["Forvent 8.000 for forløbet.", "price"],
+  ["Det er måske normalt.", "evaluation"],
+  ["Det er helt i orden.", "evaluation"],
+  ["Tanden ser fin ud.", "evaluation"],
+  ["Ingen grund til bekymring.", "evaluation"],
+  ["Det kan være et problem.", "evaluation"],
+  ["Kontakt en tandlæge hurtigst muligt.", "severity"],
+  ["Ring til vagttandlægen.", "severity"],
+  ["Gå til skadestuen.", "severity"],
+  ["Tag en Panodil eller Ipren.", "selfcare"],
+  ["Læg is på kinden.", "selfcare"],
+  ["Børst grundigt om aftenen.", "selfcare"],
+  ["Undgå at tygge på den side.", "selfcare"],
+  ["Du har en cyste?", "diagnosis"],
+  ["Det er en stor udgift.", "price"],
+];
+
+for (const [sample, category] of round5Blocked) {
+  test(`runde 5 blokeres (${category}): ${sample}`, () => {
+    assert.ok(findForbiddenCategories(sample).includes(category as never), `ventede ${category} i: ${sample}`);
+  });
+}
+
+const round5Questions = [
+  "Hvornår oplever du ubehag?",
+  "Hvilke tænder er problemet?",
+  "Haster det for dig?",
+  "Har du tandsten?",
+  "Bruger du tandtråd?",
+  "Hvilken plakat?",
+];
+
+for (const sample of round5Questions) {
+  test(`runde 5 spørgsmål tilladt: ${sample}`, () => {
+    assert.deepEqual(findForbiddenCategories(sample), []);
+  });
+}
+
+test("runde 5: 'Hvis det er akut' og 'Det var den 12.03.2024' rammes ikke", () => {
+  assert.deepEqual(findForbiddenCategories("Hvis det er akut, kan du ringe til din læge."), []);
+  assert.deepEqual(findForbiddenCategories("Det var den 12.03.2024."), []);
 });

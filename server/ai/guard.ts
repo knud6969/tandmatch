@@ -22,7 +22,7 @@ export const MAX_AI_ATTEMPTS = 2;
 // Blokeringen rammer patientens påstande (fx "skæve", "skadet"), ikke almindelig beskrivelse af det synlige.
 // Vurderinger fanges af findForbiddenCategories på billedteksten.
 const NEUTRAL_WORDS = new Set([
-  "tænder", "tanden", "tanderne", "tandkød", "tandkødet", "tandsten", "overmund", "undermund", "fortænder",
+  "tænder", "tanden", "tanderne", "tandkød", "tandkødet", "overmund", "undermund", "fortænder",
   "fortænderne", "kindtænder", "hjørnetænder", "mund", "læber", "venstre", "højre", "forfra", "siden", "billede",
   "mellemrum", "placering", "farve", "farven", "form", "kategori", "område", "øverste", "nederste",
   "synlig", "synlige", "lys", "lyse", "mørk", "mørke", "gul", "gule", "gult", "gullig", "gullige",

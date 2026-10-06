@@ -50,7 +50,12 @@ export function ImagesStep({
     setError(null);
     try {
       await apiRequest<void>(`/api/requests/${draft.id}/images/${imageId}`, { method: "DELETE" });
-      onDraftChange({ ...draft, images: draft.images.filter((image) => image.id !== imageId) });
+      // Serveren nulstiller godkendelsen af opsummeringen ved sletning, så det samme gøres lokalt.
+      onDraftChange({
+        ...draft,
+        images: draft.images.filter((image) => image.id !== imageId),
+        summaryApprovedAt: null,
+      });
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {

@@ -24,14 +24,19 @@ begin
   execute 'reset role';
 end $$;
 
-create function pg_temp.expect_error(p_sql text, p_label text) returns void
+create function pg_temp.expect_error(p_sql text, p_label text, p_expect text) returns void
 language plpgsql as $$
+declare st text;
 begin
   execute p_sql;
   raise exception 'FEJL: forventede blokering men fik ingen: %', p_label;
 exception when others then
+  get stacked diagnostics st = returned_sqlstate;
   if sqlerrm like 'FEJL:%' then raise; end if;
-  raise notice 'OK (blokeret): % -> %', p_label, sqlerrm;
+  if st <> p_expect and sqlerrm not like '%' || p_expect || '%' then
+    raise exception 'FEJL: % forventede % men fik SQLSTATE % (%)', p_label, p_expect, st, sqlerrm;
+  end if;
+  raise notice 'OK (blokeret, %): % -> %', st, p_label, sqlerrm;
 end $$;
 
 create function pg_temp.expect_count(p_sql text, p_expected bigint, p_label text) returns void
@@ -79,9 +84,9 @@ select pg_temp.expect_count($$select count(*) from public.patients where id = '0
 select pg_temp.expect_count($$select count(*) from public.profiles where id = '00000000-0000-4000-8000-000000000003' and role = 'patient' and is_anonymous = true$$, 1, 'Anonym får rolle patient');
 select pg_temp.expect_count($$select count(*) from public.dentists where id = '00000000-0000-4000-8000-000000000011' and is_verified = false and clinic_id is null$$, 1, 'Ny tandlæge er ikke verificeret');
 
-select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x@example.test', '{"role":"admin"}')$$, 'signup med rolle admin afvises');
-select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x2@example.test', '{}')$$, 'signup uden rolle afvises');
-select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x3@example.test', '{"role":"dentist","full_name":"Test Tandlæge Q","authorization_id":"ikke gyldigt id!"}')$$, 'tandlæge med ugyldigt autorisations-ID afvises');
+select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x@example.test', '{"role":"admin"}')$$, 'signup med rolle admin afvises', 'Ugyldig rolle ved oprettelse');
+select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x2@example.test', '{}')$$, 'signup uden rolle afvises', 'Ugyldig rolle ved oprettelse');
+select pg_temp.expect_error($$insert into auth.users (email, raw_user_meta_data) values ('x3@example.test', '{"role":"dentist","full_name":"Test Tandlæge Q","authorization_id":"ikke gyldigt id!"}')$$, 'tandlæge med ugyldigt autorisations-ID afvises', 'new row for relation "dentists" violates check constraint "dentists_authorization_id_check');
 
 -- Anonym som bliver til konto (konvertering) følger med: samme id, is_anonymous spejles.
 update auth.users set is_anonymous = false, email = 'anon-konverteret@example.test' where id = '00000000-0000-4000-8000-000000000004';
@@ -94,16 +99,16 @@ select pg_temp.expect_count($$select count(*) from public.patients$$, 1, 'Patien
 select pg_temp.expect_updated($$update public.profiles set role = 'dentist' where id = '00000000-0000-4000-8000-000000000001'$$, 0, 'Patient kan ikke ændre egen rolle');
 select pg_temp.expect_updated($$update public.patients set first_name = 'Hacket' where id = '00000000-0000-4000-8000-000000000002'$$, 0, 'Patient kan ikke ændre anden patients navn');
 select pg_temp.expect_updated($$update public.patients set first_name = 'Test A2' where id = '00000000-0000-4000-8000-000000000001'$$, 1, 'Patient kan opdatere eget fornavn');
-select pg_temp.expect_error($$update public.patients set first_name = repeat('x', 60) where id = '00000000-0000-4000-8000-000000000001'$$, 'for langt fornavn afvises');
+select pg_temp.expect_error($$update public.patients set first_name = repeat('x', 60) where id = '00000000-0000-4000-8000-000000000001'$$, 'for langt fornavn afvises', 'new row for relation "patients" violates check constraint "patients_first_name_check"');
 select pg_temp.expect_count($$select count(*) from public.dentists where id = '00000000-0000-4000-8000-000000000011'$$, 0, 'Patient ser ikke ikke-verificeret tandlæge');
-select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik Patient', 'Testvej 1', '2000', 'Testby', '00000000-0000-4000-8000-000000000001')$$, 'patient kan ikke oprette klinik');
-select pg_temp.expect_error($$insert into public.terms_acceptances (user_id, terms_version, privacy_version, accepted_at) values ('00000000-0000-4000-8000-000000000002', 'v0-prototype', 'v0-prototype', now())$$, 'patient kan ikke skrive vilkårs-accept for andre');
+select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik Patient', 'Testvej 1', '2000', 'Testby', '00000000-0000-4000-8000-000000000001')$$, 'patient kan ikke oprette klinik', 'new row violates row-level security policy for table "clinics"');
+select pg_temp.expect_error($$insert into public.terms_acceptances (user_id, terms_version, privacy_version, accepted_at) values ('00000000-0000-4000-8000-000000000002', 'v0-prototype', 'v0-prototype', now())$$, 'patient kan ikke skrive vilkårs-accept for andre', 'new row violates row-level security policy for table "terms_acceptances"');
 
 -- ---------- 3. Vilkårs-accept og samtykker ----------
 select pg_temp.expect_updated($$insert into public.terms_acceptances (user_id, terms_version, privacy_version, accepted_at) values ('00000000-0000-4000-8000-000000000001', 'v0-prototype', 'v0-prototype', now()) on conflict do nothing$$, 1, 'Patient kan skrive egen vilkårs-accept');
 select pg_temp.expect_updated($$update public.terms_acceptances set terms_version = 'hacket' where user_id = '00000000-0000-4000-8000-000000000001'$$, 0, 'Vilkårs-accept kan ikke ændres');
 select pg_temp.expect_count($$select count(*) from public.terms_acceptances where user_id = '00000000-0000-4000-8000-000000000002'$$, 0, 'Patient ser ikke anden patients vilkårs-accept');
-select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000001', 'health_data_sharing', 'hds@v0', true)$$, 'granted_while_anonymous skal matche session (permanent = false)');
+select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000001', 'health_data_sharing', 'hds@v0', true)$$, 'granted_while_anonymous skal matche session (permanent = false)', 'new row violates row-level security policy for table "consents"');
 select pg_temp.expect_updated($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000001', 'health_data_sharing', 'hds@v0', false)$$, 1, 'Permanent patient kan give health_data_sharing');
 select pg_temp.expect_updated($$update public.consents set withdrawn_at = now() where patient_id = '00000000-0000-4000-8000-000000000001'$$, 0, 'Samtykke kan ikke ændres direkte (kun via RPC senere)');
 
@@ -113,11 +118,11 @@ select pg_temp.expect_count($$select count(*) from public.terms_acceptances$$, 0
 
 -- ---------- 4. Anonym session ----------
 select pg_temp.as_user('00000000-0000-4000-8000-000000000003', true);
-select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000003', 'health_data_sharing', 'hds@v0', true)$$, 'anonym kan ikke give health_data_sharing');
-select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000003', 'ai_processing', 'ai@v0', false)$$, 'anonym: granted_while_anonymous=false afvises');
+select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000003', 'health_data_sharing', 'hds@v0', true)$$, 'anonym kan ikke give health_data_sharing', 'new row violates row-level security policy for table "consents"');
+select pg_temp.expect_error($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000003', 'ai_processing', 'ai@v0', false)$$, 'anonym: granted_while_anonymous=false afvises', 'new row violates row-level security policy for table "consents"');
 select pg_temp.expect_updated($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000003', 'ai_processing', 'ai@v0', true)$$, 1, 'anonym kan give ai_processing');
-select pg_temp.expect_error($$insert into public.dentists (id, full_name, authorization_id) values ('00000000-0000-4000-8000-000000000003', 'Test Anon', 'TST-9999')$$, 'anonym kan ikke oprette tandlæge-række');
-select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik Anon', 'Testvej 2', '2000', 'Testby', '00000000-0000-4000-8000-000000000003')$$, 'anonym kan ikke oprette klinik');
+select pg_temp.expect_error($$insert into public.dentists (id, full_name, authorization_id) values ('00000000-0000-4000-8000-000000000003', 'Test Anon', 'TST-9999')$$, 'anonym kan ikke oprette tandlæge-række', 'new row violates row-level security policy for table "dentists"');
+select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik Anon', 'Testvej 2', '2000', 'Testby', '00000000-0000-4000-8000-000000000003')$$, 'anonym kan ikke oprette klinik', 'new row violates row-level security policy for table "clinics"');
 select pg_temp.expect_count($$select count(*) from public.consents$$, 1, 'anonym ser kun egne samtykker');
 select pg_temp.expect_count($$select count(*) from public.profiles$$, 1, 'anonym ser kun egen profil');
 select pg_temp.expect_count($$select count(*) from public.patients$$, 1, 'anonym ser kun egen patient-række');
@@ -149,26 +154,26 @@ select pg_temp.expect_count($$select count(*) from (select public.has_active_con
 
 -- ---------- 5. Tandlæger: verifikation, klinik og guards ----------
 select pg_temp.as_user('00000000-0000-4000-8000-000000000011');
-select pg_temp.expect_error($$update public.dentists set is_verified = true where id = '00000000-0000-4000-8000-000000000011'$$, 'tandlæge kan ikke selv verificere sig');
-select pg_temp.expect_error($$update public.dentists set authorization_id = 'FALSK-1' where id = '00000000-0000-4000-8000-000000000011'$$, 'tandlæge kan ikke ændre autorisations-ID');
+select pg_temp.expect_error($$update public.dentists set is_verified = true where id = '00000000-0000-4000-8000-000000000011'$$, 'tandlæge kan ikke selv verificere sig', 'Feltet kan kun ændres af admin');
+select pg_temp.expect_error($$update public.dentists set authorization_id = 'FALSK-1' where id = '00000000-0000-4000-8000-000000000011'$$, 'tandlæge kan ikke ændre autorisations-ID', 'Feltet kan kun ændres af admin');
 select pg_temp.expect_updated($$update public.dentists set id = id, bio = 'Test-bio' where id = '00000000-0000-4000-8000-000000000012'$$, 0, 'tandlæge kan ikke ændre anden tandlæges profil');
 select pg_temp.expect_count($$select count(*) from public.dentists$$, 1, 'tandlæge X ser kun egen (uverificeret) række');
-select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik X', 'Testvej 3', '2000', 'Testby', '00000000-0000-4000-8000-000000000012')$$, 'klinik kan kun oprettes med egen created_by');
+select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik X', 'Testvej 3', '2000', 'Testby', '00000000-0000-4000-8000-000000000012')$$, 'klinik kan kun oprettes med egen created_by', 'new row violates row-level security policy for table "clinics"');
 select pg_temp.expect_updated($$insert into public.clinics (name, address, postal_code, city, created_by) values ('Test Klinik X', 'Testvej 3', '2000', 'Testby', '00000000-0000-4000-8000-000000000011')$$, 1, 'tandlæge X opretter egen klinik');
 select pg_temp.expect_updated($$update public.dentists set clinic_id = (select id from public.clinics where name = 'Test Klinik X') where id = '00000000-0000-4000-8000-000000000011'$$, 1, 'tandlæge X knytter sig til egen klinik');
 select pg_temp.expect_updated($$update public.clinics set name = 'Test Klinik X (opdateret)' where name like 'Test Klinik X%'$$, 1, 'klinik-medlem kan opdatere egen klinik');
-select pg_temp.expect_error($$update public.clinics set created_by = '00000000-0000-4000-8000-000000000012' where name like 'Test Klinik X%'$$, 'created_by kan ikke ændres');
-select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by, trustpilot_url) values ('Test Klinik TP', 'Testvej 4', '2000', 'Testby', '00000000-0000-4000-8000-000000000011', 'https://evil.example.com/x')$$, 'Trustpilot-URL må kun være trustpilot.com');
+select pg_temp.expect_error($$update public.clinics set created_by = '00000000-0000-4000-8000-000000000012' where name like 'Test Klinik X%'$$, 'created_by kan ikke ændres', 'created_by kan ikke ændres');
+select pg_temp.expect_error($$insert into public.clinics (name, address, postal_code, city, created_by, trustpilot_url) values ('Test Klinik TP', 'Testvej 4', '2000', 'Testby', '00000000-0000-4000-8000-000000000011', 'https://evil.example.com/x')$$, 'Trustpilot-URL må kun være trustpilot.com', 'new row for relation "clinics" violates check constraint "clinics_trustpilot_url_check"');
 select pg_temp.expect_updated($$insert into public.clinics (name, address, postal_code, city, created_by, trustpilot_url, trustpilot_score) values ('Test Klinik TP', 'Testvej 4', '2000', 'Testby', '00000000-0000-4000-8000-000000000011', 'https://dk.trustpilot.com/review/test-klinik', 4.5)$$, 1, 'gyldig Trustpilot-URL og score');
 
 select pg_temp.as_user('00000000-0000-4000-8000-000000000012');
-select pg_temp.expect_error($$update public.dentists set clinic_id = (select id from public.clinics where name = 'Test Klinik X (opdateret)') where id = '00000000-0000-4000-8000-000000000012'$$, 'tandlæge Y kan ikke flytte sig ind i X klinik');
+select pg_temp.expect_error($$update public.dentists set clinic_id = (select id from public.clinics where name = 'Test Klinik X (opdateret)') where id = '00000000-0000-4000-8000-000000000012'$$, 'tandlæge Y kan ikke flytte sig ind i X klinik', 'Ugyldig klinik');
 select pg_temp.expect_updated($$update public.clinics set name = 'Hacket' where name like 'Test Klinik X%'$$, 0, 'tandlæge Y kan ikke redigere X klinik');
 
 -- Admin verificerer Y. X forbliver uverificeret.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000099');
 select pg_temp.expect_updated($$update public.dentists set is_verified = true where id = '00000000-0000-4000-8000-000000000012'$$, 1, 'admin kan verificere tandlæge');
-select pg_temp.expect_error($$insert into public.profiles (id, role) values ('00000000-0000-4000-8000-000000000099', 'admin')$$, 'ingen kan indsætte profiles direkte');
+select pg_temp.expect_error($$insert into public.profiles (id, role) values ('00000000-0000-4000-8000-000000000099', 'admin')$$, 'ingen kan indsætte profiles direkte', 'new row violates row-level security policy for table "profiles"');
 
 -- Anonym rolle (ingen session): kun offentlige data
 select pg_temp.as_anon_role();
@@ -177,7 +182,7 @@ select pg_temp.expect_count($$select count(*) from public.profiles$$, 0, 'besøg
 select pg_temp.expect_count($$select count(*) from public.terms_acceptances$$, 0, 'besøgende ser ingen vilkårs-accepter');
 select pg_temp.expect_count($$select count(*) from public.clinics$$, 2, 'besøgende ser klinikker');
 select pg_temp.expect_count($$select count(*) from public.postal_codes$$, 0, 'postal_codes er tom og uskrivbar for besøgende');
-select pg_temp.expect_error($$insert into public.postal_codes values ('2000', 'Testby', 0, 0)$$, 'besøgende kan ikke skrive postal_codes');
+select pg_temp.expect_error($$insert into public.postal_codes values ('2000', 'Testby', 0, 0)$$, 'besøgende kan ikke skrive postal_codes', 'new row violates row-level security policy for table "postal_codes"');
 
 select pg_temp.as_db_owner();
 select 'ALLE TRIN 1 RLS-TESTS PASSEDE' as resultat;
