@@ -48,3 +48,28 @@ export function fromDateTimeLocal(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
+
+const monthFormat = new Intl.DateTimeFormat("da-DK", { month: "long", year: "numeric", timeZone: TIME_ZONE });
+const avgFormat = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+// "2026-10" -> "oktober 2026".
+export function formatMonth(yearMonth: string): string {
+  return monthFormat.format(new Date(`${yearMonth}-15T12:00:00Z`));
+}
+
+// Gennemsnit og score med én decimal, fx "4,5".
+export function formatOneDecimal(value: number): string {
+  return avgFormat.format(value);
+}
+
+// Procent uden decimaler, fx "85 %".
+export function formatPercent(value: number): string {
+  return `${Math.round(value)} %`;
+}
+
+// Hele kroner som rå tal (uden "kr."), til felter. Mellemrum og punktum som tusindtalsseparator accepteres.
+export function parseWholeKr(value: string): number | null {
+  const cleaned = value.trim().replace(/[\s.]/g, "");
+  if (!/^\d+$/.test(cleaned)) return null;
+  return Number(cleaned);
+}

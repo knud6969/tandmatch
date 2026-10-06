@@ -41,6 +41,13 @@ const MESSAGES: Record<string, string> = {
   RESPONSE_WITHDRAWN: "Svaret er trukket tilbage og kan ikke ændres igen.",
   STATE_CHANGED: "Svaret kunne ikke gemmes, fordi forespørgslen er ændret. Vi har hentet de nyeste oplysninger. Prøv igen.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
+  // Standard-sporet og anmeldelser (trin 5)
+  NO_VERIFIED_VISIT: "Du kan kun anmelde et besøg, der er verificeret.",
+  ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",
+  INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
+  NOT_ELIGIBLE: "Du kan kun svare på godkendte anmeldelser af dig.",
+  ALREADY_REPLIED: "Du har allerede svaret på denne anmeldelse. Svaret afventer moderation.",
+  INVALID_REPLY: "Svaret kunne ikke gemmes. Tjek teksten og prøv igen.",
   // Patientens valg af svar (trin 4)
   ALREADY_DECIDED: "Du har allerede truffet et valg for dette svar. Opdater siden for at se den nyeste status.",
   INVALID_DECISION: "Valget kunne ikke gemmes. Prøv igen.",

@@ -8,7 +8,7 @@ import { TextField } from "@/components/ui/text-field";
 import { ApiRequestError, apiRequest } from "@/lib/api/client";
 import { apiErrorMessage, STALE_STATE_CODES } from "@/lib/api/error-messages";
 import { fieldErrorsFrom, type FieldErrors } from "@/lib/forms/field-errors";
-import { fromDateTimeLocal, toDateTimeLocal } from "@/lib/format/danish";
+import { fromDateTimeLocal, parseWholeKr, toDateTimeLocal } from "@/lib/format/danish";
 import { createResponseSchema } from "@/lib/schemas/responses";
 import type { ResponseDto } from "@/lib/types/responses";
 import type { z } from "zod";
@@ -48,13 +48,6 @@ function valuesFrom(response: ResponseDto | undefined): FormValues {
     offer: response.offer ?? "",
     validUntil: response.validUntil ?? "",
   };
-}
-
-// Hele kroner. Mellemrum og punktum som tusindtalsseparator accepteres (fx "1.500").
-function parseWholeKr(value: string): number | null {
-  const cleaned = value.trim().replace(/[\s.]/g, "");
-  if (!/^\d+$/.test(cleaned)) return null;
-  return Number(cleaned);
 }
 
 // Validerer med det delte zod-skema (lib/schemas/responses.ts). Tomme pris-felter fanges først, så beskeden er dansk.

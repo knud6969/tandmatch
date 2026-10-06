@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { AiDisclaimer } from "@/components/ui/disclaimer";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -38,20 +37,15 @@ export default function HomePage() {
           </Card>
 
           <Card className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-semibold text-ink">Almindelig eller akut tandlæge</h3>
-            </div>
+            <h3 className="text-lg font-semibold text-ink">Almindelig eller akut tandlæge</h3>
             <p className="text-base leading-relaxed text-ink-muted">
               Se tandlæger i nærheden med næste ledige tid, prisinterval for standardydelser og anmeldelser.
             </p>
             <div className="mt-auto flex flex-col items-start gap-2 pt-2">
-              <Badge>Kommer snart</Badge>
-              <span
-                aria-disabled="true"
-                className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-lg bg-canvas px-5 text-base font-semibold text-ink-muted ring-1 ring-inset ring-line sm:w-auto"
-              >
+              <LinkButton href="/tandlaeger" variant="secondary" className="w-full sm:w-auto">
                 Find tandlæger
-              </span>
+              </LinkButton>
+              <p className="text-sm text-ink-muted">Ingen konto nødvendig for at se tandlæger.</p>
             </div>
           </Card>
         </div>
