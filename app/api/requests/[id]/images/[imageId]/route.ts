@@ -2,6 +2,7 @@ import { requireTerms } from "@/server/auth/terms";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, notFound, parseId, withApi } from "@/server/http/api";
+import { createSupabaseAdminClient } from "@/server/db/admin";
 import { requireOwnRequest } from "@/server/models/requests";
 import { deleteImageRow, getImage } from "@/server/models/images";
 import { removeImageObject } from "@/server/services/images";
@@ -21,7 +22,8 @@ export const DELETE = withApi(async (_req, ctx: Ctx) => {
   }
   const image = await getImage(supabase, requestId, imageId);
   if (!image) throw notFound();
-  await removeImageObject(supabase, image.storagePath);
-  await deleteImageRow(supabase, imageId);
+  const admin = createSupabaseAdminClient();
+  await removeImageObject(admin, image.storagePath);
+  await deleteImageRow(admin, imageId);
   return new Response(null, { status: 204 });
 });

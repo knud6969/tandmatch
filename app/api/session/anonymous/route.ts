@@ -9,6 +9,7 @@ import { upsertTermsAcceptance } from "@/server/models/terms";
 import { hasActiveConsent, insertConsents, type NewConsent } from "@/server/models/consents";
 import { findDraftId, insertDraft } from "@/server/models/requests";
 import { ApiError, jsonResponse, readJson, withApi } from "@/server/http/api";
+import { enforceIpRateLimit } from "@/server/http/rate-limit";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
 // Kladden oprettes med den valgte kategori. Der gives kun ai_processing her, aldrig billedsamtykke (se 9.4).
@@ -49,6 +50,7 @@ export const POST = withApi(async (req) => {
     return jsonResponse({ requestId, expiresAt: anonymousExpiresAt(existing.lastActiveAt) }, 200);
   }
 
+  await enforceIpRateLimit("anonymous-session", req);
   const { data, error } = await supabase.auth.signInAnonymously();
   if (error || !data.user) {
     throw new Error("signInAnonymously fejlede");

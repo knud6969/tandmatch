@@ -26,8 +26,8 @@ begin
 exception when others then
   get stacked diagnostics st = returned_sqlstate;
   if sqlerrm like 'FEJL:%' then raise; end if;
-  if st <> p_expect and sqlerrm not like '%' || p_expect || '%' then
-    raise exception 'FEJL: % forventede % men fik SQLSTATE % (%)', p_label, p_expect, st, sqlerrm;
+  if st <> p_expect then
+    raise exception 'FEJL: % forventede SQLSTATE % men fik % (%)', p_label, p_expect, st, sqlerrm;
   end if;
   raise notice 'OK (blokeret, %): % -> %', st, p_label, sqlerrm;
 end $$;
@@ -102,48 +102,49 @@ insert into public.requests (id, patient_id, category, questions_version) values
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
 select pg_temp.expect_count($$select count(*) from public.requests$$, 2, 'Patient A ser sine to kladder');
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000203'$$, 0, 'Patient A ser ikke anonym C''s kladde');
-select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version, status, sent_at, expires_at) values ('00000000-0000-4000-8000-000000000101', 'facings', 'v0-prototype', 'sent', now(), now())$$, 'patient kan ikke oprette forespørgsel direkte som sendt', 'Ny forespørgsel skal være kladde');
-select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000102', 'facings', 'v0-prototype')$$, 'patient kan ikke oprette forespørgsel på andens vegne', 'new row violates row-level security policy for table "requests"');
+select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version, status, sent_at, expires_at) values ('00000000-0000-4000-8000-000000000101', 'facings', 'v0-prototype', 'sent', now(), now())$$, 'patient kan ikke oprette forespørgsel direkte som sendt', '42501');
+select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000102', 'facings', 'v0-prototype')$$, 'patient kan ikke oprette forespørgsel på andens vegne', '42501');
 select pg_temp.expect_updated($$update public.requests set category = 'blegning' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient kan redigere egen kladde');
-select pg_temp.expect_error($$update public.requests set status = 'sent', sent_at = now(), expires_at = now() where id = '00000000-0000-4000-8000-000000000201'$$, 'patient kan ikke sætte status direkte', 'Feltet ændres kun af systemet');
+select pg_temp.expect_error($$update public.requests set status = 'sent', sent_at = now(), expires_at = now() where id = '00000000-0000-4000-8000-000000000201'$$, 'patient kan ikke sætte status direkte', '42501');
 select pg_temp.expect_updated($$update public.requests set answers = '{"x":"y"}' where id = '00000000-0000-4000-8000-000000000203'$$, 0, 'patient kan ikke redigere anden patients forespørgsel');
-select pg_temp.expect_error($$insert into public.request_recipients (request_id, dentist_id, distance_km) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000111', 1)$$, 'patient kan ikke indsætte modtagere', 'new row violates row-level security policy for table "request_recipients"');
+select pg_temp.expect_error($$insert into public.request_recipients (request_id, dentist_id, distance_km) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000111', 1)$$, 'patient kan ikke indsætte modtagere', '42501');
 
 -- Anonym C: én kladde, og ingen adgang til andres.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
 select pg_temp.expect_count($$select count(*) from public.requests$$, 1, 'Anonym C ser kun egen kladde');
-select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000103', 'diastema', 'v0-prototype')$$, 'anonym: højst én kladde (ANON_DRAFT_LIMIT)', 'ANON_DRAFT_LIMIT');
-select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000203')$$, 'anonym kan ikke sende forespørgsel', 'ACCOUNT_REQUIRED');
+select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000103', 'diastema', 'v0-prototype')$$, 'anonym: højst én kladde (ANON_DRAFT_LIMIT)', 'P0001');
+select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000203')$$, 'anonym kan ikke sende forespørgsel', '42501');
 
 -- ---------- 2. Afsendelse og matching ----------
 -- A: godkend opsummering og postnummer, og giv health_data_sharing (kun med konto).
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
-select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden godkendt opsummering afvises', 'SUMMARY_NOT_APPROVED');
+select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden godkendt opsummering afvises', 'P0001');
 select pg_temp.expect_updated($$update public.requests set postal_code = '2000' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient skriver opsummering og postnummer på egen kladde');
 select pg_temp.expect_count($$select (public.approve_summary('00000000-0000-4000-8000-000000000201', 'Test-opsummering') is not null)::int$$, 1, 'patient godkender opsummering via approve_summary');
 select pg_temp.expect_updated($$update public.requests set answers = '{"x":"y"}' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient ændrer indhold på kladde');
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201' and summary_approved_at is null$$, 1, 'ændring af indhold nulstiller godkendelse');
 select pg_temp.expect_count($$select (public.approve_summary('00000000-0000-4000-8000-000000000201', 'Test-opsummering 2') is not null)::int$$, 1, 'ny godkendelse efter ændring');
-select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden health_data_sharing afvises', 'CONSENT_REQUIRED');
+select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden health_data_sharing afvises', '42501');
 select pg_temp.expect_updated($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000101', 'health_data_sharing', 'health_data_sharing@v0-prototype', false)$$, 1, 'patient giver health_data_sharing');
 select pg_temp.expect_count($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 2, 'send matcher X og Y (Z tager ikke kosmetik)');
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201' and status = 'sent' and sharing_consent_id is not null$$, 1, 'forespørgsel er sendt med samtykke-reference');
-select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'dobbelt afsendelse afvises', 'NOT_DRAFT');
+select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'dobbelt afsendelse afvises', 'P0001');
 select pg_temp.expect_updated($$update public.requests set category = 'facings' where id = '00000000-0000-4000-8000-000000000201'$$, 0, 'sendt forespørgsel kan ikke redigeres (RLS: 0 rækker)');
 select pg_temp.expect_count($$select count(*) from public.request_recipients where request_id = '00000000-0000-4000-8000-000000000201'$$, 2, 'patient ser modtagere på egen forespørgsel');
 
 -- ---------- 3. Tandlæger ----------
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
-select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'modtager X ser forespørgslen');
+select pg_temp.expect_count($$select count(*) from public.dentist_inbox(null) where request_id = '00000000-0000-4000-8000-000000000201'$$, 1, 'modtager X ser forespørgslen via dentist_inbox');
+select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201'$$, 0, 'modtager X kan ikke læse requests-rækken direkte');
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000202'$$, 0, 'X ser ikke A''s kladde');
 select pg_temp.expect_count($$select count(*) from public.request_recipients$$, 1, 'X ser kun egen modtagerrække');
 select pg_temp.expect_count($$select count(*) from public.request_recipients where dentist_id = '00000000-0000-4000-8000-000000000112'$$, 0, 'X ser ikke Y''s modtagerrække');
 select pg_temp.expect_updated($$update public.requests set category = 'blegning' where id = '00000000-0000-4000-8000-000000000201'$$, 0, 'tandlæge kan ikke redigere forespørgsel');
-select pg_temp.expect_error($$insert into public.request_recipients (request_id, dentist_id, distance_km) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000111', 0)$$, 'tandlæge kan ikke selv tilføje sig som modtager', 'new row violates row-level security policy for table "request_recipients"');
-select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000111', 'facings', 'v0-prototype')$$, 'tandlæge kan ikke oprette forespørgsel', 'new row violates row-level security policy for table "requests"');
+select pg_temp.expect_error($$insert into public.request_recipients (request_id, dentist_id, distance_km) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000111', 0)$$, 'tandlæge kan ikke selv tilføje sig som modtager', '42501');
+select pg_temp.expect_error($$insert into public.requests (patient_id, category, questions_version) values ('00000000-0000-4000-8000-000000000111', 'facings', 'v0-prototype')$$, 'tandlæge kan ikke oprette forespørgsel', '42501');
 
 select pg_temp.as_user('00000000-0000-4000-8000-000000000112');
-select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'modtager Y ser forespørgslen');
+select pg_temp.expect_count($$select count(*) from public.dentist_inbox(null) where request_id = '00000000-0000-4000-8000-000000000201'$$, 1, 'modtager Y ser forespørgslen via dentist_inbox');
 select pg_temp.expect_count($$select count(*) from public.request_recipients where dentist_id = '00000000-0000-4000-8000-000000000111'$$, 0, 'Y ser ikke X''s modtagerrække');
 
 select pg_temp.as_user('00000000-0000-4000-8000-000000000113');
@@ -159,18 +160,18 @@ select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
 select pg_temp.expect_updated($$insert into public.ai_conversations (request_id, patient_id, ai_consent_id) values ('00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'ai_processing'))$$, 1, 'anonym opretter samtale med aktivt ai_processing');
 select pg_temp.expect_updated($$insert into public.ai_messages (conversation_id, patient_id, role, content) values ((select id from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000203'), '00000000-0000-4000-8000-000000000103', 'user', 'Test-besked')$$, 1, 'anonym skriver patientbesked');
 select pg_temp.expect_count($$select user_message_count from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000203'$$, 1, 'trigger tæller patientbesked');
-select pg_temp.expect_error($$insert into public.ai_messages (conversation_id, patient_id, role, content) values ((select id from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000201'), '00000000-0000-4000-8000-000000000103', 'user', 'Ikke mit')$$, 'anonym kan ikke skrive i anden patients samtale', 'new row violates row-level security policy for table "ai_messages"');
+select pg_temp.expect_error($$insert into public.ai_messages (conversation_id, patient_id, role, content) values ((select id from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000201'), '00000000-0000-4000-8000-000000000103', 'user', 'Ikke mit')$$, 'anonym kan ikke skrive i anden patients samtale', '42501');
 select pg_temp.expect_count($$select count(*) from public.ai_conversations$$, 1, 'anonym ser kun egen samtale');
 select pg_temp.expect_count($$select count(*) from public.ai_messages$$, 1, 'anonym ser kun egne chatbeskeder');
 select pg_temp.expect_updated($$update public.ai_conversations set user_message_count = 0 where request_id = '00000000-0000-4000-8000-000000000203'$$, 0, 'patient kan ikke nulstille tæller (ingen UPDATE-policy)');
-select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000203')$$, 'anonym kan ikke sende (ACCOUNT_REQUIRED)', 'ACCOUNT_REQUIRED');
-select pg_temp.expect_error($$select public.try_consume_anonymous_ai_call()$$, 'anonym klient kan ikke kalde det fælles AI-loft direkte', 'permission denied for function try_consume_anonymous_ai_call');
+select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000203')$$, 'anonym kan ikke sende (ACCOUNT_REQUIRED)', '42501');
+select pg_temp.expect_error($$select public.try_consume_anonymous_ai_call()$$, 'anonym klient kan ikke kalde det fælles AI-loft direkte', '42501');
 select pg_temp.expect_count($$select count(*) from public.ai_usage_daily$$, 0, 'ai_usage_daily er ikke læsbar for patienter');
 
 -- Patient A opretter samtale for sin sendte forespørgsel: samtalen skal lukkes ved afsendelse (sket ovenfor).
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
 select pg_temp.expect_count($$select count(*) from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000201'$$, 0, 'A har ingen samtale på forespørgslen før send (ingen læk fra X)');
-select pg_temp.expect_error($$insert into public.ai_conversations (request_id, patient_id, ai_consent_id) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'ai_processing'))$$, 'samtale kan ikke oprettes på sendt forespørgsel', 'new row violates row-level security policy for table "ai_conversations"');
+select pg_temp.expect_error($$insert into public.ai_conversations (request_id, patient_id, ai_consent_id) values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'ai_processing'))$$, 'samtale kan ikke oprettes på sendt forespørgsel', '42501');
 
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.ai_conversations$$, 0, 'tandlæge ser aldrig AI-samtaler');
@@ -179,12 +180,12 @@ select pg_temp.expect_count($$select count(*) from public.ai_messages$$, 0, 'tan
 -- ---------- 5. Billeder og storage ----------
 -- Anonym C: giver image_upload lige før upload (samtykke findes fra fixtures) og uploader til egen kladde.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_updated($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg')$$, 1, 'anonym uploader til egen mappe med samtykke');
-select pg_temp.expect_updated($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg', 800, 600, 12345)$$, 1, 'anonym indsætter billedrække med samtykke');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden patients mappe', 'new row violates row-level security policy for table "objects"');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden forespørgsel', 'new row violates row-level security policy for table "objects"');
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c2', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c2.jpg', 1, 1, 1)$$, 'billedrække med andens samtykke afvises', 'new row violates row-level security policy for table "request_images"');
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c3', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), 'forkert/sti.jpg', 1, 1, 1)$$, 'billedrække med ugyldig sti afvises', 'Ugyldig filsti');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg')$$, 'anonym uploader til egen mappe med samtykke', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg', 800, 600, 12345)$$, 'anonym indsætter billedrække med samtykke', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden patients mappe', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden forespørgsel', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c2', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c2.jpg', 1, 1, 1)$$, 'billedrække med andens samtykke afvises', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c3', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), 'forkert/sti.jpg', 1, 1, 1)$$, 'billedrække med ugyldig sti afvises', '42501');
 
 -- Grænse: højst 5 billeder pr. forespørgsel (c1 er den første).
 select pg_temp.as_db_owner();
@@ -194,14 +195,14 @@ select ('00000000-0000-4000-8000-0000000000' || lpad(g::text, 2, '0'))::uuid, '0
        '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/' || ('00000000-0000-4000-8000-0000000000' || lpad(g::text, 2, '0')) || '.jpg', 10, 10, 10
   from generate_series(2, 5) g;
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c9', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c9.jpg', 10, 10, 10)$$, 'sjette billede afvises (IMAGE_LIMIT)', 'IMAGE_LIMIT');
-select pg_temp.expect_count($$select count(*) from public.request_images$$, 5, 'anonym ser sine fem billeder');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c9', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c9.jpg', 10, 10, 10)$$, 'sjette billede afvises (IMAGE_LIMIT)', '42501');
+select pg_temp.expect_count($$select count(*) from public.request_images$$, 4, 'anonym ser sine fire fixture-billeder (patientens direkte upload er afvist)');
 
 -- A uploader til sin sendte forespørgsel (201) og en kladde (202).
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a1.jpg')$$, 'A kan ikke uploade til sendt forespørgsel', 'new row violates row-level security policy for table "objects"');
-select pg_temp.expect_updated($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg')$$, 1, 'A uploader til kladde');
-select pg_temp.expect_updated($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg', 10, 10, 10)$$, 1, 'A indsætter billede på kladde');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a1.jpg')$$, 'A kan ikke uploade til sendt forespørgsel', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg')$$, 'A uploader til kladde', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg', 10, 10, 10)$$, 'A indsætter billede på kladde', '42501');
 
 -- Tandlæge X ser billeder og storage-objekter for sendt forespørgsel A, men ikke kladdens.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
@@ -210,9 +211,12 @@ select pg_temp.expect_count($$select count(*) from storage.objects where name li
 select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/%'$$, 0, 'X ser ingen storage-objekter på sendt forespørgsel før upload');
 select pg_temp.as_db_owner();
 insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg');
+-- Fixture: billede på en allerede sendt forespørgsel. Triggeren kræver kladde, så den slås fra for denne ene fixture.
+alter table public.request_images disable trigger request_images_before_insert;
 insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a3', '00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg', 10, 10, 10);
+alter table public.request_images enable trigger request_images_before_insert;
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
-select pg_temp.expect_count($$select count(*) from public.request_images where request_id = '00000000-0000-4000-8000-000000000201'$$, 1, 'modtager X ser billeder på sendt forespørgsel');
+select pg_temp.expect_count($$select count(*) from public.request_images where request_id = '00000000-0000-4000-8000-000000000201'$$, 0, 'modtager X læser ikke billedrækker direkte (kun dentist_request_images)');
 select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/%'$$, 1, 'modtager X ser storage-objekt på sendt forespørgsel');
 select pg_temp.as_user('00000000-0000-4000-8000-000000000113');
 select pg_temp.expect_count($$select count(*) from public.request_images$$, 0, 'ikke-matchet Z ser ingen billeder');
@@ -228,7 +232,7 @@ select pg_temp.expect_count($$with d as (delete from storage.objects where name 
 select pg_temp.as_db_owner();
 update public.consents set withdrawn_at = now() where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload';
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000d1.jpg')$$, 'upload uden aktivt image_upload afvises', 'new row violates row-level security policy for table "objects"');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000d1.jpg')$$, 'upload uden aktivt image_upload afvises', '42501');
 
 -- ---------- 6. Anonym AI-samtale: lukning ved 30 og tilbagetrukket ai_processing ----------
 select pg_temp.as_db_owner();
@@ -243,7 +247,7 @@ select pg_temp.expect_count($$select count(*) from public.ai_conversations where
 select pg_temp.as_db_owner();
 update public.consents set withdrawn_at = now() where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'ai_processing';
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into public.ai_messages (conversation_id, patient_id, role, content) select id, '00000000-0000-4000-8000-000000000103', 'user', 'Efter tilbagetrækning' from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000203'$$, 'besked uden aktivt ai_processing afvises', 'new row violates row-level security policy for table "ai_messages"');
+select pg_temp.expect_error($$insert into public.ai_messages (conversation_id, patient_id, role, content) select id, '00000000-0000-4000-8000-000000000103', 'user', 'Efter tilbagetrækning' from public.ai_conversations where request_id = '00000000-0000-4000-8000-000000000203'$$, 'besked uden aktivt ai_processing afvises', '42501');
 
 select pg_temp.as_db_owner();
 select 'ALLE TRIN 2 RLS-TESTS PASSEDE' as resultat;

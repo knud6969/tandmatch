@@ -8,6 +8,8 @@ import { requireTerms } from "@/server/auth/terms";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, jsonResponse, parseId, withApi } from "@/server/http/api";
+import { createSupabaseAdminClient } from "@/server/db/admin";
+import { enforceIpRateLimit } from "@/server/http/rate-limit";
 import { requireOwnRequest } from "@/server/models/requests";
 import { getLatestConsent } from "@/server/models/consents";
 import { insertImage, listImages, sumImageBytes } from "@/server/models/images";
@@ -27,6 +29,7 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   await requireTerms();
   const session = await requireRole("patient", { allowAnonymous: true });
   const requestId = parseId((await ctx.params).id);
+  await enforceIpRateLimit("image-upload", req);
 
   const declared = Number(req.headers.get("content-length") ?? 0);
   if (declared > MAX_IMAGE_UPLOAD_BYTES + 64 * 1024) {
@@ -78,9 +81,11 @@ export const POST = withApi(async (req, ctx: Ctx) => {
 
   const imageId = randomUUID();
   const path = imageStoragePath(session.userId, requestId, imageId);
-  await uploadImageObject(supabase, path, processed.data);
+  // Skrivning sker med service role efter re-encoding. Brugerens JWT må ikke skrive billeder (architecture 9.2).
+  const admin = createSupabaseAdminClient();
+  await uploadImageObject(admin, path, processed.data);
   try {
-    await insertImage(supabase, {
+    await insertImage(admin, {
       id: imageId,
       requestId,
       patientId: session.userId,
@@ -91,7 +96,7 @@ export const POST = withApi(async (req, ctx: Ctx) => {
       bytes: processed.data.length,
     });
   } catch (err) {
-    await removeImageObject(supabase, path).catch(() => undefined);
+    await removeImageObject(admin, path).catch(() => undefined);
     throw err;
   }
 

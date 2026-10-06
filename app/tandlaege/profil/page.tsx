@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
-import { Card } from "@/components/ui/card";
+import { DentistProfile } from "@/components/dentist/dentist-profile";
 import { PageIntro } from "@/components/ui/page-intro";
 
 export const metadata: Metadata = { title: "Profil" };
 
+// Egen profil og klinik (architecture 6.3, 10.8). Data hentes via /api/dentists/me og /api/clinics/me.
 export default function DentistProfilePage() {
   return (
     <>
       <PageIntro title="Profil">
-        <p>Din offentlige profil, klinik og priser.</p>
+        <p>Din klinik og dine oplysninger. Patienter ser klinikken, når din profil er verificeret.</p>
       </PageIntro>
-      <Card>
-        <p className="text-base leading-relaxed text-ink-muted">
-          Redigering af profil, klinik og priser er ikke bygget endnu.
-        </p>
-      </Card>
+      <DentistProfile />
     </>
   );
 }

@@ -5,9 +5,11 @@ import { upsertTermsAcceptance } from "@/server/models/terms";
 import { getSession } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, jsonResponse, readJson, withApi } from "@/server/http/api";
+import { enforceIpRateLimit } from "@/server/http/rate-limit";
 
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
+  await enforceIpRateLimit("signup", req);
   const input = await readJson(req, signupSchema);
 
   const existing = await getSession();

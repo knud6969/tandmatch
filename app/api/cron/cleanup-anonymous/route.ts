@@ -31,3 +31,6 @@ export const POST = withApi(async (req) => {
   }
   return jsonResponse({ deletedSessions: deleted });
 });
+
+// Vercel Cron kalder med GET. Samme beskyttelse (CRON_SECRET) som POST.
+export const GET = POST;

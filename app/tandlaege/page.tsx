@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
-import { Card } from "@/components/ui/card";
+import { InboxList } from "@/components/dentist/inbox-list";
 import { PageIntro } from "@/components/ui/page-intro";
 
 export const metadata: Metadata = { title: "Indbakke" };
 
+// Indbakken: forespørgsler sendt til tandlægen (architecture 6.3, 10.6). Data hentes via /api/inbox.
 export default function DentistInboxPage() {
   return (
     <>
       <PageIntro title="Indbakke">
-        <p>Her samles forespørgsler, der matcher din profil.</p>
+        <p>Forespørgsler fra patienter, der matcher din profil. Du ser kategori, område og afstand, indtil du åbner en forespørgsel.</p>
       </PageIntro>
-      <Card>
-        <p className="text-base leading-relaxed text-ink-muted">
-          Der er ingen forespørgsler endnu. Indbakken bliver udfyldt, når din profil er verificeret, og en patient
-          sender en forespørgsel, der matcher dig.
-        </p>
-      </Card>
+      <InboxList />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { deleteDraft, requireOwnRequest, updateDraft } from "@/server/models/req
 import { listImages } from "@/server/models/images";
 import { buildDraftDto } from "@/server/services/requests";
 import { removeImageObject } from "@/server/services/images";
+import { createSupabaseAdminClient } from "@/server/db/admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -57,7 +58,7 @@ export const DELETE = withApi(async (_req, ctx: Ctx) => {
     throw new ApiError(409, "NOT_DRAFT", "Kun kladder kan slettes.");
   }
   for (const image of await listImages(supabase, requestId)) {
-    await removeImageObject(supabase, image.storagePath);
+    await removeImageObject(createSupabaseAdminClient(), image.storagePath);
   }
   await deleteDraft(supabase, requestId);
   return new Response(null, { status: 204 });

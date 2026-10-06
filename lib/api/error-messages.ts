@@ -33,7 +33,25 @@ const MESSAGES: Record<string, string> = {
   SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før forespørgslen sendes.",
   POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før forespørgslen sendes.",
   DRAFT_EXISTS: "Du har allerede en forespørgsel i gang.",
+  // Tandlæger og svar (trin 3)
+  NOT_VERIFIED: "Din profil er endnu ikke verificeret. Du kan først svare på forespørgsler, når en administrator har godkendt dig.",
+  REQUEST_CLOSED: "Forespørgslen er ikke længere åben for svar. Den er lukket eller udløbet.",
+  ALREADY_RESPONDED: "Du har allerede svaret på denne forespørgsel. Du kan rette dit eksisterende svar.",
+  RESPONSE_LOCKED: "Patienten har truffet et valg, så svaret kan ikke ændres længere.",
+  RESPONSE_WITHDRAWN: "Svaret er trukket tilbage og kan ikke ændres igen.",
+  STATE_CHANGED: "Svaret kunne ikke gemmes, fordi forespørgslen er ændret. Vi har hentet de nyeste oplysninger. Prøv igen.",
+  POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
 };
+
+// Fejl, der betyder, at visningen er forældet. Siden bør hente data igen.
+export const STALE_STATE_CODES = [
+  "REQUEST_CLOSED",
+  "ALREADY_RESPONDED",
+  "RESPONSE_LOCKED",
+  "RESPONSE_WITHDRAWN",
+  "STATE_CHANGED",
+  "NOT_FOUND",
+] as const;
 
 // Neutrale tekster, når serverens besked ikke kan vises som den står.
 const NEUTRAL_BY_CODE: Record<string, string> = {
