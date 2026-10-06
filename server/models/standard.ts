@@ -158,19 +158,19 @@ export async function listPublicReviews(supabase: SupabaseClient, dentistId: str
   }));
 }
 
-export async function getPublicReviewStats(supabase: SupabaseClient, dentistId: string): Promise<ReviewStats> {
-  const { data, error } = await supabase.rpc("public_dentist_review_stats", { p_dentist_id: dentistId });
-  if (error) throw new Error("public_dentist_review_stats fejlede");
-  const row = (data as unknown as {
-    review_count: number;
-    avg_stars: number | string | null;
-    price_accuracy_pct: number | null;
-    n_as_quoted: number;
-    n_slightly_higher: number;
-    n_much_higher: number;
-  }[] | null)?.[0];
+type StatsDbRow = {
+  dentist_id: string;
+  review_count: number;
+  avg_stars: number | string | null;
+  price_accuracy_pct: number | null;
+  n_as_quoted: number | null;
+  n_slightly_higher: number | null;
+  n_much_higher: number | null;
+};
+
+function toStats(row: StatsDbRow | undefined): ReviewStats {
   if (!row) {
-    return { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: { asQuoted: 0, slightlyHigher: 0, muchHigher: 0 } };
+    return { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: { asQuoted: null, slightlyHigher: null, muchHigher: null } };
   }
   return {
     reviewCount: row.review_count,
@@ -178,4 +178,25 @@ export async function getPublicReviewStats(supabase: SupabaseClient, dentistId: 
     priceAccuracyPct: row.price_accuracy_pct,
     distribution: { asQuoted: row.n_as_quoted, slightlyHigher: row.n_slightly_higher, muchHigher: row.n_much_higher },
   };
+}
+
+// Statistik for mange tandlæger i ét kald (ingen N+1).
+export async function getPublicReviewStatsMany(
+  supabase: SupabaseClient,
+  dentistIds: string[],
+): Promise<Map<string, ReviewStats>> {
+  const result = new Map<string, ReviewStats>();
+  if (dentistIds.length === 0) return result;
+  const { data, error } = await supabase.rpc("public_dentist_review_stats_many", { p_dentist_ids: dentistIds });
+  if (error) throw new Error("public_dentist_review_stats_many fejlede");
+  const rows = (data ?? []) as unknown as StatsDbRow[];
+  for (const id of dentistIds) {
+    result.set(id, toStats(rows.find((r) => r.dentist_id === id)));
+  }
+  return result;
+}
+
+export async function getPublicReviewStats(supabase: SupabaseClient, dentistId: string): Promise<ReviewStats> {
+  const map = await getPublicReviewStatsMany(supabase, [dentistId]);
+  return map.get(dentistId) ?? toStats(undefined);
 }

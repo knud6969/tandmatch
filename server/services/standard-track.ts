@@ -5,6 +5,7 @@ import type { DentistListItemDto, DentistProfileDto, PublicReviewDto, ReviewStat
 import {
   getPublicDentist,
   getPublicReviewStats,
+  getPublicReviewStatsMany,
   listPricesForClinics,
   listPublicDentists,
   listPublicReviews,
@@ -53,11 +54,12 @@ export async function listStandardDentists(
 ): Promise<DentistListItemDto[]> {
   const rows = await listPublicDentists(supabase, postalCode ?? null);
   const prices = await listPricesForClinics(supabase, [...new Set(rows.map((r) => r.clinicId))]);
+  const statsById = await getPublicReviewStatsMany(supabase, [...new Set(rows.map((r) => r.dentistId))]);
   const items: DentistListItemDto[] = [];
   for (const row of rows) {
     const clinicPrices = prices.filter((p) => p.clinicId === row.clinicId);
     if (service && !clinicPrices.some((p) => p.service === service)) continue;
-    const stats = await getPublicReviewStats(supabase, row.dentistId);
+    const stats = statsById.get(row.dentistId) ?? (await getPublicReviewStats(supabase, row.dentistId));
     items.push(toListItem(row, clinicPrices, stats));
   }
   return items;

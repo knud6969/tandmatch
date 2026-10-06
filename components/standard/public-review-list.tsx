@@ -24,7 +24,7 @@ export function PublicReviewList({ reviews }: { reviews: PublicReviewDto[] }) {
               <StarRating stars={review.stars} />
               <Badge tone="brand">Verificeret besøg</Badge>
             </div>
-            <p className="text-sm text-ink-muted">Besøg fra {formatMonth(review.createdMonth)}</p>
+            <p className="text-sm text-ink-muted">Anmeldt {formatMonth(review.createdMonth)}</p>
             <p className="whitespace-pre-line text-base leading-relaxed text-ink">{review.text}</p>
 
             <dl className="grid gap-3 text-base sm:grid-cols-2">

@@ -126,25 +126,24 @@ export function DentistProfileView({ dentistId }: { dentistId: string }) {
           <h2 className="text-lg font-semibold text-ink">TandMatch-anmeldelser</h2>
           <p className="text-sm text-ink-muted">Kun verificerede besøg, der er gennemgået af moderation.</p>
         </div>
-        <DefinitionList
-          items={[
-            {
-              label: "Antal anmeldelser",
-              value: String(stats.reviewCount),
-            },
-            {
-              label: "Gennemsnit",
-              value: stats.avgStars !== null ? `${formatOneDecimal(stats.avgStars)} af 5` : "Ingen endnu",
-            },
-            {
-              label: "Prisnøjagtighed",
-              value:
-                stats.priceAccuracyPct !== null
-                  ? `${formatPercent(stats.priceAccuracyPct)} af anmelderne svarede, at den endelige pris var som oplyst`
-                  : "Vises, når der er mindst tre godkendte anmeldelser.",
-            },
-          ]}
-        />
+        <div className="flex flex-col gap-2">
+          <p className="text-base text-ink">
+            {stats.reviewCount === 1 ? "1 verificeret anmeldelse" : `${stats.reviewCount} verificerede anmeldelser`}
+            {stats.avgStars !== null && ` · gennemsnit ${formatOneDecimal(stats.avgStars)} af 5`}
+          </p>
+          {stats.priceAccuracyPct !== null ? (
+            <p className="text-base text-ink">
+              Prisnøjagtighed {formatPercent(stats.priceAccuracyPct)} (baseret på {stats.reviewCount} verificerede
+              anmeldelser)
+            </p>
+          ) : (
+            <p className="text-base text-ink-muted">For få anmeldelser til at vise prisnøjagtighed.</p>
+          )}
+          <p className="text-sm text-ink-muted">
+            Prisnøjagtighed beregnes ud fra, om den endelige pris svarede til prisoverslaget. Anmeldelser, hvor prisen
+            var lidt højere, tæller halvt.
+          </p>
+        </div>
         <div className="border-t border-line pt-5">
           <PublicReviewList reviews={reviews} />
         </div>

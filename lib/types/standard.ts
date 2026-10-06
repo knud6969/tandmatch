@@ -8,7 +8,7 @@ export type ReviewStats = {
   reviewCount: number;
   avgStars: number | null;
   priceAccuracyPct: number | null; // null hvis < 3 godkendte anmeldelser
-  distribution: { asQuoted: number; slightlyHigher: number; muchHigher: number };
+  distribution: { asQuoted: number | null; slightlyHigher: number | null; muchHigher: number | null }; // null under 3 godkendte
 };
 
 export type DentistListItemDto = {
@@ -50,4 +50,34 @@ export type EligibleVisitDto = {
   clinicName: string | null;
   visitedOn: string;
   quotedPrice: PriceRange | null; // fra svaret, hvis besøget kom fra et svar
+};
+
+export type ModerationStatus = "pending" | "approved" | "rejected";
+
+// GET /api/dentists/me/reviews: tandlægens egne anmeldelser inkl. afventende, og status på eget svar. Ingen patientidentitet.
+export type DentistOwnReviewDto = {
+  reviewId: string;
+  stars: number;
+  text: string;
+  priceAccuracy: PriceAccuracy;
+  actualPrice: number | null;
+  lackedTransparency: boolean | null;
+  transparencyComment: string | null;
+  moderationStatus: ModerationStatus;
+  createdAt: string;
+  reply: { id: string; text: string; replyStatus: ModerationStatus } | null;
+  replyStatus: ModerationStatus | "none";
+};
+
+// GET /api/reviews/mine: patientens egne anmeldelser med moderationsstatus.
+export type OwnReviewDto = {
+  id: string;
+  visitId: string;
+  stars: number;
+  text: string;
+  priceAccuracy: PriceAccuracy;
+  actualPrice: number | null;
+  moderationStatus: ModerationStatus;
+  rejectionReason: string | null;
+  createdAt: string;
 };

@@ -177,4 +177,48 @@ select pg_temp.expect_count($$select count(*) from public.reviews where id = (se
 select pg_temp.expect_count($$select count(*) from public.reviews where id = (select id from ids where name = 'r1503')$$, 1, 'patient B ser sin egen anmeldelse');
 
 select pg_temp.as_db_owner();
+-- ---------- 6. Hærdning: under 3 godkendte = null, verificeret/aktiv, afviste skjules (reviewer trin 5) ----------
+select pg_temp.as_db_owner();
+select set_config('tm.system', 'on', false);
+update public.reviews set moderation_status = 'approved' where visit_id = '00000000-0000-4000-8000-000000001505';
+select set_config('tm.system', '', false);
+select pg_temp.as_anon_role();
+select pg_temp.expect_count($$select count(*) from public.public_dentist_review_stats('00000000-0000-4000-8000-000000000112') where review_count = 1 and price_accuracy_pct is null and n_as_quoted is null and n_slightly_higher is null and n_much_higher is null$$, 1, 'under 3 godkendte: prisnøjagtighed og fordeling er null');
+select pg_temp.expect_count($$select count(*) from public.public_dentist_review_stats_many(array['00000000-0000-4000-8000-000000000111'::uuid, '00000000-0000-4000-8000-000000000112'::uuid])$$, 2, 'batch-statistik returnerer én række pr. tandlæge');
+select pg_temp.expect_count($$select count(*) from public.public_dentist_review_stats_many(array['00000000-0000-4000-8000-000000000111'::uuid]) where price_accuracy_pct = 83 and n_as_quoted = 2$$, 1, 'batch: 3 godkendte giver prisnøjagtighed og fordeling');
+
+-- Inaktiv tandlæge: ingen offentlige anmeldelser eller statistik.
+select pg_temp.as_db_owner();
+update public.dentists set is_active = false where id = '00000000-0000-4000-8000-000000000112';
+select pg_temp.as_anon_role();
+select pg_temp.expect_count($$select count(*) from public.public_reviews('00000000-0000-4000-8000-000000000112')$$, 0, 'inaktiv tandlæge: ingen offentlige anmeldelser');
+select pg_temp.expect_count($$select count(*) from public.public_dentist_review_stats('00000000-0000-4000-8000-000000000112') where review_count = 0$$, 1, 'inaktiv tandlæge: statistik er tom');
+select pg_temp.as_db_owner();
+update public.dentists set is_active = true where id = '00000000-0000-4000-8000-000000000112';
+
+-- Afvist anmeldelse: tandlægen ser den ikke, patienten gør.
+insert into public.visits (id, patient_id, dentist_id, visited_on, verified_at) values
+  ('00000000-0000-4000-8000-000000001508', '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000111', '2026-09-08', now());
+insert into public.reviews (id, visit_id, dentist_id, patient_id, stars, text, price_accuracy) values
+  ('00000000-0000-4000-8000-000000001508', '00000000-0000-4000-8000-000000001508', '00000000-0000-4000-8000-000000000111', '00000000-0000-4000-8000-000000000101', 1, 'Afvist anmeldelse med tekst til test.', 'much_higher');
+select set_config('tm.system', 'on', false);
+update public.reviews set moderation_status = 'rejected', rejection_reason = 'Test' where id = '00000000-0000-4000-8000-000000001508';
+select set_config('tm.system', '', false);
+select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
+select pg_temp.expect_count($$select count(*) from public.dentist_reviews() where review_id = '00000000-0000-4000-8000-000000001508'$$, 0, 'tandlæge ser ikke afvist anmeldelse');
+select pg_temp.expect_count($$select count(*) from public.dentist_reviews() where moderation_status = 'rejected'$$, 0, 'tandlæge ser ingen afviste anmeldelser');
+select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
+select pg_temp.expect_count($$select count(*) from public.reviews where id = '00000000-0000-4000-8000-000000001508' and moderation_status = 'rejected'$$, 1, 'patient ser sin afviste anmeldelse med status');
+
+-- Afvist svar: tandlægen ser ikke teksten, kun at der ikke er svar.
+select pg_temp.as_db_owner();
+insert into public.review_replies (review_id, dentist_id, text) values
+  ((select id from ids where name = 'r1503'), '00000000-0000-4000-8000-000000000111', 'Svar der afvises.');
+select set_config('tm.system', 'on', false);
+update public.review_replies set moderation_status = 'rejected', rejection_reason = 'Test' where review_id = (select id from ids where name = 'r1503');
+select set_config('tm.system', '', false);
+select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
+select pg_temp.expect_count($$select count(*) from public.dentist_reviews() where review_id = (select id from ids where name = 'r1503') and reply_status is null and reply_text is null$$, 1, 'afvist svar vises ikke for tandlægen (replyStatus none)');
+select pg_temp.as_db_owner();
+
 select 'ALLE REVIEWS-TESTS PASSEDE' as resultat;
