@@ -61,6 +61,7 @@ export type SummaryResponse = {
   retakeImages: { imageId: string; reason: Exclude<ImageQuality, "ok"> }[];
   outOfScopeNotice: boolean;
   fallback: "none" | "write_yourself";
+  generationsLeft: number; // udkast tilbage på forespørgslen (5, anonym: 3), jf. architecture 7.6
 };
 
 export type ConsentDto = {

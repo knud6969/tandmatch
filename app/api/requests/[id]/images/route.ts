@@ -8,7 +8,7 @@ import { requireTerms } from "@/server/auth/terms";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, jsonResponse, parseId, withApi } from "@/server/http/api";
-import { requireOwnRequest, updateDraft } from "@/server/models/requests";
+import { requireOwnRequest } from "@/server/models/requests";
 import { getLatestConsent } from "@/server/models/consents";
 import { insertImage, listImages, sumImageBytes } from "@/server/models/images";
 import {
@@ -94,9 +94,6 @@ export const POST = withApi(async (req, ctx: Ctx) => {
     await removeImageObject(supabase, path).catch(() => undefined);
     throw err;
   }
-
-  // Nyt billede ændrer indholdet, så opsummeringens godkendelse nulstilles (architecture 9.3, punkt 6).
-  await updateDraft(supabase, requestId, { summary_approved_at: null });
 
   const url = await signedImageUrl(supabase, path);
   if (!url) {

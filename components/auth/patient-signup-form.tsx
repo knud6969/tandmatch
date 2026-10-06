@@ -15,9 +15,14 @@ import type { AuthUserDto } from "@/lib/types/auth";
 
 type PatientField = "firstName" | "email" | "password";
 
+type PatientSignupFormProps = {
+  // Kaldes efter konto er oprettet eller konverteret. Uden den sendes brugeren til sin forside (bruges i wizarden).
+  onDone?: () => void | Promise<void>;
+};
+
 // Opretter en patientkonto. Hvis brugeren har en anonym session, konverteres den i stedet,
 // så samme bruger-id og samtale følger med (architecture 7.7).
-export function PatientSignupForm() {
+export function PatientSignupForm({ onDone }: PatientSignupFormProps) {
   const router = useRouter();
   const { state, refresh } = useSession();
   const [values, setValues] = useState({ firstName: "", email: "", password: "" });
@@ -60,6 +65,10 @@ export function PatientSignupForm() {
         await apiRequest<AuthUserDto>("/api/auth/signup", { method: "POST", body: parsed.data });
       }
       await refresh();
+      if (onDone) {
+        await onDone();
+        return;
+      }
       router.replace(AREA_HOME.patient);
       router.refresh();
     } catch (error) {

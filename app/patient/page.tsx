@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
 
@@ -14,6 +15,9 @@ export default function PatientHomePage() {
         <p className="text-base leading-relaxed text-ink-muted">
           Du har ikke sendt nogen forespørgsler endnu. Når du har sendt en, vises den her, med status og svar.
         </p>
+        <LinkButton href="/patient/forespoergsel/ny" className="mt-5 w-full sm:w-auto">
+          Start ny forespørgsel
+        </LinkButton>
       </Card>
     </>
   );

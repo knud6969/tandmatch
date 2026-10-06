@@ -6,7 +6,7 @@
 import type { AiImageObservation, AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./errors";
 import { maskPii } from "./pii";
-import { detectOutOfScopeTopics, findForbiddenCategories, mergeTopics, wordsOf } from "./forbiddenTerms";
+import { detectOutOfScopeTopics, findForbiddenCategories, isEchoableWord, mergeTopics, wordsOf } from "./forbiddenTerms";
 import type { z, ZodType } from "zod";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
 import { CHAT_RETRY_REMINDER } from "./prompts/chat.v1";
@@ -18,10 +18,14 @@ export const CHAT_BLOCKED_TEXT =
 
 export const MAX_AI_ATTEMPTS = 2;
 
-// Anatomiske og neutrale ord der må forekomme i både patientens tekst og billedbeskrivelser.
+// Synlige og anatomiske ord, der må bruges i billedbeskrivelser, også når patienten selv har skrevet dem.
+// Blokeringen rammer patientens påstande (fx "skæve", "skadet"), ikke almindelig beskrivelse af det synlige.
+// Vurderinger fanges af findForbiddenCategories på billedteksten.
 const NEUTRAL_WORDS = new Set([
-  "tænder", "tanden", "tandkød", "tandsten", "overmund", "undermund", "fortænder", "mund", "læber",
-  "venstre", "højre", "forfra", "siden", "billede", "mellemrum", "kategori", "område", "øverste", "nederste",
+  "tænder", "tanden", "tanderne", "tandkød", "tandkødet", "tandsten", "overmund", "undermund", "fortænder",
+  "fortænderne", "kindtænder", "hjørnetænder", "mund", "læber", "venstre", "højre", "forfra", "siden", "billede",
+  "mellemrum", "placering", "farve", "farven", "form", "kategori", "område", "øverste", "nederste",
+  "synlig", "synlige", "lys", "lyse", "mørk", "mørke", "gul", "gule", "gult", "gullig", "gullige",
 ]);
 
 type History = { role: "user" | "assistant"; content: string }[];
@@ -60,12 +64,12 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   const maskedUserMessage = maskPii(input.userMessage);
   const detected = detectOutOfScopeTopics(maskedUserMessage);
 
-  // Patientens egne ord og kategorien må gentages i svaret, men ikke ord der selv er forbudte (fx "karies").
+  // Patientens egne ord og kategorien må gentages i svaret, men ikke ord der selv er emner (fx "karies", "pris").
   const allowTerms = [
     ...wordsOf(maskedUserMessage),
     ...wordsOf(input.category),
     ...answerTexts(input.answers).flatMap((t) => wordsOf(t)),
-  ].filter((w) => findForbiddenCategories(w).length === 0);
+  ].filter(isEchoableWord);
 
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
     let raw: unknown;
@@ -126,7 +130,7 @@ export async function runSummaryGuard(input: SummaryGuardInput, callModel: Model
   const detected = mergeTopics(...patientTexts.map((t) => detectOutOfScopeTopics(t)));
 
   // Patientens ord må bruges i tekst-felterne (genfortælling), men ikke i billedbeskrivelser (architecture 7.5, række 5).
-  const allowTerms = patientTexts.flatMap((t) => wordsOf(t)).filter((w) => findForbiddenCategories(w).length === 0);
+  const allowTerms = patientTexts.flatMap((t) => wordsOf(t)).filter(isEchoableWord);
   const forbiddenInImages = new Set(
     patientTexts.flatMap((t) => wordsOf(t, 5)).filter((w) => !NEUTRAL_WORDS.has(w)),
   );

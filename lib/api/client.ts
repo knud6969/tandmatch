@@ -14,8 +14,10 @@ export class ApiRequestError extends Error {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
+  // Til multipart/form-data (billedupload). Content-Type sættes af browseren.
+  form?: FormData;
 };
 
 function readApiErrorBody(data: unknown): { code: string; message: string } | null {
@@ -35,7 +37,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(path, {
       method: options.method ?? "GET",
       headers: hasBody ? { "Content-Type": "application/json" } : undefined,
-      body: hasBody ? JSON.stringify(options.body) : undefined,
+      body: options.form ?? (hasBody ? JSON.stringify(options.body) : undefined),
       cache: "no-store",
       credentials: "same-origin",
     });

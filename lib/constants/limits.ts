@@ -9,6 +9,9 @@ export const ANON_MAX_TOTAL_IMAGE_BYTES = 20 * 1024 * 1024;
 export const MAX_IMAGES_PER_REQUEST = 5;
 export const MAX_IMAGE_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const MAX_IMAGE_DIMENSION = 2048;
+// Tekstgrænser for opsummering og fri tekst (architecture 4.3, 10.4). Bruges af skemaer og UI.
+export const SUMMARY_MAX_CHARS = 1500;
+export const FREE_TEXT_MAX_CHARS = 2000;
 export const SIGNED_URL_TTL_SECONDS = 300;
 export const REQUEST_BUCKET = "request-images";
 

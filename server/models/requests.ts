@@ -155,6 +155,54 @@ export async function deleteDraft(supabase: SupabaseClient, id: string): Promise
   if (error) throw new Error("requests: delete fejlede");
 }
 
+// Tæller et udkast atomisk i databasen. Returnerer udkast tilbage på forespørgslen.
+export async function consumeSummaryGeneration(supabase: SupabaseClient, id: string): Promise<number> {
+  const { data, error } = await supabase.rpc("consume_summary_generation", { p_request_id: id });
+  mapDbError(
+    error,
+    {
+      SUMMARY_LIMIT: new ApiError(429, "SUMMARY_LIMIT", "Du har brugt alle udkast til denne forespørgsel."),
+      ANON_CAP_REACHED: new ApiError(429, "ANON_CAP_REACHED", "Chatten er travl lige nu. Opret en konto eller prøv igen senere."),
+      DAILY_SUMMARY_LIMIT: new ApiError(429, "DAILY_SUMMARY_LIMIT", "Du har brugt dagens udkast. Prøv igen i morgen."),
+      NOT_DRAFT: new ApiError(409, "NOT_DRAFT", "Forespørgslen er sendt. Opsummeringen kan ikke ændres."),
+      NOT_FOUND: notFound(),
+    },
+    "consume_summary_generation fejlede",
+  );
+  if (typeof data !== "number") throw new Error("consume_summary_generation: uventet svar");
+  return data;
+}
+
+// Godkendelse af opsummering. Ændrer kun kladder (approve_summary i databasen).
+export async function approveSummary(supabase: SupabaseClient, id: string, summaryText: string): Promise<string> {
+  const { data, error } = await supabase.rpc("approve_summary", { p_request_id: id, p_summary_text: summaryText });
+  mapDbError(
+    error,
+    {
+      NOT_FOUND: notFound(),
+      NOT_DRAFT: new ApiError(409, "NOT_DRAFT", "Forespørgslen er sendt og kan ikke ændres."),
+    },
+    "approve_summary fejlede",
+  );
+  if (typeof data !== "string") throw new Error("approve_summary: uventet svar");
+  return data;
+}
+
+// Gemmer AI-udkast på kladden (store_ai_summary i databasen).
+export async function storeAiSummary(
+  supabase: SupabaseClient,
+  id: string,
+  summary: unknown,
+  aiAssisted: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc("store_ai_summary", {
+    p_request_id: id,
+    p_summary: summary,
+    p_ai_assisted: aiAssisted,
+  });
+  mapDbError(error, { NOT_FOUND: notFound(), NOT_DRAFT: new ApiError(409, "NOT_DRAFT", "Forespørgslen er sendt.") }, "store_ai_summary fejlede");
+}
+
 // Afsendelse sker kun via send_request() (security definer). Fejlkoder fra funktionen oversættes her.
 export async function sendRequest(supabase: SupabaseClient, id: string): Promise<number> {
   const { data, error } = await supabase.rpc("send_request", { p_request_id: id });

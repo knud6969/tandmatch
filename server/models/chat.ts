@@ -139,6 +139,28 @@ export async function insertMessage(
   return toMessage(data as unknown as MessageRow);
 }
 
+// Assistentsvar skrives KUN af serveren med service role (append_assistant_message i databasen).
+export async function appendAssistantMessage(
+  admin: SupabaseClient,
+  params: {
+    conversationId: string;
+    content: string;
+    outOfScopeTopics: OutOfScopeTopic[];
+    blocked: boolean;
+    readyForSummary: boolean;
+  },
+): Promise<MessageRecord> {
+  const { data, error } = await admin.rpc("append_assistant_message", {
+    p_conversation_id: params.conversationId,
+    p_content: params.content,
+    p_out_of_scope: params.outOfScopeTopics,
+    p_blocked: params.blocked,
+    p_ready: params.readyForSummary,
+  });
+  if (error || !data) throw new Error("append_assistant_message fejlede");
+  return toMessage(data as unknown as MessageRow);
+}
+
 // Antal patientbeskeder de seneste 24 timer (security definer i databasen, se migration 120500).
 export async function countUserMessagesLastDay(supabase: SupabaseClient): Promise<number> {
   const { data, error } = await supabase.rpc("patient_user_messages_last_day");
@@ -147,8 +169,9 @@ export async function countUserMessagesLastDay(supabase: SupabaseClient): Promis
 }
 
 // Dagligt loft for AI-kald fra anonyme sessioner (7.6). Returnerer true, hvis kaldet må køre.
-export async function tryConsumeAnonymousAiCall(supabase: SupabaseClient, cap: number): Promise<boolean> {
-  const { data, error } = await supabase.rpc("try_consume_anonymous_ai_call", { p_cap: cap });
+// Cap ligger i databasen (tabellen ai_limits), ikke i klienten.
+export async function tryConsumeAnonymousAiCall(supabase: SupabaseClient): Promise<boolean> {
+  const { data, error } = await supabase.rpc("try_consume_anonymous_ai_call");
   if (error) throw new Error("try_consume_anonymous_ai_call fejlede");
   return data === true;
 }

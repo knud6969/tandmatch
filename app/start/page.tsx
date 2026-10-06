@@ -14,7 +14,7 @@ export default function StartPage() {
       <PageIntro title="Start en samtale">
         <p>
           Vælg hvad din henvendelse handler om, og giv samtykke til, at din tekst behandles af AI-assistenten. Du
-          behøver ikke en konto for at starte.
+          behøver ikke en konto for at starte. Billeder kan du tilføje senere i samtalen, hvis du vil.
         </p>
       </PageIntro>
       <Card>

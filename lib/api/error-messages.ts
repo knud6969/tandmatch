@@ -13,11 +13,47 @@ const MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: "Din session er udløbet. Log ind igen.",
   PROFILE_MISSING: "Kontoen er ikke klar endnu. Prøv igen om lidt.",
   NETWORK: "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
+  // Forespørgsel og samtale (trin 2)
+  NOT_FOUND: "Vi kunne ikke finde det, du søgte efter.",
+  NOT_DRAFT: "Forespørgslen er sendt og kan ikke ændres længere.",
+  CONSENT_REQUIRED: "Du skal give samtykke, før du kan fortsætte.",
+  CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
+  CONVERSATION_CLOSED: "Samtalen er lukket. Du kan stadig lave en opsummering.",
+  CHAT_LIMIT: "Samtalen har nået grænsen på 30 beskeder. Du kan lave en opsummering af det, du har skrevet.",
+  RATE_LIMITED: "Du har sendt mange beskeder i dag. Prøv igen i morgen.",
+  AI_TIMEOUT: "AI-assistenten svarede ikke i tide. Din besked er ikke gemt. Prøv igen om lidt.",
+  AI_UNAVAILABLE: "AI-assistenten er ikke tilgængelig lige nu. Din besked er ikke gemt. Prøv igen om lidt.",
+  SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne forespørgsel. Ret teksten selv i stedet.",
+  INVALID_FORM: "Billedet kunne ikke sendes. Prøv et andet billede.",
+  MISSING_FILE: "Vælg et billede, før du uploader.",
+  FILE_TOO_LARGE: "Billedet er for stort. Vælg et billede på højst 4 MB.",
+  IMAGE_LIMIT: "Du kan højst uploade 5 billeder pr. forespørgsel.",
+  NO_MATCHES: "Der er ikke fundet tandlæger, der matcher din forespørgsel endnu. Prøv at vælge en større afstand.",
+  ACCOUNT_REQUIRED: "Opret en konto for at sende forespørgslen til tandlæger.",
+  SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før forespørgslen sendes.",
+  POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før forespørgslen sendes.",
+  DRAFT_EXISTS: "Du har allerede en forespørgsel i gang.",
 };
+
+// Neutrale tekster, når serverens besked ikke kan vises som den står.
+const NEUTRAL_BY_CODE: Record<string, string> = {
+  VALIDATION_ERROR: "Oplysningerne kunne ikke gemmes. Ret det, der står i felterne, og prøv igen.",
+};
+const GENERIC = "Der opstod en fejl. Prøv igen om lidt.";
+
+// Serverens besked bruges kun, hvis den er kort og dansk. Engelske standardfejl fra zod (fx "Invalid input") vises ikke.
+const ENGLISH_HINTS = /\b(invalid|expected|too (small|big)|unrecognized|required|received)\b/i;
+export function usableServerMessage(message: string): string | null {
+  const text = message.trim();
+  if (text === "" || text.length > 300 || ENGLISH_HINTS.test(text)) return null;
+  return text;
+}
 
 export function apiErrorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) {
-    return MESSAGES[error.code] ?? error.message;
+    const known = MESSAGES[error.code];
+    if (known) return known;
+    return usableServerMessage(error.message) ?? NEUTRAL_BY_CODE[error.code] ?? GENERIC;
   }
   return "Der opstod en uventet fejl. Prøv igen om lidt.";
 }

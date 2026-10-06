@@ -6,11 +6,16 @@ import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
 import { ApiError, jsonResponse, parseId, readJson, withApi } from "@/server/http/api";
 import { getLatestConsent } from "@/server/models/consents";
-import { getConversation, listMessages, tryConsumeAnonymousAiCall } from "@/server/models/chat";
+import { getConversation, listMessages } from "@/server/models/chat";
 import { listImages } from "@/server/models/images";
-import { requireOwnRequest, updateDraft } from "@/server/models/requests";
+import {
+  approveSummary,
+  consumeSummaryGeneration,
+  requireOwnRequest,
+  storeAiSummary,
+} from "@/server/models/requests";
 import { downloadImageObject } from "@/server/services/images";
-import { anonymousDailyCap } from "@/server/ai/chat";
+import { createSupabaseAdminClient } from "@/server/db/admin";
 import { generateSummary } from "@/server/ai/summary";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -33,10 +38,6 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
     throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til AI-behandling, før vi kan lave et udkast.");
   }
 
-  if (session.isAnonymous && !(await tryConsumeAnonymousAiCall(supabase, anonymousDailyCap()))) {
-    throw new ApiError(429, "ANON_CAP_REACHED", "Chatten er travl lige nu. Opret en konto eller prøv igen senere.");
-  }
-
   const conversation = await getConversation(supabase, requestId);
   const messages = conversation ? await listMessages(supabase, conversation.id) : [];
   const images = await listImages(supabase, requestId);
@@ -53,6 +54,10 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
     throw new ApiError(400, "NOTHING_TO_SUMMARIZE", "Svar på spørgsmålene, skriv en besked eller vedlæg et billede først.");
   }
 
+  // Udkast-grænsen (pr. forespørgsel og pr. døgn) og det globale anonyme loft tjekkes og forbruges atomisk
+  // i databasen FØR billeder hentes og AI kaldes. Blokeret kvote tæller derfor ikke.
+  const generationsLeft = await consumeSummaryGeneration(supabase, requestId);
+
   const imageBytes = [];
   for (const image of images) {
     imageBytes.push({ imageId: image.id, bytes: await downloadImageObject(supabase, image.storagePath) });
@@ -66,17 +71,18 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
     images: imageBytes,
   });
 
-  // Udkastet gemmes, så det kan vises igen. Godkendelse sker først i PUT.
-  await updateDraft(supabase, requestId, {
-    ai_summary: result.summary,
-    summary_ai_assisted: result.summary !== null,
-  });
+  // Kun et lykkedes udkast gemmes (service role, architecture 2.3). Et fejlet AI-kald må ikke overskrive
+  // et tidligere gemt udkast. Godkendelse sker først i PUT.
+  if (result.summary !== null) {
+    await storeAiSummary(createSupabaseAdminClient(), requestId, result.summary, true);
+  }
 
   const body: SummaryResponse = {
     summary: result.summary,
     retakeImages: result.retakeImages,
     outOfScopeNotice: result.outOfScopeTopics.length > 0,
     fallback: result.fallback,
+    generationsLeft,
   };
   return jsonResponse(body);
 });
@@ -89,12 +95,9 @@ export const PUT = withApi(async (req, ctx: Ctx) => {
   const input = await readJson(req, summarySchema);
   const supabase = await createSupabaseServerClient();
   await requireOwnRequest(supabase, requestId, session.userId);
-  const record = await updateDraft(supabase, requestId, {
-    summary_text: input.summaryText,
-    summary_approved_at: new Date().toISOString(),
-  });
+  const summaryApprovedAt = await approveSummary(supabase, requestId, input.summaryText);
   return jsonResponse({
-    summaryText: record.summaryText,
-    summaryApprovedAt: record.summaryApprovedAt,
+    summaryText: input.summaryText,
+    summaryApprovedAt,
   });
 });

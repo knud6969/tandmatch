@@ -114,10 +114,11 @@ select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-800
 -- A: godkend opsummering og postnummer, og giv health_data_sharing (kun med konto).
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
 select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden godkendt opsummering afvises');
-select pg_temp.expect_updated($$update public.requests set summary_text = 'Test-opsummering', summary_approved_at = now(), postal_code = '2000' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient godkender opsummering på egen kladde');
+select pg_temp.expect_updated($$update public.requests set postal_code = '2000' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient skriver opsummering og postnummer på egen kladde');
+select pg_temp.expect_count($$select (public.approve_summary('00000000-0000-4000-8000-000000000201', 'Test-opsummering') is not null)::int$$, 1, 'patient godkender opsummering via approve_summary');
 select pg_temp.expect_updated($$update public.requests set answers = '{"x":"y"}' where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'patient ændrer indhold på kladde');
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000201' and summary_approved_at is null$$, 1, 'ændring af indhold nulstiller godkendelse');
-select pg_temp.expect_updated($$update public.requests set summary_text = 'Test-opsummering 2', summary_approved_at = now() where id = '00000000-0000-4000-8000-000000000201'$$, 1, 'ny godkendelse efter ændring');
+select pg_temp.expect_count($$select (public.approve_summary('00000000-0000-4000-8000-000000000201', 'Test-opsummering 2') is not null)::int$$, 1, 'ny godkendelse efter ændring');
 select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 'send uden health_data_sharing afvises');
 select pg_temp.expect_updated($$insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values ('00000000-0000-4000-8000-000000000101', 'health_data_sharing', 'health_data_sharing@v0-prototype', false)$$, 1, 'patient giver health_data_sharing');
 select pg_temp.expect_count($$select public.send_request('00000000-0000-4000-8000-000000000201')$$, 2, 'send matcher X og Y (Z tager ikke kosmetik)');
@@ -158,9 +159,7 @@ select pg_temp.expect_count($$select count(*) from public.ai_conversations$$, 1,
 select pg_temp.expect_count($$select count(*) from public.ai_messages$$, 1, 'anonym ser kun egne chatbeskeder');
 select pg_temp.expect_updated($$update public.ai_conversations set user_message_count = 0 where request_id = '00000000-0000-4000-8000-000000000203'$$, 0, 'patient kan ikke nulstille tæller (ingen UPDATE-policy)');
 select pg_temp.expect_error($$select public.send_request('00000000-0000-4000-8000-000000000203')$$, 'anonym kan ikke sende (ACCOUNT_REQUIRED)');
-select pg_temp.expect_count($$select public.try_consume_anonymous_ai_call(2)::int$$, 1, 'anonym AI-kald 1 af 2 tilladt');
-select pg_temp.expect_count($$select public.try_consume_anonymous_ai_call(2)::int$$, 1, 'anonym AI-kald 2 af 2 tilladt');
-select pg_temp.expect_count($$select public.try_consume_anonymous_ai_call(2)::int$$, 0, 'anonym AI-loft nået');
+select pg_temp.expect_error($$select public.try_consume_anonymous_ai_call()$$, 'anonym klient kan ikke kalde det fælles AI-loft direkte');
 select pg_temp.expect_count($$select count(*) from public.ai_usage_daily$$, 0, 'ai_usage_daily er ikke læsbar for patienter');
 
 -- Patient A opretter samtale for sin sendte forespørgsel: samtalen skal lukkes ved afsendelse (sket ovenfor).

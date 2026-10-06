@@ -8,19 +8,21 @@ import {
 import { requireTerms } from "@/server/auth/terms";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/db/supabase";
+import { createSupabaseAdminClient } from "@/server/db/admin";
 import { ApiError, jsonResponse, parseId, readJson, withApi } from "@/server/http/api";
-import { requireOwnRequest, updateDraft } from "@/server/models/requests";
+import { requireOwnRequest } from "@/server/models/requests";
 import { getLatestConsent } from "@/server/models/consents";
 import {
   countUserMessagesLastDay,
   createConversation,
   getConversation,
   insertMessage,
+  appendAssistantMessage,
   listMessages,
   tryConsumeAnonymousAiCall,
   type MessageRecord,
 } from "@/server/models/chat";
-import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError, anonymousDailyCap, sendChatTurn } from "@/server/ai/chat";
+import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError, sendChatTurn } from "@/server/ai/chat";
 import type { AiChatMessageDto, ChatStateDto } from "@/lib/types/requests";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -97,7 +99,7 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   if ((await countUserMessagesLastDay(supabase)) >= CHAT_MAX_DAILY_PER_PATIENT) {
     throw new ApiError(429, "RATE_LIMITED", "Du har sendt mange beskeder i dag. Prøv igen i morgen.");
   }
-  if (session.isAnonymous && !(await tryConsumeAnonymousAiCall(supabase, anonymousDailyCap()))) {
+  if (session.isAnonymous && !(await tryConsumeAnonymousAiCall(createSupabaseAdminClient()))) {
     throw new ApiError(429, "ANON_CAP_REACHED", "Chatten er travl lige nu. Opret en konto eller prøv igen senere.");
   }
 
@@ -137,10 +139,8 @@ export const POST = withApi(async (req, ctx: Ctx) => {
     blocked: false,
     readyForSummary: false,
   });
-  const assistantMessage = await insertMessage(supabase, {
+  const assistantMessage = await appendAssistantMessage(createSupabaseAdminClient(), {
     conversationId: conversation.id,
-    patientId: session.userId,
-    role: "assistant",
     content: turn.reply,
     outOfScopeTopics: turn.outOfScopeTopics,
     blocked: turn.blocked,
@@ -148,7 +148,6 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   });
 
   // En ny besked ændrer grundlaget for opsummeringen, så en tidligere godkendelse nulstilles (architecture 7.1).
-  await updateDraft(supabase, requestId, { summary_approved_at: null });
 
   return jsonResponse(
     {

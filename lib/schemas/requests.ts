@@ -1,16 +1,35 @@
 import { z } from "zod";
 import { COSMETIC_CATEGORIES } from "@/lib/constants/categories";
+import { QUESTION_DEFINITIONS } from "@/lib/constants/questions";
 
-const answerKey = z.string().regex(/^[a-zA-Z0-9_]{1,40}$/, "Ugyldigt spørgsmålsnavn.");
-const answerValue = z.union([
-  z.string().max(300, "Svaret er for langt."),
-  z.array(z.string().max(100)).max(10),
-]);
+export type Answers = Record<string, string | string[]>;
 
-// Svar på faste spørgsmål. Liste og typer afventer endelige spørgsmål (lib/constants/questions.ts).
+// Svar på faste spørgsmål. Kun kendte nøgler og tilladte værdier (lib/constants/questions.ts).
+// Længden er begrænset af listerne, så der kan ikke sendes fri tekst her (fri tekst ligger i freeText).
 export const answersSchema = z
-  .record(answerKey, answerValue)
-  .refine((value) => Object.keys(value).length <= 20, "For mange svar.");
+  .record(z.string(), z.unknown())
+  .superRefine((value, ctx) => {
+    for (const [key, answer] of Object.entries(value)) {
+      const definition = (QUESTION_DEFINITIONS as Record<string, { multiple: boolean; options: readonly string[] }>)[key];
+      if (!definition) {
+        ctx.addIssue({ code: "custom", message: "Ukendt spørgsmål.", path: [key] });
+        continue;
+      }
+      const allowed = definition.options as readonly string[];
+      if (definition.multiple) {
+        const valid =
+          Array.isArray(answer) &&
+          answer.every((v) => typeof v === "string" && allowed.includes(v)) &&
+          new Set(answer).size === answer.length;
+        if (!valid) {
+          ctx.addIssue({ code: "custom", message: "Ugyldigt svar.", path: [key] });
+        }
+      } else if (typeof answer !== "string" || !allowed.includes(answer)) {
+        ctx.addIssue({ code: "custom", message: "Ugyldigt svar.", path: [key] });
+      }
+    }
+  })
+  .transform((value) => value as Answers);
 
 export const createRequestSchema = z
   .object({
