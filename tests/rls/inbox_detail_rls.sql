@@ -65,23 +65,23 @@ insert into public.requests (id, patient_id, category, questions_version, postal
 
 -- Samtykker: C1 aktiv (billede 1111 og 1103), C2 trukket tilbage (billede 1112).
 insert into public.consents (id, patient_id, type, text_version, granted_while_anonymous) values
-  ('00000000-0000-4000-8000-000000001201', '00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v0-prototype', false);
+  ('00000000-0000-4000-8000-000000001201', '00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v1-ai-disclosure', false);
 insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values
   ('00000000-0000-4000-8000-000000001111', '00000000-0000-4000-8000-000000001101', '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000001201',
-   '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg', 10, 10, 10),
+   '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg', 10, 10, 10),
   ('00000000-0000-4000-8000-000000001113', '00000000-0000-4000-8000-000000001102', '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000001201',
-   '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001102/00000000-0000-4000-8000-000000001113.jpg', 10, 10, 10);
+   '00000000-0000-4000-8000-000000001102/00000000-0000-4000-8000-000000001113.jpg', 10, 10, 10);
 insert into public.consents (id, patient_id, type, text_version, granted_while_anonymous) values
-  ('00000000-0000-4000-8000-000000001202', '00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v0-prototype', false);
+  ('00000000-0000-4000-8000-000000001202', '00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v1-ai-disclosure', false);
 insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values
   ('00000000-0000-4000-8000-000000001112', '00000000-0000-4000-8000-000000001101', '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000001202',
-   '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg', 10, 10, 10);
+   '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg', 10, 10, 10);
 update public.consents set withdrawn_at = now() where id = '00000000-0000-4000-8000-000000001202';
 -- Storage-objekter svarende til billedrækkerne (uploadet af serveren).
 insert into storage.objects (bucket_id, name) values
-  ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg'),
-  ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg'),
-  ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001102/00000000-0000-4000-8000-000000001113.jpg');
+  ('request-images', '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg'),
+  ('request-images', '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg'),
+  ('request-images', '00000000-0000-4000-8000-000000001102/00000000-0000-4000-8000-000000001113.jpg');
 
 -- Send 1101 til X, 1103 til Y. Godkend opsummering på 1101 (ikke på 1103).
 select set_config('tm.transition', 'on', false);
@@ -107,15 +107,15 @@ select pg_temp.expect_count($$select count(*) from public.dentist_request_detail
 select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001101')$$, 1, 'X ser kun billedet med aktivt samtykke (trukket billede skjult)');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001102')$$, 0, 'X ser ikke billeder på usendt kladde');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001103')$$, 0, 'X ser ikke billeder på forespørgsel sendt til Y');
-select pg_temp.expect_count($$select public.is_shared_image_path('00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg')::int$$, 1, 'delt billede er læsbart i storage-policy');
-select pg_temp.expect_count($$select count(*) from storage.objects where name = '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg'$$, 0, 'X kan ikke hente trukket billede fra storage');
-select pg_temp.expect_count($$select count(*) from storage.objects where name = '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg'$$, 1, 'X kan hente delt billede fra storage');
+select pg_temp.expect_count($$select public.is_shared_image_path('00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg')::int$$, 1, 'delt billede er læsbart i storage-policy');
+select pg_temp.expect_count($$select count(*) from storage.objects where name = '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001112.jpg'$$, 0, 'X kan ikke hente trukket billede fra storage');
+select pg_temp.expect_count($$select count(*) from storage.objects where name = '00000000-0000-4000-8000-000000001101/00000000-0000-4000-8000-000000001111.jpg'$$, 1, 'X kan hente delt billede fra storage');
 
 -- ---------- 3. Tandlæge Y ser ikke X's forespørgsel eller billeder ----------
 select pg_temp.as_user('00000000-0000-4000-8000-000000000112');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001101')$$, 0, 'Y kan ikke se forespørgsel sendt til X');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001101')$$, 0, 'Y ser ikke billeder på X''s forespørgsel');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/%'$$, 0, 'Y kan ikke hente storage-objekter for X''s forespørgsel');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000001101/%'$$, 0, 'Y kan ikke hente storage-objekter for X''s forespørgsel');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001103')$$, 1, 'Y ser sin egen forespørgsel');
 
 -- ---------- 4. Tandlæger læser ikke requests direkte; detaljer har ingen patient_id ----------
@@ -146,13 +146,18 @@ select pg_temp.expect_count($$select count(*) from public.dentist_inbox(null)$$,
 select pg_temp.expect_count($$select count(*) from public.dentist_request_status('00000000-0000-4000-8000-000000001101')$$, 0, 'uverificeret tandlæge får ingen status');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_detail('00000000-0000-4000-8000-000000001101')$$, 0, 'uverificeret tandlæge ser ingen detaljer');
 select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001101')$$, 0, 'uverificeret tandlæge ser ingen billeder');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000001101/%'$$, 0, 'uverificeret tandlæge henter ingen storage-objekter');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000001101/%'$$, 0, 'uverificeret tandlæge henter ingen storage-objekter');
 select pg_temp.expect_error($$insert into public.responses (request_id, dentist_id, assessment, price_min, price_max) values ('00000000-0000-4000-8000-000000001101', '00000000-0000-4000-8000-000000000114', 'Uverificeret', 1000, 2000)$$, 'uverificeret tandlæge kan ikke svare', '42501');
 
 -- Tandlæge X kan ikke læse request_images direkte, heller ikke efter samtykke er trukket tilbage.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.request_images$$, 0, 'tandlæge kan ikke læse request_images direkte');
 select pg_temp.expect_count($$select count(*) from public.request_images where request_id = '00000000-0000-4000-8000-000000001101'$$, 0, 'tandlæge kan ikke læse billedrækker på modtaget forespørgsel');
+
+-- Privacy: billedstien og den delte funktion afslører ikke patient_id (security-gennemgang).
+select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001101') where storage_path like '%00000000-0000-4000-8000-000000000101%'$$, 0, 'delt billedsti indeholder ikke patient_id');
+select pg_temp.expect_count($$select count(*) from public.dentist_request_images('00000000-0000-4000-8000-000000001101') where storage_path !~ '^00000000-0000-4000-8000-000000001101/[0-9a-f-]+\.jpg$'$$, 0, 'billedsti har formen {request_id}/{image_id}.jpg (ingen patient-mappe)');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '%00000000-0000-4000-8000-000000000101%'$$, 0, 'intet storage-objekt har patient_id i navnet');
 select pg_temp.as_db_owner();
 update public.consents set withdrawn_at = now() where id = '00000000-0000-4000-8000-000000001201';
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');

@@ -1,4 +1,5 @@
 import { summarySchema } from "@/lib/schemas/requests";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import { MAX_IMAGES_PER_REQUEST } from "@/lib/constants/limits";
 import type { SummaryResponse } from "@/lib/types/requests";
 import { requireTerms } from "@/server/auth/terms";
@@ -57,6 +58,13 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
   // Udkast-grænsen (pr. forespørgsel og pr. døgn) og det globale anonyme loft tjekkes og forbruges atomisk
   // i databasen FØR billeder hentes og AI kaldes. Blokeret kvote tæller derfor ikke.
   const generationsLeft = await consumeSummaryGeneration(supabase, requestId);
+
+  if (images.length > 0) {
+    const imageConsent = await getLatestConsent(supabase, "image_upload");
+    if (!imageConsent || imageConsent.withdrawnAt !== null || imageConsent.textVersion !== CONSENT_TEXT_VERSIONS.image_upload) {
+      throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til billeder (nyeste version), før de sendes til AI.");
+    }
+  }
 
   const imageBytes = [];
   for (const image of images) {

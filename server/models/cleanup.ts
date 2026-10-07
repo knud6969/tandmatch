@@ -52,6 +52,13 @@ export async function removeAllObjectsForPrefix(admin: SupabaseClient, prefix: s
   }
 }
 
+// Billedstien er nu {request_id}/{image_id}.jpg (ikke {patient_id}/...), så oprydning skal ske pr. forespørgsel.
+export async function listRequestIdsForPatient(admin: SupabaseClient, patientId: string): Promise<string[]> {
+  const { data, error } = await admin.from("requests").select("id").eq("patient_id", patientId);
+  if (error) throw new Error("requests: kunne ikke læses til oprydning");
+  return (data as { id: string }[]).map((row) => row.id);
+}
+
 export async function deleteAuthUser(admin: SupabaseClient, userId: string): Promise<void> {
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw new Error("auth: slet bruger fejlede");

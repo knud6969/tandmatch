@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import {
   ANON_MAX_TOTAL_IMAGE_BYTES,
   MAX_IMAGES_PER_REQUEST,
@@ -43,8 +44,12 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   }
 
   const consent = await getLatestConsent(supabase, "image_upload");
-  if (!consent || consent.withdrawnAt !== null) {
-    throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til billeder, før du uploader.");
+  if (!consent || consent.withdrawnAt !== null || consent.textVersion !== CONSENT_TEXT_VERSIONS.image_upload) {
+    throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til billeder (nyeste version), før du uploader.");
+  }
+  const aiConsent = await getLatestConsent(supabase, "ai_processing");
+  if (!aiConsent || aiConsent.withdrawnAt !== null) {
+    throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til AI-behandling, før du uploader billeder.");
   }
 
   const existing = await listImages(supabase, requestId);
@@ -80,7 +85,7 @@ export const POST = withApi(async (req, ctx: Ctx) => {
   }
 
   const imageId = randomUUID();
-  const path = imageStoragePath(session.userId, requestId, imageId);
+  const path = imageStoragePath(requestId, imageId);
   // Skrivning sker med service role efter re-encoding. Brugerens JWT må ikke skrive billeder (architecture 9.2).
   const admin = createSupabaseAdminClient();
   await uploadImageObject(admin, path, processed.data);

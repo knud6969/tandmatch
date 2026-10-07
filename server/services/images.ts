@@ -36,8 +36,10 @@ export async function reencodeImage(buf: Buffer): Promise<{ data: Buffer; width:
   }
 }
 
-export function imageStoragePath(patientId: string, requestId: string, imageId: string): string {
-  return `${patientId}/${requestId}/${imageId}.jpg`;
+// Stien indeholder bevidst IKKE patient_id, så signerede URL'er og mappenavne ikke afslører patienten
+// for tandlæger (security-gennemgang 29687ebf).
+export function imageStoragePath(requestId: string, imageId: string): string {
+  return `${requestId}/${imageId}.jpg`;
 }
 
 // Signeret URL med brugerens JWT (storage-policies gælder). Logges aldrig.

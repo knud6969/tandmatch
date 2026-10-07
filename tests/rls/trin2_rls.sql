@@ -88,9 +88,9 @@ alter table public.dentists enable trigger dentists_guard;
 
 insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values
   ('00000000-0000-4000-8000-000000000103', 'ai_processing', 'ai_processing@v0-prototype', true),
-  ('00000000-0000-4000-8000-000000000103', 'image_upload', 'image_upload@v0-prototype', true),
+  ('00000000-0000-4000-8000-000000000103', 'image_upload', 'image_upload@v1-ai-disclosure', true),
   ('00000000-0000-4000-8000-000000000101', 'ai_processing', 'ai_processing@v0-prototype', false),
-  ('00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v0-prototype', false);
+  ('00000000-0000-4000-8000-000000000101', 'image_upload', 'image_upload@v1-ai-disclosure', false);
 
 -- Forespørgsler (kladder) indsættes som ejer for at have kendte id'er.
 insert into public.requests (id, patient_id, category, questions_version) values
@@ -180,11 +180,11 @@ select pg_temp.expect_count($$select count(*) from public.ai_messages$$, 0, 'tan
 -- ---------- 5. Billeder og storage ----------
 -- Anonym C: giver image_upload lige før upload (samtykke findes fra fixtures) og uploader til egen kladde.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg')$$, 'anonym uploader til egen mappe med samtykke', '42501');
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg', 800, 600, 12345)$$, 'anonym indsætter billedrække med samtykke', '42501');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden patients mappe', '42501');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden forespørgsel', '42501');
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c2', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c2.jpg', 1, 1, 1)$$, 'billedrække med andens samtykke afvises', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg')$$, 'anonym uploader til egen mappe med samtykke', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c1.jpg', 800, 600, 12345)$$, 'anonym indsætter billedrække med samtykke', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden patients mappe', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000201/x.jpg')$$, 'anonym kan ikke uploade til anden forespørgsel', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c2', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c2.jpg', 1, 1, 1)$$, 'billedrække med andens samtykke afvises', '42501');
 select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c3', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), 'forkert/sti.jpg', 1, 1, 1)$$, 'billedrække med ugyldig sti afvises', '42501');
 
 -- Grænse: højst 5 billeder pr. forespørgsel (c1 er den første).
@@ -192,32 +192,32 @@ select pg_temp.as_db_owner();
 insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes)
 select ('00000000-0000-4000-8000-0000000000' || lpad(g::text, 2, '0'))::uuid, '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103',
        (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'),
-       '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/' || ('00000000-0000-4000-8000-0000000000' || lpad(g::text, 2, '0')) || '.jpg', 10, 10, 10
+       '00000000-0000-4000-8000-000000000203/' || ('00000000-0000-4000-8000-0000000000' || lpad(g::text, 2, '0')) || '.jpg', 10, 10, 10
   from generate_series(2, 5) g;
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c9', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c9.jpg', 10, 10, 10)$$, 'sjette billede afvises (IMAGE_LIMIT)', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000c9', '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000103', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload'), '00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000c9.jpg', 10, 10, 10)$$, 'sjette billede afvises (IMAGE_LIMIT)', '42501');
 select pg_temp.expect_count($$select count(*) from public.request_images$$, 4, 'anonym ser sine fire fixture-billeder (patientens direkte upload er afvist)');
 
 -- A uploader til sin sendte forespørgsel (201) og en kladde (202).
 select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a1.jpg')$$, 'A kan ikke uploade til sendt forespørgsel', '42501');
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg')$$, 'A uploader til kladde', '42501');
-select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg', 10, 10, 10)$$, 'A indsætter billede på kladde', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a1.jpg')$$, 'A kan ikke uploade til sendt forespørgsel', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg')$$, 'A uploader til kladde', '42501');
+select pg_temp.expect_error($$insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000a2.jpg', 10, 10, 10)$$, 'A indsætter billede på kladde', '42501');
 
 -- Tandlæge X ser billeder og storage-objekter for sendt forespørgsel A, men ikke kladdens.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.request_images where request_id = '00000000-0000-4000-8000-000000000202'$$, 0, 'X ser ikke billeder på A''s kladde');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/%'$$, 0, 'X ser ikke kladdens storage-objekter');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/%'$$, 0, 'X ser ingen storage-objekter på sendt forespørgsel før upload');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000202/%'$$, 0, 'X ser ikke kladdens storage-objekter');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000201/%'$$, 0, 'X ser ingen storage-objekter på sendt forespørgsel før upload');
 select pg_temp.as_db_owner();
-insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg');
+insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg');
 -- Fixture: billede på en allerede sendt forespørgsel. Triggeren kræver kladde, så den slås fra for denne ene fixture.
 alter table public.request_images disable trigger request_images_before_insert;
-insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a3', '00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg', 10, 10, 10);
+insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes) values ('00000000-0000-4000-8000-0000000000a3', '00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload'), '00000000-0000-4000-8000-000000000201/00000000-0000-4000-8000-0000000000a3.jpg', 10, 10, 10);
 alter table public.request_images enable trigger request_images_before_insert;
 select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.request_images where request_id = '00000000-0000-4000-8000-000000000201'$$, 0, 'modtager X læser ikke billedrækker direkte (kun dentist_request_images)');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000201/%'$$, 1, 'modtager X ser storage-objekt på sendt forespørgsel');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000201/%'$$, 1, 'modtager X ser storage-objekt på sendt forespørgsel');
 select pg_temp.as_user('00000000-0000-4000-8000-000000000113');
 select pg_temp.expect_count($$select count(*) from public.request_images$$, 0, 'ikke-matchet Z ser ingen billeder');
 select pg_temp.expect_count($$select count(*) from storage.objects where bucket_id = 'request-images'$$, 0, 'ikke-matchet Z ser ingen storage-objekter');
@@ -225,14 +225,14 @@ select pg_temp.expect_count($$select count(*) from storage.objects where bucket_
 -- Anonym C ser ikke A's billeder; A kan ikke slette C's.
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
 select pg_temp.expect_count($$select count(*) from public.request_images where patient_id = '00000000-0000-4000-8000-000000000101'$$, 0, 'anonym ser ikke A''s billeder');
-select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000101/%'$$, 0, 'anonym ser ikke A''s storage-objekter');
-select pg_temp.expect_count($$with d as (delete from storage.objects where name like '00000000-0000-4000-8000-000000000101/%' returning 1) select count(*) from d$$, 0, 'anonym kan ikke slette A''s filer');
+select pg_temp.expect_count($$select count(*) from storage.objects where name like '00000000-0000-4000-8000-000000000201/%'$$, 0, 'anonym ser ikke A''s storage-objekt (findes, men ikke synligt for C)');
+select pg_temp.expect_count($$with d as (delete from storage.objects where name like '00000000-0000-4000-8000-000000000201/%' returning 1) select count(*) from d$$, 0, 'anonym kan ikke slette A''s fil');
 
 -- Tilbagetrukket image_upload giver ingen nye uploads.
 select pg_temp.as_db_owner();
 update public.consents set withdrawn_at = now() where patient_id = '00000000-0000-4000-8000-000000000103' and type = 'image_upload';
 select pg_temp.as_user('00000000-0000-4000-8000-000000000103', true);
-select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000103/00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000d1.jpg')$$, 'upload uden aktivt image_upload afvises', '42501');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('request-images', '00000000-0000-4000-8000-000000000203/00000000-0000-4000-8000-0000000000d1.jpg')$$, 'upload uden aktivt image_upload afvises', '42501');
 
 -- ---------- 6. Anonym AI-samtale: lukning ved 30 og tilbagetrukket ai_processing ----------
 select pg_temp.as_db_owner();

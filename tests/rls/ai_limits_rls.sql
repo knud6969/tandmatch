@@ -191,7 +191,7 @@ select pg_temp.expect_count($$select count(*) from public.requests where id = '0
 insert into public.request_images (id, request_id, patient_id, consent_id, storage_path, width, height, bytes)
 values ('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101',
         (select id from public.consents where patient_id = '00000000-0000-4000-8000-000000000101' and type = 'image_upload' limit 1),
-        '00000000-0000-4000-8000-000000000101/00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000e1.jpg', 10, 10, 10);
+        '00000000-0000-4000-8000-000000000202/00000000-0000-4000-8000-0000000000e1.jpg', 10, 10, 10);
 select pg_temp.expect_count($$select count(*) from public.requests where id = '00000000-0000-4000-8000-000000000202' and summary_approved_at is null$$, 1, 'billed-insert nulstiller godkendelse');
 select set_config('tm.system', 'on', false);
 update public.requests set summary_approved_at = now() where id = '00000000-0000-4000-8000-000000000202';

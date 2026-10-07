@@ -221,4 +221,15 @@ select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
 select pg_temp.expect_count($$select count(*) from public.dentist_reviews() where review_id = (select id from ids where name = 'r1503') and reply_status is null and reply_text is null$$, 1, 'afvist svar vises ikke for tandlægen (replyStatus none)');
 select pg_temp.as_db_owner();
 
+-- ---------- 7. Tandlæge kan ikke læse patient_id fra visits (security-gennemgang) ----------
+select pg_temp.as_user('00000000-0000-4000-8000-000000000111');
+select pg_temp.expect_count($$select count(*) from public.visits$$, 0, 'tandlæge kan ikke læse visits-tabellen direkte (inkl. patient_id)');
+select pg_temp.expect_count($$select count(*) from public.dentist_visits() where visit_id = '00000000-0000-4000-8000-000000001501'$$, 1, 'tandlæge ser eget besøg via dentist_visits() (uden patient_id)');
+select pg_temp.expect_count($$select count(*) from pg_proc p where p.proname = 'dentist_visits' and position('patient' in pg_get_function_result(p.oid)) = 0$$, 1, 'dentist_visits() returnerer ikke patient-felter');
+select pg_temp.as_user('00000000-0000-4000-8000-000000000112');
+select pg_temp.expect_count($$select count(*) from public.dentist_visits() where visit_id = '00000000-0000-4000-8000-000000001501'$$, 0, 'tandlæge Y ser ikke X''s besøg');
+select pg_temp.as_user('00000000-0000-4000-8000-000000000101');
+select pg_temp.expect_count($$select count(*) from public.visits where id = '00000000-0000-4000-8000-000000001501' and patient_id = '00000000-0000-4000-8000-000000000101'$$, 1, 'patienten ser stadig eget besøg med patient_id');
+select pg_temp.as_db_owner();
+
 select 'ALLE REVIEWS-TESTS PASSEDE' as resultat;
