@@ -96,6 +96,18 @@ function toRecord(row: ResponseRow): ResponseRecord {
   };
 }
 
+// Alle egne svar, uden filter på forespørgsel. RLS (is_request_owner via responses-policyen) begrænser
+// automatisk til patientens egne forespørgsler. Bruges af dataeksporten.
+export async function listOwnResponses(supabase: SupabaseClient): Promise<ResponseRecord[]> {
+  const { data, error } = await supabase
+    .from("responses")
+    .select(RESPONSE_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw new Error("responses: select fejlede");
+  return (data as unknown as ResponseRow[]).map(toRecord);
+}
+
 // Patientens valg. Al logik ligger i decide_response() (security definer). Fejlkoder oversættes her.
 export async function decideResponse(
   supabase: SupabaseClient,

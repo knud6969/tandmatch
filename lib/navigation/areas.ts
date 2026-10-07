@@ -14,6 +14,7 @@ export const AREA_NAV: Record<Role, NavItem[]> = {
   patient: [
     { href: "/patient", label: "Mine forespørgsler" },
     { href: "/patient/anmeldelser", label: "Anmeldelser" },
+    { href: "/patient/samtykker", label: "Samtykker og data" },
   ],
   dentist: [
     { href: "/tandlaege", label: "Indbakke" },

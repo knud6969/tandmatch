@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DecisionControls, type Decision } from "@/components/patient/decision-controls";
+import { MessageThread } from "@/components/responses/message-thread";
 import { ResponseDetails } from "@/components/responses/response-details";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -222,10 +223,12 @@ function ResponseCard({
         />
       )}
 
-      <p className="border-t border-line pt-4 text-sm text-ink-muted">
+      <p className="text-sm text-ink-muted">
         Svar modtaget {formatDateTime(response.createdAt)}
         {updated && !withdrawn ? `. Senest ændret ${formatDateTime(response.updatedAt)}` : ""}
       </p>
+
+      <MessageThread responseId={response.id} counterpartLabel="Tandlægen" />
     </Card>
   );
 }

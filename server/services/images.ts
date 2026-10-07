@@ -71,3 +71,11 @@ export async function removeImageObject(supabase: SupabaseClient, path: string):
   const { error } = await supabase.storage.from(REQUEST_BUCKET).remove([path]);
   if (error) throw new Error("storage: slet billede fejlede");
 }
+
+// Sletter flere filer i ét kald (bruges ved tilbagetrækning af image_upload-samtykke).
+export async function removeImageObjects(admin: SupabaseClient, paths: string[]): Promise<void> {
+  for (let i = 0; i < paths.length; i += 100) {
+    const { error } = await admin.storage.from(REQUEST_BUCKET).remove(paths.slice(i, i + 100));
+    if (error) throw new Error("storage: slet billeder fejlede");
+  }
+}

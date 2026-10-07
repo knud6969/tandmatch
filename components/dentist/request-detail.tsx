@@ -11,6 +11,7 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { ResponseDetails } from "@/components/responses/response-details";
 import { ResponseForm } from "@/components/dentist/response-form";
 import { WithdrawResponse } from "@/components/dentist/withdraw-response";
+import { MessageThread } from "@/components/responses/message-thread";
 import { ApiRequestError, apiRequest } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { categoryLabel } from "@/lib/constants/category-labels";
@@ -248,9 +249,12 @@ function ResponseSection({
 
   if (response.status === "withdrawn") {
     return (
-      <Alert tone="info" title="Svaret er trukket tilbage">
-        <p>Du har trukket dit svar tilbage. Det kan ikke ændres igen.</p>
-      </Alert>
+      <>
+        <Alert tone="info" title="Svaret er trukket tilbage">
+          <p>Du har trukket dit svar tilbage. Det kan ikke ændres igen.</p>
+        </Alert>
+        <MessageThread responseId={response.id} counterpartLabel="Patienten" />
+      </>
     );
   }
 
@@ -261,6 +265,7 @@ function ResponseSection({
           <p>Svaret er låst og kan ikke ændres længere.</p>
         </Alert>
         <ResponseDetails response={response} />
+        <MessageThread responseId={response.id} counterpartLabel="Patienten" />
       </>
     );
   }
@@ -273,6 +278,7 @@ function ResponseSection({
           <p>Forespørgslen er ikke længere åben, så svaret kan ikke ændres.</p>
         </Alert>
         <ResponseDetails response={response} />
+        <MessageThread responseId={response.id} counterpartLabel="Patienten" />
       </>
     );
   }
@@ -292,6 +298,7 @@ function ResponseSection({
         onWithdrawn={() => onChanged("Dit svar er trukket tilbage.")}
         onStale={() => onChanged()}
       />
+      <MessageThread responseId={response.id} counterpartLabel="Patienten" />
     </>
   );
 }

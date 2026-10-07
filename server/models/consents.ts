@@ -2,6 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ConsentDto } from "@/lib/types/requests";
 import type { ConsentType } from "@/lib/types/common";
+import { ApiError, notFound } from "@/server/http/api";
+import { mapDbError } from "@/server/http/db-errors";
 
 export type NewConsent = {
   patientId: string;
@@ -98,4 +100,43 @@ export async function hasActiveConsent(supabase: SupabaseClient, type: ConsentTy
     throw new Error("has_active_consent fejlede");
   }
   return data === true;
+}
+
+export type WithdrawConsentResult = {
+  withdrawnAt: string;
+  consentType: ConsentType;
+  deletedImagePaths: string[];
+  closedConversations: number;
+};
+
+// Al logik ligger i withdraw_consent() (security definer): sætter withdrawn_at, sletter billedrækker
+// (image_upload) og lukker aktive AI-samtaler (ai_processing). Returnerer filstierne, så API'et kan
+// rydde storage i samme kald (architecture 5.3).
+export async function withdrawConsent(
+  supabase: SupabaseClient,
+  consentId: string,
+): Promise<WithdrawConsentResult> {
+  const { data, error } = await supabase.rpc("withdraw_consent", { p_consent_id: consentId });
+  mapDbError(
+    error,
+    {
+      NOT_FOUND: notFound(),
+      ALREADY_WITHDRAWN: new ApiError(409, "ALREADY_WITHDRAWN", "Samtykket er allerede trukket tilbage."),
+      UNAUTHENTICATED: new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind."),
+    },
+    "withdraw_consent fejlede",
+  );
+  const row = (data as unknown as Array<{
+    withdrawn_at: string;
+    consent_type: ConsentType;
+    deleted_image_paths: string[] | null;
+    closed_conversations: number;
+  }> | null)?.[0];
+  if (!row) throw new Error("withdraw_consent: uventet svar");
+  return {
+    withdrawnAt: row.withdrawn_at,
+    consentType: row.consent_type,
+    deletedImagePaths: row.deleted_image_paths ?? [],
+    closedConversations: row.closed_conversations,
+  };
 }

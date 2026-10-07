@@ -41,6 +41,9 @@ const MESSAGES: Record<string, string> = {
   RESPONSE_WITHDRAWN: "Svaret er trukket tilbage og kan ikke ændres igen.",
   STATE_CHANGED: "Svaret kunne ikke gemmes, fordi forespørgslen er ændret. Vi har hentet de nyeste oplysninger. Prøv igen.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
+  // Samtykker, dataeksport og beskeder (trin 6)
+  ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
+  EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
   // Standard-sporet og anmeldelser (trin 5)
   NO_VERIFIED_VISIT: "Du kan kun anmelde et besøg, der er verificeret.",
   ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",

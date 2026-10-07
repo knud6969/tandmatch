@@ -20,3 +20,8 @@ export const REQUEST_EXPIRY_DAYS = 14;
 
 // Oprydning af anonyme sessioner (architecture 7.7).
 export const CLEANUP_BATCH_SIZE = 200;
+
+// Beskedtråd (architecture 10.7). Et dagligt loft er tilføjet som værn mod misbrug (ikke i architecture;
+// se rapport). Samme grænse er håndhævet i databasen (participant_messages_last_day()).
+export const MESSAGE_MAX_CHARS = 2000;
+export const MESSAGE_MAX_PER_DAY = 200;
