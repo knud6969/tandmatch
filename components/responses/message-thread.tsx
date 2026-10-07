@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { apiRequest } from "@/lib/api/client";
+import { ApiRequestError, apiRequest } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { MESSAGE_MAX_CHARS } from "@/lib/constants/limits";
 import { formatDateTime } from "@/lib/format/danish";
@@ -26,26 +26,69 @@ type MessageThreadProps = {
 // Beskedtråd bundet til ét svar: altid præcis én patient og én tandlæge (architecture 4.3, 10.7). Intet AI-indhold.
 export function MessageThread({ responseId, counterpartLabel }: MessageThreadProps) {
   const [state, setState] = useState<State>({ status: "loading" });
+  // Sat når en 401/404 viser, at tråden ikke findes eller ikke må læses længere. Pollingen stopper permanent,
+  // og beskeden beholder den sidst kendte liste i stedet for at blive erstattet af en fejlboks.
+  const [blocked, setBlocked] = useState<string | null>(null);
   const [body, setBody] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     let active = true;
+    let stopped = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    function stopPolling() {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function startPolling() {
+      if (intervalId === null && !stopped && !document.hidden) {
+        intervalId = setInterval(load, POLL_MS);
+      }
+    }
+
     function load() {
+      if (stopped) return;
       apiRequest<{ messages: MessageDto[] }>(`/api/responses/${encodeURIComponent(responseId)}/messages`)
         .then(({ messages }) => {
           if (active) setState({ status: "ready", messages });
         })
         .catch((err: unknown) => {
-          if (active) setState({ status: "error", message: apiErrorMessage(err) });
+          if (!active) return;
+          const permanent = err instanceof ApiRequestError && (err.status === 401 || err.status === 404);
+          if (permanent) {
+            // Tråden findes ikke (længere), eller sessionen er udløbet. Gentagne kald vil bare give samme fejl.
+            stopped = true;
+            stopPolling();
+            setBlocked(apiErrorMessage(err));
+          }
+          // En forbigående fejl beholder den sidst viste liste, hvis vi allerede har én, i stedet for at skjule den.
+          setState((prev) => (prev.status === "ready" ? prev : { status: "error", message: apiErrorMessage(err) }));
         });
     }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        load();
+        startPolling();
+      }
+    }
+
     load();
-    const interval = setInterval(load, POLL_MS);
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       active = false;
-      clearInterval(interval);
+      stopped = true;
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [responseId]);
 
@@ -88,7 +131,7 @@ export function MessageThread({ responseId, counterpartLabel }: MessageThreadPro
         </p>
       )}
 
-      {state.status === "error" && (
+      {state.status === "error" && !blocked && (
         <Alert tone="danger" role="alert">
           {state.message}
         </Alert>
@@ -116,40 +159,46 @@ export function MessageThread({ responseId, counterpartLabel }: MessageThreadPro
         </ul>
       )}
 
-      <form
-        noValidate
-        aria-label="Skriv besked"
-        className="flex flex-col gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submit();
-        }}
-      >
-        {sendError && (
-          <Alert tone="danger" role="alert">
-            {sendError}
-          </Alert>
-        )}
-        <label htmlFor={`besked-${responseId}`} className="text-sm font-semibold text-ink">
-          Skriv en besked til {counterpartLabel.toLowerCase()}
-        </label>
-        <textarea
-          id={`besked-${responseId}`}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          maxLength={MESSAGE_MAX_CHARS}
-          rows={3}
-          className="min-h-24 w-full rounded-lg border border-field-border bg-surface px-3.5 py-2.5 text-base leading-relaxed text-ink placeholder:text-ink-muted/70"
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-ink-muted" aria-live="polite">
-            {body.length}/{MESSAGE_MAX_CHARS} tegn
-          </p>
-          <Button type="submit" disabled={sending} className="w-full sm:w-auto">
-            {sending ? "Sender …" : "Send besked"}
-          </Button>
-        </div>
-      </form>
+      {blocked ? (
+        <Alert tone="warning" role="status">
+          {blocked}
+        </Alert>
+      ) : (
+        <form
+          noValidate
+          aria-label="Skriv besked"
+          className="flex flex-col gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          {sendError && (
+            <Alert tone="danger" role="alert">
+              {sendError}
+            </Alert>
+          )}
+          <label htmlFor={`besked-${responseId}`} className="text-sm font-semibold text-ink">
+            Skriv en besked til {counterpartLabel.toLowerCase()}
+          </label>
+          <textarea
+            id={`besked-${responseId}`}
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            maxLength={MESSAGE_MAX_CHARS}
+            rows={3}
+            className="min-h-24 w-full rounded-lg border border-field-border bg-surface px-3.5 py-2.5 text-base leading-relaxed text-ink placeholder:text-ink-muted/70"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-ink-muted" aria-live="polite">
+              {body.length}/{MESSAGE_MAX_CHARS} tegn
+            </p>
+            <Button type="submit" disabled={sending} className="w-full sm:w-auto">
+              {sending ? "Sender …" : "Send besked"}
+            </Button>
+          </div>
+        </form>
+      )}
     </section>
   );
 }

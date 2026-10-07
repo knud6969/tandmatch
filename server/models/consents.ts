@@ -140,3 +140,9 @@ export async function withdrawConsent(
     closedConversations: row.closed_conversations,
   };
 }
+
+// Bekræfter at oprydningen efter tilbagetrækning er udført (kun image_upload: filerne er fjernet fra storage).
+export async function confirmConsentCleanup(supabase: SupabaseClient, consentId: string): Promise<void> {
+  const { error } = await supabase.rpc("confirm_consent_cleanup", { p_consent_id: consentId });
+  if (error) throw new Error("confirm_consent_cleanup fejlede");
+}

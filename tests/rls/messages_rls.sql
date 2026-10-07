@@ -113,7 +113,17 @@ select pg_temp.expect_sqlstate($$select * from public.withdraw_consent('00000000
 select pg_temp.expect_count($$select count(*) from public.withdraw_consent('00000000-0000-4000-8000-00000000c651') where consent_type = 'image_upload' and array_length(deleted_image_paths, 1) = 2$$, 1, 'tilbagetrækning af image_upload sletter begge billedrækker og returnerer filstierne');
 select pg_temp.expect_count($$select count(*) from public.request_images where patient_id = '00000000-0000-4000-8000-00000000c601'$$, 0, 'billedrækkerne er slettet i databasen');
 select pg_temp.expect_count($$select count(*) from public.consents where id = '00000000-0000-4000-8000-00000000c651' and withdrawn_at is not null$$, 1, 'tidspunktet for tilbagetrækning er gemt');
-select pg_temp.expect_sqlstate($$select * from public.withdraw_consent('00000000-0000-4000-8000-00000000c651')$$, 'samme samtykke kan ikke trækkes tilbage to gange', 'P0001');
+
+-- Simulerer at oprydningen af billedfiler fejlede (API'et nåede ikke at kalde confirm_consent_cleanup()).
+-- Et nyt forsøg skal gentage oprydningen (samme filstier), ikke svare ALREADY_WITHDRAWN.
+select pg_temp.expect_count($$select count(*) from public.consents where id = '00000000-0000-4000-8000-00000000c651' and cleanup_done = false$$, 1, 'oprydning er endnu ikke bekræftet efter første forsøg');
+select pg_temp.expect_count($$select count(*) from public.withdraw_consent('00000000-0000-4000-8000-00000000c651') where consent_type = 'image_upload' and array_length(deleted_image_paths, 1) = 2$$, 1, 'nyt forsøg (uden bekræftet oprydning) gentager de samme filstier i stedet for at blokere');
+select pg_temp.expect_count($$select count(*) from public.withdraw_consent('00000000-0000-4000-8000-00000000c651') where array_length(deleted_image_paths, 1) = 2$$, 1, 'endnu et forsøg giver stadig samme filstier (idempotent, så flere fejlslagne oprydninger ikke taber data)');
+
+-- API'et bekræfter nu oprydningen (filerne er fjernet fra storage). Først nu er tilbagetrækningen færdig.
+select pg_temp.expect_updated($$select public.confirm_consent_cleanup('00000000-0000-4000-8000-00000000c651')$$, 1, 'serveren bekræfter oprydningen efter det lykkedes forsøg');
+select pg_temp.expect_count($$select count(*) from public.consents where id = '00000000-0000-4000-8000-00000000c651' and cleanup_done = true and pending_storage_paths is null$$, 1, 'oprydning er nu bekræftet, og filstierne er ikke gemt længere');
+select pg_temp.expect_sqlstate($$select * from public.withdraw_consent('00000000-0000-4000-8000-00000000c651')$$, 'samme samtykke kan ikke trækkes tilbage to gange, når oprydningen er bekræftet', 'P0001');
 
 select pg_temp.expect_count($$select count(*) from public.withdraw_consent('00000000-0000-4000-8000-00000000c652') where consent_type = 'ai_processing' and closed_conversations = 1$$, 1, 'tilbagetrækning af ai_processing lukker den aktive AI-samtale');
 select pg_temp.expect_count($$select count(*) from public.ai_conversations where id = '00000000-0000-4000-8000-00000000c671' and status = 'closed'$$, 1, 'AI-samtalen er lukket i databasen');

@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
+import { HomeFlash } from "@/components/session/home-flash";
 
 export const metadata: Metadata = { title: "Forside" };
 
 export default function HomePage() {
   return (
     <Container size="wide" className="sm:gap-10">
+      <HomeFlash />
       <PageIntro title="Den rigtige tandlæge til dit tandproblem">
         <p>
           TandMatch hjælper dig med at beskrive dit ønske og finde tandlæger, der kan svare dig. Du bestemmer selv,

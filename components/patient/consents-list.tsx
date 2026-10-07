@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ type State =
 
 // Samtykker givet efter GDPR art. 9 (architecture 4.3, 10.3). Vilkårs-accept vises ikke her, det er noget andet.
 export function ConsentsList() {
+  const router = useRouter();
   const [state, setState] = useState<State>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
@@ -39,6 +41,20 @@ export function ConsentsList() {
   }, [reloadKey]);
 
   function onWithdrawn(result: WithdrawResultDto) {
+    // Sessionen er slettet (kun muligt for en anonym bruger). Siden må ikke hente data igen, det ville give 401.
+    // Beskeden kan ikke vises her, da siden forlades med det samme, så den gemmes til forsiden viser den.
+    if (result.sessionDeleted) {
+      try {
+        sessionStorage.setItem(
+          "tm-home-flash",
+          "Din session er slettet, inklusive din kladde-forespørgsel og dine billeder, fordi du trak samtykket til AI-behandling tilbage.",
+        );
+      } catch {
+        // sessionStorage kan være blokeret. Sletningen er allerede sket på serveren uanset.
+      }
+      router.replace("/");
+      return;
+    }
     const extra = result.deletedImages > 0 ? ` ${result.deletedImages} billede(r) er slettet.` : "";
     setFlash(`Samtykket er trukket tilbage ${formatDateTime(result.withdrawnAt)}.${extra}`);
     setReloadKey((key) => key + 1);
