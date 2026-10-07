@@ -64,6 +64,22 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Demo-data knyttet til demo-brugere: anmeldelser, besøg og forespørgsler (med svar og modtagere).
+  // Sletningen er eksplicit, så den ikke kun afhænger af cascade. Kun demo-brugernes id'er bruges.
+  const { data: reviews, error: reviewErr } = await admin.from('reviews').delete().in('patient_id', ids).select('id');
+  if (reviewErr) throw new Error(`reviews delete fejlede: ${reviewErr.message}`);
+  const { data: visits, error: visitErr } = await admin
+    .from('visits')
+    .delete()
+    .or(`patient_id.in.(${ids.join(',')}),dentist_id.in.(${ids.join(',')})`)
+    .select('id');
+  if (visitErr) throw new Error(`visits delete fejlede: ${visitErr.message}`);
+  const { data: requests, error: requestErr } = await admin.from('requests').delete().in('patient_id', ids).select('id');
+  if (requestErr) throw new Error(`requests delete fejlede: ${requestErr.message}`);
+  console.log(
+    `Demo-data: ${requests?.length ?? 0} forespørgsler, ${visits?.length ?? 0} besøg, ${reviews?.length ?? 0} anmeldelser.`,
+  );
+
   if (clinics && clinics.length > 0) {
     const clinicIds = clinics.map((c) => c.id as string);
     const { error } = await admin.from('clinics').delete().in('id', clinicIds);

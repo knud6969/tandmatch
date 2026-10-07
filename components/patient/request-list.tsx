@@ -59,7 +59,7 @@ export function PatientRequestList() {
           Du har ikke sendt nogen forespørgsler endnu. Når du har sendt en, vises den her, med status og svar.
         </p>
         <LinkButton href="/patient/forespoergsel/ny" className="mt-5 w-full sm:w-auto">
-          Start ny forespørgsel
+          Ny forespørgsel
         </LinkButton>
       </Card>
     );
@@ -95,7 +95,7 @@ export function PatientRequestList() {
         ))}
       </ul>
       <LinkButton href="/patient/forespoergsel/ny" variant="secondary" className="w-full sm:w-auto sm:self-start">
-        Start ny forespørgsel
+        Ny forespørgsel
       </LinkButton>
     </div>
   );

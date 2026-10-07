@@ -61,19 +61,30 @@ interface DemoDentist {
   acceptsCosmetic: boolean;
   cosmeticCategories: CosmeticCategory[];
   priceFactor: number;
+  slug: string;
+  trustpilotScore: number;
+  trustpilotCount: number;
 }
 
 // Alle navne, klinikker og adresser er fiktive. Gadenavne er konstrueret til demoen.
+// Trustpilot-URL'erne er fiktive demo-stier (.example), ikke rigtige Trustpilot-sider.
 const DEMO_DENTISTS: DemoDentist[] = [
-  { n: 1, postalCode: '2200', clinicName: 'Demo Tandklinik Nørrebro', address: 'Demogade 1', nextAvailableInDays: 2, acceptsCosmetic: true, cosmeticCategories: ['diastema', 'facings'], priceFactor: 1 },
-  { n: 2, postalCode: '2100', clinicName: 'Demo Tandklinik Østerbro', address: 'Demovej 2', nextAvailableInDays: 5, acceptsCosmetic: false, cosmeticCategories: [], priceFactor: 1.1 },
-  { n: 3, postalCode: '2000', clinicName: 'Demo Tandklinik Frederiksberg', address: 'Eksempelstræde 3', nextAvailableInDays: 1, acceptsCosmetic: true, cosmeticCategories: ['blegning', 'retainer'], priceFactor: 1.25 },
-  { n: 4, postalCode: '2300', clinicName: 'Demo Tandklinik Amager', address: 'Fiktivvej 4', nextAvailableInDays: 9, acceptsCosmetic: false, cosmeticCategories: [], priceFactor: 0.95 },
-  { n: 5, postalCode: '2800', clinicName: 'Demo Tandklinik Lyngby', address: 'Prøvevej 5', nextAvailableInDays: 3, acceptsCosmetic: true, cosmeticCategories: ['andet_kosmetisk', 'blegning'], priceFactor: 1.05 },
-  { n: 6, postalCode: '4000', clinicName: 'Demo Tandklinik Roskilde', address: 'Demotorvet 6', nextAvailableInDays: 14, acceptsCosmetic: false, cosmeticCategories: [], priceFactor: 0.9 },
+  { n: 1, postalCode: '2200', clinicName: 'Demo Tandklinik Nørrebro', address: 'Demogade 1', nextAvailableInDays: 2, acceptsCosmetic: true, cosmeticCategories: ['diastema', 'facings'], priceFactor: 1, slug: 'noerrebro', trustpilotScore: 4.6, trustpilotCount: 38 },
+  { n: 2, postalCode: '2100', clinicName: 'Demo Tandklinik Østerbro', address: 'Demovej 2', nextAvailableInDays: 5, acceptsCosmetic: true, cosmeticCategories: ['diastema'], priceFactor: 1.1, slug: 'oesterbro', trustpilotScore: 4.3, trustpilotCount: 21 },
+  { n: 3, postalCode: '2000', clinicName: 'Demo Tandklinik Frederiksberg', address: 'Eksempelstræde 3', nextAvailableInDays: 1, acceptsCosmetic: true, cosmeticCategories: ['blegning', 'retainer'], priceFactor: 1.25, slug: 'frederiksberg', trustpilotScore: 4.8, trustpilotCount: 56 },
+  { n: 4, postalCode: '2300', clinicName: 'Demo Tandklinik Amager', address: 'Fiktivvej 4', nextAvailableInDays: 9, acceptsCosmetic: false, cosmeticCategories: [], priceFactor: 0.95, slug: 'amager', trustpilotScore: 4.1, trustpilotCount: 14 },
+  { n: 5, postalCode: '2800', clinicName: 'Demo Tandklinik Lyngby', address: 'Prøvevej 5', nextAvailableInDays: 3, acceptsCosmetic: true, cosmeticCategories: ['andet_kosmetisk', 'blegning'], priceFactor: 1.05, slug: 'lyngby', trustpilotScore: 4.5, trustpilotCount: 27 },
+  { n: 6, postalCode: '4000', clinicName: 'Demo Tandklinik Roskilde', address: 'Demotorvet 6', nextAvailableInDays: 14, acceptsCosmetic: false, cosmeticCategories: [], priceFactor: 0.9, slug: 'roskilde', trustpilotScore: 4.2, trustpilotCount: 9 },
 ];
 
 const DEMO_PATIENT = { n: 1, firstName: 'Demo Patient 1', postalCode: '2200' };
+
+// Faste id'er, så kørsler er idempotente. Alle er fiktive.
+const DEMO_REQUEST_ID = '00000000-0000-4000-8000-00000000d001';
+const DEMO_VISIT_ON_D3 = '00000000-0000-4000-8000-00000000d101'; // verificeret besøg hos tandlæge 3
+const DEMO_VISIT_ON_D1 = '00000000-0000-4000-8000-00000000d102'; // verificeret besøg hos tandlæge 1
+const DEMO_REVIEW_ON_D3 = '00000000-0000-4000-8000-00000000d201'; // pending (moderation mangler, se rapport)
+const DEMO_REVIEW_ON_D1 = '00000000-0000-4000-8000-00000000d202'; // pending
 
 // Fiktive demopriser i DKK. De er ikke markedspriser.
 const BASE_PRICES: Record<Service, { min: number; max: number }> = {
@@ -220,6 +231,10 @@ async function seedDentist(
     city: pc.city,
     lat: pc.lat,
     lng: pc.lng,
+    // Fiktiv demo-sti. Trustpilot scrapes ikke; score og antal er indtastet "af klinikken" (demo).
+    trustpilot_url: `https://dk.trustpilot.com/review/demo-klinik-${d.slug}.example`,
+    trustpilot_score: d.trustpilotScore,
+    trustpilot_review_count: d.trustpilotCount,
   };
 
   const { data: existingClinic, error: findErr } = await admin
@@ -277,6 +292,156 @@ async function seedDentist(
   return userId;
 }
 
+// Logger en demo-bruger ind med den almindelige anon-nøgle, så de eksisterende RPC'er og RLS
+// bruges præcis som i appen (send_request, approve_summary, responses-insert). Sessionen gemmes ikke.
+async function signInDemoClient(url: string, anonKey: string, email: string, password: string): Promise<SupabaseClient> {
+  const client = createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(`Login for ${email} fejlede: ${error.message}`);
+  return client;
+}
+
+// Én sendt kosmetisk forespørgsel (diastema) fra demo-patient 1, med godkendt opsummering,
+// sendt via send_request (modtagere: tandlæge 1 og 2), og ét svar fra tandlæge 1.
+// Tandlæge 2 har ingen svar, så "afventer" kan vises. Ingen billeder, ingen AI-kald.
+async function seedDemoRequest(
+  admin: SupabaseClient,
+  patientClient: SupabaseClient,
+  patientId: string,
+  dentistClient: SupabaseClient,
+  dentistId: string,
+): Promise<void> {
+  const { data: existing, error: findErr } = await admin
+    .from('requests')
+    .select('id, status')
+    .eq('id', DEMO_REQUEST_ID)
+    .maybeSingle();
+  if (findErr) throw new Error(`requests select fejlede: ${findErr.message}`);
+  if (existing) {
+    console.log(`- Demo-forespørgsel findes allerede (status: ${existing.status}). Springer over.`);
+    return;
+  }
+
+  const { error: consentErr } = await patientClient.from('consents').insert({
+    patient_id: patientId,
+    type: 'health_data_sharing',
+    text_version: 'health_data_sharing@v0-prototype',
+    granted_while_anonymous: false,
+  });
+  if (consentErr) throw new Error(`consents insert fejlede: ${consentErr.message}`);
+
+  const { error: reqErr } = await patientClient.from('requests').insert({
+    id: DEMO_REQUEST_ID,
+    patient_id: patientId,
+    category: 'diastema',
+    answers: {},
+    questions_version: 'demo-v1',
+    free_text: 'Fiktiv demo-beskrivelse. Der er ingen rigtig patient bag forespørgslen.',
+    postal_code: DEMO_PATIENT.postalCode,
+    status: 'draft',
+  });
+  if (reqErr) throw new Error(`requests insert fejlede: ${reqErr.message}`);
+
+  const { error: summaryErr } = await patientClient.rpc('approve_summary', {
+    p_request_id: DEMO_REQUEST_ID,
+    p_summary_text: 'Demo-opsummering (fiktiv): Patienten ønsker at høre om muligheder for et mindre mellemrum mellem fortænderne.',
+  });
+  if (summaryErr) throw new Error(`approve_summary fejlede: ${summaryErr.message}`);
+
+  const { data: recipientCount, error: sendErr } = await patientClient.rpc('send_request', {
+    p_request_id: DEMO_REQUEST_ID,
+  });
+  if (sendErr) throw new Error(`send_request fejlede: ${sendErr.message}`);
+  console.log(`- Demo-forespørgsel (diastema) sendt til ${recipientCount} tandlæger`);
+
+  const { error: respErr } = await dentistClient.from('responses').insert({
+    request_id: DEMO_REQUEST_ID,
+    dentist_id: dentistId,
+    assessment: 'Demo-svar (fiktivt): Tak for henvendelsen. Vi foreslår en konsultation, hvor vi gennemgår mulighederne sammen.',
+    price_min: 1200,
+    price_max: 2400,
+    price_note: 'Demopris (fiktiv)',
+    first_available_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+  if (respErr) throw new Error(`responses insert fejlede: ${respErr.message}`);
+  console.log('- Svar fra demo-tandlæge 1 oprettet (tandlæge 2 afventer)');
+}
+
+// Verificerede besøg for demo-patient 1 (oprettes af seed, jf. architecture 8.1) og to anmeldelser.
+// Begge anmeldelser er pending. Godkendelse kræver en moderations-sti, som endnu ikke findes (se rapport).
+async function seedVisitsAndReviews(
+  admin: SupabaseClient,
+  patientClient: SupabaseClient,
+  patientId: string,
+  dentist1Id: string,
+  dentist3Id: string,
+): Promise<void> {
+  const verifiedAt = new Date().toISOString();
+  const { error: visitErr } = await admin.from('visits').upsert(
+    [
+      {
+        id: DEMO_VISIT_ON_D3,
+        patient_id: patientId,
+        dentist_id: dentist3Id,
+        visited_on: '2026-09-15',
+        verified_at: verifiedAt,
+        verification_method: 'demo-seed',
+      },
+      {
+        id: DEMO_VISIT_ON_D1,
+        patient_id: patientId,
+        dentist_id: dentist1Id,
+        visited_on: '2026-08-20',
+        verified_at: verifiedAt,
+        verification_method: 'demo-seed',
+      },
+    ],
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+  if (visitErr) throw new Error(`visits upsert fejlede: ${visitErr.message}`);
+
+  const reviews = [
+    {
+      id: DEMO_REVIEW_ON_D3,
+      visit_id: DEMO_VISIT_ON_D3,
+      dentist_id: dentist3Id,
+      stars: 4,
+      text: 'Demo-anmeldelse (fiktiv): Prisoverslaget passede med den endelige pris. Teksten er opdigtet til demoen.',
+      price_accuracy: 'as_quoted',
+      actual_price: null,
+      lacked_transparency: null,
+      transparency_comment: null,
+    },
+    {
+      id: DEMO_REVIEW_ON_D1,
+      visit_id: DEMO_VISIT_ON_D1,
+      dentist_id: dentist1Id,
+      stars: 3,
+      text: 'Demo-anmeldelse (fiktiv): Den endelige pris blev lidt højere end overslaget. Teksten er opdigtet til demoen.',
+      price_accuracy: 'slightly_higher',
+      actual_price: 2300,
+      lacked_transparency: false,
+      transparency_comment: null,
+    },
+  ];
+
+  for (const review of reviews) {
+    const { data: existing, error: findErr } = await admin
+      .from('reviews')
+      .select('id')
+      .eq('id', review.id)
+      .maybeSingle();
+    if (findErr) throw new Error(`reviews select fejlede: ${findErr.message}`);
+    if (existing) {
+      console.log(`- Anmeldelse ${review.id} findes allerede. Springer over.`);
+      continue;
+    }
+    const { error } = await patientClient.from('reviews').insert({ ...review, patient_id: patientId });
+    if (error) throw new Error(`reviews insert fejlede: ${error.message}`);
+  }
+  console.log('- Besøg: 2 verificerede (tandlæge 3 og 1). Anmeldelser: 2 (pending)');
+}
+
 async function verify(admin: SupabaseClient, ids: string[]): Promise<number> {
   const { data, error } = await admin
     .from('dentists')
@@ -294,9 +459,10 @@ async function main(): Promise<void> {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !serviceKey || !anonKey) {
     console.error(
-      'Mangler NEXT_PUBLIC_SUPABASE_URL eller SUPABASE_SERVICE_ROLE_KEY i miljøet. Kør med --env-file=.env.local.',
+      'Mangler NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY eller SUPABASE_SERVICE_ROLE_KEY i miljøet. Kør med --env-file=.env.local.',
     );
     process.exit(1);
   }
@@ -305,8 +471,15 @@ async function main(): Promise<void> {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Tilfældig adgangskode pr. kørsel. Vises én gang og gemmes ikke.
-  const password = randomBytes(18).toString('base64url');
+  // DEMO_PASSWORD (valgfri) bruges til alle demo-brugere og printes ikke.
+  // Ellers genereres en tilfældig adgangskode pr. kørsel, som vises én gang.
+  const envPassword = process.env.DEMO_PASSWORD;
+  const usingEnvPassword = envPassword !== undefined && envPassword !== '';
+  if (usingEnvPassword && envPassword.length < 12) {
+    console.error('DEMO_PASSWORD skal være mindst 12 tegn.');
+    process.exit(1);
+  }
+  const password = usingEnvPassword ? envPassword : randomBytes(18).toString('base64url');
 
   console.log('Demo-seed: opretter/opdaterer demo-data (kun @demo.tandmatch.test)...');
   const existing = await listDemoUsers(admin);
@@ -329,9 +502,22 @@ async function main(): Promise<void> {
   }
   console.log(`- Patient-id: ${patientId}`);
 
+  // Forespørgsel, svar, besøg og anmeldelser oprettes gennem de eksisterende RPC'er og RLS
+  // ved at logge demo-brugerne ind (samme adgangskode som ovenfor).
+  const patientClient = await signInDemoClient(url, anonKey, patientEmail(DEMO_PATIENT.n), password);
+  const dentist1Client = await signInDemoClient(url, anonKey, dentistEmail(1), password);
+  const dentist1Id = dentistIds[0];
+  const dentist3Id = dentistIds[2];
+  await seedDemoRequest(admin, patientClient, patientId, dentist1Client, dentist1Id);
+  await seedVisitsAndReviews(admin, patientClient, patientId, dentist1Id, dentist3Id);
+
   console.log('');
-  console.log('Demo-adgangskode (vises kun denne gang, gemmes ikke):');
-  console.log(`  ${password}`);
+  if (usingEnvPassword) {
+    console.log('Adgangskode: sat via DEMO_PASSWORD (printes ikke).');
+  } else {
+    console.log('Demo-adgangskode (vises kun denne gang, gemmes ikke):');
+    console.log(`  ${password}`);
+  }
   console.log('Log ind med en af: ' + DEMO_DENTISTS.map((d) => dentistEmail(d.n)).join(', ') + ' eller ' + patientEmail(DEMO_PATIENT.n));
 }
 
