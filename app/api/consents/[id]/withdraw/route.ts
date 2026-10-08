@@ -1,8 +1,8 @@
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, parseId, withApi } from "@/server/http/api";
-import { withdrawOwnConsent } from "@/server/services/consents";
+import { requireTerms } from "@/middleware/termsGate";
+import { clearAuthCookies, requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, parseId, withApi } from "@/middleware/http";
+import { withdrawOwnConsent } from "@/controllers/consentsController";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,5 +12,9 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
   const session = await requireRole("patient", { allowAnonymous: true });
   const consentId = parseId((await ctx.params).id);
   const supabase = await createSupabaseServerClient();
-  return jsonResponse(await withdrawOwnConsent(supabase, session, consentId));
+  const result = await withdrawOwnConsent(supabase, session, consentId);
+  if (result.sessionDeleted) {
+    await clearAuthCookies();
+  }
+  return jsonResponse(result);
 });

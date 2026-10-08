@@ -1,8 +1,8 @@
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, parseId, withApi } from "@/server/http/api";
-import { getInboxDetail } from "@/server/services/inbox";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, parseId, withApi } from "@/middleware/http";
+import { getInboxDetail } from "@/controllers/inboxController";
 
 type Ctx = { params: Promise<{ requestId: string }> };
 

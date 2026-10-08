@@ -1,13 +1,11 @@
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { withApi } from "@/server/http/api";
+import { noContent, withApi } from "@/middleware/http";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { logout } from "@/controllers/authController";
 
 // Logout kræver ikke vilkårs-accept: at afslutte en session må aldrig blokeres af gaten, og routen
-// læser ingen data. Scope "local" logger kun denne enhed ud (default "global" ville logge alle enheder ud).
+// læser ingen data.
 export const POST = withApi(async () => {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signOut({ scope: "local" });
-  if (error && error.name !== "AuthSessionMissingError") {
-    throw new Error("signOut fejlede");
-  }
-  return new Response(null, { status: 204 });
+  await logout(supabase);
+  return noContent();
 });

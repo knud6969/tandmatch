@@ -1,9 +1,9 @@
 import { patchDentistSchema } from "@/lib/schemas/dentists";
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, readJson, withApi } from "@/server/http/api";
-import { getMyDentist, updateMyDentist } from "@/server/services/dentists";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, readJson, withApi } from "@/middleware/http";
+import { getMyDentist, updateMyDentist } from "@/controllers/dentistsController";
 
 // Egen tandlægeprofil (architecture 10.8). Ikke-verificerede tandlæger kan se og redigere profilen, men ikke svare.
 export const GET = withApi(async () => {

@@ -1,5 +1,5 @@
 import type { PriceRange, StandardService } from "@/lib/types/common";
-import type { TrustpilotInfo } from "@/lib/types/dentist";
+import type { TrustpilotInfo } from "@/lib/types/dentists";
 
 // Standard-sporet (architecture 10.8, 10.9). Ingen patientdata i nogen af typerne.
 export type PriceAccuracy = "as_quoted" | "slightly_higher" | "much_higher";

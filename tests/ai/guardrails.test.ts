@@ -18,7 +18,7 @@ const registerHooks = (nodeModule as unknown as {
 }).registerHooks;
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    // Alias "@/" peger på projektroden (tsconfig). Bruges af form-labels, der importerer lib/constants.
+    // Alias "@/" peger på projektroden (tsconfig). Bruges af formLabels, der importerer lib/constants.
     if (specifier.startsWith("@/")) {
       return nextResolve(new URL(`../../${specifier.slice(2)}.ts`, import.meta.url).href, context);
     }
@@ -33,14 +33,14 @@ registerHooks({
   },
 });
 
-const { maskPii, PII_MASK } = await import("../../server/ai/pii");
-const { detectOutOfScopeTopics, findForbiddenCategories } = await import("../../server/ai/forbiddenTerms");
-const { chatTurnSchema, summaryModelSchema, CHAT_TURN_JSON_SCHEMA, SUMMARY_JSON_SCHEMA } = await import("../../server/ai/schemas");
-const { runChatGuard, runSummaryGuard, CHAT_BLOCKED_TEXT } = await import("../../server/ai/guard");
-const { CATEGORY_WORDS, isEchoableWord, containsAmount } = await import("../../server/ai/forbiddenTerms");
-const { escapeForPrompt, formatFormData, wrapAssistantText, wrapPatientInput } = await import("../../server/ai/prompt-format");
-const { FORM_LABELS } = await import("../../server/ai/form-labels");
-const { AiInvalidOutputError, AiTimeoutError } = await import("../../server/ai/errors");
+const { maskPii, PII_MASK } = await import("../../services/ai/pii");
+const { detectOutOfScopeTopics, findForbiddenCategories } = await import("../../services/ai/forbiddenTerms");
+const { chatTurnSchema, summaryModelSchema, CHAT_TURN_JSON_SCHEMA, SUMMARY_JSON_SCHEMA } = await import("../../services/ai/schemas");
+const { runChatGuard, runSummaryGuard, CHAT_BLOCKED_TEXT } = await import("../../services/ai/guard");
+const { CATEGORY_WORDS, isEchoableWord, containsAmount } = await import("../../services/ai/forbiddenTerms");
+const { escapeForPrompt, formatFormData, wrapAssistantText, wrapPatientInput } = await import("../../services/ai/promptFormat");
+const { FORM_LABELS } = await import("../../services/ai/formLabels");
+const { AiInvalidOutputError, AiTimeoutError } = await import("../../services/ai/errors");
 
 const chatBase = { category: "diastema", answers: {}, history: [] as { role: "user" | "assistant"; content: string }[] };
 

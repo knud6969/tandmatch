@@ -1,9 +1,9 @@
 import { decisionSchema } from "@/lib/schemas/responses";
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, parseId, readJson, withApi } from "@/server/http/api";
-import { decideOwnResponse } from "@/server/services/responses";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
+import { decideOwnResponse } from "@/controllers/responsesController";
 
 type Ctx = { params: Promise<{ id: string }> };
 

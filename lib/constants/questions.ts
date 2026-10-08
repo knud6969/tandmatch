@@ -1,6 +1,6 @@
 // Version og server-side definition af de faste spørgsmål. De endelige spørgsmål er IKKE besluttet
-// (architecture 7.1, 12.3). Listen spejler PLACEHOLDER_QUESTIONS i frontend og er den eneste kilde
-// til validering af requests.answers. Ukendte nøgler og ukendte svarværdier afvises.
+// (architecture 7.1, 12.3). Filen er den eneste kilde til både validering af requests.answers og de danske
+// visningstekster. Ukendte nøgler og ukendte svarværdier afvises.
 export const QUESTIONS_VERSION = "v0-prototype";
 
 export const QUESTION_DEFINITIONS = {
@@ -12,11 +12,20 @@ export const QUESTION_DEFINITIONS = {
 
 export type QuestionKey = keyof typeof QUESTION_DEFINITIONS;
 
-// Visningstekster til tandlægen (labels, ikke rå nøgler). Spejler frontend-teksterne.
-export const QUESTION_LABELS: Record<
-  QuestionKey,
-  { label: string; options: Record<string, string> }
-> = {
+export type PlaceholderQuestion = {
+  key: string;
+  label: string;
+  multiple: boolean;
+  options: { value: string; label: string }[];
+};
+
+// Danske visningstekster. Typen tvinger en tekst for hver nøgle og værdi i QUESTION_DEFINITIONS.
+type QuestionText<K extends QuestionKey> = {
+  label: string;
+  options: Record<(typeof QUESTION_DEFINITIONS)[K]["options"][number], string>;
+};
+
+const QUESTION_TEXT: { [K in QuestionKey]: QuestionText<K> } = {
   aendring: {
     label: "Hvad vil du gerne have ændret?",
     options: { placering: "Placering eller mellemrum", farve: "Farve", form: "Form eller længde", andet: "Andet" },
@@ -34,3 +43,20 @@ export const QUESTION_LABELS: Record<
     options: { hurtigst: "Hurtigst muligt", "3_mdr": "Inden for 3 måneder", undersoeger: "Jeg undersøger bare" },
   },
 };
+
+// Opslag til visning af gemte svar (fx i tandlægens indbakke).
+export const QUESTION_LABELS: Record<QuestionKey, { label: string; options: Record<string, string> }> = QUESTION_TEXT;
+
+export const PLACEHOLDER_QUESTIONS: PlaceholderQuestion[] = (Object.keys(QUESTION_DEFINITIONS) as QuestionKey[]).map(
+  (key) => {
+    const definition = QUESTION_DEFINITIONS[key];
+    const text = QUESTION_TEXT[key];
+    return {
+      key,
+      label: text.label,
+      multiple: definition.multiple,
+      // Typen i QuestionText sikrer, at alle værdier har tekst; opslaget er bredt, fordi key-union ikke kan indekseres pr. nøgle.
+      options: definition.options.map((value) => ({ value, label: (text.options as Record<string, string>)[value] })),
+    };
+  },
+);

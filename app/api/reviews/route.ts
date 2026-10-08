@@ -1,9 +1,9 @@
 import { createReviewSchema } from "@/lib/schemas/standard";
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, readJson, withApi } from "@/server/http/api";
-import { submitReview } from "@/server/services/reviews";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, readJson, withApi } from "@/middleware/http";
+import { submitReview } from "@/controllers/reviewsController";
 
 // Patienten anmelder et verificeret besøg. Status er pending til moderation (architecture 8.5, 10.9).
 export const POST = withApi(async (req) => {

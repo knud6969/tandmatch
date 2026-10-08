@@ -1,26 +1,13 @@
-import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
-import type { TermsStatusDto } from "@/lib/types/auth";
-import { readCurrentTermsCookie } from "@/server/auth/terms";
-import { getSession } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { hasCurrentTermsAcceptance } from "@/server/models/terms";
-import { jsonResponse, withApi } from "@/server/http/api";
+import { jsonResponse, withApi } from "@/middleware/http";
+import { getSession } from "@/middleware/session";
+import { readCurrentTermsCookie } from "@/middleware/termsGate";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { getTermsStatus } from "@/controllers/termsController";
 
-// Undtaget fra vilkårs-gaten. Svarer kun om den aktuelle accept findes.
+// Undtaget fra vilkårs-gaten. Sessionen hentes kun, hvis cookien ikke allerede viser en gyldig accept.
 export const GET = withApi(async () => {
-  let accepted = (await readCurrentTermsCookie()) !== null;
-
-  if (!accepted) {
-    const session = await getSession();
-    if (session) {
-      const supabase = await createSupabaseServerClient();
-      accepted = await hasCurrentTermsAcceptance(supabase, session.userId);
-    }
-  }
-
-  const body: TermsStatusDto = {
-    current: { termsVersion: TERMS_VERSION, privacyVersion: PRIVACY_VERSION },
-    accepted,
-  };
-  return jsonResponse(body);
+  const hasValidCookie = (await readCurrentTermsCookie()) !== null;
+  const session = hasValidCookie ? null : await getSession();
+  const supabase = await createSupabaseServerClient();
+  return jsonResponse(await getTermsStatus(supabase, hasValidCookie, session));
 });

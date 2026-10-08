@@ -1,8 +1,8 @@
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, withApi } from "@/server/http/api";
-import { exportOwnData } from "@/server/services/export";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, withApi } from "@/middleware/http";
+import { exportOwnData } from "@/controllers/exportController";
 
 // Dataeksport for egen konto (GDPR). Også for anonyme, så en patient kan se sin kladde før kontooprettelse.
 export const GET = withApi(async () => {

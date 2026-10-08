@@ -1,9 +1,9 @@
 import { createReplySchema } from "@/lib/schemas/standard";
-import { requireTerms } from "@/server/auth/terms";
-import { requireRole } from "@/server/auth/session";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, parseId, readJson, withApi } from "@/server/http/api";
-import { submitReviewReply } from "@/server/services/reviews";
+import { requireTerms } from "@/middleware/termsGate";
+import { requireRole } from "@/middleware/session";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
+import { submitReviewReply } from "@/controllers/reviewsController";
 
 type Ctx = { params: Promise<{ id: string }> };
 

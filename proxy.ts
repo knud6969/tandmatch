@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/server/db/config";
-import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/server/auth/terms-cookie";
+import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/models/db/config";
+import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/middleware/termsCookie";
 import { safeInternalPath } from "@/lib/navigation/paths";
 
 // Sider der altid er tilgængelige uden vilkårs-accept (architecture 2.5, 6.1).

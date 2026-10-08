@@ -1,6 +1,6 @@
 # TandMatch: arkitektur
 
-Version: 1.0 (2026-10-06). Nyt i 1.0: trin 3 (responses, tandlægeprofil, klinik, indbakke og svar-routes, dentist-views), billeder kun via service role, svarets livscyklus, sikkerhedshærdning (rate limit, consents, cron GET/POST, anon uden EXECUTE) og trin 2-3-migrationer. 0.9 (2026-10-06): AI-skrivninger via service role (`append_assistant_message()`, `store_ai_summary()`), `summary_text` låst og ændret kun via `approve_summary()`, lofter for opsummering samlet i `consume_summary_generation()`, `QUESTION_DEFINITIONS` som eneste spørgsmålskilde, assistentbeskeder kun via server, og trin 2-migrationer. 0.8 (2026-10-05) afspejlede trin 2 som committet på `feat/skelet` (e5a78da): DB-lofter for chat, storage-regel for kladder, nye tabeller og funktioner, `/api/session/anonymous` uden `imageConsent`, kladde-oprettelse, anonym-blokering af `POST /api/requests`, og markering af endnu ikke implementerede routes.
+Version: 1.1 (2026-10-08). Nyt i 1.1: MVC-mappestruktur (`app/` kun routing, `middleware/`, `controllers/`, `services/`, `models/`, `views/`, `lib/`) med lagregler håndhævet af ESLint (2.1-2.2). 1.0 (2026-10-06): trin 3 (responses, tandlægeprofil, klinik, indbakke og svar-routes, dentist-views), billeder kun via service role, svarets livscyklus, sikkerhedshærdning (rate limit, consents, cron GET/POST, anon uden EXECUTE) og trin 2-3-migrationer. 0.9 (2026-10-06): AI-skrivninger via service role (`append_assistant_message()`, `store_ai_summary()`), `summary_text` låst og ændret kun via `approve_summary()`, lofter for opsummering samlet i `consume_summary_generation()`, `QUESTION_DEFINITIONS` som eneste spørgsmålskilde, assistentbeskeder kun via server, og trin 2-migrationer. 0.8 (2026-10-05) afspejlede trin 2 som committet på `feat/skelet` (e5a78da): DB-lofter for chat, storage-regel for kladder, nye tabeller og funktioner, `/api/session/anonymous` uden `imageConsent`, kladde-oprettelse, anonym-blokering af `POST /api/requests`, og markering af endnu ikke implementerede routes.
 Tidligere: 0.7 låste beslutninger før trin 2: wizarden ligger under `/start/[requestId]`; billedsamtykke gives kun lige før upload (ikke på `/start`); oprydning af anonyme sessioner via `/api/cron/cleanup-anonymous`; AI-laget placeres i `server/ai/` (`sendChatTurn`).
 Tidligere: 0.6 Ændret i forhold til 0.5: tilpasset reviewer-rettelserne i trin 1 (logout uden vilkårs-gate og med `scope: "local"`, server-side områdevagt `guardArea()`, `AnonymousPatientBanner` på `/start`, samtykker gemmes samlet ved anonym start med oprydning ved fejl og retry).
 Tidligere: 0.5 Ændret i forhold til 0.4: tilpasset den implementerede kode fra trin 1 (proxy springer `/api/*` over, `touch_last_active()`, `clinics.created_by`, tandlægerække oprettes af signup-trigger, påkrævede signup-felter, versionsnavn `v0-prototype`, anonym session uden kladde i trin 1, Supabase-opsætning, validering af `naeste`, udskudte seed-/cron-opgaver).
@@ -77,58 +77,80 @@ Punkter i højre kolonne skal afklares **før rigtige brugere**, men blokerer ik
 ## 2. Systemarkitektur (MVC, adskilt frontend og backend)
 
 ```
-Browser (View)                Next.js server                          Eksterne
------------------             ------------------------------------    ---------------
-app/(sider)  ── fetch JSON ─> app/api/**/route.ts  (Controller)
-components/                     │  auth-tjek, zod-validering,
-                                │  rolle-tjek, DTO-formning
-                                v
-                              server/services/*   (forretningslogik) 
-                                │  images, requests, accounts, matching, reviews
-                              server/ai/*         (AI-lag, egen mappe) ──> OpenAI API
-                                v
-                              server/models/*     (Model / data)   ──> Supabase Postgres (RLS, EU)
-                                                                   ──> Supabase Storage (privat, EU)
+Browser                       Next.js server                                    Eksterne
+-----------------             ----------------------------------------------    ---------------
+views/pages, views/components
+   │ fetch JSON (views/utils/api-client)
+   v
+app/api/**/route.ts   (Route)       vilkår, session/rolle, parse params/body/query  ── middleware/*
+   │ kalder præcis én controller-funktion
+   v
+controllers/*Controller.ts          forretningsflow pr. ressource, tjek af regler,
+   │                                 DTO-formning, oversættelse af fejl
+   ├──> services/ai/*  (Service)    AI-lag (chat, opsummering, prompts, filter)  ──> OpenAI API
+   v
+models/*Model.ts      (Model)       al dataadgang: tabeller, RPC og storage      ──> Supabase Postgres (RLS, EU)
+models/db/*                          Supabase-klienter og db-fejl                 ──> Supabase Storage (privat, EU)
 ```
+
+`app/` indeholder kun det, Next.js kræver for routing (sider, layouts, `route.ts`). Al øvrig kode ligger i lagene nedenfor.
 
 ### 2.1 Regler for lagene
 
-- **View (frontend):** `app/` sider og `components/`. Client components henter og skriver **kun** via `/api/*` med `fetch` og JSON. Frontend importerer aldrig noget fra `server/` og bruger aldrig Supabase-klienten til at læse/skrive tabeller eller storage.
-  - Login/logout, anonym session og konvertering til konto går også via API'et (`/api/auth/*`, `/api/session/*`), så sessionen sættes som cookie af serveren.
-  - Server components (layouts) må kalde `server/auth/getSession()` for at lave rolle-redirects. De henter ikke forretningsdata direkte; data hentes via API'et. Begrundelse: ét mønster for hele holdet.
-- **Controller:** `app/api/**/route.ts`. Hver route: (1) henter session, (2) tjekker rolle, (3) validerer input med zod, (4) kalder service/model, (5) returnerer DTO som JSON. Ingen SQL i routes.
-- **Service:** `server/services/*` (images, requests, accounts, matching, reviews). Forretningslogik: billedbehandling, kladder og afsendelse, konti, matching via RPC, prisnøjagtighed.
-- **AI-lag:** `server/ai/*` (chat, opsummering, prompts, filter). Ligger **ikke** under `services/`, så AI-koden kan udvikles og testes separat (7.2). Chat-routen kalder `sendChatTurn(...)` og kender ikke til prompts eller OpenAI.
-- **Model:** `server/models/*`. Al databaseadgang. Bruger Supabase server-klienten **med brugerens JWT**, så RLS altid gælder. Service role-nøglen bruges kun i de tilfælde, der står i 2.3.
-- Alle filer i `server/` starter med `import "server-only"`.
+| Lag | Mappe | Ansvar | Må importere |
+|---|---|---|---|
+| Routing | `app/` | `page.tsx` re-eksporterer en side fra `views/pages/`. `layout.tsx` kalder områdevagten (`guardArea`/`guardWizard`). `route.ts`: (1) `requireTerms()`, (2) `requireSession()`/`requireRole()`/`requireParticipant()`/`requireAnonymous()`/`requireAccount()`, (3) evt. `enforceIpRateLimit()`, (4) `parseId`/`readJson`/`readQuery`, (5) kalder **én** controller-funktion, (6) returnerer JSON. Cookies sættes og slettes her (vilkårs-cookien, `clearAuthCookies()` efter sletning). Undtagelser: `/api/session/anonymous` rate-limiter efter validering, fordi grænsen kun gælder, når der ikke er en session; billedupload sender en læser (`imageFileReader`) til controlleren, så filen først læses efter samtykketjekket (9.3). Ingen forretningslogik og ingen modelkald. | `middleware/`, `controllers/`, `views/`, `lib/`, og fra `models/` kun `createSupabaseServerClient` |
+| Middleware | `middleware/` | Tværgående request-håndtering: `http.ts` (`ApiError`, `withApi`, `readJson`, `readQuery`, `rejectLargeImage`, `imageFileReader`, `parseId`, `jsonResponse`, `noContent`), `session.ts` (`getSession`, `requireSession`, `requireRole`, `requireParticipant`, `requireAnonymous`, `requireAccount`, `clearAuthCookies`), `termsGate.ts`, `termsCookie.ts`, `rateLimit.ts`, `cron.ts`, `areaGuard.ts` (`guardArea`, `guardWizard`). | `models/`, `lib/` |
+| Controller | `controllers/` | Én fil pr. ressource (`requestsController.ts`, `chatController.ts` …). Modtager en Supabase-klient, sessionen og **typet, valideret input** (aldrig `Request`, aldrig cookies). Tjekker forretningsregler, kalder models og services, returnerer DTO'er. Controllers kalder ikke hinanden. Opretter kun admin-klienten i de tilfælde, der står i 2.3. | `models/`, `services/`, `middleware/http`, `lib/` |
+| Service | `services/` | Logik, som flere controllers deler, og eksterne integrationer: `services/ai/` (chat, opsummering, prompts, filter, OpenAI-klient), `imageProcessing.ts` (sharp: tjek af filtype, re-encoding, EXIF fjernes), `accountDeletion.ts` (sletning af konto og billedfiler). Controlleren kalder `sendChatTurn(...)`/`generateSummary(...)` og kender ikke til prompts eller OpenAI. | `models/`, `lib/`, `middleware/http` (kun `ApiError`) |
+| Model | `models/` | Én fil pr. tabel/aggregat (`requestsModel.ts` …), plus `authModel.ts` (Supabase Auth). **Eneste lag, der kalder Supabase** (tabeller, RPC, storage og auth). `require*`-funktioner (`requireOwnRequest`, `requireVerifiedDentist`) henter en række og kaster 404/403. Mapper `snake_case` til `camelCase`. Bruger brugerens JWT, så RLS altid gælder. `models/db/` har klienterne (`createSupabaseServerClient`, `createSupabaseAdminClient`), env-konfiguration og `mapDbError`. | `models/db/`, `middleware/http` (kun `ApiError`), `lib/` |
+| View | `views/` | `views/pages/` (sideindhold), `views/components/` (UI) og `views/utils/` (fetch-klient `api-client.ts`, fejltekster `api-errors.ts`, `field-errors.ts`, `format.ts`). Henter og skriver **kun** via `/api/*` med `views/utils/api-client`. | `views/`, `lib/` |
+| Delt | `lib/` | Kode uden afhængigheder til andre lag, brugt af både views og server: `types/` (DTO'er pr. ressource), `schemas/` (zod pr. ressource), `constants/` (én fil pr. domæne med både værdier og danske visningsnavne), `navigation/`, `domain/` (regler der skal være ens i UI og server). | `lib/` |
+
+- Alle filer i `middleware/`, `controllers/`, `services/` og `models/` starter med `import "server-only"`. Undtaget er de rene funktioner i `services/ai/` (`errors.ts`, `forbiddenTerms.ts`, `formLabels.ts`, `guard.ts`, `pii.ts`, `promptFormat.ts`, `schemas.ts`, `prompts/`), som testes direkte i `tests/ai/`.
+- Reglerne i kolonnen "Må importere" håndhæves af ESLint (`no-restricted-imports` i `eslint.config.mjs`). Type-imports er tilladt på tværs af lag. Imports bruger `@/...`; relative imports op ad træet (`../`) er forbudt, så reglerne ikke kan omgås.
+- Kode, der kun bruges af views, hører til i `views/utils/`, ikke i `lib/`.
+- Login/logout, anonym session og konvertering til konto går via API'et (`/api/auth/*`, `/api/session/*`), så sessionen sættes som cookie af serveren.
+- Navngivning: serverlagene bruger `camelCase`-filnavne (`requestsModel.ts`), `views/` og `lib/` bruger `kebab-case` (`dentist-card.tsx`).
+- Ny ressource: tilføj `lib/types/<x>.ts`, `lib/schemas/<x>.ts`, `models/<x>Model.ts`, `controllers/<x>Controller.ts`, `app/api/<x>/route.ts` og evt. `views/pages/...` med en re-eksport i `app/`.
 
 ### 2.2 Mappestruktur
 
 ```
-app/
-  (offentlig)/            forside (med chat-indgang), login, opret, tandlægeliste, tandlægeprofil
-  patient/                patientflade (beskyttet, rolle = patient)
-  tandlaege/              tandlægeflade (beskyttet, rolle = dentist)
-  admin/                  moderation (beskyttet, rolle = admin)
-  api/                    controllers
-components/               UI-komponenter og designsystem (inkl. ChatPanel)
+app/                      kun Next.js-routing
+  layout.tsx, globals.css
+  <rute>/page.tsx         export { default, metadata } from "@/views/pages/<rute>/page"
+  patient/layout.tsx      guardArea("patient", …)
+  tandlaege/layout.tsx    guardArea("dentist", …)
+  start/[requestId]/layout.tsx  guardWizard()
+  api/**/route.ts         tynde routes (2.1)
+middleware/               http.ts, session.ts, termsGate.ts, termsCookie.ts, rateLimit.ts, cron.ts, areaGuard.ts
+controllers/              <ressource>Controller.ts
+services/
+  ai/                     chat.ts (sendChatTurn), summary.ts, openai.ts, guard.ts, forbiddenTerms.ts, pii.ts, schemas.ts,
+                          errors.ts, formLabels.ts, promptFormat.ts, prompts/
+  imageProcessing.ts      sharp: filtype, re-encoding, EXIF fjernes
+  accountDeletion.ts      sletning af konto, billedfiler og auth-bruger
+models/
+  db/                     supabase.ts (brugerens JWT), admin.ts (service role, kun 2.3), config.ts, errors.ts (mapDbError)
+  authModel.ts            Supabase Auth (login, signup, anonym, logout, sletning af auth-bruger)
+  <ressource>Model.ts     dataadgang pr. tabel, RPC og storage
+views/
+  pages/                  sideindhold, spejler ruterne i app/
+  components/             ui/, layout/, auth/, patient/, dentist/, standard/, wizard/, chat/, responses/, session/, start/
+  utils/                  api-client.ts, api-errors.ts, field-errors.ts, format.ts
 lib/
-  types/                  delte DTO-typer (importeres af både frontend og server)
-  schemas/                zod-skemaer for request bodies (delte)
-  constants/              kategorier, spørgsmål, samtykketekster, faste AI-meddelelser (versionerede)
-server/
-  db/                     supabase-klienter: server (brugerens JWT, standard) og admin (service role, kun de tilfælde i 2.3)
-  auth/                   getSession, requireRole
-  models/                 dataadgang pr. tabel
-  ai/                     chat.ts (sendChatTurn), summary.ts, prompts/, forbiddenTerms.ts (låst i 0.7)
-  services/               images/, requests/, accounts/, matching/, reviews/
-  (Strukturen er en pragmatisk start. Vi flytter senere til en mere MVC-agtig opdeling, men stierne ovenfor er det, der gælder nu.)
+  types/                  delte DTO-typer
+  schemas/                zod-skemaer for request bodies og query-parametre
+  constants/              categories, consents, questions, standard, inbox, limits, legal, sessions, ai-texts
+  navigation/             områder og sikre redirect-stier
+  domain/                 regler delt af UI og server (fx isOpenForResponses)
 supabase/
   migrations/             SQL, én fil pr. ændring
-  seed.sql                fiktive demodata
 tests/
   ai/                     provokationstests for chat og opsummering
   rls/                    RLS-tests (afsnit 5.6)
+scripts/                  seed-demo.ts, unseed-demo.ts
 proxy.ts                  session-refresh og grov rolle-redirect (Next 16: tidligere middleware.ts)
 ```
 
@@ -138,7 +160,7 @@ proxy.ts                  session-refresh og grov rolle-redirect (Next 16: tidli
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | server (og evt. klient) | Offentlig |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | server (og evt. klient) | Offentlig af design, beskyttet af RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | kun server, kun via `createSupabaseAdminClient()` (`server/db/`) | Må **kun** bruges til: (a) AI-skrivninger `append_assistant_message()` og `store_ai_summary()` (kun `service_role` må kalde dem, 5.1), (b) sletning af auth-bruger ved kontosletning eller sletning af anonym session, (c) oprydningsjobbet for udløbne anonyme sessioner (7.7), (d) seed-script, (e) admin-scripts. Aldrig i almindelige request-flows |
+| `SUPABASE_SERVICE_ROLE_KEY` | kun server, kun via `createSupabaseAdminClient()` (`models/db/`) | Må **kun** bruges til: (a) AI-skrivninger `append_assistant_message()` og `store_ai_summary()` (kun `service_role` må kalde dem, 5.1), (b) sletning af auth-bruger ved kontosletning eller sletning af anonym session, (c) oprydningsjobbet for udløbne anonyme sessioner (7.7), (d) seed-script, (e) admin-scripts. Aldrig i almindelige request-flows |
 | `OPENAI_API_KEY` | kun server | |
 | `OPENAI_MODEL` | kun server | Model med vision + structured outputs. Ikke hardcodet |
 | `CRON_SECRET` | kun server | Beskytter `/api/cron/cleanup-anonymous` |
@@ -167,7 +189,7 @@ Koden forudsætter følgende indstillinger i Supabase-projektet. De sættes manu
 ### 2.4 Fælles API-konventioner
 
 - JSON ind og ud. Datoer som ISO 8601-strenge (UTC). Beløb i hele kroner (`integer`, DKK).
-- Feltnavne i JSON: `camelCase`. Kolonner i databasen: `snake_case`. Mapping sker i `server/models`.
+- Feltnavne i JSON: `camelCase`. Kolonner i databasen: `snake_case`. Mapping sker i `models/`.
 - Fejlformat for alle routes:
   ```ts
   type ApiError = { error: { code: string; message: string } }; // message på dansk, uden interne detaljer
@@ -187,7 +209,7 @@ Alle, også besøgende uden session og anonyme patienter, skal acceptere **bruge
 
 **Håndhævelse:**
 - **Sider:** `proxy.ts` tjekker for alle sider, at `tm_terms` er gyldig (signatur) og har de aktuelle versioner. Ellers redirect til `/vilkaar/accepter?naeste=<sti>`. Undtaget: alt under `/vilkaar` (inkl. `/vilkaar/accepter`), `/privatliv` og statiske filer.
-- **API:** `proxy.ts` lader **alle `/api/*`-kald passere uden vilkårstjek** (en redirect til en HTML-side ville ødelægge `fetch`-kald, og en bruger med session på en ny enhed har ingen cookie, men kan have en accept i databasen). Hver API-route håndhæver i stedet selv gaten via `requireTerms()` i `server/auth/` (kaldes før `requireRole`): gyldig cookie **eller**, for brugere med session, en række i `terms_acceptances` for de aktuelle versioner. Mangler begge, svarer routen **403 `TERMS_REQUIRED`** (JSON, ingen redirect). Har brugeren session og gyldig cookie, men ingen række, indsættes rækken. Undtaget fra `requireTerms()`: `/api/terms/*`, `/api/cron/*` og **`POST /api/auth/logout`** (besluttet i 0.6: at afslutte en session må aldrig blokeres, og routen læser ingen data).
+- **API:** `proxy.ts` lader **alle `/api/*`-kald passere uden vilkårstjek** (en redirect til en HTML-side ville ødelægge `fetch`-kald, og en bruger med session på en ny enhed har ingen cookie, men kan have en accept i databasen). Hver API-route håndhæver i stedet selv gaten via `requireTerms()` i `middleware/termsGate.ts` (kaldes før `requireRole`): gyldig cookie **eller**, for brugere med session, en række i `terms_acceptances` for de aktuelle versioner. Mangler begge, svarer routen **403 `TERMS_REQUIRED`** (JSON, ingen redirect). Har brugeren session og gyldig cookie, men ingen række, indsættes rækken. Undtaget fra `requireTerms()`: `/api/terms/*`, `/api/cron/*` og **`POST /api/auth/logout`** (besluttet i 0.6: at afslutte en session må aldrig blokeres, og routen læser ingen data).
 - **`naeste`-parameteren** valideres både i `/vilkaar/accepter` og efter accept: den skal være en **relativ sti** på samme site (starter med én `/`, ikke `//`, ingen `\`, intet skema/host). Ugyldige værdier erstattes med `/`. Det forhindrer åben redirect.
 - Session-oprettende routes afviser med 403 `TERMS_REQUIRED`, hvis der ikke er gyldig accept.
 
@@ -731,7 +753,7 @@ Slugs er danske uden æøå. Alle sider er mobile-first og skal tjekkes ved 390 
 
 Alle sider kræver permanent konto (områdevagt, 6.5). Wizarden ligger **ikke** her, men på `/start/[requestId]` (6.1), fordi `guardArea` afviser anonyme i hele `/patient`, og én wizard-route for alle er enklest.
 
-**Spørgsmål (0.9):** `QUESTION_DEFINITIONS` i `lib/constants/questions.ts` er den **eneste kilde** til faste spørgsmål og valgmuligheder. `placeholder-questions.ts` udleder sin liste fra den og har ingen egen kopi. Wizardens trin 2 og valideringen af `answers` (10.4) bruger samme definition. Endelige spørgsmål ændres kun dér (12.3 punkt 11).
+**Spørgsmål (0.9):** `QUESTION_DEFINITIONS` i `lib/constants/questions.ts` er den **eneste kilde** til faste spørgsmål og valgmuligheder. De danske visningstekster ligger i samme fil, og `PLACEHOLDER_QUESTIONS`/`QUESTION_LABELS` udledes derfra. Wizardens trin 2 og valideringen af `answers` (10.4) bruger samme definition. Endelige spørgsmål ændres kun dér (12.3 punkt 11).
 
 | Route | Indhold |
 |---|---|
@@ -763,11 +785,12 @@ Alle sider kræver permanent konto (områdevagt, 6.5). Wizarden ligger **ikke** 
 ### 6.5 Beskyttelse af sider
 
 - `proxy.ts` (i denne rækkefølge): (0) `/api/*` passerer uændret (API'et håndhæver selv vilkår og roller, 2.5), (1) vilkårs-gate for sider: uden gyldig `tm_terms`-cookie med aktuelle versioner -> `/vilkaar/accepter?naeste=...` (undtagelser i 2.5), (2) opfrisker session, (3) redirecter groft (`/patient/*`, `/tandlaege/*`, `/admin/*` uden session -> `/login`).
-- **Områdevagt (implementeret, 0.6):** `/patient` og `/tandlaege` har hver et **server-layout**, der kalder `guardArea(role, area)` (`app/_lib/guard-area.ts`), før noget indhold renderes. `guardArea` kalder `requireRole(role)` fra `server/auth/session.ts` og oversætter fejlen til en redirect:
+- **Områdevagt (implementeret, 0.6):** `/patient` og `/tandlaege` har hver et **server-layout**, der kalder `guardArea(role, area)` (`middleware/areaGuard.ts`), før noget indhold renderes. `guardArea` kalder `requireRole(role)` fra `middleware/session.ts` og oversætter fejlen til en redirect:
   - ikke logget ind (`UNAUTHENTICATED`) -> `/login?naeste=<område>`,
   - anonym patient (`ANONYMOUS_NOT_ALLOWED`) -> `/opret/patient`,
   - forkert rolle (`FORBIDDEN`) -> brugerens eget område (`AREA_HOME[role]`).
   `/admin` skal have samme mekanisme, når området bygges.
+- **Wizard-vagt (1.1):** `/start/[requestId]` har sit eget layout (`app/start/[requestId]/layout.tsx`), der kalder `guardWizard()` (patient, anonym tilladt). Begrænsning, som gælder alle layout-vagter i Next.js: et layout køres ikke igen ved klientside-navigation, og siden renderes parallelt med layoutet. Det er acceptabelt, fordi siderne ikke selv henter data; alle data kommer fra API'et, som tjekker rolle og ejerskab ved hvert kald.
 - Der er **ingen klientside rollevagt** (den tidligere `RoleGate` er fjernet). Navigationen i headeren viser stadig links ud fra rollen, men det er kun UI; adgang afgøres af layout-vagten og af API/RLS.
 - **Anonyme patienter kommer aldrig ind i `/patient`** (layout-vagten afviser dem i hele området). Derfor vises status for den anonyme session (`AnonymousPatientBanner`: "gemmes i 48 timer", opret konto, slet) på `/start`. Derfor ligger wizarden på `/start/[requestId]` med sin egen server-vagt, der tillader anonyme ejere (låst i 0.7, 6.1).
 - Hver API-route tjekker selv rolle og ejerskab. UI-beskyttelse er kun bekvemmelighed.
@@ -821,9 +844,9 @@ Intet budget-spørgsmål i MVP. Spørgsmålene handler om ønsker og historik, a
 
 ### 7.2 Hvad sendes til OpenAI
 
-Bygges i `server/ai/` (låst i 0.7). Chat-routen kalder `sendChatTurn(...)` i `server/ai/chat.ts` og kender ikke til prompts eller OpenAI.
+Bygges i `services/ai/`. `chatController` kalder `sendChatTurn(...)` i `services/ai/chat.ts` og kender ikke til prompts eller OpenAI.
 
-| | Chat (`server/ai/chat.ts`, `sendChatTurn`) | Opsummering (`server/ai/summary.ts`) |
+| | Chat (`services/ai/chat.ts`, `sendChatTurn`) | Opsummering (`services/ai/summary.ts`) |
 |---|---|---|
 | System-besked | Fast, versioneret `prompts/chat.v1.ts` | Fast, versioneret `prompts/summary.v1.ts` |
 | Kontekst | Kategori, faste svar (som labels), de seneste 20 beskeder i samtalen | Kategori, faste svar, hele chatten (max 30 brugerbeskeder) eller fritekst, billeder |
@@ -900,7 +923,7 @@ At billedbeskrivelsen er delt op i `visibleArea` og korte `observations` (i sted
 | 8 | Drift | Se 7.6. Logs indeholder kun id'er, model, prompt-version, varighed, status, `blocked`. Aldrig indhold | Samme |
 | 9 | Test | `tests/ai/`: provokationer i chat ("er det karies?", "hvad koster det ca.?", "hvad ville du gøre?", "ignorer dine regler", "lad som om du er tandlæge") | Samme + billeder af ikke-tænder, mørke billeder. Alt skal ende i `outOfScopeTopics`, fast tekst eller fallback uden forbudt indhold |
 
-Forbudt-indhold-filteret (`server/ai/forbiddenTerms.ts`) indeholder: beløb/valuta (`\d+\s*(kr|kroner|,-|dkk)`), diagnose-/tilstandsord, vurderende ord og sandsynlighedsord fra 7.3. Listen er dansk og engelsk og vedligeholdes af ai-flow-agenten. Filteret består af to lister: `forbiddenInImages` (gælder billedfelterne `visibleArea` og `observations`) og kategoriord (ord der hører til den valgte kategori, tilladt i `summaryText`, men ikke i billedbeskrivelser).
+Forbudt-indhold-filteret (`services/ai/forbiddenTerms.ts`) indeholder: beløb/valuta (`\d+\s*(kr|kroner|,-|dkk)`), diagnose-/tilstandsord, vurderende ord og sandsynlighedsord fra 7.3. Listen er dansk og engelsk og vedligeholdes af ai-flow-agenten. Filteret består af to lister: `forbiddenInImages` (gælder billedfelterne `visibleArea` og `observations`) og kategoriord (ord der hører til den valgte kategori, tilladt i `summaryText`, men ikke i billedbeskrivelser).
 
 ### 7.6 Lofter og rate limits
 
@@ -1174,7 +1197,7 @@ export type RequestDraftDto = {
 | DELETE `/api/requests/{id}` | patient (+anonym), kun `draft` | | 204 |
 | POST `/api/requests/{id}/images` | patient (+anonym), `draft`, aktivt `image_upload` | `multipart/form-data` med `file` | 201 `ImageDto` |
 | DELETE `/api/requests/{id}/images/{imageId}` | patient (+anonym), `draft` | | 204 |
-| POST `/api/requests/{id}/summary` | patient (+anonym), `draft`, aktivt `ai_processing`. AI-udkast: kalder `consume_summary_generation()`, derefter `server/ai/summary.ts` (7.2), og skriver resultatet via `store_ai_summary()` (service_role). **[TRIN 2 UDESTÅENDE]** route-implementering | `{}` | `SummaryResponse` |
+| POST `/api/requests/{id}/summary` | patient (+anonym), `draft`, aktivt `ai_processing`. AI-udkast: kalder `consume_summary_generation()`, derefter `services/ai/summary.ts` (7.2), og skriver resultatet via `store_ai_summary()` (service_role). **[TRIN 2 UDESTÅENDE]** route-implementering | `{}` | `SummaryResponse` |
 | PUT `/api/requests/{id}/summary` | patient (+anonym), `draft`. Kalder `approve_summary()` (5.3), den eneste vej til `summary_text` | `{ summaryText: string }` (max 1500) | `{ summaryText, summaryApprovedAt }` |
 | POST `/api/requests/{id}/send` | **kun patient med konto**, `draft`, godkendt opsummering, aktivt `health_data_sharing`. **[TRIN 2 UDESTÅENDE]** Kræver seed af `postal_codes` og tandlæger; uden match svares 409 `NO_MATCHES` | `{}` | `{ status: "sent", recipientCount, expiresAt }`; 403 `ACCOUNT_REQUIRED` for anonyme; 409 `NO_MATCHES` |
 | POST `/api/requests/{id}/close` | patient. **[TRIN 2 UDESTÅENDE]** | | `{ status: "closed" }` |
@@ -1478,7 +1501,7 @@ I v0.9 (efter service role-rettelser i trin 2):
 - **Assistentbeskeder:** patienten kan kun indsætte `role='user'` (policy `ai_messages_insert_own_user`). Assistentsvar skrives af serveren (4.3, 5.4, 7.2).
 - **Låst opsummering:** `summary_text` ændres kun via `approve_summary()`. `store_ai_summary()` skriver kun AI-udkastet (4.3, 5.3).
 - **Lofter:** `consume_summary_generation()` tjekker kladde, forespørgselsloft, døgnloft og globalt anonymt loft i samme transaktion; fejl ruller tilbage. Værdierne står i `ai_limits` (7.6).
-- **Spørgsmål:** `QUESTION_DEFINITIONS` i `lib/constants/questions.ts` er eneste kilde. `placeholder-questions.ts` udleder fra den (6.2).
+- **Spørgsmål:** `QUESTION_DEFINITIONS` i `lib/constants/questions.ts` er eneste kilde. Visningsteksterne ligger i samme fil (6.2).
 - **Migrationer:** `20261006120000` til `20261006120300` køres i nummerorden (11).
 - **Guardrails:** filteret har to lister, `forbiddenInImages` og kategoriord (7.5). Ingen ændring i de overordnede regler.
 
@@ -1489,13 +1512,13 @@ I v0.8 (trin 2 implementeret, e5a78da):
 - **Samtykke-tidspunkt for billeder:** `request_images.created_at` (4.3, 9.3).
 - **Anonyme:** `POST /api/requests` afvises (403 `ANONYMOUS_NOT_ALLOWED`); kladden oprettes af `/api/session/anonymous`, som ikke længere tager `imageConsent` (10.2, 10.4).
 - **Ikke implementeret endnu:** summary-route, `/close`, dentist-visning af forespørgsler (trin 3), `/api/consents/{id}/withdraw` (trin 6), og `/send` der kræver seed af `postal_codes` og tandlæger.
-- **Serverstruktur:** `server/services/` bruges til images, requests, accounts (og senere matching, reviews). AI-kode ligger i `server/ai/` (2.2). Stien rettes ikke for at matche en plan; flytning til en mere MVC-agtig struktur er senere.
+- **Serverstruktur:** `server/services/` bruges til images, requests, accounts (og senere matching, reviews). AI-kode ligger i `server/ai/` (2.2). Stien rettes ikke for at matche en plan; flytning til en mere MVC-agtig struktur er senere. *(Erstattet i 1.1: se 2.1-2.2.)*
 
 I v0.7 (låst før trin 2):
 - **Wizarden ligger på `/start/[requestId]`** for både anonyme og patienter med konto. Begrundelse: `guardArea` afviser anonyme i hele `/patient` (6.5), og én wizard-route er enklere end en undtagelse i områdevagten.
 - **Billedsamtykke gives kun lige før første upload**, som særskilt samtykke i billedtrinnet. Ikke på `/start`, ikke sammen med AI-samtykke eller vilkårs-accept. Vilkårs-accept er stadig separat (2.5). Konsekvens for koden: `imageConsent` er fjernet fra `/api/session/anonymous` i trin 2 (implementeret).
 - **Oprydning af anonyme sessioner:** `POST /api/cron/cleanup-anonymous`, beskyttet med `CRON_SECRET` fra miljøvariabel, sletter alt (billeder, chat, kladde, samtykker) for anonyme brugere 48 timer efter `last_active_at` (10.2, 7.7). Bygges i trin 2 før anonym billedupload.
-- **AI-lagets placering:** `server/ai/chat.ts` med funktionen `sendChatTurn(...)`, så chat-routen (`app/api/requests/[id]/chat`) og AI-laget kan bygges uafhængigt af hver sin agent. Routen står for auth, samtykke-/loftstjek og lagring; `sendChatTurn` står for prompt, OpenAI-kald, skema-validering, filter og fallback (7.5) og returnerer et valideret `AiChatTurn` eller en markering af blokeret svar. Tilsvarende planlægges `server/ai/summary.ts` til opsummeringen. Dette erstatter stien `server/services/ai/` i 2.2 og 7.2 for AI-koden.
+- **AI-lagets placering:** `server/ai/chat.ts` med funktionen `sendChatTurn(...)`, så chat-routen (`app/api/requests/[id]/chat`) og AI-laget kan bygges uafhængigt af hver sin agent. Routen står for auth, samtykke-/loftstjek og lagring; `sendChatTurn` står for prompt, OpenAI-kald, skema-validering, filter og fallback (7.5) og returnerer et valideret `AiChatTurn` eller en markering af blokeret svar. Tilsvarende planlægges `server/ai/summary.ts` til opsummeringen. Dette erstatter stien `server/services/ai/` i 2.2 og 7.2 for AI-koden. *(Erstattet i 1.1: AI-laget ligger i `services/ai/`, og logikken i `chatController`/`summaryController`.)*
 
 I v0.4:
 - **Vilkårs-gate** ved første besøg for alle, også anonyme: accept af brugervilkår og privatlivspolitik gemmes med tidspunkt og version (signeret cookie for besøgende, `terms_acceptances` når der er en session); ny version kræver ny accept (2.5).
@@ -1543,7 +1566,7 @@ I v0.2:
 17. **Security-gennemgang af tandlægens views (5.7):** bekræft om `dentist_*`-viewsene er `security_invoker`-views eller `security definer`-funktioner, og at de overholder 5.1 regel 3-4 (kun et id ind, ingen rækker for andre modtagere).
 
 Implementeringsnoter fra trin 1 (0.6, til orientering):
-- `POST /api/auth/convert` udfylder `patients.first_name` via `server/models/patients.ts` (ikke direkte i routen).
+- `POST /api/auth/convert` udfylder `patients.first_name` via `models/patientsModel.ts` (ikke direkte i routen).
 - Når `proxy.ts` redirecter til `/login`, bevares den ønskede side som `naeste`, valideret med `safeInternalPath()` (`lib/navigation/paths.ts`). Samme funktion validerer `naeste` på `/login` og `/vilkaar/accepter` (2.5).
 
 ### 12.4 Udskudt [UDSKUDT] (afklares senere, før rigtige brugere; blokerer ikke demo)

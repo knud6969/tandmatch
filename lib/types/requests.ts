@@ -1,4 +1,4 @@
-import type { CosmeticCategory, ConsentType, ImageDto, RequestStatus } from "@/lib/types/common";
+import type { CosmeticCategory, ImageDto, RequestStatus } from "@/lib/types/common";
 import type { AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 
 export type RequestDraftDto = {
@@ -64,11 +64,9 @@ export type SummaryResponse = {
   generationsLeft: number; // udkast tilbage på forespørgslen (5, anonym: 3), jf. architecture 7.6
 };
 
-export type ConsentDto = {
-  id: string;
-  type: ConsentType;
-  textVersion: string;
-  grantedAt: string;
-  grantedWhileAnonymous: boolean;
-  withdrawnAt: string | null;
-};
+
+// POST /api/requests/{id}/images. view og quality udfyldes først af AI-udkastet.
+export type UploadedImageDto = { id: string; url: string; view: null; quality: null };
+
+// POST /api/requests/{id}/send.
+export type SentRequestDto = { status: "sent"; recipientCount: number; expiresAt: string | null };

@@ -1,7 +1,7 @@
-import { requireTerms } from "@/server/auth/terms";
-import { createSupabaseServerClient } from "@/server/db/supabase";
-import { jsonResponse, parseId, withApi } from "@/server/http/api";
-import { getStandardDentistProfile } from "@/server/services/standard-track";
+import { requireTerms } from "@/middleware/termsGate";
+import { createSupabaseServerClient } from "@/models/db/supabase";
+import { jsonResponse, parseId, withApi } from "@/middleware/http";
+import { getStandardDentistProfile } from "@/controllers/standardTrackController";
 
 type Ctx = { params: Promise<{ id: string }> };
 
