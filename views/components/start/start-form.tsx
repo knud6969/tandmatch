@@ -20,7 +20,7 @@ type StartField = "category" | "aiConsent";
 
 type StartResult = { requestId: string; expiresAt: string };
 
-// Første skridt på /start: kategori og AI-samtykke. Billedsamtykke gives først i billedtrinnet (architecture 0.7, 9.4).
+// Første skridt på /start: kategori og AI-samtykke. Billedsamtykke gives først i billedtrinnet (architecture 9.4).
 export function StartForm() {
   const router = useRouter();
   const { state, refresh } = useSession();
