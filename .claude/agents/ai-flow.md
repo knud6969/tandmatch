@@ -43,7 +43,7 @@ Målet er det bedst mulige lead til klinikken: en patient, der ved, hvad hun vil
 - Kun nødvendige data til OpenAI: ingen navn, e-mail, telefon, adresse eller id'er. PII maskeres før afsendelse.
 
 ## Teknisk
-- Koden ligger i `services/ai/` (prompts, skemaer, filter, OpenAI-klient). Controllers kalder kun dine funktioner og kender ikke til prompts eller OpenAI. Følg lagreglerne i 2.1.
+- Koden ligger i `services/ai/` og er objektorienteret (architecture 2.1.1): `AiChatService` og `AiSummaryService` får OpenAI-klienten og AI-reglerne (`rules.ts`) i constructoren. Controllers bruger kun disse klasser og kender ikke til prompts eller OpenAI. Rene hjælpefunktioner (filter, PII-maskering, skemaer) må være funktioner, så de kan testes direkte.
 - Struktureret output med strict JSON-skema. Ydelser returneres som id'er fra kataloget, som serveren validerer mod kataloget. Ukendte id'er afvises.
 - Filter på alle AI-genererede strenge (priser, klinikanbefalinger og senere evt. MDR-ord). Ét nyt forsøg, derefter en fast tekst.
 - Timeouts, lofter og rate limits håndhæves (7.6). Ingen streaming.

@@ -22,12 +22,12 @@ Har patienten ondt, er der en hurtig vej direkte til klinikker med en ledig akut
 - Klinikken har **én konto**. Klinikkens tandlæger vises på profilen med billeder af deres arbejde.
 - Klinikken udfylder sin profil én gang: priser på alle ydelser, åbningstider og billeder.
 - Et lead skal kunne klares på **under et minut**: ét overblik og knapperne *Accepter*, *Accepter med kommentar* eller *Afvis*.
-- Klinikker, der ikke har oprettet sig, vises med grundoplysninger (adresse, placering på kortet, kontaktinfo, åbningstider og anmeldelser), men kan ikke modtage leads. Klinikker, der har oprettet sig, får priser, billeder og leads, og det er deres fordel. Præcis hvad der vises, designes senere.
+- Klinikker, der ikke har oprettet sig, vises med grundoplysninger (adresse, placering på kortet, kontaktinfo, åbningstider og Trustpilot, hvis vi kender den), men kan ikke modtage leads. Egne anmeldelser findes kun for verificerede klinikker, fordi de kræver en booking. Klinikker, der har oprettet sig, får priser, billeder og leads, og det er deres fordel. Præcis hvad der vises, designes senere.
 
 ## Teknik
 Next.js (App Router, TypeScript), Tailwind, Supabase (Postgres, Auth, Storage, Row Level Security) og OpenAI, der kun kaldes fra serveren.
 
-Koden er bygget som **MVC**, og det skal den blive ved med. Lagene og mapperne er beskrevet i `docs/architecture.md` (afsnit 2), og `npm run lint` fejler, hvis reglerne brydes.
+Koden er bygget som **MVC**, og det skal den blive ved med. Backend er **objektorienteret**: models, services og controllers er klasser med fælles basisklasser, så logik genbruges i stedet for at blive kopieret. Lagene og mapperne er beskrevet i `docs/architecture.md` (afsnit 2), og `npm run lint` fejler, hvis reglerne brydes.
 
 ## Faste regler
 - **Mobil først.** Tjek altid layoutet ved 390 px og 1280 px bredde.

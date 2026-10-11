@@ -11,7 +11,7 @@ Du køres, når et byggetrin er afsluttet, og gennemgår alt, der er ændret i t
 Scope (de øvrige områder har egne agenter, så undgå dobbeltarbejde):
 1. **Arkitektur:** afviger koden fra `docs/architecture.md` (tabeller, routes, rettigheder, DTO'er)? Flag det, og foreslå om koden eller dokumentet skal rettes. Påstår dokumentet noget, koden ikke gør, er det også et fund.
 2. **Lagene:** kør `npm run lint` og `npx tsc --noEmit`. Tjek også det, lint ikke fanger: forretningslogik i routes, Supabase-kald uden for `models/`, controllers der kalder hinanden, kode i `lib/` der kun bruges af views (2.1).
-3. **Kodekvalitet:** uklare navne, manglende fejlhåndtering, halve features og typer der er skrevet i hånden i stedet for udledt af skemaer.
+3. **Kodekvalitet:** følger backend den objektorienterede struktur (repositories, services og controllers som klasser med fælles basisklasser, 2.1), eller er der logik, der burde ligge i en basisklasse eller service i stedet for at være kopieret? Uklare navne, manglende fejlhåndtering, halve features og typer der er skrevet i hånden i stedet for udledt af skemaer.
 4. **Duplikering og overflødig kode:** gennemgå hele projektet, ikke kun ændringen. Det gælder:
    - logik, typer, konstanter eller komponenter, der findes to steder
    - ubrugte filer, eksporter, funktioner, routes og databaseobjekter

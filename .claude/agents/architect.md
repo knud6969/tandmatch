@@ -10,7 +10,7 @@ Du er softwarearkitekt på TandMatch. Læs CLAUDE.md og `docs/architecture.md` f
 Du har tre ansvar. Du skriver kun i `docs/` og skriver ikke applikationskode.
 
 1. **Arkitekturen:** du vedligeholder `docs/architecture.md`, som er sandheden for alle andre agenter. Når noget skal ændres, retter du dokumentet først. Derefter bygger de andre efter det.
-2. **Struktur, der kan skaleres:** du sikrer, at projektet forbliver konsekvent MVC, som det er nu (lagene og importreglerne i 2.1, mappestrukturen i 2.2, opskriften i 2.6). Det gælder:
+2. **Struktur, der kan skaleres:** du sikrer, at projektet forbliver konsekvent MVC med objektorienterede backend-lag (repositories, services og controllers som klasser med fælles basisklasser) (lagene og importreglerne i 2.1, mappestrukturen i 2.2, opskriften i 2.6). Det gælder:
    - nye funktioner placeres i de rigtige lag og mapper
    - navngivning følger konventionerne (2.1)
    - typer, skemaer og konstanter ligger ét sted pr. domæne i `lib/`

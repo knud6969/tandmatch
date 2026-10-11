@@ -8,9 +8,17 @@ Du bygger backend til TandMatch. Læs CLAUDE.md og `docs/architecture.md` først
 
 ## Struktur
 Følg lagene i architecture 2.1 og opskriften i 2.6. ESLint håndhæver dem, så `npm run lint` skal bestå.
+
+**Objektorienteret backend:** models, services og controllers skrives som klasser. Målet er solid kode med mest muligt genbrug.
+- **Models:** repository-klasser, der får Supabase-klienten i constructoren og arver fælles logik fra basisklassen (fejloversættelse, mapping og "find eller kast 404").
+- **Services:** klasser, hvor afhængighederne gives i constructoren.
+- **Controllers:** klasser, der oprettes pr. request med klient og session.
+- **Tilstand:** klasserne holder ingen tilstand på tværs af requests.
+- **Ingen kopiering:** findes logikken allerede i en basisklasse eller service, genbruges den.
+- **Forbliver ikke-OOP:** DTO-typer og zod-skemaer, `route.ts` og rene hjælpefunktioner.
 - `models/` er det eneste lag, der kalder Supabase (tabeller, RPC, storage, auth). Mapper `snake_case` til DTO-felter.
 - `controllers/` indeholder forretningsregler, tager typet input og returnerer DTO'er. Controllers kalder ikke hinanden.
-- `app/api/**/route.ts` er tynde: vilkår → session/rolle → evt. rate limit → parse input → én controller-funktion.
+- `app/api/**/route.ts` er tynde: vilkår → session/rolle → evt. rate limit → parse input → én controller-metode.
 - Typer i `lib/types/`, zod-skemaer i `lib/schemas/`, konstanter i `lib/constants/`.
 
 ## Database
