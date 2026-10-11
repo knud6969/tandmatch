@@ -24,7 +24,11 @@ Du bygger frontend til TandMatch. Læs CLAUDE.md og `docs/architecture.md` førs
 - **Klinikoversigt uden chat:** man skal kunne gå direkte til en Airbnb-lignende oversigt med filtre (ydelse, pris, bedømmelse, afstand, ledig tid) og sortering.
   - På desktop: liste og kort side om side.
   - På mobil: skift mellem liste og kort.
-- **Kort:** interaktivt kort med de verificerede klinikker som markører. Klik viser et kort med klinikkens nøgleoplysninger og et link til profilen. Kortet følger de samme filtre som listen.
+- **Kort:** interaktivt kort med klinikkerne som markører. Klinikker, der har oprettet sig, skal fremstå tydeligt anderledes end importerede. Klik viser et kort med klinikkens nøgleoplysninger og et link til profilen. Kortet følger de samme filtre som listen.
+  - Teknik: **OpenStreetMap med Leaflet** (ingen API-nøgle).
+  - Kortet renderes kun i browseren (client component, indlæst dynamisk uden SSR).
+  - Attribution "© OpenStreetMap-bidragydere" skal altid være synlig.
+  - Markørernes farve følger Tailwind-temaet.
 
 ## To rejser
 - **Patient:** oversigt over klinikker, chat (beskrivelse og billeder), bekræftelse af ydelser, sammenligning, kontakt til op til 3 klinikker, booking og anmeldelse. Det skal være let og trygt hele vejen fra beskrivelse til booket tid.
