@@ -1,6 +1,8 @@
+import type { CASE_STATUSES, CASE_TIMEFRAMES } from "@/lib/constants/cases";
+
 // Sager (architecture 4.3 `cases`, 10.5). Udvides i trin 2 med CaseDto m.fl.
-export type CaseStatus = "draft" | "submitted" | "closed";
-export type CaseTimeframe = "asap" | "within_2_weeks" | "within_3_months" | "flexible";
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+export type CaseTimeframe = (typeof CASE_TIMEFRAMES)[number];
 
 // Sagens egne felter, som de står i databasen (camelCase).
 export type CaseRecordDto = {

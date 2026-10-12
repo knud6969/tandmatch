@@ -10,7 +10,7 @@ export default function PatientSignupPage() {
   return (
     <Container>
       <PageIntro title="Opret patientkonto">
-        <p>Oplysningerne bruges til at oprette din konto. Vi viser aldrig dit navn eller din e-mail til tandlæger.</p>
+        <p>Oplysningerne bruges til at oprette din konto. Klinikker ser først dit navn og dine kontaktoplysninger, når du har booket en tid hos dem.</p>
       </PageIntro>
       <Card>
         <PatientSignupForm />

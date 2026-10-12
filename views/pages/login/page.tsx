@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   return (
     <Container>
       <PageIntro title="Log ind">
-        <p>Patienter og tandlæger logger ind samme sted.</p>
+        <p>Patienter og klinikker logger ind samme sted.</p>
       </PageIntro>
       <Card>
         <LoginForm naeste={safeInternalPath(naeste)} />

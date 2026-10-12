@@ -1,3 +1,4 @@
+import { CHAT_MAX_USER_MESSAGES_PER_CONVERSATION, MAX_IMAGE_UPLOAD_BYTES, MAX_IMAGES_PER_CASE } from "@/lib/constants/limits";
 import { ApiRequestError } from "@/views/utils/api-client";
 
 // Danske fejlbeskeder ud fra API-fejlkoder (architecture 2.4). Ukendte koder viser serverens danske besked.
@@ -13,55 +14,27 @@ const MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: "Din session er udløbet. Log ind igen.",
   PROFILE_MISSING: "Kontoen er ikke klar endnu. Prøv igen om lidt.",
   NETWORK: "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
-  // Forespørgsel og samtale (trin 2)
   NOT_FOUND: "Vi kunne ikke finde det, du søgte efter.",
-  NOT_DRAFT: "Forespørgslen er sendt og kan ikke ændres længere.",
   CONSENT_REQUIRED: "Du skal give samtykke, før du kan fortsætte.",
   CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
   CONVERSATION_CLOSED: "Samtalen er lukket. Du kan stadig lave en opsummering.",
-  CHAT_LIMIT: "Samtalen har nået grænsen på 30 beskeder. Du kan lave en opsummering af det, du har skrevet.",
+  CHAT_LIMIT: `Samtalen har nået grænsen på ${CHAT_MAX_USER_MESSAGES_PER_CONVERSATION} beskeder. Du kan lave en opsummering af det, du har skrevet.`,
   RATE_LIMITED: "Du har sendt mange beskeder i dag. Prøv igen i morgen.",
   AI_TIMEOUT: "AI-assistenten svarede ikke i tide. Din besked er ikke gemt. Prøv igen om lidt.",
   AI_UNAVAILABLE: "AI-assistenten er ikke tilgængelig lige nu. Din besked er ikke gemt. Prøv igen om lidt.",
-  SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne forespørgsel. Ret teksten selv i stedet.",
+  SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne sag. Ret teksten selv i stedet.",
   INVALID_FORM: "Billedet kunne ikke sendes. Prøv et andet billede.",
   MISSING_FILE: "Vælg et billede, før du uploader.",
-  FILE_TOO_LARGE: "Billedet er for stort. Vælg et billede på højst 4 MB.",
-  IMAGE_LIMIT: "Du kan højst uploade 5 billeder pr. forespørgsel.",
-  NO_MATCHES: "Der er ikke fundet tandlæger, der matcher din forespørgsel endnu. Prøv at vælge en større afstand.",
-  ACCOUNT_REQUIRED: "Opret en konto for at sende forespørgslen til tandlæger.",
-  SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før forespørgslen sendes.",
-  POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før forespørgslen sendes.",
-  DRAFT_EXISTS: "Du har allerede en forespørgsel i gang.",
-  // Tandlæger og svar (trin 3)
-  NOT_VERIFIED: "Din profil er endnu ikke verificeret. Du kan først svare på forespørgsler, når en administrator har godkendt dig.",
-  RESPONSE_LOCKED: "Patienten har truffet et valg, så svaret kan ikke ændres længere.",
-  RESPONSE_WITHDRAWN: "Svaret er trukket tilbage og kan ikke ændres igen.",
-  STATE_CHANGED: "Svaret kunne ikke gemmes, fordi forespørgslen er ændret. Vi har hentet de nyeste oplysninger. Prøv igen.",
+  FILE_TOO_LARGE: `Billedet er for stort. Vælg et billede på højst ${MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024)} MB.`,
+  IMAGE_LIMIT: `Du kan højst uploade ${MAX_IMAGES_PER_CASE} billeder pr. sag.`,
+  ACCOUNT_REQUIRED: "Opret en konto for at fortsætte.",
+  SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før sagen sendes.",
+  POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før sagen sendes.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
-  // Samtykker, dataeksport og beskeder (trin 6)
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
   EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
-  // Standard-sporet og anmeldelser (trin 5)
-  NO_VERIFIED_VISIT: "Du kan kun anmelde et besøg, der er verificeret.",
-  ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
-  NOT_ELIGIBLE: "Du kan kun svare på godkendte anmeldelser af dig.",
-  ALREADY_REPLIED: "Du har allerede svaret på denne anmeldelse. Svaret afventer moderation.",
-  INVALID_REPLY: "Svaret kunne ikke gemmes. Tjek teksten og prøv igen.",
-  // Patientens valg af svar (trin 4)
-  ALREADY_DECIDED: "Du har allerede truffet et valg for dette svar. Opdater siden for at se den nyeste status.",
-  INVALID_DECISION: "Valget kunne ikke gemmes. Prøv igen.",
 };
-
-// Fejl, der betyder, at visningen er forældet. Siden bør hente data igen.
-export const STALE_STATE_CODES = [
-  "RESPONSE_LOCKED",
-  "RESPONSE_WITHDRAWN",
-  "STATE_CHANGED",
-  "ALREADY_DECIDED",
-  "NOT_FOUND",
-] as const;
 
 // Neutrale tekster, når serverens besked ikke kan vises som den står.
 const NEUTRAL_BY_CODE: Record<string, string> = {

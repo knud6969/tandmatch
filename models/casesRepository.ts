@@ -1,27 +1,27 @@
 import "server-only";
 import { BaseRepository } from "@/models/base/baseRepository";
-import type { CaseExportDto, CaseRecordDto, CaseStatus, CaseTimeframe } from "@/lib/types/cases";
+import type { CaseExportDto, CaseRecordDto } from "@/lib/types/cases";
+import type { Tables } from "@/models/db/database.types";
 
-type CaseRow = {
-  id: string;
-  status: CaseStatus;
-  is_emergency: boolean;
-  postal_code: string | null;
-  preferred_timeframe: CaseTimeframe | null;
-  ai_summary: unknown | null;
-  summary_text: string | null;
-  summary_ai_assisted: boolean;
-  summary_approved_at: string | null;
-  submitted_at: string | null;
-  closed_at: string | null;
-  created_at: string;
-};
+type CaseRow = Pick<
+  Tables<"cases">,
+  | "id"
+  | "status"
+  | "is_emergency"
+  | "postal_code"
+  | "preferred_timeframe"
+  | "ai_summary"
+  | "summary_text"
+  | "summary_ai_assisted"
+  | "summary_approved_at"
+  | "submitted_at"
+  | "closed_at"
+  | "created_at"
+>;
 
 type CaseExportRow = CaseRow & {
-  case_services: { service_id: string; suggested_by_ai: boolean; confirmed_at: string }[] | null;
-  case_images:
-    | { id: string; ai_view: string | null; ai_quality: string | null; ai_description: string | null; created_at: string }[]
-    | null;
+  case_services: Pick<Tables<"case_services">, "service_id" | "suggested_by_ai" | "confirmed_at">[] | null;
+  case_images: Pick<Tables<"case_images">, "id" | "ai_view" | "ai_quality" | "ai_description" | "created_at">[] | null;
 };
 
 const CASE_COLUMNS =
@@ -49,7 +49,7 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
 
   // Opretter en tom kladde. Triggeren afviser en ekstra kladde for anonyme (DRAFT_LIMIT).
   async create(patientId: string): Promise<CaseRecordDto> {
-    const row = await this.run<CaseRow>(
+    const row = await this.run(
       this.db.from("cases").insert({ patient_id: patientId }).select(CASE_COLUMNS).single(),
       "cases: insert fejlede",
     );
@@ -58,7 +58,7 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
 
   // Seneste egen kladde (anonyme har højst én). Bruges til retry-sikker oprettelse af anonym session.
   async findLatestDraft(): Promise<CaseRecordDto | null> {
-    const row = await this.run<CaseRow>(
+    const row = await this.run(
       this.db
         .from("cases")
         .select(CASE_COLUMNS)

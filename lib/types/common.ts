@@ -1,6 +1,7 @@
 import type { CONSENT_TYPES } from "@/lib/constants/consents";
+import type { ROLES } from "@/lib/constants/roles";
 
-export type Role = "patient" | "clinic" | "admin";
+export type Role = (typeof ROLES)[number];
 export type ConsentType = (typeof CONSENT_TYPES)[number];
 export type PriceRange = { min: number; max: number }; // hele kroner
 

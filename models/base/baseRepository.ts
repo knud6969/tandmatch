@@ -3,14 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, notFound } from "@/middleware/http";
 import { mapDbError } from "@/models/db/errors";
 
-// Svaret fra supabase-js. Rækkernes form kendes ikke af klienten, så repositoriet angiver den (T) pr. kald.
+// Svaret fra supabase-js. Klienten er utypet, så rækkernes form angives af repositoriet (TRow, fra
+// models/db/database.types.ts) og stoles på uden runtime-validering (architecture 2.1.1).
 type DbResult = { data: unknown; error: { message: string } | null };
 export type KnownDbErrors = Record<string, ApiError>;
 
 // Fælles grundlag for alle repositories (architecture 2.1.1). Klienten gives i constructoren og ejes af
 // den, der opretter repositoriet (typisk en controller pr. request). Klassen holder ingen anden tilstand.
 //
-// TRow er rækken, som den kommer fra databasen (snake_case). TDto er det, repositoriet returnerer (camelCase).
+// TRow er rækken, som den kommer fra databasen (snake_case, typen genereres af Supabase). TDto er det, repositoriet
+// returnerer (camelCase). Repositories uden en bestemt række (rpc-only) lader TRow være `unknown`.
 export abstract class BaseRepository<TRow = unknown, TDto = TRow> {
   constructor(protected readonly db: SupabaseClient) {}
 
@@ -25,14 +27,14 @@ export abstract class BaseRepository<TRow = unknown, TDto = TRow> {
 
   // Afvikler en forespørgsel (select/insert/update/delete) og oversætter databasefejl til ApiError via mapDbError.
   // Ukendte fejl bliver til en almindelig Error (500 uden detaljer); `fallback` er den interne besked.
-  protected async run<T>(query: PromiseLike<DbResult>, fallback: string, known: KnownDbErrors = {}): Promise<T | null> {
+  protected async run<T = TRow>(query: PromiseLike<DbResult>, fallback: string, known: KnownDbErrors = {}): Promise<T | null> {
     const { data, error } = await query;
     mapDbError(error, known, fallback);
     return (data ?? null) as T | null;
   }
 
   // Som run, men en tom liste i stedet for null.
-  protected async runList<T>(query: PromiseLike<DbResult>, fallback: string, known: KnownDbErrors = {}): Promise<T[]> {
+  protected async runList<T = TRow>(query: PromiseLike<DbResult>, fallback: string, known: KnownDbErrors = {}): Promise<T[]> {
     return (await this.run(query, fallback, known)) ?? [];
   }
 

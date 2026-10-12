@@ -81,11 +81,11 @@ export function PatientSignupForm({ onDone }: PatientSignupFormProps) {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {converting ? (
         <Alert tone="info" title="Gem din samtale">
-          Din samtale og dine svar følger med til din nye konto. Du behøver ikke starte forfra.
+          Din samtale følger med til din nye konto. Du behøver ikke starte forfra.
         </Alert>
       ) : (
         <p className="text-base leading-relaxed text-ink-muted">
-          Med en patientkonto kan du sende forespørgsler til tandlæger og følge deres svar.
+          Med en patientkonto kan du sende din sag til klinikker, booke en tid og følge dine aftaler.
         </p>
       )}
       {errors.general && (

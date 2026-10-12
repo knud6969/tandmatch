@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/auth";
 import type { AuthUserDto } from "@/lib/types/auth";
-import { ApiError } from "@/middleware/http";
+import { ApiError, unauthenticated } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import type { TermsGate } from "@/middleware/termsGate";
 import { AuthRepository } from "@/models/authRepository";
@@ -16,6 +16,13 @@ type SignupInput = z.infer<typeof signupSchema>;
 type ConvertInput = z.infer<typeof convertSchema>;
 
 // Login, logout, signup og konvertering. `session` er den aktuelle session eller null (ingen session).
+export type AuthDeps = {
+  auth: AuthRepository;
+  profiles: ProfilesRepository;
+  patients: PatientsRepository;
+  terms: TermsRepository;
+};
+
 export class AuthController {
   private readonly auth: AuthRepository;
   private readonly profiles: ProfilesRepository;
@@ -25,11 +32,12 @@ export class AuthController {
   constructor(
     supabase: SupabaseClient,
     private readonly session: Session | null,
+    deps: Partial<AuthDeps> = {},
   ) {
-    this.auth = new AuthRepository(supabase);
-    this.profiles = new ProfilesRepository(supabase);
-    this.patients = new PatientsRepository(supabase);
-    this.terms = new TermsRepository(supabase);
+    this.auth = deps.auth ?? new AuthRepository(supabase);
+    this.profiles = deps.profiles ?? new ProfilesRepository(supabase);
+    this.patients = deps.patients ?? new PatientsRepository(supabase);
+    this.terms = deps.terms ?? new TermsRepository(supabase);
   }
 
   async login(gate: TermsGate, input: LoginInput): Promise<AuthUserDto> {
@@ -73,7 +81,7 @@ export class AuthController {
   // Sag, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
   async convertAnonymous(input: ConvertInput): Promise<AuthUserDto> {
     if (!this.session) {
-      throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+      throw unauthenticated();
     }
     await this.auth.setCredentials(input.email, input.password);
     // Triggeren på auth.users har nu sat profiles.is_anonymous = false. Opfrisk sessionen, så JWT'en matcher.

@@ -1,27 +1,26 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CaseExportDto } from "@/lib/types/cases";
-import type { ConsentDto } from "@/lib/types/consents";
+import type { PatientExportDto } from "@/lib/types/patients";
+import type { Session } from "@/middleware/session";
 import { CasesRepository } from "@/models/casesRepository";
 import { ConsentsRepository } from "@/models/consentsRepository";
 
-// GDPR art. 15/20 (architecture 10.2): { exportedAt, cases, leads, bookings, reviews, consents }.
-// Kun egne data; RLS afgør hvad der kan læses.
-// [IKKE BYGGET] leads (trin 4), bookings (trin 6) og reviews (trin 6) tilføjes, når deres repositories findes.
-// Chatten (ai_conversations/ai_messages) hører til trin 2.
-export type PatientExportDto = {
-  exportedAt: string;
-  cases: CaseExportDto[];
-  consents: ConsentDto[];
-};
+// Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
+export type ExportDeps = { cases: CasesRepository; consents: ConsentsRepository };
 
+// GDPR art. 15/20 (architecture 10.2). Læser med brugerens JWT, så RLS afgør, hvad der kan læses: kun egne data.
+// Chatten (ai_conversations/ai_messages) hører til trin 2.
 export class ExportController {
   private readonly cases: CasesRepository;
   private readonly consents: ConsentsRepository;
 
-  constructor(supabase: SupabaseClient) {
-    this.cases = new CasesRepository(supabase);
-    this.consents = new ConsentsRepository(supabase);
+  constructor(
+    supabase: SupabaseClient,
+    protected readonly session: Session,
+    deps: Partial<ExportDeps> = {},
+  ) {
+    this.cases = deps.cases ?? new CasesRepository(supabase);
+    this.consents = deps.consents ?? new ConsentsRepository(supabase);
   }
 
   async exportOwnData(): Promise<PatientExportDto> {

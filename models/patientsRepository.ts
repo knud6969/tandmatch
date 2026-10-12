@@ -1,10 +1,13 @@
 import "server-only";
+import type { z } from "zod";
+import type { patchPatientSchema } from "@/lib/schemas/patients";
 import type { PatientMeDto } from "@/lib/types/patients";
 import { BaseRepository } from "@/models/base/baseRepository";
+import type { Tables } from "@/models/db/database.types";
 
-type PatientRow = { first_name: string | null; postal_code: string | null };
+type PatientRow = Pick<Tables<"patients">, "first_name" | "postal_code">;
 
-export type PatientPatch = { firstName?: string; postalCode?: string };
+export type PatientPatch = z.infer<typeof patchPatientSchema>;
 
 export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto> {
   protected toDto(row: PatientRow): PatientMeDto {
@@ -12,7 +15,7 @@ export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto>
   }
 
   async findById(userId: string): Promise<PatientMeDto | null> {
-    const row = await this.run<PatientRow>(
+    const row = await this.run(
       this.db.from("patients").select("first_name, postal_code").eq("id", userId).maybeSingle(),
       "patients: select fejlede",
     );

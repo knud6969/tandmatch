@@ -13,6 +13,8 @@ import { TermsRepository } from "@/models/termsRepository";
 type TermsAcceptInput = z.infer<typeof termsAcceptSchema>;
 
 // Undtaget fra vilkårs-gaten. Vilkårs-accept giver IKKE samtykke (architecture 2.5).
+export type TermsDeps = { auth: AuthRepository; terms: TermsRepository };
+
 export class TermsController {
   private readonly auth: AuthRepository;
   private readonly terms: TermsRepository;
@@ -20,9 +22,10 @@ export class TermsController {
   constructor(
     supabase: SupabaseClient,
     private readonly session: Session | null,
+    deps: Partial<TermsDeps> = {},
   ) {
-    this.auth = new AuthRepository(supabase);
-    this.terms = new TermsRepository(supabase);
+    this.auth = deps.auth ?? new AuthRepository(supabase);
+    this.terms = deps.terms ?? new TermsRepository(supabase);
   }
 
   // Accepten gælder kun, hvis versionerne er de aktuelle. Er der en session, skrives også en række i

@@ -1,7 +1,8 @@
 import "server-only";
 import { BaseRepository } from "@/models/base/baseRepository";
+import type { Tables } from "@/models/db/database.types";
 
-type IdRow = { id: string };
+type IdRow = Pick<Tables<"profiles">, "id">;
 
 // Læsninger til oprydning og kontosletning. Bruges kun med admin-klienten (architecture 2.3 f, g).
 // Ingen persondata logges herfra.

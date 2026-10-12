@@ -7,7 +7,7 @@ import { ExportController } from "@/controllers/exportController";
 // Dataeksport for egen konto (GDPR). Også for anonyme, så en patient kan se sin kladde før kontooprettelse.
 export const GET = withApi(async () => {
   await requireTerms();
-  await requireRole("patient", { allowAnonymous: true });
+  const session = await requireRole("patient", { allowAnonymous: true });
   const supabase = await createSupabaseServerClient();
-  return jsonResponse(await new ExportController(supabase).exportOwnData());
+  return jsonResponse(await new ExportController(supabase, session).exportOwnData());
 });

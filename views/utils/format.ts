@@ -12,7 +12,7 @@ const kmFormat = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 1 });
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
-// Dato uden klokkeslæt. YYYY-MM-DD (fx tilbuds-gyldighed) læses som middag, så dagen ikke flytter sig.
+// Dato uden klokkeslæt. YYYY-MM-DD læses som middag, så dagen ikke flytter sig.
 export function formatDate(value: string): string {
   const date = DATE_ONLY.test(value) ? new Date(`${value}T12:00:00Z`) : new Date(value);
   return dateFormat.format(date);

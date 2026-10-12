@@ -7,20 +7,27 @@ import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { ConsentsRepository } from "@/models/consentsRepository";
-import { createSupabaseAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/models/db/admin";
 import { AccountDeletionService } from "@/services/accountDeletionService";
 
 type GrantConsentInput = { type: ConsentType; textVersion: string };
 
+// Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
+export type ConsentsDeps = { consents: ConsentsRepository; admin: () => SupabaseClient };
+
 // Samtykker (GDPR art. 9). Vilkårs-accept er IKKE et samtykke (architecture 2.5, 10.3).
 export class ConsentsController {
   private readonly consents: ConsentsRepository;
+  // Service role-klienten (architecture 2.3, 2.1.1). Gives kun videre til storage og sletning, med formål.
+  private readonly admin: () => SupabaseClient;
 
   constructor(
     supabase: SupabaseClient,
     private readonly session: Session,
+    deps: Partial<ConsentsDeps> = {},
   ) {
-    this.consents = new ConsentsRepository(supabase);
+    this.consents = deps.consents ?? new ConsentsRepository(supabase);
+    this.admin = deps.admin ?? lazyAdminClient();
   }
 
   // Egne samtykker, også tilbagetrukne (RLS: kun ejeren).
@@ -55,7 +62,8 @@ export class ConsentsController {
 
     if (result.deletedImagePaths.length > 0) {
       try {
-        await new CaseImageStorage(createSupabaseAdminClient()).removeImages(result.deletedImagePaths);
+        // 2.3 (c): billedfiler i case-images fjernes efter tilbagetrækning af image_upload.
+        await new CaseImageStorage(this.admin()).remove(result.deletedImagePaths);
         await this.consents.confirmCleanup(consentId);
       } catch (err) {
         // Ingen persondata logges, kun fejltypen. Samtykket er allerede trukket tilbage; prøv igen for at rydde filerne.
@@ -71,7 +79,8 @@ export class ConsentsController {
     let sessionDeleted = false;
     if (result.consentType === "ai_processing" && this.session.isAnonymous) {
       try {
-        await AccountDeletionService.forAdmin(createSupabaseAdminClient()).deleteAccount(this.session.userId);
+        // 2.3 (c, f): billedfiler og auth-brugeren slettes for den anonyme session.
+        await new AccountDeletionService(this.admin()).deleteAccount(this.session.userId);
         sessionDeleted = true;
       } catch (err) {
         console.error("withdraw_consent: sletning af anonym konto fejlede:", err instanceof Error ? err.name : "ukendt");

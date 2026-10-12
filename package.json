@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "gen:types": "supabase gen types typescript --local > models/db/database.types.ts",
     "test:rls": "bash tests/rls/run.sh",
     "test:api": "bash tests/api/run.sh",
     "seed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/seed-demo.ts",

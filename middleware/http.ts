@@ -117,9 +117,15 @@ const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0
 // Ugyldigt id og manglende id giver 404 (architecture 2.4: vi skelner ikke, for ikke at lække eksistens).
 export function parseId(value: string): string {
   if (!UUID_RE.test(value)) {
-    throw new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede.");
+    throw notFound();
   }
   return value;
 }
 
+// Fælles fejl (architecture 2.4). Brug disse i stedet for at bygge ApiError med samme tekst igen.
 export const notFound = () => new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede.");
+
+export const unauthenticated = () => new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+
+export const anonymousNotAllowed = () =>
+  new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");

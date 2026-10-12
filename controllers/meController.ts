@@ -6,14 +6,17 @@ import type { Session } from "@/middleware/session";
 import { PatientsRepository } from "@/models/patientsRepository";
 
 // Den indloggede bruger: rolle og visningsnavn (architecture 10.2). Klinikkens navn tilføjes i 1.1.
+export type MeDeps = { patients: PatientsRepository };
+
 export class MeController {
   private readonly patients: PatientsRepository;
 
   constructor(
     supabase: SupabaseClient,
     private readonly session: Session,
+    deps: Partial<MeDeps> = {},
   ) {
-    this.patients = new PatientsRepository(supabase);
+    this.patients = deps.patients ?? new PatientsRepository(supabase);
   }
 
   async get(): Promise<MeDto> {

@@ -1,11 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import { anonymousExpiresAt } from "@/lib/constants/sessions";
 import type { anonymousSessionSchema } from "@/lib/schemas/session";
 import type { AnonymousSessionDto } from "@/lib/types/session";
-import { ApiError } from "@/middleware/http";
+import { ApiError, unauthenticated } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import type { TermsGate } from "@/middleware/termsGate";
 import { AuthRepository } from "@/models/authRepository";
@@ -15,6 +14,13 @@ import { TermsRepository } from "@/models/termsRepository";
 
 type AnonymousSessionInput = z.infer<typeof anonymousSessionSchema>;
 type AnonymousSessionResult = { body: AnonymousSessionDto; status: 200 | 201 };
+
+export type SessionDeps = {
+  auth: AuthRepository;
+  terms: TermsRepository;
+  consents: ConsentsRepository;
+  cases: CasesRepository;
+};
 
 // `existing` er den aktuelle session, hvis gate.userId er sat (ellers null).
 export class SessionController {
@@ -26,23 +32,22 @@ export class SessionController {
   constructor(
     supabase: SupabaseClient,
     private readonly existing: Session | null,
+    deps: Partial<SessionDeps> = {},
   ) {
-    this.auth = new AuthRepository(supabase);
-    this.terms = new TermsRepository(supabase);
-    this.consents = new ConsentsRepository(supabase);
-    this.cases = new CasesRepository(supabase);
+    this.auth = deps.auth ?? new AuthRepository(supabase);
+    this.terms = deps.terms ?? new TermsRepository(supabase);
+    this.consents = deps.consents ?? new ConsentsRepository(supabase);
+    this.cases = deps.cases ?? new CasesRepository(supabase);
   }
 
   // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke, og en tom sag
   // (architecture 10.2). Der gives kun ai_processing her, aldrig billedsamtykke (9.4). Routen kører IP-rate limit,
-  // før en ny anonym bruger oprettes. AI-samtykket er valideret af skemaet (versionen er fast).
-  async createAnonymous(gate: TermsGate, _input: AnonymousSessionInput): Promise<AnonymousSessionResult> {
-    void _input;
-
+  // før en ny anonym bruger oprettes. Versionen i samtykket er den, patienten har set; skemaet kræver den aktuelle.
+  async createAnonymous(gate: TermsGate, input: AnonymousSessionInput): Promise<AnonymousSessionResult> {
     const aiConsent = (patientId: string): NewConsent => ({
       patientId,
       type: "ai_processing",
-      textVersion: CONSENT_TEXT_VERSIONS.ai_processing,
+      textVersion: input.aiConsent.textVersion,
       grantedWhileAnonymous: true,
     });
 
@@ -51,7 +56,7 @@ export class SessionController {
     if (gate.userId !== null) {
       const existing = this.existing;
       if (!existing) {
-        throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+        throw unauthenticated();
       }
       if (!existing.isAnonymous) {
         throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");

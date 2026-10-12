@@ -1,8 +1,9 @@
 import "server-only";
 import type { ConsentDto } from "@/lib/types/consents";
 import type { ConsentType } from "@/lib/types/common";
-import { ApiError } from "@/middleware/http";
+import { ApiError, notFound, unauthenticated } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
+import type { Database, Tables } from "@/models/db/database.types";
 
 export type NewConsent = {
   patientId: string;
@@ -19,22 +20,12 @@ export type WithdrawConsentResult = {
   withdrawnLeads: number;
 };
 
-type ConsentRow = {
-  id: string;
-  type: ConsentType;
-  text_version: string;
-  granted_at: string;
-  granted_while_anonymous: boolean;
-  withdrawn_at: string | null;
-};
+type ConsentRow = Pick<
+  Tables<"consents">,
+  "id" | "type" | "text_version" | "granted_at" | "granted_while_anonymous" | "withdrawn_at"
+>;
 
-type WithdrawRow = {
-  withdrawn_at: string;
-  consent_type: ConsentType;
-  deleted_image_paths: string[] | null;
-  closed_conversations: number;
-  withdrawn_leads: number;
-};
+type WithdrawRow = Database["public"]["Functions"]["withdraw_consent"]["Returns"][number];
 
 const CONSENT_COLUMNS = "id, type, text_version, granted_at, granted_while_anonymous, withdrawn_at";
 
@@ -66,7 +57,7 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
   }
 
   async create(row: NewConsent): Promise<ConsentDto> {
-    const data = await this.run<ConsentRow>(
+    const data = await this.run(
       this.db.from("consents").insert(this.toInsert(row)).select(CONSENT_COLUMNS).single(),
       "consents: insert fejlede",
     );
@@ -76,7 +67,7 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
   // Egne samtykker, også tilbagetrukne.
   async listOwn(): Promise<ConsentDto[]> {
     return this.toDtos(
-      await this.runList<ConsentRow>(
+      await this.runList(
         this.db.from("consents").select(CONSENT_COLUMNS).order("granted_at", { ascending: false }),
         "consents: list fejlede",
       ),
@@ -96,9 +87,9 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
       "withdraw_consent",
       { p_consent_id: consentId },
       {
-        NOT_FOUND: new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede."),
+        NOT_FOUND: notFound(),
         ALREADY_WITHDRAWN: new ApiError(409, "ALREADY_WITHDRAWN", "Samtykket er allerede trukket tilbage."),
-        UNAUTHENTICATED: new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind."),
+        UNAUTHENTICATED: unauthenticated(),
       },
     );
     const row = data?.[0];

@@ -14,8 +14,6 @@ export const MAX_IMAGES_PER_CASE = 5;
 export const MAX_IMAGE_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const MAX_IMAGE_DIMENSION = 2048;
 export const SIGNED_URL_TTL_SECONDS = 300;
-export const CASE_BUCKET = "case-images";
-export const PUBLIC_MEDIA_BUCKET = "public-media";
 
 // Leads pr. sag (SQL: send_leads(), trigger på leads).
 export const MAX_ACTIVE_LEADS_PER_CASE = 3;

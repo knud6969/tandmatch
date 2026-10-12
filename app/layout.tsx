@@ -7,7 +7,7 @@ import { SiteFooter } from "@/views/components/layout/site-footer";
 
 export const metadata: Metadata = {
   title: { default: "TandMatch", template: "%s · TandMatch" },
-  description: "Beskriv dit tandproblem og find tandlæger, der kan svare dig. AI’en giver ikke medicinsk rådgivning.",
+  description: "Beskriv dit tandproblem, sammenlign klinikker og book en tid. AI’en giver en foreløbig vurdering; klinikken vurderer endeligt.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

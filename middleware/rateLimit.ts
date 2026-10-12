@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { createSupabaseAdminClient } from "@/models/db/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { lazyAdminClient } from "@/models/db/admin";
 import { RateLimitRepository } from "@/models/rateLimitRepository";
 import { ApiError } from "@/middleware/http";
 
@@ -13,9 +14,15 @@ export function clientIp(req: Request): string {
 }
 
 // Gemmer kun et hash af IP-adressen (dataminimering). Kaldes i routen før selve handlingen.
-export async function enforceIpRateLimit(scope: string, req: Request): Promise<void> {
+// `admin` kan erstattes i tests; ellers oprettes service role-klienten først her (architecture 2.1.1).
+export async function enforceIpRateLimit(
+  scope: string,
+  req: Request,
+  admin: () => SupabaseClient = lazyAdminClient(),
+): Promise<void> {
   const hash = createHash("sha256").update(clientIp(req)).digest("hex");
-  if (!(await new RateLimitRepository(createSupabaseAdminClient()).consume(`${scope}:${hash}`, RATE_LIMIT_PER_HOUR))) {
+  // 2.3 (b): consume_rate_limit() kan kun udføres af service role.
+  if (!(await new RateLimitRepository(admin()).consume(`${scope}:${hash}`, RATE_LIMIT_PER_HOUR))) {
     throw new ApiError(429, "RATE_LIMITED", "For mange forsøg. Prøv igen om lidt.");
   }
 }

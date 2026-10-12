@@ -16,9 +16,3 @@ export const AREA_NAV: Record<Role, NavItem[]> = {
   clinic: [],
   admin: [],
 };
-
-export const AREA_LABEL: Record<Role, string> = {
-  patient: "patienter",
-  clinic: "klinikker",
-  admin: "administratorer",
-};

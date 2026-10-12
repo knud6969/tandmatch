@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { AuthRepository } from "@/models/authRepository";
 import { ProfilesRepository } from "@/models/profilesRepository";
-import { ApiError } from "@/middleware/http";
+import { ApiError, anonymousNotAllowed, unauthenticated } from "@/middleware/http";
 import type { Role } from "@/lib/types/common";
 
 export type Session = {
@@ -39,7 +39,7 @@ export async function getSession(): Promise<Session | null> {
 export async function requireSession(): Promise<Session> {
   const session = await getSession();
   if (!session) {
-    throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+    throw unauthenticated();
   }
   return session;
 }
@@ -61,18 +61,6 @@ export function requireAccount(session: Session, message: string): Session {
   return session;
 }
 
-// Rolle-tjek for API-routes, der deles af patient og tandlæge (fx beskedtråd og svar). Anonyme afvises.
-export async function requireParticipant(): Promise<Session & { role: "patient" | "clinic" }> {
-  const session = await requireSession();
-  if (session.role !== "patient" && session.role !== "clinic") {
-    throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
-  }
-  if (session.isAnonymous) {
-    throw new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");
-  }
-  return { ...session, role: session.role };
-}
-
 // Rolle-tjek for API-routes. Anonyme patienter afvises, medmindre allowAnonymous er sat (kun sagsflowet).
 export async function requireRole(
   role: Role,
@@ -83,11 +71,7 @@ export async function requireRole(
     throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
   }
   if (session.isAnonymous && !options.allowAnonymous) {
-    throw new ApiError(
-      403,
-      "ANONYMOUS_NOT_ALLOWED",
-      "Opret en konto for at fortsætte.",
-    );
+    throw anonymousNotAllowed();
   }
   return session;
 }

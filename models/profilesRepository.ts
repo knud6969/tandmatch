@@ -1,15 +1,9 @@
 import "server-only";
-import { z } from "zod";
 import type { Role } from "@/lib/types/common";
 import { BaseRepository } from "@/models/base/baseRepository";
+import type { Tables } from "@/models/db/database.types";
 
-const profileRowSchema = z.object({
-  role: z.enum(["patient", "clinic", "admin"]),
-  is_anonymous: z.boolean(),
-  last_active_at: z.string(),
-});
-
-type ProfileRow = z.infer<typeof profileRowSchema>;
+type ProfileRow = Pick<Tables<"profiles">, "role" | "is_anonymous" | "last_active_at">;
 
 export type ProfileDto = {
   role: Role;
@@ -23,14 +17,11 @@ export class ProfilesRepository extends BaseRepository<ProfileRow, ProfileDto> {
   }
 
   async findById(userId: string): Promise<ProfileDto | null> {
-    const data = await this.run(
+    const row = await this.run(
       this.db.from("profiles").select("role, is_anonymous, last_active_at").eq("id", userId).maybeSingle(),
       "profiles: select fejlede",
     );
-    if (!data) return null;
-    const parsed = profileRowSchema.safeParse(data);
-    if (!parsed.success) throw new Error("profiles: uventet format");
-    return this.toDto(parsed.data);
+    return row ? this.toDto(row) : null;
   }
 
   // Opdaterer last_active_at for den indloggede anonyme bruger (architecture 7.7).

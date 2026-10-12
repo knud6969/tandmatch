@@ -7,6 +7,7 @@ const CHUNK = 100;
 // fordi ingen bucket har policies for authenticated/anon (9.2). Kalderen har selv tjekket ejerskab først.
 // Fejl kastes som almindelige Error uden stier eller persondata og bliver til 500.
 export abstract class BaseStorage {
+  // Bucket-navnet ligger i den konkrete storage-klasse (architecture 9.1).
   protected abstract readonly bucket: string;
 
   constructor(protected readonly admin: SupabaseClient) {}
