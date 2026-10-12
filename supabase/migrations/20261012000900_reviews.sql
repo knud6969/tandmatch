@@ -37,9 +37,11 @@ create function public.review_is_for_my_clinic(p_review_id uuid)
 returns boolean
 language sql stable security definer set search_path = ''
 as $$
+  -- Kun anmeldelser af bookinger på leads, der er sendt efter at den nuværende ejer overtog klinikken (H2).
   select exists (
     select 1 from public.reviews r
-     where r.id = p_review_id and r.clinic_id = (select k.id from public.clinics k where k.owner_id = (select auth.uid()))
+      join public.bookings b on b.id = r.booking_id
+     where r.id = p_review_id and public.is_my_clinic_lead(b.lead_id)
   );
 $$;
 
@@ -136,13 +138,12 @@ create policy reviews_insert_after_completed_booking on public.reviews
 revoke update, delete, truncate on public.reviews from authenticated;
 
 create policy review_replies_select_own_clinic_or_admin on public.review_replies
-  for select to authenticated using (clinic_id = public.auth_clinic_id() or public.is_admin());
+  for select to authenticated using (public.review_is_for_my_clinic(review_id) or public.is_admin());
 create policy review_replies_insert_own_clinic on public.review_replies
   for insert to authenticated
   with check (
     public.review_is_for_my_clinic(review_id)
     and clinic_id = public.auth_clinic_id()
-    and exists (select 1 from public.clinics k where k.id = clinic_id and k.status = 'verified')
     and public.review_is_approved(review_id)
   );
 revoke update, delete, truncate on public.review_replies from authenticated;

@@ -62,6 +62,8 @@ create function tt.mk_booking(
 ) returns uuid language plpgsql as $$
 declare v_id uuid;
 begin
+  -- Starttider ligger på hele kvarterer (bookings_starts_at_quarter): afrund ned.
+  p_starts := to_timestamp(floor(extract(epoch from p_starts) / 900) * 900);
   insert into public.bookings (lead_id, clinic_id, patient_id, service_id, starts_at, ends_at, status, hold_expires_at,
                                contact_name, contact_phone, contact_email, cancelled_by, cancelled_at, no_show_at, completed_at)
   values (p_lead, tt.cid('X'), tt.id('pA'), tt.svc(p_service), p_starts, p_starts + make_interval(mins => p_minutes), p_status,

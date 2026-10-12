@@ -11,7 +11,7 @@ select public.send_leads(tt.id('S'), array[tt.cid('X'), tt.cid('Y'), tt.cid('Z')
 select tt.allowed(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)', tt.lead('S', 'X'), tt.id('pA'), 'Patient til X'), 'patient kan skrive på sent lead');
 select tt.as_user(tt.id('uX'));
 select tt.allowed(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)', tt.lead('S', 'X'), tt.id('uX'), 'X til patient'), 'klinik kan skrive på sent lead');
-select tt.rows(format('select 1 from public.messages where lead_id = %L', tt.lead('S', 'X')), 2, 'klinik læser tråden');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('S', 'X')))::int, 2, 'klinik læser tråden via clinic_lead_messages');
 -- Afsender kan ikke udgive sig for andre
 select tt.denied(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)', tt.lead('S', 'X'), tt.id('pA'), 'Falsk afsender'), 'sender_id skal være en selv');
 select tt.denied(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)', tt.lead('S', 'X'), tt.id('uX'), '   '), 'tom besked afvises');
@@ -32,7 +32,7 @@ select tt.denied(format('insert into public.messages (lead_id, sender_id, body) 
 select tt.rows(format('select 1 from public.messages where lead_id = %L', tt.lead('S', 'Z')), 1, 'patienten kan stadig læse tråden på withdrawn lead');
 select tt.as_user(tt.id('uZ'));
 select tt.denied(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)', tt.lead('S', 'Z'), tt.id('uZ'), 'Efter tilbagetrækning'), 'klinik kan ikke skrive på withdrawn lead');
-select tt.rows(format('select 1 from public.messages where lead_id = %L', tt.lead('S', 'Z')), 0, 'klinikken kan ikke læse beskeder på withdrawn lead');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('S', 'Z')))::int, 0, 'klinikken kan ikke læse beskeder på withdrawn lead');
 select tt.rows('select 1 from public.messages', 0, 'klinikken ser ingen beskeder');
 -- Sagens indhold og billeder
 select tt.eq((select count(*) from public.clinic_lead_images(tt.lead('S', 'Z')))::int, 0, 'klinikken kan ikke læse billeder på withdrawn lead');

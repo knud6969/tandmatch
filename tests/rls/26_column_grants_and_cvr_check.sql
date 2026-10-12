@@ -50,7 +50,9 @@ select tt.denied(pg_temp.col_update('messages', c, format('lead_id = %L', tt.lea
 select tt.denied(format('update public.messages set body = %L where lead_id = %L', 'ændret', tt.lead('S', 'X')), 'messages.body kan ikke ændres', '42501');
 select tt.as_user(tt.id('uX'));
 select tt.denied(format('update public.messages set body = %L where lead_id = %L', 'ændret af klinik', tt.lead('S', 'X')), 'messages.body kan ikke ændres af modtageren', '42501');
-select tt.affects(format('update public.messages set read_at = now() where lead_id = %L', tt.lead('S', 'X')), 1, 'modtageren må sætte messages.read_at');
+select tt.affects(format('update public.messages set read_at = now() where lead_id = %L', tt.lead('S', 'X')), 0, 'klinikken har ingen direkte UPDATE på messages');
+select public.clinic_mark_messages_read(tt.lead('S', 'X'));
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('S', 'X')) m where not m.from_me and m.read_at is not null)::int, 1, 'klinikken markerer patientens besked som læst via funktionen');
 
 -- ---- portfolio_items ----
 select tt.allowed(pg_temp.col_update('portfolio_items', c, format('clinic_id = %L', tt.cid('X'))), 'portfolio_items.' || c || ' må opdateres')

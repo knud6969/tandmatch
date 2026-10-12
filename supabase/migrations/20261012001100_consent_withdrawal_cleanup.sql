@@ -50,7 +50,13 @@ begin
     ) select count(*) into v_closed from c;
   elsif v_consent.type = 'health_data_sharing' then
     -- Ubesvarede og accepterede leads uden booking trækkes tilbage, reservationer frigives. Bookede bookinger består.
-    v_leads := public.withdraw_open_leads(v_uid, null);
+    -- Kun hvis patienten ikke har et andet aktivt delingssamtykke (L3).
+    if not exists (
+      select 1 from public.consents c
+       where c.patient_id = v_uid and c.type = 'health_data_sharing' and c.withdrawn_at is null
+    ) then
+      v_leads := public.withdraw_open_leads(v_uid, null);
+    end if;
   end if;
 
   v_pending := (v_consent.type = 'image_upload' and coalesce(array_length(v_paths, 1), 0) > 0)
@@ -127,3 +133,7 @@ grant execute on function public.withdraw_consent(uuid) to authenticated;
 grant execute on function public.confirm_consent_cleanup(uuid) to authenticated;
 grant execute on function public.touch_last_active() to authenticated;
 grant execute on function public.consume_rate_limit(text, integer) to service_role;
+
+-- Ingen TRUNCATE, REFERENCES eller TRIGGER for anon/authenticated på nogen tabel i public (M6).
+revoke truncate, references, trigger on all tables in schema public from anon, authenticated;
+alter default privileges in schema public revoke truncate, references, trigger on tables from anon, authenticated;

@@ -838,6 +838,8 @@ is_clinic_owner(clinic_id)            -> boolean
 is_verified_clinic_owner()            -> boolean     -- kaldende ejer en klinik med status 'verified'
 is_case_owner(case_id)                -> boolean
 is_lead_participant(lead_id)          -> boolean     -- ejer af sagen ELLER ejer af leadets klinik, når klinikken er 'verified',
+is_lead_patient(lead_id)              -> boolean     -- brugeren er patient på leadets sag (bruges i messages-policyerne)
+is_my_clinic_lead(lead_id)            -> boolean     -- brugeren ejer leadets klinik, klinikken er 'verified', og sent_at >= owner_since
                                                      -- leadet ikke er 'withdrawn' og lead.sent_at >= clinics.owner_since
 is_lead_thread_open(lead_id)          -> boolean     -- lead.status in ('sent','accepted','booked')
 is_lead_active_status(status)         -> boolean     -- status in ('sent','accepted','booked'); bruges af loftet på 3 aktive
@@ -973,7 +975,7 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 28. En klinik har ingen direkte SELECT på `messages`; `clinic_lead_messages()` returnerer aldrig `sender_id` og intet for en ikke-verificeret klinik, et `withdrawn` lead eller et lead fra før `owner_since`.
 29. En ikke-verificeret klinik kan ikke læse `leads`, kalde `cancel_booking()` eller `mark_booking_no_show()`.
 30. `authenticated` kan ikke kalde `effective_booking_status(uuid)`, ikke slette `cases` direkte, ikke sætte `created_at`/`read_at` ved insert i `ai_messages`/`messages` (triggeren overskriver), og har ikke `TRUNCATE`, `REFERENCES` eller `TRIGGER` på nogen tabel.
-31. Tilbagetrækning af ét `health_data_sharing`-samtykke trækker ikke leads tilbage, hvis patienten har et andet aktivt samtykke af samme type.
+31. (Ligger i testfil `30_quarter_check_and_hardening.sql`.) Tilbagetrækning af ét `health_data_sharing`-samtykke trækker ikke leads tilbage, hvis patienten har et andet aktivt samtykke af samme type.
 
 API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cookie afvises, ny version kræver ny accept) og "vilkårs-accept giver ikke samtykke" (403 `CONSENT_REQUIRED` ved upload/chat).
 

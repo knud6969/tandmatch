@@ -49,6 +49,7 @@ as $$
         where m.lead_id = l.id and m.sender_id <> (select auth.uid()) and m.read_at is null) end
   from public.leads l
   join public.clinics k on k.id = l.clinic_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+    and l.sent_at >= k.owner_since
   join public.cases c on c.id = l.case_id
   left join public.postal_codes pc on pc.postal_code = c.postal_code
   where p_status is null or l.status = p_status
@@ -140,6 +141,7 @@ as $$
       b.eff_status = 'booked' and b.starts_at <= now() and now() < b.ends_at + interval '24 hours' end
   from public.leads l
   join public.clinics k on k.id = l.clinic_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+    and l.sent_at >= k.owner_since
   join public.cases c on c.id = l.case_id
   left join public.postal_codes pc on pc.postal_code = c.postal_code
   left join lateral (
@@ -168,6 +170,7 @@ as $$
   select i.id, i.storage_path, i.ai_description, i.width, i.height
     from public.leads l
     join public.clinics k on k.id = l.clinic_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+      and l.sent_at >= k.owner_since
     join public.cases c on c.id = l.case_id
     join public.case_images i on i.case_id = c.id
    where l.id = p_lead_id
@@ -180,6 +183,20 @@ as $$
             order by k2.created_at desc limit 1
          ), false)
    order by i.created_at;
+$$;
+
+-- Beskedtråd til klinikken. Aldrig sender_id (det er patientens id); kun om beskeden er klinikkens egen (H1).
+create function public.clinic_lead_messages(p_lead_id uuid)
+returns table (id uuid, body text, created_at timestamptz, read_at timestamptz, from_me boolean)
+language sql stable security definer set search_path = ''
+as $$
+  select m.id, m.body, m.created_at, m.read_at, m.sender_id = (select auth.uid())
+    from public.messages m
+    join public.leads l on l.id = m.lead_id
+   where m.lead_id = p_lead_id
+     and l.status <> 'withdrawn'
+     and public.is_my_clinic_lead(p_lead_id)
+   order by m.created_at, m.id;
 $$;
 
 create function public.clinic_bookings(p_from timestamptz, p_to timestamptz)
@@ -209,6 +226,7 @@ as $$
       select b.*, public.effective_booking_status(b.status, b.ends_at, b.hold_expires_at) as eff_status
         from public.bookings b
         join public.clinics k on k.id = b.clinic_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+        join public.leads bl on bl.id = b.lead_id and bl.sent_at >= k.owner_since
        where b.ends_at > p_from and b.starts_at < p_to
     ) x
     join public.services s on s.id = x.service_id
@@ -236,6 +254,8 @@ as $$
          r.created_at, rr.id, rr.text, rr.created_at, rr.moderation_status
     from public.reviews r
     join public.clinics k on k.id = r.clinic_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+    join public.bookings rb on rb.id = r.booking_id
+    join public.leads rl on rl.id = rb.lead_id and rl.sent_at >= k.owner_since
     left join public.review_replies rr on rr.review_id = r.id
    where r.moderation_status = 'approved'
    order by r.created_at desc;
@@ -405,11 +425,13 @@ revoke all on function public.clinic_lead_detail(uuid) from public, anon;
 revoke all on function public.clinic_lead_images(uuid) from public, anon;
 revoke all on function public.clinic_bookings(timestamptz, timestamptz) from public, anon;
 revoke all on function public.clinic_reviews() from public, anon;
+revoke all on function public.clinic_lead_messages(uuid) from public, anon;
 grant execute on function public.clinic_leads(public.lead_status) to authenticated;
 grant execute on function public.clinic_lead_detail(uuid) to authenticated;
 grant execute on function public.clinic_lead_images(uuid) to authenticated;
 grant execute on function public.clinic_bookings(timestamptz, timestamptz) to authenticated;
 grant execute on function public.clinic_reviews() to authenticated;
+grant execute on function public.clinic_lead_messages(uuid) to authenticated;
 
 revoke all on function public.public_clinics(uuid[], uuid[]) from public;
 revoke all on function public.public_clinic_profile(uuid, uuid[]) from public;

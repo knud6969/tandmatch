@@ -22,7 +22,7 @@ select tt.mk_booking(tt.mk_lead('R_justended', 'X', 'booked'), 'undersoegelse', 
 
 -- complete_due_bookings() har ikke kørt: databasestatus er stadig booked
 select tt.eq((select b.status::text from public.bookings b where b.lead_id = tt.lead('R_ok', 'X')), 'booked', 'opsætning: databasestatus er booked');
-select tt.eq((select public.effective_booking_status(b.id)::text from public.bookings b where b.lead_id = tt.lead('R_ok', 'X')), 'completed', 'opsætning: effektiv status er completed');
+select tt.eq((select public.effective_booking_status(b.status, b.ends_at, b.hold_expires_at)::text from public.bookings b where b.lead_id = tt.lead('R_ok', 'X')), 'completed', 'opsætning: effektiv status er completed');
 
 select tt.as_user(tt.id('pA'));
 create function pg_temp.review_sql(p_case text) returns text language sql as $$

@@ -272,6 +272,8 @@ const PRICE_BASE: PriceBase[] = [
   { slug: 'akut_smertebehandling', min: 995, max: 1895 },
 ];
 
+// Fiktive kontaktdata: telefonnumre er på formen +45 00 00 xx xx (danske numre starter aldrig med 0), og CVR-numrene
+// består IKKE modulus 11-kontrollen, så de aldrig kan svare til en rigtig virksomhed.
 type ImportedSpec = {
   cvr: string; name: string; address: string; postalCode: string; city: string; phone: string; website: string;
   trustpilot?: { url: string; score: number; count: number };
@@ -279,15 +281,15 @@ type ImportedSpec = {
 };
 
 const IMPORTED: ImportedSpec[] = [
-  { cvr: '90000001', name: 'Demo Tandlæge Frederiksberg', address: 'Eksempelvej 1', postalCode: '2000', city: 'Frederiksberg', phone: '+45 70 00 00 01', website: 'https://example.com/demo-1',
+  { cvr: '90000001', name: 'Demo Tandlæge Frederiksberg', address: 'Eksempelvej 1', postalCode: '2000', city: 'Frederiksberg', phone: '+45 00 00 00 01', website: 'https://example.com/demo-1',
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-1.dk', score: 4.4, count: 87 }, weekdayHours: true },
-  { cvr: '90000002', name: 'Demo Tandklinik Esbjerg', address: 'Prøvegade 2', postalCode: '6700', city: 'Esbjerg', phone: '+45 70 00 00 02', website: 'https://example.com/demo-2',
+  { cvr: '90000002', name: 'Demo Tandklinik Esbjerg', address: 'Prøvegade 2', postalCode: '6700', city: 'Esbjerg', phone: '+45 00 00 00 02', website: 'https://example.com/demo-2',
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-2.dk', score: 3.8, count: 23 }, weekdayHours: true },
-  { cvr: '90000003', name: 'Demo Tandlægehuset Vejle', address: 'Testallé 3', postalCode: '7100', city: 'Vejle', phone: '+45 70 00 00 03', website: 'https://example.com/demo-3',
+  { cvr: '90000003', name: 'Demo Tandlægehuset Vejle', address: 'Testallé 3', postalCode: '7100', city: 'Vejle', phone: '+45 00 00 00 03', website: 'https://example.com/demo-3',
     trustpilot: { url: 'https://www.trustpilot.com/review/demo-eksempel-3.dk', score: 4.7, count: 152 }, weekdayHours: false },
-  { cvr: '90000004', name: 'Demo Tandcenter Helsingør', address: 'Fiktivstræde 4', postalCode: '3000', city: 'Helsingør', phone: '+45 70 00 00 04', website: 'https://example.com/demo-4', weekdayHours: true },
-  { cvr: '90000005', name: 'Demo Tandklinikken Valby', address: 'Modelvej 5', postalCode: '2500', city: 'Valby', phone: '+45 70 00 00 05', website: 'https://example.com/demo-5', weekdayHours: false },
-  { cvr: '90000006', name: 'Demo Tandlæge Lyngby', address: 'Skabelonvej 6', postalCode: '2800', city: 'Kongens Lyngby', phone: '+45 70 00 00 06', website: 'https://example.com/demo-6', weekdayHours: true },
+  { cvr: '90000007', name: 'Demo Tandcenter Helsingør', address: 'Fiktivstræde 4', postalCode: '3000', city: 'Helsingør', phone: '+45 00 00 00 04', website: 'https://example.com/demo-4', weekdayHours: true },
+  { cvr: '90000005', name: 'Demo Tandklinikken Valby', address: 'Modelvej 5', postalCode: '2500', city: 'Valby', phone: '+45 00 00 00 05', website: 'https://example.com/demo-5', weekdayHours: false },
+  { cvr: '90000006', name: 'Demo Tandlæge Lyngby', address: 'Skabelonvej 6', postalCode: '2800', city: 'Kongens Lyngby', phone: '+45 00 00 00 06', website: 'https://example.com/demo-6', weekdayHours: true },
 ];
 
 type VerifiedSpec = {
@@ -298,27 +300,27 @@ type VerifiedSpec = {
 };
 
 const VERIFIED: VerifiedSpec[] = [
-  { key: 'v0', cvr: '90001001', name: 'Demo Tandklinik Nørrebro', address: 'Demovej 10', postalCode: '2200', city: 'København N', phone: '+45 70 00 10 01',
+  { key: 'v0', cvr: '90001001', name: 'Demo Tandklinik Nørrebro', address: 'Demovej 10', postalCode: '2200', city: 'København N', phone: '+45 00 00 10 01',
     email: 'klinik-v0@demo.tandmatch.test', description: 'Fiktiv demoklinik i København med fokus på kosmetisk tandpleje og akuttider.', factor: 1.15, saturday: false, emergencyWindow: true, hue: 200,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v0.dk', score: 4.5, count: 120 },
     dentists: [
       { name: 'Anne Demosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge. Arbejder med kosmetiske behandlinger.' },
       { name: 'Rasmus Eksempel', title: 'Specialtandlæge i ortodonti', bio: 'Fiktiv specialtandlæge til demoformål.' },
     ] },
-  { key: 'v1', cvr: '90001002', name: 'Demo Tandlægerne Aarhus', address: 'Prøveplads 20', postalCode: '8000', city: 'Aarhus C', phone: '+45 70 00 10 02',
+  { key: 'v1', cvr: '90001002', name: 'Demo Tandlægerne Aarhus', address: 'Prøveplads 20', postalCode: '8000', city: 'Aarhus C', phone: '+45 00 00 10 02',
     email: 'klinik-v1@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aarhus med almindelig og kosmetisk tandpleje.', factor: 1.0, saturday: false, emergencyWindow: true, hue: 150,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v1.dk', score: 4.2, count: 64 },
     dentists: [
       { name: 'Camilla Testesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Mikkel Fiktiv', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
-  { key: 'v2', cvr: '90001003', name: 'Demo Tandcenter Odense', address: 'Skitsegade 30', postalCode: '5000', city: 'Odense C', phone: '+45 70 00 10 03',
+  { key: 'v2', cvr: '90001003', name: 'Demo Tandcenter Odense', address: 'Skitsegade 30', postalCode: '5000', city: 'Odense C', phone: '+45 00 00 10 03',
     email: 'klinik-v2@demo.tandmatch.test', description: 'Fiktiv demoklinik i Odense med åbent om lørdagen.', factor: 0.9, saturday: true, emergencyWindow: false, hue: 30,
     dentists: [
       { name: 'Louise Prøvesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Jens Modelsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
-  { key: 'v3', cvr: '90001004', name: 'Demo Tandklinik Aalborg', address: 'Mockupvej 40', postalCode: '9000', city: 'Aalborg', phone: '+45 70 00 10 04',
+  { key: 'v3', cvr: '90001004', name: 'Demo Tandklinik Aalborg', address: 'Mockupvej 40', postalCode: '9000', city: 'Aalborg', phone: '+45 00 00 10 04',
     email: 'klinik-v3@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aalborg.', factor: 0.95, saturday: false, emergencyWindow: false, hue: 300,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v3.dk', score: 3.9, count: 31 },
     dentists: [
@@ -328,16 +330,16 @@ const VERIFIED: VerifiedSpec[] = [
 ];
 
 const REGISTERED = {
-  cvr: '90002001', name: 'Demo Tandlægehuset Roskilde', address: 'Kladdevej 50', postalCode: '4000', city: 'Roskilde', phone: '+45 70 00 20 01',
+  cvr: '90002001', name: 'Demo Tandlægehuset Roskilde', address: 'Kladdevej 50', postalCode: '4000', city: 'Roskilde', phone: '+45 00 00 20 01',
   email: 'klinik-registreret@demo.tandmatch.test',
 };
 
 const PATIENTS = [
-  { firstName: 'Mette', postalCode: '2200', phone: '+45 20 00 00 01', fullName: 'Mette Eksempel' },
-  { firstName: 'Jonas', postalCode: '8000', phone: '+45 20 00 00 02', fullName: 'Jonas Demo' },
-  { firstName: 'Sofie', postalCode: '5000', phone: '+45 20 00 00 03', fullName: 'Sofie Testesen' },
-  { firstName: 'Emil', postalCode: '2100', phone: '+45 20 00 00 04', fullName: 'Emil Fiktiv' },
-  { firstName: 'Laura', postalCode: '9000', phone: '+45 20 00 00 05', fullName: 'Laura Prøve' },
+  { firstName: 'Mette', postalCode: '2200', phone: '+45 00 00 20 01', fullName: 'Mette Eksempel' },
+  { firstName: 'Jonas', postalCode: '8000', phone: '+45 00 00 20 02', fullName: 'Jonas Demo' },
+  { firstName: 'Sofie', postalCode: '5000', phone: '+45 00 00 20 03', fullName: 'Sofie Testesen' },
+  { firstName: 'Emil', postalCode: '2100', phone: '+45 00 00 20 04', fullName: 'Emil Fiktiv' },
+  { firstName: 'Laura', postalCode: '9000', phone: '+45 00 00 20 05', fullName: 'Laura Prøve' },
 ];
 
 const REVIEW_TEXTS = [
@@ -573,6 +575,8 @@ async function seed(config: Config): Promise<void> {
   async function insertPastBooking(
     clinic: ClinicHandle, patient: PatientHandle, leadId: string, slug: string, startsAt: Date, status: 'completed' | 'no_show' | 'booked',
   ): Promise<string> {
+    // Databasen kræver hele kvarterer (bookings_starts_at_quarter); afrund ned.
+    startsAt = new Date(Math.floor(startsAt.getTime() / 900_000) * 900_000);
     const duration = defaultDuration(slug);
     const endsAt = plusMinutes(startsAt, duration);
     const row = must(await admin.from('bookings').insert({

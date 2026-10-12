@@ -27,6 +27,11 @@ create table public.bookings (
   created_at timestamptz not null default now(),
   check (starts_at < ends_at),
   check (status <> 'held' or hold_expires_at is not null),
+  -- Starttider ligger på hele kvarterer i lokal tid (SLOT_STEP_MINUTES = 15), også ved skrivning med service role.
+  constraint bookings_starts_at_quarter check (
+    extract(minute from (starts_at at time zone 'Europe/Copenhagen'))::integer % 15 = 0
+    and extract(second from (starts_at at time zone 'Europe/Copenhagen')) = 0
+  ),
   -- Ingen dobbeltbooking: også en reserveret akuttid blokerer. Én kalender pr. klinik [PROTOTYPE].
   constraint bookings_no_overlap exclude using gist (
     clinic_id with =,
@@ -52,13 +57,8 @@ as $$
   end;
 $$;
 
-create function public.effective_booking_status(p_booking_id uuid)
-returns public.booking_status
-language sql stable security definer set search_path = ''
-as $$
-  select public.effective_booking_status(b.status, b.ends_at, b.hold_expires_at)
-    from public.bookings b where b.id = p_booking_id;
-$$;
+-- (Overloaden med booking-id er fjernet: den var security definer og kunne bruges til at læse status på fremmede
+-- bookinger. Brug den rene funktion over rækkens felter.)
 
 -- Udløbne reservationer frigives i samme transaktion som enhver skrivning (exclusion constraints kan ikke bruge now()).
 create function public.release_expired_holds(p_clinic_id uuid)
@@ -345,7 +345,7 @@ begin
   end if;
   select l.* into v_lead from public.leads l
     join public.clinics k on k.id = l.clinic_id
-   where l.id = p_lead_id and k.owner_id = v_uid
+   where l.id = p_lead_id and k.owner_id = v_uid and l.sent_at >= k.owner_since
    for update of l;
   if not found then
     raise exception 'NOT_FOUND' using errcode = 'P0002';
@@ -513,7 +513,7 @@ begin
   end if;
   if v_booking.patient_id = v_uid and public.is_permanent_user() then
     v_actor := 'patient';
-  elsif exists (select 1 from public.clinics k where k.id = v_booking.clinic_id and k.owner_id = v_uid) then
+  elsif public.is_my_clinic_lead(v_booking.lead_id) then
     v_actor := 'clinic';
   else
     raise exception 'NOT_FOUND' using errcode = 'P0002';
@@ -541,7 +541,8 @@ begin
   end if;
   select b.* into v_booking from public.bookings b
     join public.clinics k on k.id = b.clinic_id
-   where b.id = p_booking_id and k.owner_id = v_uid
+   where b.id = p_booking_id and k.owner_id = v_uid and k.status = 'verified'
+     and public.is_my_clinic_lead(b.lead_id)
    for update of b;
   if not found then
     raise exception 'NOT_FOUND' using errcode = 'P0002';
@@ -665,9 +666,7 @@ revoke all on function public.close_case(uuid) from public, anon;
 grant execute on function public.close_case(uuid) to authenticated;
 revoke all on function public.clinics_after_owner_removed() from public, anon, authenticated;
 revoke all on function public.effective_booking_status(public.booking_status, timestamptz, timestamptz) from public, anon;
-revoke all on function public.effective_booking_status(uuid) from public, anon;
 grant execute on function public.effective_booking_status(public.booking_status, timestamptz, timestamptz) to authenticated, service_role;
-grant execute on function public.effective_booking_status(uuid) to authenticated, service_role;
 
 revoke all on function public.release_expired_holds(uuid) from public, anon, authenticated;
 revoke all on function public.assert_slot_bookable(uuid, uuid, timestamptz, timestamptz) from public, anon, authenticated;

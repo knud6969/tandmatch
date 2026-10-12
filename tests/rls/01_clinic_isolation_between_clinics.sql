@@ -17,7 +17,8 @@ select public.book_slot(tt.lead('S', 'Y'), tt.svc('undersoegelse'), tt.slot(3, 1
 -- Y kan selv se sit materiale (kontrol af at opsætningen virker)
 select tt.as_user(tt.id('uY'));
 select tt.rows('select 1 from public.leads', 1, 'Y ser sit eget lead');
-select tt.rows('select 1 from public.messages', 2, 'Y ser sin egen tråd');
+select tt.rows('select 1 from public.messages', 0, 'klinikken har ingen direkte læsning af messages');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('S', 'Y')))::int, 2, 'Y ser sin egen tråd via clinic_lead_messages');
 select tt.rows($$select 1 from public.clinic_bookings(now() - interval '1 day', now() + interval '30 days')$$, 1, 'Y ser sin egen booking');
 
 -- X

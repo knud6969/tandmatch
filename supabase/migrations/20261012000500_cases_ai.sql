@@ -231,6 +231,22 @@ create trigger ai_conversations_before_insert
   before insert on public.ai_conversations
   for each row execute function public.ai_conversations_before_insert();
 
+-- Tidsstemplet sættes af databasen, uanset hvad klienten sender (M4).
+create function public.ai_messages_before_insert()
+returns trigger
+language plpgsql set search_path = ''
+as $$
+begin
+  new.created_at := now();
+  return new;
+end;
+$$;
+
+create trigger ai_messages_before_insert
+  before insert on public.ai_messages
+  for each row execute function public.ai_messages_before_insert();
+revoke all on function public.ai_messages_before_insert() from public, anon, authenticated;
+
 -- Hver besked nulstiller godkendelsen af opsummeringen (kladde), og brugerbeskeder tælles; ved 30 lukkes samtalen.
 create function public.ai_messages_after_insert()
 returns trigger
@@ -474,9 +490,8 @@ create policy cases_update_own_draft on public.cases
   for update to authenticated
   using (patient_id = (select auth.uid()) and status = 'draft')
   with check (patient_id = (select auth.uid()));
-create policy cases_delete_own_draft on public.cases
-  for delete to authenticated using (patient_id = (select auth.uid()) and status = 'draft');
-revoke insert, update on public.cases from authenticated;
+-- Ingen DELETE for authenticated: kladder slettes af serveren (service role), som også rydder billedfilerne (M5).
+revoke insert, update, delete, truncate on public.cases from authenticated;
 grant insert (patient_id, is_emergency, postal_code, preferred_timeframe) on public.cases to authenticated;
 grant update (postal_code, preferred_timeframe) on public.cases to authenticated;
 

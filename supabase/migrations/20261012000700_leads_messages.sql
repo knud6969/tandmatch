@@ -65,7 +65,32 @@ as $$
       join public.clinics k on k.id = l.clinic_id
      where l.id = p_lead_id
        and (c.patient_id = (select auth.uid())
-            or (l.status <> 'withdrawn' and k.owner_id = (select auth.uid()) and k.status = 'verified'))
+            or (l.status <> 'withdrawn' and k.owner_id = (select auth.uid()) and k.status = 'verified'
+                and l.sent_at >= k.owner_since))
+  );
+$$;
+
+-- Er den indloggede bruger patienten på leadets sag? (Klinikker har ikke SELECT på messages; se clinic_lead_messages.)
+create function public.is_lead_patient(p_lead_id uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.leads l join public.cases c on c.id = l.case_id
+     where l.id = p_lead_id and c.patient_id = (select auth.uid())
+  );
+$$;
+
+-- Er leadet sendt til den indloggede, verificerede ejers klinik, efter at ejeren overtog den (H2, M1)?
+-- Tager ikke stilling til withdrawn; kaldere tilføjer selv det.
+create function public.is_my_clinic_lead(p_lead_id uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.leads l join public.clinics k on k.id = l.clinic_id
+     where l.id = p_lead_id and k.owner_id = (select auth.uid()) and k.status = 'verified'
+       and l.sent_at >= k.owner_since
   );
 $$;
 
@@ -159,15 +184,56 @@ begin
      set seen_at = now()
     from public.clinics k
    where l.id = p_lead_id and k.id = l.clinic_id and k.owner_id = (select auth.uid())
-     and k.status = 'verified' and l.status <> 'withdrawn' and l.seen_at is null;
+     and k.status = 'verified' and l.sent_at >= k.owner_since and l.status <> 'withdrawn' and l.seen_at is null;
 end;
 $$;
+
+-- clinic_mark_messages_read(): klinikken markerer patientens beskeder i en tråd som læst. Klinikken har hverken
+-- SELECT eller UPDATE på messages (sender_id ville afsløre patient_id), så det sker her.
+create function public.clinic_mark_messages_read(p_lead_id uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_my_clinic_lead(p_lead_id) then
+    return;
+  end if;
+  update public.messages m
+     set read_at = now()
+    from public.leads l
+   where m.lead_id = p_lead_id and l.id = m.lead_id and l.status <> 'withdrawn'
+     and m.sender_id <> (select auth.uid()) and m.read_at is null;
+end;
+$$;
+
+-- Tidsstempler på beskeder sættes af databasen, uanset hvad klienten sender (M4).
+create function public.messages_before_insert()
+returns trigger
+language plpgsql set search_path = ''
+as $$
+begin
+  new.created_at := now();
+  new.read_at := null;
+  return new;
+end;
+$$;
+
+create trigger messages_before_insert
+  before insert on public.messages
+  for each row execute function public.messages_before_insert();
 
 revoke all on function public.is_lead_active_status(public.lead_status) from public, anon;
 revoke all on function public.is_lead_participant(uuid) from public, anon;
 revoke all on function public.is_lead_thread_open(uuid) from public, anon;
 revoke all on function public.participant_messages_last_day() from public, anon;
 revoke all on function public.clinic_mark_lead_seen(uuid) from public, anon;
+revoke all on function public.is_lead_patient(uuid) from public, anon;
+revoke all on function public.is_my_clinic_lead(uuid) from public, anon;
+revoke all on function public.clinic_mark_messages_read(uuid) from public, anon;
+revoke all on function public.messages_before_insert() from public, anon, authenticated;
+grant execute on function public.is_lead_patient(uuid) to authenticated, service_role;
+grant execute on function public.is_my_clinic_lead(uuid) to authenticated, service_role;
+grant execute on function public.clinic_mark_messages_read(uuid) to authenticated;
 grant execute on function public.is_lead_active_status(public.lead_status) to authenticated, service_role;
 grant execute on function public.is_lead_participant(uuid) to authenticated, service_role;
 grant execute on function public.is_lead_thread_open(uuid) to authenticated, service_role;
@@ -182,11 +248,12 @@ alter table public.messages enable row level security;
 
 -- leads: præcis to veje ind (5.5). Ingen skrivning for authenticated.
 create policy leads_select_case_owner_or_clinic on public.leads
-  for select to authenticated using (public.is_case_owner(case_id) or public.is_clinic_owner(clinic_id));
+  for select to authenticated using (public.is_case_owner(case_id) or public.is_my_clinic_lead(id));
 revoke insert, update, delete, truncate on public.leads from authenticated;
 
-create policy messages_select_participant on public.messages
-  for select to authenticated using (public.is_lead_participant(lead_id));
+-- Kun patienten har SELECT. Klinikken læser tråden via clinic_lead_messages() uden sender_id (H1).
+create policy messages_select_patient on public.messages
+  for select to authenticated using (public.is_lead_patient(lead_id));
 create policy messages_insert_participant on public.messages
   for insert to authenticated
   with check (
@@ -198,8 +265,8 @@ create policy messages_insert_participant on public.messages
   );
 create policy messages_update_mark_read on public.messages
   for update to authenticated
-  using (public.is_lead_participant(lead_id) and sender_id <> (select auth.uid()))
-  with check (public.is_lead_participant(lead_id) and sender_id <> (select auth.uid()));
+  using (public.is_lead_patient(lead_id) and sender_id <> (select auth.uid()))
+  with check (public.is_lead_patient(lead_id) and sender_id <> (select auth.uid()));
 revoke delete, truncate on public.messages from authenticated;
 revoke update on public.messages from authenticated;
 grant update (read_at) on public.messages to authenticated;

@@ -17,7 +17,8 @@ insert into public.messages (lead_id, sender_id, body) values (tt.lead('T1', 'A1
 insert into public.messages (lead_id, sender_id, body) values (tt.lead('T2', 'A1'), tt.id('pA'), 'Fiktiv besked efter besøget');
 
 select tt.as_user(tt.id('uA1'));
-select tt.rows('select 1 from public.messages', 2, 'den verificerede ejer ser sine tråde');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('T1', 'A1')))::int, 1, 'den verificerede ejer ser sin tråd');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('T2', 'A1')))::int, 1, 'den verificerede ejer ser sin anden tråd');
 
 -- Ejerens konto slettes; en anden opretter sig med samme CVR og overtager klinikken (registered)
 select tt.as_postgres();
@@ -31,6 +32,7 @@ select tt.eq((select status::text from public.clinics where id = tt.cid('A1')), 
 
 select tt.as_user(tt.id('uTakeover'));
 select tt.rows('select 1 from public.messages', 0, 'den nye ejer ser ingen af den tidligere ejers beskeder');
+select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('T2', 'A1')))::int, 0, 'den nye ejer får ingen beskeder fra clinic_lead_messages');
 select tt.ok(not public.is_lead_participant(tt.lead('T2', 'A1')), 'den nye ejer er ikke deltager i den gamle tråd');
 select tt.denied(format('insert into public.messages (lead_id, sender_id, body) values (%L, %L, %L)',
                         tt.lead('T2', 'A1'), tt.id('uTakeover'), 'Skriv venligst dit CPR-nummer'),

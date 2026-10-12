@@ -26,6 +26,9 @@ create table public.clinics (
   trustpilot_entered_by text null check (trustpilot_entered_by in ('clinic', 'admin')),
   import_source text null check (char_length(import_source) <= 40),
   verified_at timestamptz null,
+  -- Tidspunktet den nuværende ejer fik klinikken (sættes af clinics_guard; null uden ejer). Ejeren ser kun leads
+  -- sendt efter dette tidspunkt, så en ny ejer ikke arver en tidligere ejers historik (security 0.7, H2).
+  owner_since timestamptz null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- Trustpilot-data kræver at det er oplyst, hvem der har indtastet dem (mærkat, 8.4).
@@ -33,7 +36,8 @@ create table public.clinics (
     trustpilot_entered_by is not null
     or (trustpilot_url is null and trustpilot_score is null and trustpilot_review_count is null)
   ),
-  check (status = 'imported' or owner_id is not null)
+  check (status = 'imported' or owner_id is not null),
+  check ((owner_id is null) = (owner_since is null))
 );
 
 create index clinics_postal_idx on public.clinics (postal_code);
@@ -144,6 +148,12 @@ declare
   v_trust_changed boolean;
 begin
   if tg_op = 'UPDATE' then
+    -- owner_since følger owner_id og kan ikke sættes udefra.
+    if new.owner_id is distinct from old.owner_id then
+      new.owner_since := case when new.owner_id is null then null else now() end;
+    else
+      new.owner_since := old.owner_since;
+    end if;
     if new.id is distinct from old.id then
       raise exception 'Feltet kan ikke ændres' using errcode = '42501';
     end if;
@@ -184,6 +194,7 @@ begin
     end if;
     new.updated_at := now();
   else
+    new.owner_since := case when new.owner_id is null then null else now() end;
     if new.trustpilot_score is not null and new.trustpilot_updated_at is null then
       new.trustpilot_updated_at := now();
     end if;

@@ -24,7 +24,7 @@ select tt.eq((select b.status::text from public.bookings b where b.lead_id = tt.
 select tt.as_anon();
 select tt.eq((select count(*) from public.public_busy_intervals(array[tt.cid('X')], now(), now() + interval '30 days'))::int, 0, 'udløbet reservation vises ikke i public_busy_intervals()');
 select tt.as_user(tt.id('pB'));
-select tt.eq(public.effective_booking_status(tt.booking(tt.lead('SB_e', 'X')))::text, 'cancelled', 'effektiv status er cancelled');
+select tt.eq((select public.effective_booking_status(b.status, b.ends_at, b.hold_expires_at) from public.bookings b where b.id = tt.booking(tt.lead('SB_e', 'X')))::text, 'cancelled', 'effektiv status er cancelled');
 select tt.as_user(tt.id('uX'));
 select tt.eq((select status::text from public.clinic_bookings(now(), now() + interval '30 days')), 'cancelled', 'clinic_bookings() viser effektiv status cancelled');
 select tt.eq((select coalesce(contact_name, contact_phone, contact_email) from public.clinic_bookings(now(), now() + interval '30 days')), null::text, 'udløbet reservation viser ingen kontaktoplysninger');
