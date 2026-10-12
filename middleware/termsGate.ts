@@ -2,8 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { AUTH_COOKIE_OPTIONS } from "@/models/db/config";
-import { getAuthUserId } from "@/models/authModel";
-import { hasCurrentTermsAcceptance, upsertTermsAcceptance } from "@/models/termsModel";
+import { AuthRepository } from "@/models/authRepository";
+import { TermsRepository } from "@/models/termsRepository";
 import {
   TERMS_COOKIE,
   TERMS_COOKIE_MAX_AGE_SECONDS,
@@ -40,7 +40,7 @@ export type TermsGate =
 export async function requireTerms(): Promise<TermsGate> {
   const terms = await readCurrentTermsCookie();
   const supabase = await createSupabaseServerClient();
-  const userId = await getAuthUserId(supabase);
+  const userId = await new AuthRepository(supabase).findUserId();
 
   if (!userId) {
     if (!terms) {
@@ -49,12 +49,13 @@ export async function requireTerms(): Promise<TermsGate> {
     return { userId: null, terms };
   }
 
-  const hasRow = await hasCurrentTermsAcceptance(supabase, userId);
+  const termsRepo = new TermsRepository(supabase);
+  const hasRow = await termsRepo.hasCurrentAcceptance(userId);
   if (!hasRow) {
     if (!terms) {
       throw termsRequiredError();
     }
-    await upsertTermsAcceptance(supabase, userId, terms);
+    await termsRepo.upsertAcceptance(userId, terms);
   }
   return { userId, terms };
 }

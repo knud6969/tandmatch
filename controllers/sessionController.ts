@@ -1,73 +1,86 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type { anonymousSessionSchema } from "@/lib/schemas/session";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import { anonymousExpiresAt } from "@/lib/constants/sessions";
-import type { TermsGate } from "@/middleware/termsGate";
-import type { Session } from "@/middleware/session";
-import { upsertTermsAcceptance } from "@/models/termsModel";
-import { hasActiveConsent, insertConsents, type NewConsent } from "@/models/consentsModel";
+import type { anonymousSessionSchema } from "@/lib/schemas/session";
+import type { AnonymousSessionDto } from "@/lib/types/session";
 import { ApiError } from "@/middleware/http";
-import { signInAnonymously, signOutLocal } from "@/models/authModel";
+import type { Session } from "@/middleware/session";
+import type { TermsGate } from "@/middleware/termsGate";
+import { AuthRepository } from "@/models/authRepository";
+import { CasesRepository } from "@/models/casesRepository";
+import { ConsentsRepository, type NewConsent } from "@/models/consentsRepository";
+import { TermsRepository } from "@/models/termsRepository";
 
 type AnonymousSessionInput = z.infer<typeof anonymousSessionSchema>;
-type AnonymousSessionResult = { body: { expiresAt: string }; status: 200 | 201 };
+type AnonymousSessionResult = { body: AnonymousSessionDto; status: 200 | 201 };
 
-// Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
-// MIDLERTIDIGT (0.9): den tomme sag i cases oprettes i 0.10. Der gives kun ai_processing her, aldrig billedsamtykke (se 9.4).
-// existing er den aktuelle session, hvis gate.userId er sat. Routen kører IP-rate limit, før en ny anonym bruger oprettes.
-export async function createAnonymousSession(
-  supabase: SupabaseClient,
-  gate: TermsGate,
-  existing: Session | null,
-  _input: AnonymousSessionInput, // AI-samtykket er valideret af skemaet; sagen oprettes i 0.10
-): Promise<AnonymousSessionResult> {
-  void _input;
+// `existing` er den aktuelle session, hvis gate.userId er sat (ellers null).
+export class SessionController {
+  private readonly auth: AuthRepository;
+  private readonly terms: TermsRepository;
+  private readonly consents: ConsentsRepository;
+  private readonly cases: CasesRepository;
 
-  const aiRow = (patientId: string): NewConsent => ({
-    patientId,
-    type: "ai_processing",
-    textVersion: CONSENT_TEXT_VERSIONS.ai_processing,
-    grantedWhileAnonymous: true,
-  });
-
-  // Der er allerede en session (requireTerms har kørt, så den har en accept).
-  if (gate.userId !== null) {
-    if (!existing) {
-      throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
-    }
-    if (!existing.isAnonymous) {
-      throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
-    }
-
-    // Retry-sikkert: manglende samtykke gemmes nu, før der svares 200.
-    if (!(await hasActiveConsent(supabase, "ai_processing"))) {
-      // Vilkårs-accepten er allerede sikret af requireTerms() ovenfor, så den skrives ikke igen her.
-      await insertConsents(supabase, [aiRow(existing.userId)]);
-    }
-    return {
-      body: { expiresAt: anonymousExpiresAt(existing.lastActiveAt) },
-      status: 200,
-    };
+  constructor(
+    supabase: SupabaseClient,
+    private readonly existing: Session | null,
+  ) {
+    this.auth = new AuthRepository(supabase);
+    this.terms = new TermsRepository(supabase);
+    this.consents = new ConsentsRepository(supabase);
+    this.cases = new CasesRepository(supabase);
   }
 
-  const userId = await signInAnonymously(supabase);
+  // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke, og en tom sag
+  // (architecture 10.2). Der gives kun ai_processing her, aldrig billedsamtykke (9.4). Routen kører IP-rate limit,
+  // før en ny anonym bruger oprettes. AI-samtykket er valideret af skemaet (versionen er fast).
+  async createAnonymous(gate: TermsGate, _input: AnonymousSessionInput): Promise<AnonymousSessionResult> {
+    void _input;
 
-  try {
-    await upsertTermsAcceptance(supabase, userId, gate.terms);
-    await insertConsents(supabase, [aiRow(userId)]);
-  } catch (err) {
-    // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke. Logger ud lokalt.
-    // Den anonyme bruger uden data ryddes af oprydningsjobbet.
+    const aiConsent = (patientId: string): NewConsent => ({
+      patientId,
+      type: "ai_processing",
+      textVersion: CONSENT_TEXT_VERSIONS.ai_processing,
+      grantedWhileAnonymous: true,
+    });
+
+    // Der er allerede en session (requireTerms har kørt, så den har en accept). Retry-sikkert: det, der mangler
+    // (samtykke, sag), oprettes nu, før der svares 200.
+    if (gate.userId !== null) {
+      const existing = this.existing;
+      if (!existing) {
+        throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+      }
+      if (!existing.isAnonymous) {
+        throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
+      }
+      if (!(await this.consents.hasActive("ai_processing"))) {
+        await this.consents.createMany([aiConsent(existing.userId)]);
+      }
+      const draft = (await this.cases.findLatestDraft()) ?? (await this.cases.create(existing.userId));
+      return { body: { caseId: draft.id, expiresAt: anonymousExpiresAt(existing.lastActiveAt) }, status: 200 };
+    }
+
+    const userId = await this.auth.signInAnonymously();
+
+    let caseId: string;
     try {
-      await signOutLocal(supabase);
-    } catch {
-      console.error("signOut efter fejl fejlede");
+      await this.terms.upsertAcceptance(userId, gate.terms);
+      await this.consents.createMany([aiConsent(userId)]);
+      caseId = (await this.cases.create(userId)).id;
+    } catch (err) {
+      // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke og sag. Logger ud lokalt.
+      // Den anonyme bruger uden data ryddes af oprydningsjobbet.
+      try {
+        await this.auth.signOutLocal();
+      } catch {
+        console.error("signOut efter fejl fejlede");
+      }
+      throw err;
     }
-    throw err;
-  }
 
-  const expiresAt = anonymousExpiresAt(new Date().toISOString());
-  return { body: { expiresAt }, status: 201 };
+    return { body: { caseId, expiresAt: anonymousExpiresAt(new Date().toISOString()) }, status: 201 };
+  }
 }

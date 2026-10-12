@@ -2,7 +2,7 @@ import { requireTerms } from "@/middleware/termsGate";
 import { clearAuthCookies, requireRole } from "@/middleware/session";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { jsonResponse, parseId, withApi } from "@/middleware/http";
-import { withdrawOwnConsent } from "@/controllers/consentsController";
+import { ConsentsController } from "@/controllers/consentsController";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,7 +12,7 @@ export const POST = withApi(async (_req, ctx: Ctx) => {
   const session = await requireRole("patient", { allowAnonymous: true });
   const consentId = parseId((await ctx.params).id);
   const supabase = await createSupabaseServerClient();
-  const result = await withdrawOwnConsent(supabase, session, consentId);
+  const result = await new ConsentsController(supabase, session).withdraw(consentId);
   if (result.sessionDeleted) {
     await clearAuthCookies();
   }

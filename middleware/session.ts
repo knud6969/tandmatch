@@ -1,8 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/models/db/supabase";
-import { getAuthUserId } from "@/models/authModel";
-import { getProfile, touchLastActive } from "@/models/profilesModel";
+import { AuthRepository } from "@/models/authRepository";
+import { ProfilesRepository } from "@/models/profilesRepository";
 import { ApiError } from "@/middleware/http";
 import type { Role } from "@/lib/types/common";
 
@@ -17,14 +17,15 @@ export type Session = {
 // Opdaterer last_active_at for anonyme sessioner (architecture 10.2).
 export async function getSession(): Promise<Session | null> {
   const supabase = await createSupabaseServerClient();
-  const userId = await getAuthUserId(supabase);
+  const userId = await new AuthRepository(supabase).findUserId();
   if (!userId) return null;
 
-  const profile = await getProfile(supabase, userId);
+  const profiles = new ProfilesRepository(supabase);
+  const profile = await profiles.findById(userId);
   if (!profile) return null;
 
   if (profile.isAnonymous) {
-    await touchLastActive(supabase);
+    await profiles.touchLastActive();
   }
 
   return {

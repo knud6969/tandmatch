@@ -4,7 +4,7 @@ import { enforceIpRateLimit } from "@/middleware/rateLimit";
 import { getSession } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
 import { createSupabaseServerClient } from "@/models/db/supabase";
-import { signup } from "@/controllers/authController";
+import { AuthController } from "@/controllers/authController";
 
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
@@ -12,5 +12,5 @@ export const POST = withApi(async (req) => {
   const input = await readJson(req, signupSchema);
   const existing = await getSession();
   const supabase = await createSupabaseServerClient();
-  return jsonResponse(await signup(supabase, gate, existing, input), 201);
+  return jsonResponse(await new AuthController(supabase, existing).signup(gate, input), 201);
 });

@@ -1,0 +1,119 @@
+import "server-only";
+import type { ConsentDto } from "@/lib/types/consents";
+import type { ConsentType } from "@/lib/types/common";
+import { ApiError } from "@/middleware/http";
+import { BaseRepository } from "@/models/base/baseRepository";
+
+export type NewConsent = {
+  patientId: string;
+  type: ConsentType;
+  textVersion: string;
+  grantedWhileAnonymous: boolean;
+};
+
+export type WithdrawConsentResult = {
+  withdrawnAt: string;
+  consentType: ConsentType;
+  deletedImagePaths: string[];
+  closedConversations: number;
+  withdrawnLeads: number;
+};
+
+type ConsentRow = {
+  id: string;
+  type: ConsentType;
+  text_version: string;
+  granted_at: string;
+  granted_while_anonymous: boolean;
+  withdrawn_at: string | null;
+};
+
+type WithdrawRow = {
+  withdrawn_at: string;
+  consent_type: ConsentType;
+  deleted_image_paths: string[] | null;
+  closed_conversations: number;
+  withdrawn_leads: number;
+};
+
+const CONSENT_COLUMNS = "id, type, text_version, granted_at, granted_while_anonymous, withdrawn_at";
+
+// Samtykker (architecture 4.3, 10.3). Brugerens JWT: RLS lader kun ejeren se og give samtykker.
+export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
+  protected toDto(row: ConsentRow): ConsentDto {
+    return {
+      id: row.id,
+      type: row.type,
+      textVersion: row.text_version,
+      grantedAt: row.granted_at,
+      grantedWhileAnonymous: row.granted_while_anonymous,
+      withdrawnAt: row.withdrawn_at,
+    };
+  }
+
+  private toInsert(row: NewConsent) {
+    return {
+      patient_id: row.patientId,
+      type: row.type,
+      text_version: row.textVersion,
+      granted_while_anonymous: row.grantedWhileAnonymous,
+    };
+  }
+
+  // Flere samtykker indsættes i ét insert, så de enten alle gemmes eller ingen.
+  async createMany(rows: NewConsent[]): Promise<void> {
+    await this.run(this.db.from("consents").insert(rows.map((row) => this.toInsert(row))), "consents: insert fejlede");
+  }
+
+  async create(row: NewConsent): Promise<ConsentDto> {
+    const data = await this.run<ConsentRow>(
+      this.db.from("consents").insert(this.toInsert(row)).select(CONSENT_COLUMNS).single(),
+      "consents: insert fejlede",
+    );
+    return this.toDto(this.requireRow(data));
+  }
+
+  // Egne samtykker, også tilbagetrukne.
+  async listOwn(): Promise<ConsentDto[]> {
+    return this.toDtos(
+      await this.runList<ConsentRow>(
+        this.db.from("consents").select(CONSENT_COLUMNS).order("granted_at", { ascending: false }),
+        "consents: list fejlede",
+      ),
+    );
+  }
+
+  // Aktivt samtykke: seneste række uden tilbagetrækning. Samme regel som has_active_consent() i databasen.
+  async hasActive(type: ConsentType): Promise<boolean> {
+    return (await this.rpc<boolean>("has_active_consent", { p_type: type })) === true;
+  }
+
+  // Al logik ligger i withdraw_consent() (security definer): sætter withdrawn_at, sletter billedrækker
+  // (image_upload), lukker aktive AI-samtaler (ai_processing) og trækker åbne leads tilbage
+  // (health_data_sharing). Returnerer filstierne, så controlleren kan rydde storage (architecture 5.3).
+  async withdraw(consentId: string): Promise<WithdrawConsentResult> {
+    const data = await this.rpc<WithdrawRow[]>(
+      "withdraw_consent",
+      { p_consent_id: consentId },
+      {
+        NOT_FOUND: new ApiError(404, "NOT_FOUND", "Fandt ikke det ønskede."),
+        ALREADY_WITHDRAWN: new ApiError(409, "ALREADY_WITHDRAWN", "Samtykket er allerede trukket tilbage."),
+        UNAUTHENTICATED: new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind."),
+      },
+    );
+    const row = data?.[0];
+    if (!row) throw new Error("withdraw_consent: uventet svar");
+    return {
+      withdrawnAt: row.withdrawn_at,
+      consentType: row.consent_type,
+      deletedImagePaths: row.deleted_image_paths ?? [],
+      closedConversations: row.closed_conversations,
+      withdrawnLeads: row.withdrawn_leads,
+    };
+  }
+
+  // Bekræfter at oprydningen efter tilbagetrækning er udført (filerne er fjernet fra storage).
+  async confirmCleanup(consentId: string): Promise<void> {
+    await this.rpc("confirm_consent_cleanup", { p_consent_id: consentId });
+  }
+}

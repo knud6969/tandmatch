@@ -22,6 +22,14 @@ function layer(files, groups, message, ignores = []) {
   };
 }
 
+// Ren kode i services/ uden I/O (architecture 2.1): testes direkte og starter ikke med import "server-only".
+const PURE_SERVICE_FILES = [
+  "services/ai/{rules,errors,forbiddenTerms,guard,pii,promptFormat,schemas}.ts",
+  "services/ai/prompts/**/*.ts",
+  "services/rankingService.ts",
+  "services/availabilityService.ts",
+];
+
 const layerRules = [
   layer(
     ["app/**/*.{ts,tsx}"],
@@ -31,28 +39,42 @@ const layerRules = [
   ),
   layer(
     ["app/api/**/*.ts"],
-    ["@/models/*", "!@/models/db", "@/models/db/*", "!@/models/db/supabase", "@/services/*", "@/views/*"],
+    ["@/models/*", "!@/models/db", "@/models/db/*", "!@/models/db/supabase", "@/services/*", "@/views/*", "@supabase/*"],
     "Routes kalder én controller. Kun createSupabaseServerClient må hentes fra models/.",
   ),
   layer(
     ["middleware/**/*.ts"],
-    ["@/controllers/*", "@/services/*", "@/views/*", "@/app/*"],
-    "middleware/ må kun bruge models/ og lib/.",
+    ["@/controllers/*", "@/services/*", "@/views/*", "@/app/*", "@supabase/*"],
+    "middleware/ må kun bruge models/ og lib/. Supabase kaldes kun i models/.",
   ),
   layer(
     ["controllers/**/*.ts"],
-    ["@/controllers/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http"],
-    "Controllers må kun bruge models/, services/, lib/ og middleware/http. Delt logik hører til i services/.",
+    ["@/controllers/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http", "@supabase/*"],
+    "Controllers må kun bruge models/, services/, lib/ og middleware/http. Delt logik hører til i services/. Supabase kaldes kun i models/ (typen SupabaseClient er tilladt).",
   ),
   layer(
     ["services/**/*.ts"],
-    ["@/controllers/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http"],
-    "services/ må kun bruge models/, lib/ og ApiError.",
+    ["@/controllers/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http", "@supabase/*"],
+    "services/ må kun bruge models/, lib/ og ApiError. Supabase kaldes kun i models/ (typen SupabaseClient er tilladt).",
+    PURE_SERVICE_FILES,
+  ),
+  // Ren kode i services/ (architecture 2.1): ingen I/O, så ingen models, ingen Supabase og ingen netværksklienter.
+  layer(
+    PURE_SERVICE_FILES,
+    ["@/models/*", "@/controllers/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http", "@supabase/*", "openai", "sharp"],
+    "Ren kode i services/ (rules, guard, pii, rankingService, availabilityService m.fl.) må ikke importere models/, Supabase eller netværksklienter.",
   ),
   layer(
     ["models/**/*.ts"],
     ["@/controllers/*", "@/services/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http"],
-    "models/ må kun bruge models/db, lib/ og ApiError.",
+    "models/ må kun bruge models/base, models/db, lib/ og ApiError.",
+    ["models/base/**"],
+  ),
+  // Basisklasserne kender ikke de konkrete repositories (arv går kun nedad, architecture 2.1.1).
+  layer(
+    ["models/base/**/*.ts"],
+    ["@/models/*", "!@/models/db", "!@/models/db/*", "@/controllers/*", "@/services/*", "@/views/*", "@/app/*", "@/middleware/*", "!@/middleware/http"],
+    "models/base/ må kun bruge models/db, lib/ og ApiError og kender ikke de konkrete repositories.",
   ),
   layer(
     ["views/**/*.{ts,tsx}"],

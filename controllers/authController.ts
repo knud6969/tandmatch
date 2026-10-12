@@ -1,83 +1,84 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { loginSchema, signupSchema, convertSchema } from "@/lib/schemas/auth";
-import type { AuthUserDto } from "@/lib/types/auth";
-import type { TermsGate } from "@/middleware/termsGate";
-import { upsertTermsAcceptance } from "@/models/termsModel";
-import type { Session } from "@/middleware/session";
-import { ApiError } from "@/middleware/http";
-import { getProfile } from "@/models/profilesModel";
-import { updateFirstName } from "@/models/patientsModel";
-import { refreshSession, setCredentials, signInWithPassword, signOutLocal, signUp } from "@/models/authModel";
 import type { z } from "zod";
+import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/auth";
+import type { AuthUserDto } from "@/lib/types/auth";
+import { ApiError } from "@/middleware/http";
+import type { Session } from "@/middleware/session";
+import type { TermsGate } from "@/middleware/termsGate";
+import { AuthRepository } from "@/models/authRepository";
+import { PatientsRepository } from "@/models/patientsRepository";
+import { ProfilesRepository } from "@/models/profilesRepository";
+import { TermsRepository } from "@/models/termsRepository";
 
 type LoginInput = z.infer<typeof loginSchema>;
 type SignupInput = z.infer<typeof signupSchema>;
 type ConvertInput = z.infer<typeof convertSchema>;
 
-export async function login(supabase: SupabaseClient, gate: TermsGate, input: LoginInput): Promise<AuthUserDto> {
-  const userId = await signInWithPassword(supabase, input.email, input.password);
+// Login, logout, signup og konvertering. `session` er den aktuelle session eller null (ingen session).
+export class AuthController {
+  private readonly auth: AuthRepository;
+  private readonly profiles: ProfilesRepository;
+  private readonly patients: PatientsRepository;
+  private readonly terms: TermsRepository;
 
-  if (gate.terms) {
-    await upsertTermsAcceptance(supabase, userId, gate.terms);
+  constructor(
+    supabase: SupabaseClient,
+    private readonly session: Session | null,
+  ) {
+    this.auth = new AuthRepository(supabase);
+    this.profiles = new ProfilesRepository(supabase);
+    this.patients = new PatientsRepository(supabase);
+    this.terms = new TermsRepository(supabase);
   }
 
-  const profile = await getProfile(supabase, userId);
-  if (!profile) {
-    throw new ApiError(500, "PROFILE_MISSING", "Kontoen er ikke klar. Prøv igen om lidt.");
+  async login(gate: TermsGate, input: LoginInput): Promise<AuthUserDto> {
+    const userId = await this.auth.signInWithPassword(input.email, input.password);
+
+    if (gate.terms) {
+      await this.terms.upsertAcceptance(userId, gate.terms);
+    }
+
+    const profile = await this.profiles.findById(userId);
+    if (!profile) {
+      throw new ApiError(500, "PROFILE_MISSING", "Kontoen er ikke klar. Prøv igen om lidt.");
+    }
+    return { userId, role: profile.role };
   }
 
-  return { userId, role: profile.role };
-}
-
-// Logout kræver ikke vilkårs-accept og læser ingen data (architecture 2.5).
-export async function logout(supabase: SupabaseClient): Promise<void> {
-  await signOutLocal(supabase);
-}
-
-// existing er den aktuelle session (eller null). En anonym session skal konverteres i stedet.
-export async function signup(
-  supabase: SupabaseClient,
-  gate: TermsGate,
-  existing: Session | null,
-  input: SignupInput,
-): Promise<AuthUserDto> {
-  if (existing?.isAnonymous) {
-    throw new ApiError(
-      409,
-      "ANONYMOUS_SESSION_ACTIVE",
-      "Din samtale skal konverteres til en konto i stedet.",
-    );
-  }
-  if (existing) {
-    throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
+  // Logout kræver ikke vilkårs-accept og læser ingen data (architecture 2.5).
+  async logout(): Promise<void> {
+    await this.auth.signOutLocal();
   }
 
-  const metadata: Record<string, string> =
-    { role: "patient", first_name: input.firstName }; // Klinik-signup kommer i 1.1.
+  // En anonym session skal konverteres i stedet for at oprette en ny konto.
+  async signup(gate: TermsGate, input: SignupInput): Promise<AuthUserDto> {
+    if (this.session?.isAnonymous) {
+      throw new ApiError(409, "ANONYMOUS_SESSION_ACTIVE", "Din samtale skal konverteres til en konto i stedet.");
+    }
+    if (this.session) {
+      throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
+    }
 
-  const userId = await signUp(supabase, input.email, input.password, metadata);
+    const metadata: Record<string, string> = { role: "patient", first_name: input.firstName }; // Klinik-signup kommer i 1.1.
+    const userId = await this.auth.signUp(input.email, input.password, metadata);
 
-  if (gate.terms) {
-    await upsertTermsAcceptance(supabase, userId, gate.terms);
+    if (gate.terms) {
+      await this.terms.upsertAcceptance(userId, gate.terms);
+    }
+    return { userId, role: input.role };
   }
 
-  return { userId, role: input.role };
-}
-
-// Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
-// Sag, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
-export async function convertAnonymous(
-  supabase: SupabaseClient,
-  session: Session,
-  input: ConvertInput,
-): Promise<AuthUserDto> {
-  await setCredentials(supabase, input.email, input.password);
-
-  // Triggeren på auth.users har nu sat profiles.is_anonymous = false. Opfrisk sessionen, så JWT'en matcher.
-  await updateFirstName(supabase, session.userId, input.firstName);
-
-  await refreshSession(supabase);
-
-  return { userId: session.userId, role: "patient" };
+  // Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
+  // Sag, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
+  async convertAnonymous(input: ConvertInput): Promise<AuthUserDto> {
+    if (!this.session) {
+      throw new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
+    }
+    await this.auth.setCredentials(input.email, input.password);
+    // Triggeren på auth.users har nu sat profiles.is_anonymous = false. Opfrisk sessionen, så JWT'en matcher.
+    await this.patients.update(this.session.userId, { firstName: input.firstName });
+    await this.auth.refreshSession();
+    return { userId: this.session.userId, role: "patient" };
+  }
 }

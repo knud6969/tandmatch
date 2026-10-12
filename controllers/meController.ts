@@ -3,18 +3,29 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonymousExpiresAt } from "@/lib/constants/sessions";
 import type { MeDto } from "@/lib/types/auth";
 import type { Session } from "@/middleware/session";
-import { getPatientFirstName } from "@/models/profilesModel";
+import { PatientsRepository } from "@/models/patientsRepository";
 
 // Den indloggede bruger: rolle og visningsnavn (architecture 10.2). Klinikkens navn tilføjes i 1.1.
-export async function getMe(supabase: SupabaseClient, session: Session): Promise<MeDto> {
-  const displayName =
-    session.role === "patient" ? await getPatientFirstName(supabase, session.userId) : null;
+export class MeController {
+  private readonly patients: PatientsRepository;
 
-  return {
-    id: session.userId,
-    role: session.role,
-    isAnonymous: session.isAnonymous,
-    displayName,
-    anonymousExpiresAt: session.isAnonymous ? anonymousExpiresAt(session.lastActiveAt) : null,
-  };
+  constructor(
+    supabase: SupabaseClient,
+    private readonly session: Session,
+  ) {
+    this.patients = new PatientsRepository(supabase);
+  }
+
+  async get(): Promise<MeDto> {
+    const displayName =
+      this.session.role === "patient" ? ((await this.patients.findById(this.session.userId))?.firstName ?? null) : null;
+
+    return {
+      id: this.session.userId,
+      role: this.session.role,
+      isAnonymous: this.session.isAnonymous,
+      displayName,
+      anonymousExpiresAt: this.session.isAnonymous ? anonymousExpiresAt(this.session.lastActiveAt) : null,
+    };
+  }
 }
