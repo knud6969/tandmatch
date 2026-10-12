@@ -10,7 +10,9 @@ export const AI_CONSENT_VERSION = "ai_processing@v0-prototype";
 export const IMAGE_CONSENT_VERSION = "image_upload@v1-ai-disclosure";
 export const SHARING_CONSENT_VERSION = "health_data_sharing@v0-prototype";
 
-export type Json = Record<string, any>;
+export type Json = Record<string, unknown>;
+// Svarets JSON læses frit i testene; skemaet tjekkes af assertions, ikke af typerne.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Res = { status: number; body: any; headers: Headers };
 
 export class TestClient {
@@ -40,7 +42,7 @@ export class TestClient {
       else this.cookies.set(name, value);
     }
     const text = await res.text();
-    let parsed: any = null;
+    let parsed: unknown = null;
     if (text) {
       try {
         parsed = JSON.parse(text);

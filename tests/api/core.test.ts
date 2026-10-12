@@ -123,8 +123,8 @@ describe("anonym session", () => {
   it("giver ai_processing-samtykke ved start, men intet billede- eller delingssamtykke", async () => {
     const { c } = await anonymousWithCase();
     const list = await c.get("/api/consents");
-    const active = list.body.consents.filter((x: any) => !x.withdrawnAt);
-    assert.deepEqual(active.map((x: any) => x.type), ["ai_processing"]);
+    const active = list.body.consents.filter((x: { id: string; type: string; withdrawnAt: string | null }) => !x.withdrawnAt);
+    assert.deepEqual(active.map((x: { id: string; type: string; withdrawnAt: string | null }) => x.type), ["ai_processing"]);
   });
 
   it("uden session er /api/patients/me 401", async () => {
@@ -255,14 +255,14 @@ describe("samtykker", () => {
     const second = await c.post(`/api/consents/${g.body.id}/withdraw`);
     assert.equal(second.status, 409);
     const list = await c.get("/api/consents");
-    const row = list.body.consents.find((x: any) => x.id === g.body.id);
+    const row = list.body.consents.find((x: { id: string; type: string; withdrawnAt: string | null }) => x.id === g.body.id);
     assert.ok(row.withdrawnAt);
   });
 
   it("tilbagetrækning af ai_processing som anonym sletter hele sessionen", async () => {
     const { c, userId } = await anonymousWithCase();
     const list = await c.get("/api/consents");
-    const ai = list.body.consents.find((x: any) => x.type === "ai_processing");
+    const ai = list.body.consents.find((x: { id: string; type: string; withdrawnAt: string | null }) => x.type === "ai_processing");
     const r = await c.post(`/api/consents/${ai.id}/withdraw`);
     assert.equal(r.status, 200);
     assert.equal(r.body.sessionDeleted, true);
