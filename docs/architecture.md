@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Overgang:** koden implementerer i dag den gamle forespørgsels- og tandlægemodel. `docs/omlaegning.md` viser, hvad der genbruges, tilpasses, erstattes og slettes, og `docs/arbejdsplan.md` fordeler arbejdet. Infrastrukturen (2.1-2.5, vilkårs-gate, anonym session 7.7, billedbehandling 9.3, AI-klienten) findes og genbruges; domænet (afsnit 3-10) er [IKKE BYGGET], medmindre andet står.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Resten af API'et (10.4-10.14), siderne (6), AI-flowet (7) og anmeldelsesflowet (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -143,7 +143,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 | Middleware | `middleware/` | Tværgående request-håndtering: `http.ts` (`ApiError`, `withApi`, `readJson`, `readQuery`, `rejectLargeImage`, `imageFileReader`, `parseId`, `jsonResponse`, `noContent`), `session.ts` (`getSession`, `requireSession`, `requireRole`, `requireAnonymous`, `requireAccount`, `clearAuthCookies`), `termsGate.ts`, `termsCookie.ts`, `rateLimit.ts`, `cron.ts`, `areaGuard.ts` (`guardArea`, `guardCaseFlow`). Funktioner, ikke klasser. Ejerskab af en ressource tjekkes ikke her, men i repositories (`require*`). | `models/`, `lib/` |
 | Controller | `controllers/` | Én klasse pr. ressource (`LeadsController` i `leadsController.ts`). **Oprettes pr. request** med `(supabase, session)` og opretter selv de repositories og services, den bruger (2.1.1). Metoderne tager **typet, valideret input** (aldrig `Request`, aldrig cookies), tjekker forretningsregler, kalder repositories og services og returnerer DTO'er. Controllers kalder ikke hinanden; delt logik flyttes til en service. Opretter kun admin-klienten i de tilfælde, der står i 2.3, og giver den videre til det repository, der skal bruge den. | `models/`, `services/`, `middleware/http`, `lib/` |
 | Service | `services/` | Klasser med afhængigheder i constructoren: `RankingService` (sortering og filtrering efter faste kriterier, 6.6), `AvailabilityService` (ledige tider, 6.7), `ai/AiChatService` og `ai/AiSummaryService` (OpenAI-klient og `AI_RULES`), `ImageProcessingService` (sharp: filtype, re-encoding, EXIF fjernes), `AccountDeletionService`. Controlleren kalder fx `chatService.sendTurn(...)` eller `rankingService.rank(...)` og kender ikke detaljerne. Rene hjælpefunktioner (PII-maskering, ordfilter, promptformat) må være funktioner. | `models/`, `lib/`, `middleware/http` (kun `ApiError`) |
-| Model | `models/` | **Repository-klasser**, én pr. tabel/aggregat (`CasesRepository` i `casesRepository.ts`), plus `AuthRepository` (Supabase Auth) og storage-repositories (`CaseImageStorage`, `PublicMediaStorage`). Alle arver `BaseRepository` (`models/base/baseRepository.ts`) og får Supabase-klienten i constructoren (`new CasesRepository(supabase)`). **Eneste lag, der kalder Supabase.** Metoder med faste navne: `findById`, `findOwn`, `list…`, `create`, `update`, `delete`, `require…` (find eller kast 404/403), og ét navngivet kald pr. RPC (`sendLeads(...)`). Bruger brugerens JWT, så RLS altid gælder, medmindre controlleren har givet admin-klienten (2.3). `models/db/` har klientfabrikkerne (`createSupabaseServerClient`, `createSupabaseAdminClient`), env-konfiguration og `mapDbError` (funktioner). | `models/base/`, `models/db/`, `middleware/http` (kun `ApiError`), `lib/` |
+| Model | `models/` | **Repository-klasser**, én pr. tabel/aggregat (`CasesRepository` i `casesRepository.ts`), plus `AuthRepository` (Supabase Auth). Tabel-repositories arver `BaseRepository` (`models/base/baseRepository.ts`); storage-klasserne (`CaseImageStorage`, `PublicMediaStorage`) arver `BaseStorage` (`models/base/baseStorage.ts`). Alle får Supabase-klienten i constructoren (`new CasesRepository(supabase)`). **Eneste lag, der kalder Supabase.** Metoder med faste navne: `findById`, `findOwn`, `list…`, `create`, `update`, `delete`, `require…` (find eller kast 404/403), og ét navngivet kald pr. RPC (`sendLeads(...)`). Bruger brugerens JWT, så RLS altid gælder, medmindre controlleren har givet admin-klienten (2.3). `models/db/` har klientfabrikkerne (`createSupabaseServerClient`, `createSupabaseAdminClient`), env-konfiguration og `mapDbError` (funktioner). | `models/base/`, `models/db/`, `middleware/http` (kun `ApiError`), `lib/` |
 | View | `views/` | `views/pages/` (sideindhold), `views/components/` (UI) og `views/utils/` (`api-client.ts`, `api-errors.ts`, `field-errors.ts`, `format.ts`, `map.ts`). Henter og skriver **kun** via `/api/*` med `views/utils/api-client`. | `views/`, `lib/` |
 | Delt | `lib/` | Kode uden afhængigheder til andre lag, brugt af både views og server: `types/` (DTO'er, én fil pr. domæne), `schemas/` (zod, én fil pr. domæne), `constants/` (én fil pr. domæne med både værdier og danske visningsnavne), `navigation/`, `domain/` (regler der skal være ens i UI og server). | `lib/` |
 
@@ -153,6 +153,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 - Login/logout, anonym session og konvertering til konto går via API'et (`/api/auth/*`, `/api/session/*`), så sessionen sættes som cookie af serveren.
 - **Navngivning:** serverlagene bruger `camelCase`-filnavne, og hver klassefil eksporterer præcis én klasse med samme navn i PascalCase: `casesRepository.ts` → `CasesRepository`, `leadsController.ts` → `LeadsController`, `rankingService.ts` → `RankingService`. Repositories hedder efter tabellen i flertal, controllers efter ressourcen, services efter ansvaret. `views/` og `lib/` bruger `kebab-case` (`clinic-card.tsx`). Ressourcenavne på engelsk i kode og API (`case`, `lead`, `booking`, `clinic`, `service`), danske slugs i sider (`/klinikker`, `/sag`). Sagen hedder `case` i kode og `cases` i databasen; da `case` er et reserveret ord i TypeScript, bruges `caseRow`/`patientCase` som variabelnavne.
 - **Ét sted pr. domæne:** hver ressource har højst én fil i hver af `lib/types/`, `lib/schemas/` og `lib/constants/` med samme navn (`leads.ts`). Statusser, enum-værdier og deres danske visningsnavne står kun i `lib/constants/`. Ingen dubletter i komponenter.
+- **Værdier først, typer udledt:** hver enum-lignende værdimængde defineres én gang som `as const`-array i `lib/constants/<domæne>.ts`, og typen udledes i `lib/types/` (`export type Role = (typeof ROLES)[number]`). zod-skemaer bruger samme array (`z.enum(ROLES)`). Mønstret fra `CONSENT_TYPES` gælder for alle: `ROLES` (`lib/constants/roles.ts`), `CASE_STATUSES` og `CASE_TIMEFRAMES` (`lib/constants/cases.ts`), `LEAD_STATUSES`, `LEAD_DECLINE_REASONS`, `BOOKING_STATUSES`, `CLINIC_STATUSES`, `SERVICE_CATEGORIES`, `PRICE_ACCURACY_VALUES`. Typer må ikke skrives som håndskrevne string-unions ved siden af. Værdierne skal svare til Postgres-enums i 4.2.
 - Ny ressource eller funktion: følg opskriften i 2.6.
 
 ### 2.1.1 Klasser i backend
@@ -174,7 +175,23 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 - "Find eller kast": `protected requireRow(row, { notFound, forbidden })` kaster 404 (eller 403, hvor 2.4 tillader det). Repositories bygger deres `require…`-metoder (`requireOwn(caseId)`) på den.
 - Storage-repositories har en tilsvarende basisklasse (`models/base/baseStorage.ts`) med bucket-navn, upload, sletning og signering.
 
-**Afhængigheder gives i constructoren.** En klasse opretter ikke skjult sine afhængigheder inde i metoderne. Controllere får `(supabase, session)` og bygger deres repositories og services i constructoren; et valgfrit tredje argument med afhængigheder må bruges i tests. Services får deres afhængigheder direkte (`new AiChatService(openAiClient, AI_RULES)`, `new AvailabilityService(constants)`).
+**Afhængigheder gives i constructoren.** En klasse opretter ikke skjult sine afhængigheder inde i metoderne. Services får deres afhængigheder direkte i constructoren (`new AiChatService(openAiClient, AI_RULES)`, `new AccountDeletionService(adminClient)`); statiske fabriksmetoder (`forAdmin(...)`) bruges ikke.
+
+**Controller-signaturer (besluttet):**
+- Alle controllere med en bruger: `constructor(supabase: SupabaseClient, session: Session, deps: Partial<XDeps> = {})`. Det gælder også `ExportController` (eksporten læser med brugerens JWT, så RLS gælder). Repositories og services bygges i constructoren ud fra `deps` eller standardværdier.
+- Eneste undtagelse er `CronController`, som kaldes af planlagte jobs uden session: `constructor(deps: Partial<CronDeps> = {})`. Den har ingen brugerklient og bruger kun service role-klienten (2.3 g). Nye controllere uden session er ikke tilladt uden at blive beskrevet her.
+- `deps` bruges kun til at erstatte afhængigheder i tests.
+
+**Service role-klienten i controllere (besluttet):**
+- `createSupabaseAdminClient()` kaldes **kun** fra `lazyAdminClient()` i `models/db/admin.ts` (og fra scripts). Controllere og services kalder den aldrig direkte.
+- En controller, der må bruge service role (2.3), har feltet `private readonly admin: () => SupabaseClient`, sat i constructoren til `deps.admin ?? lazyAdminClient()`. `lazyAdminClient()` returnerer en getter, der opretter klienten ved første kald og genbruger den inden for samme controller-instans (dvs. samme request).
+- Klienten bruges kun ved at give `this.admin()` videre til et repository, en storage-klasse eller en service (`new CaseImageStorage(this.admin())`), og hvert kald har en kommentar med formålet fra 2.3 (fx `// 2.3 (c)`).
+- Controllere, der ikke må bruge service role, har ikke feltet. Reviewer tjekker, at `createSupabaseAdminClient` kun findes i `models/db/admin.ts` og `scripts/`.
+
+**Rækker fra databasen valideres ikke med zod (besluttet):**
+- Repositories stoler på databasens typer. Typerne genereres med `supabase gen types typescript --local` til `models/db/database.types.ts`, og `BaseRepository` er generisk over tabellens rækketype. `toDto(row)` mapper typet række til DTO uden runtime-validering.
+- **Undtagelse:** `jsonb`-kolonner (fx `cases.ai_summary`) har typen `Json` i de genererede typer og parses med zod-skemaet fra `lib/schemas/` eller `services/ai/schemas.ts`, når de læses. Ugyldigt indhold behandles som `null` og logges uden indhold.
+- zod bruges ellers kun på input til API'et (`lib/schemas/`) og på AI-output (7.4). `ProfilesRepository` følger samme mønster som de øvrige repositories (rækkevalideringen fjernes).
 
 **Ingen tilstand på tværs af requests.** Instanser oprettes pr. request og kasseres bagefter. Der må ikke være modul-singletons med en Supabase-klient, en session eller brugerdata, og ingen statiske felter med muterbar tilstand. Uforanderlig konfiguration (konstanter, `AI_RULES`, en OpenAI-klient uden brugerdata) må deles.
 
@@ -210,7 +227,8 @@ services/
   accountDeletionService.ts  AccountDeletionService: sletning af konto, billedfiler og auth-bruger
 models/
   base/                      baseRepository.ts (BaseRepository), baseStorage.ts (BaseStorage)
-  db/                        supabase.ts (brugerens JWT), admin.ts (service role, kun 2.3), config.ts, errors.ts (funktioner)
+  db/                        supabase.ts (brugerens JWT), admin.ts (createSupabaseAdminClient, lazyAdminClient; kun 2.3),
+                             config.ts, errors.ts (funktioner), database.types.ts (genereret, 2.1.1)
   authRepository.ts, profilesRepository.ts, patientsRepository.ts, termsRepository.ts, consentsRepository.ts,
   rateLimitRepository.ts, cleanupRepository.ts
   servicesRepository.ts, casesRepository.ts, caseImagesRepository.ts, chatRepository.ts
@@ -237,7 +255,7 @@ lib/
   types/                     common, auth, consents, patients, ai, services, cases, clinics, leads, bookings,
                              messages, reviews
   schemas/                   samme domæner som types (+ session, terms)
-  constants/                 consents, legal, limits, sessions, ai-texts, services, cases, clinics, leads,
+  constants/                 roles, consents, legal, limits, sessions, ai-texts, services, cases, clinics, leads,
                              bookings, reviews
   navigation/                områder og sikre redirect-stier
   domain/                    regler delt af UI og server: leads.ts (fx canSendMoreLeads), bookings.ts (fx canCancel)
@@ -249,6 +267,8 @@ tests/
   ai/                        provokationstests for chat og opsummering
   rls/                       RLS-tests (5.6), køres mod lokal Supabase
   unit/                      rene funktioner: ranking, availability, prisnøjagtighed, AI-guard
+  api/                       API-tests med Node test runner mod lokal Supabase (`npm run test:api`):
+                             vilkårs-gate, samtykker, sessioner m.m. (5.6, API-tests)
   e2e/                       Playwright, 390 px og 1280 px
 scripts/                     seed-demo.ts, unseed-demo.ts
 proxy.ts                     session-refresh og grov rolle-redirect (Next 16)
@@ -365,7 +385,9 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseDto> {
 
 ---
 
-## 3. Roller og rettigheder [IKKE BYGGET]
+## 3. Roller og rettigheder
+
+Status: rollerne og rettighederne er bygget i databasen (trin 0). API og sider for klinikrollen er [IKKE BYGGET] (trin 1-7).
 
 Rolle gemmes i `profiles.role` (`patient` | `clinic` | `admin`). Rollen sættes ved oprettelse og kan **ikke** ændres af brugeren. `admin` sættes manuelt i databasen.
 
@@ -416,7 +438,9 @@ Bemærkninger:
 
 ---
 
-## 4. Datamodel [IKKE BYGGET]
+## 4. Datamodel
+
+Status: bygget i det samlede migrationssæt (trin 0, se 11).
 
 Alle tabeller ligger i `public`, har `id uuid primary key default gen_random_uuid()` (medmindre andet står), `created_at timestamptz not null default now()`, og **RLS er slået til på alle tabeller**. Enums er Postgres-enums. Det hele oprettes af det samlede migrationssæt (11).
 
@@ -652,7 +676,7 @@ Vises kun for verificerede klinikker.
 | submitted_at, closed_at | timestamptz null | |
 | updated_at | timestamptz | |
 
-Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_before_update()` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger).
+Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_guard` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger).
 
 #### `case_services` (bekræftede ydelser)
 | Felt | Type | Note |
@@ -795,7 +819,9 @@ Klinikker har ingen SELECT-adgang til `cases`, `case_services`, `case_images`, `
 
 ---
 
-## 5. Row Level Security [IKKE BYGGET]
+## 5. Row Level Security
+
+Status: bygget i migrationssættet og dækket af RLS-testene i `tests/rls/` (trin 0). Læsefunktionerne i 5.7 findes i databasen, men bruges endnu ikke af API'et ([IKKE BYGGET] i 10).
 
 ### 5.1 Grundregler
 
@@ -866,6 +892,9 @@ service_duration_min(clinic_id, service_id) -> integer
 haversine_km(lat1, lng1, lat2, lng2) -> numeric
       -- afstand til leads.distance_km og public_*-funktionerne
 release_expired_holds(clinic_id) -> void   -- se 5.3
+withdraw_open_leads(...) -> integer
+      -- sætter leads med status 'sent', og 'accepted' uden aktiv booking, til 'withdrawn' og frigiver deres 'held'-reservationer;
+      -- returnerer antal. Fælles for close_case() (én sag) og withdraw_consent() ved health_data_sharing (alle patientens sager)
 ```
 
 ### 5.3 Funktioner (RPC, `security definer`)
@@ -1280,7 +1309,9 @@ Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste
 
 ---
 
-## 8. Anmeldelser og prisnøjagtighed [IKKE BYGGET]
+## 8. Anmeldelser og prisnøjagtighed
+
+Status: tabeller, policies og statistikfunktion er bygget i databasen (trin 0). API og sider er [IKKE BYGGET] (trin 2 og 6).
 
 ### 8.1 Verifikation: kun efter gennemført booking
 
@@ -1324,7 +1355,9 @@ Vises kun ved `n_total >= 3` sammen med fordelingen. Beregnes i databasen (`publ
 
 ## 9. Billeder og storage
 
-### 9.1 Buckets [IKKE BYGGET]
+### 9.1 Buckets
+
+Status: begge buckets oprettes af migrationssættet (trin 0). Upload til `case-images` er bygget i kernen; routes for sager (10.5) og `public-media` (9.5) er [IKKE BYGGET].
 
 | Bucket | Type | Indhold |
 |---|---|---|
@@ -1369,15 +1402,17 @@ Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id
 
 ---
 
-## 10. API-kontrakter [IKKE BYGGET]
+## 10. API-kontrakter
 
-Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404. Undtaget fra [IKKE BYGGET] er routes markeret "Bygget" (de findes og tilpasses kun).
+Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
+
+**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0). Afsnit 10.4-10.14 er [IKKE BYGGET] i deres helhed. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 
 ### 10.1 Delte typer
 
 ```ts
 // lib/types/common.ts
-export type Role = "patient" | "clinic" | "admin";
+export type Role = (typeof ROLES)[number];   // ROLES = ["patient", "clinic", "admin"] as const i lib/constants/roles.ts (2.1)
 export type PriceRange = { min: number; max: number };  // hele kroner
 export type ImageDto = { id: string; url: string; view: string | null; quality: string | null };
 export type TrustpilotInfo = { url: string; score: number | null; reviewCount: number | null; updatedAt: string | null; enteredBy: "clinic" | "admin" } | null;
@@ -1400,24 +1435,24 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 
 ### 10.2 Auth, anonym session og konto
 
-| Metode og route | Rolle | Input | Output |
-|---|---|---|---|
-| GET `/api/terms/status`, POST `/api/terms/accept` | alle (undtaget fra gaten) | uændret | Bygget |
-| POST `/api/session/anonymous` | besøgende, gyldig vilkårs-accept | `{ aiConsent: { textVersion } }` (strict) | 201 `{ caseId, expiresAt }`. Opretter anonym session, vilkårs-accept, `ai_processing`-samtykke og tom sag. Retry-sikker. 409 `ALREADY_AUTHENTICATED` ved permanent konto; 429 ved IP-limit |
-| POST `/api/auth/convert` | anonym patient | `{ email, password, firstName }` | 200 `{ userId, role: "patient" }`; 409 `EMAIL_EXISTS` |
-| POST `/api/auth/signup` | besøgende | Diskrimineret på `role`: patient `{ role: "patient", email, password (8-72), firstName (1-50) }`; klinik `{ role: "clinic", email, password (8-72), cvr (8 cifre), clinicName (2-100), address, postalCode, city, phone }` | 201 `{ userId, role }`. Signup-triggeren opretter `profiles` + `patients` eller `profiles` + `clinics` (status `registered`). Findes en **importeret** klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]; har den en ejer: 409 `CLINIC_EXISTS`. Controlleren forhåndstjekker med `is_cvr_claimed()`, fordi fejlen fra triggeren kommer tilbage fra GoTrue som en generisk fejl (4.3). 409 ved aktiv anonym session |
-| POST `/api/auth/login`, POST `/api/auth/logout` | | uændret | Bygget |
-| GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` |
-| GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` |
-| DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 |
-| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, leads, bookings, reviews, consents }` (GDPR art. 20) |
-| GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Bygget; tilpasses til `{case_id}/`-mapper |
+| Metode og route | Rolle | Input | Output | Status |
+|---|---|---|---|---|
+| GET `/api/terms/status`, POST `/api/terms/accept` | alle (undtaget fra gaten) | uændret (2.5) | uændret | Bygget |
+| POST `/api/session/anonymous` | besøgende, gyldig vilkårs-accept | `{ aiConsent: { textVersion } }` (strict) | **201** `{ caseId, expiresAt }` ved ny session: opretter anonym session, vilkårs-accept, `ai_processing`-samtykke og tom sag. **200** `{ caseId, expiresAt }` ved retry med eksisterende anonym session: gemmer manglende samtykker og returnerer den eksisterende kladde. 409 `ALREADY_AUTHENTICATED` ved permanent konto; 429 ved IP-limit | Bygget |
+| POST `/api/auth/convert` | anonym patient | `{ email, password (8-72), firstName }` | 200 `{ userId, role: "patient" }`; 409 `EMAIL_EXISTS` | Bygget |
+| POST `/api/auth/signup` | besøgende | Diskrimineret på `role`: patient `{ role: "patient", email, password (8-72), firstName (1-50) }`; klinik `{ role: "clinic", email, password (8-72), cvr (8 cifre), clinicName (2-100), address, postalCode, city, phone }` | 201 `{ userId, role }`. Signup-triggeren opretter `profiles` + `patients` eller `profiles` + `clinics` (status `registered`). Findes en **importeret** klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]; har den en ejer: 409 `CLINIC_EXISTS`. Controlleren forhåndstjekker med `is_cvr_claimed()`, fordi fejlen fra triggeren kommer tilbage fra GoTrue som en generisk fejl (4.3). 409 ved aktiv anonym session | Patient: bygget. Klinik: [IKKE BYGGET] (1.1) |
+| POST `/api/auth/login`, POST `/api/auth/logout` | | uændret | uændret | Bygget |
+| GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget uden `clinic` ([IKKE BYGGET], 1.1) |
+| GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget uden `phone` ([IKKE BYGGET], 6.1) |
+| DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 | Bygget |
+| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag | Delvis: i dag kun `cases` og `consents`. `chat` [IKKE BYGGET] (3.3), `leads` (4.1), `bookings` og `reviews` (6.1-6.2) |
+| GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Sletter `{case_id}/`-mapper og auth-brugeren | Bygget |
 
 IP-rate-limited: login, signup, anonym session, billedupload. Routes, som anonyme må kalde, kalder `touch_last_active()`.
 
 ### 10.3 Samtykker
 
-Bygget; tilpasses: GET `/api/consents`, POST `/api/consents` (`{ type, textVersion }`; `health_data_sharing` kun permanent), POST `/api/consents/{id}/withdraw` (`{ withdrawnAt, deletedImages, withdrawnLeads, sessionDeleted }`). `withdrawnLeads` er antallet af leads, der blev trukket tilbage ved tilbagetrækning af `health_data_sharing` (5.3); UI fortæller, at bookede tider består og kan aflyses under Bookinger.
+Bygget (trin 0), inkl. `withdrawnLeads`. GET `/api/consents`, POST `/api/consents` (`{ type, textVersion }`; `health_data_sharing` kun permanent), POST `/api/consents/{id}/withdraw` (`{ withdrawnAt, deletedImages, withdrawnLeads, sessionDeleted }`). `withdrawnLeads` er antallet af leads, der blev trukket tilbage ved tilbagetrækning af `health_data_sharing` (5.3); UI fortæller, at bookede tider består og kan aflyses under Bookinger.
 
 ### 10.4 Ydelseskatalog
 
@@ -1703,17 +1738,17 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 
 | Trin | Indhold | Status |
 |---|---|---|
-| 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS-tests, fjernelse af den gamle domænekode (12.5) | [IKKE BYGGET] |
+| 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
 | 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | [IKKE BYGGET] |
 | 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | [IKKE BYGGET] |
-| 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session, billedupload og AI-klient findes fra den gamle model |
+| 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session (med tom sag), billedbehandling og AI-klienten findes i kernen fra trin 0 |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
 | 5 | Klinikkens indbakke: accepter eller afvis | [IKKE BYGGET] |
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | [IKKE BYGGET] |
 | 7 | Akutvej, demodata og finpudsning | [IKKE BYGGET] |
-| Infrastruktur | Vilkårs-gate, MVC-lag med ESLint, auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
+| Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
-**Migrationer:** det gamle sæt (27 filer) er kørt i det fælles Supabase-projekt og beskriver den gamle model. Det slettes og erstattes af et nyt, samlet sæt, og databasen nulstilles (ingen rigtige data). Det nye sæt:
+**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; `supabase migration list --linked` viser de 12 migrationer; tjek i 2.3.1). Det nye sæt:
 
 | Fil | Indhold |
 |---|---|
@@ -1845,8 +1880,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 
 ### 12.5 Overgang fra den gamle model
 
-Koden indeholder stadig den gamle model (forespørgsler, tandlæger, svar, standard-spor). Indtil den er fjernet, gælder:
-- Den gamle domænekode fjernes samlet lige efter det nye migrationssæt (opgave 0.9 i `docs/arbejdsplan.md`), fordi den ikke kan køre mod det nye skema. Det, der kan genbruges, hentes fra git (`e5cf7a04`), når afløseren bygges. Der er dermed aldrig to versioner af samme ting (besluttet).
-- Den genbrugte kerne (auth, session, vilkår, samtykker, patienter, oprydning, billedbehandling) omskrives i samme trin til klasser efter 2.1.1, så al backendkode følger samme mønster fra trin 1.
+Den gamle model (forespørgsler, tandlæger, svar, standard-spor) er fjernet fra koden i opgave 0.9 (commit `33d066f1`), og den genbrugte kerne er omskrevet til klasser i opgave 0.10. Indtil omlægningen er færdig, gælder:
+- Kode fra den gamle model, der kan genbruges, hentes fra git (`e5cf7a04`), når afløseren bygges, og skrives om til klasser. Der er aldrig to versioner af samme ting.
 - `docs/omlaegning.md` er arbejdsredskabet for, hvad der genbruges; den slettes, når omlægningen er færdig.
-- Den gamle fejl i `try_consume_anonymous_ai_call()` (bruger `auth.uid()` under service role, så anonym chat altid får 429) løses af det nye migrationssæt (5.1 regel 8, 5.3).
+- Den gamle fejl i `try_consume_anonymous_ai_call()` (brugte `auth.uid()` under service role) er løst i det nye migrationssæt (5.1 regel 8, 5.3).
