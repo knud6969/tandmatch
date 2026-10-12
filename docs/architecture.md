@@ -811,7 +811,7 @@ Klinikker har ingen SELECT-adgang til `cases`, `case_services`, `case_images`, `
 
 | Tabel | `authenticated` må opdatere |
 |---|---|
-| `clinics` | `name`, `description`, `address`, `postal_code`, `city`, `lat`, `lng`, `phone`, `email`, `website`, `logo_path`, `trustpilot_url`, `trustpilot_score`, `trustpilot_review_count` |
+| `clinics` | `name`, `description`, `address`, `postal_code`, `city`, `phone`, `email`, `website`, `trustpilot_url`, `trustpilot_score`, `trustpilot_review_count`. `lat`/`lng` sættes af `clinics_guard()` ud fra postnummeret, og `logo_path` skrives af serveren med service role efter upload (9.5) |
 | `patients` | `first_name`, `postal_code`, `phone` |
 | `cases` | `postal_code`, `preferred_timeframe` |
 | `portfolio_items` | `caption`, `service_id` |
@@ -849,7 +849,7 @@ Interne hjælpere (ikke RPC; kaldes kun af andre funktioner, triggers og policie
 effective_booking_status(<bookingens status, ends_at, hold_expires_at>) -> booking_status
       -- 'booked' og ends_at + 24 t <= now() → 'completed'; 'held' og hold_expires_at <= now() → 'cancelled'; ellers status
       -- (undtagelse fra 5.1 regel 4: returnerer en status). Eneste definition af "effektiv status" (4.2)
-assert_slot_bookable(clinic_id, service_id, starts_at, ends_at, is_emergency) -> void
+assert_slot_bookable(clinic_id, service_id, starts_at, ends_at) -> void   -- akut afgøres af ydelsen
       -- kaster fejl, hvis tiden ikke ligger på et helt kvarter, uden for åbningsvindue (akutvindue kun for akutydelser),
       -- i en blokering, før varsel eller efter horisont (6.7). Bruges af book_slot() og send_leads()
 service_duration_min(clinic_id, service_id) -> integer
