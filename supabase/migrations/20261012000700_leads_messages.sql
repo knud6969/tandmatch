@@ -51,6 +51,9 @@ language sql immutable set search_path = ''
 as $$ select p_status in ('sent', 'accepted', 'booked'); $$;
 
 -- Deltager = ejer af sagen ELLER ejer af leadets klinik, når leadet ikke er trukket tilbage (beslutning 20).
+-- Klinikken skal desuden være 'verified' (5.7: leads kræver verifikation). Uden det kunne en, der overtager en
+-- importeret klinik via CVR (signup, [PROTOTYPE]) efter at den tidligere ejer har slettet sin konto, læse den
+-- tidligere ejers beskedtråde med patienter og skrive til dem (security 0.7, kritisk fund).
 create function public.is_lead_participant(p_lead_id uuid)
 returns boolean
 language sql stable security definer set search_path = ''
@@ -62,7 +65,7 @@ as $$
       join public.clinics k on k.id = l.clinic_id
      where l.id = p_lead_id
        and (c.patient_id = (select auth.uid())
-            or (l.status <> 'withdrawn' and k.owner_id = (select auth.uid())))
+            or (l.status <> 'withdrawn' and k.owner_id = (select auth.uid()) and k.status = 'verified'))
   );
 $$;
 
