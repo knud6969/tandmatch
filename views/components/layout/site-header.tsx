@@ -17,9 +17,9 @@ export function SiteHeader() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const me = state.status === "ready" ? state.me : null;
-  // Anonyme patienter har ingen områdenavigation: /patient kræver konto (architecture 6.5).
+  // Anonyme patienter har ingen områdenavigation: områderne kræver konto (architecture 6.5).
   const areaNav = me && !me.isAnonymous ? AREA_NAV[me.role] : [];
-  // Den længste matchende sti er aktiv, så fx /tandlaege/forespoergsel/... markerer "Indbakke".
+  // Den længste matchende sti er aktiv, så fx /patient/sag/... markerer "Mine sager".
   const activeHref = areaNav
     .map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))

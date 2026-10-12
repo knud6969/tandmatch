@@ -12,7 +12,7 @@ export type ImageView = "front" | "upper" | "lower" | "side_left" | "side_right"
 export type ImageQuality = "ok" | "too_dark" | "blurry" | "wrong_angle" | "not_teeth";
 
 export type AiImageObservation = {
-  imageRef: string; // request_images.id på serveren (intern "img_n" mappes før lagring)
+  imageRef: string; // case_images.id på serveren (intern "img_n" mappes før lagring)
   view: ImageView;
   visibleArea: string; // max 80 tegn
   observations: string[]; // max 4, hver max 120 tegn

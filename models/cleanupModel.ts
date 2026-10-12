@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { REQUEST_BUCKET } from "@/lib/constants/limits";
+import { CASE_BUCKET } from "@/lib/constants/limits";
 
 // Bruges kun med service role (createSupabaseAdminClient). Ingen persondata logges herfra.
 
@@ -26,7 +26,7 @@ async function listFilesRecursive(admin: SupabaseClient, prefix: string): Promis
   let offset = 0;
   for (;;) {
     const { data, error } = await admin.storage
-      .from(REQUEST_BUCKET)
+      .from(CASE_BUCKET)
       .list(prefix, { limit: pageSize, offset, sortBy: { column: "name", order: "asc" } });
     if (error) throw new Error("storage: list fejlede");
     const entries = data ?? [];
@@ -47,14 +47,22 @@ async function listFilesRecursive(admin: SupabaseClient, prefix: string): Promis
 export async function removeAllObjectsForPrefix(admin: SupabaseClient, prefix: string): Promise<void> {
   const paths = await listFilesRecursive(admin, prefix);
   for (let i = 0; i < paths.length; i += 100) {
-    const { error } = await admin.storage.from(REQUEST_BUCKET).remove(paths.slice(i, i + 100));
+    const { error } = await admin.storage.from(CASE_BUCKET).remove(paths.slice(i, i + 100));
     if (error) throw new Error("storage: slet fejlede");
   }
 }
 
-// Billedstien er nu {request_id}/{image_id}.jpg (ikke {patient_id}/...), så oprydning skal ske pr. forespørgsel.
-export async function listRequestIdsForPatient(admin: SupabaseClient, patientId: string): Promise<string[]> {
-  const { data, error } = await admin.from("requests").select("id").eq("patient_id", patientId);
-  if (error) throw new Error("requests: kunne ikke læses til oprydning");
+// Sletter flere filer i ét kald (bruges ved tilbagetrækning af image_upload-samtykke).
+export async function removeImageObjects(admin: SupabaseClient, paths: string[]): Promise<void> {
+  for (let i = 0; i < paths.length; i += 100) {
+    const { error } = await admin.storage.from(CASE_BUCKET).remove(paths.slice(i, i + 100));
+    if (error) throw new Error("storage: slet billeder fejlede");
+  }
+}
+
+// Billedstien er {case_id}/{image_id}.jpg (ikke {patient_id}/...), så oprydning sker pr. sag.
+export async function listCaseIdsForPatient(admin: SupabaseClient, patientId: string): Promise<string[]> {
+  const { data, error } = await admin.from("cases").select("id").eq("patient_id", patientId);
+  if (error) throw new Error("cases: kunne ikke læses til oprydning");
   return (data as { id: string }[]).map((row) => row.id);
 }

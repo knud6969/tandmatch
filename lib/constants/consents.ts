@@ -8,8 +8,7 @@ export const CONSENT_TYPES = ["ai_processing", "image_upload", "health_data_shar
 export const CONSENT_TEXT_VERSIONS = {
   ai_processing: "ai_processing@v0-prototype",
   // v1: oplyser eksplicit om AI-tjenesten (OpenAI) og at det er en beskrivelse, ikke en vurdering.
-  // Tidligere samtykker (v0) forbliver gyldige rækker, men nye uploads kræver denne version
-  // (håndhævet i request_images-triggeren, se migration 20261009120000).
+  // Tidligere samtykker (v0) forbliver gyldige rækker, men nye uploads kræver denne version.
   image_upload: "image_upload@v1-ai-disclosure",
   health_data_sharing: "health_data_sharing@v0-prototype",
 } as const;

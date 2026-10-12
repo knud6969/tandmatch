@@ -61,9 +61,9 @@ export function requireAccount(session: Session, message: string): Session {
 }
 
 // Rolle-tjek for API-routes, der deles af patient og tandlæge (fx beskedtråd og svar). Anonyme afvises.
-export async function requireParticipant(): Promise<Session & { role: "patient" | "dentist" }> {
+export async function requireParticipant(): Promise<Session & { role: "patient" | "clinic" }> {
   const session = await requireSession();
-  if (session.role !== "patient" && session.role !== "dentist") {
+  if (session.role !== "patient" && session.role !== "clinic") {
     throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
   }
   if (session.isAnonymous) {
@@ -72,7 +72,7 @@ export async function requireParticipant(): Promise<Session & { role: "patient" 
   return { ...session, role: session.role };
 }
 
-// Rolle-tjek for API-routes. Anonyme patienter afvises, medmindre allowAnonymous er sat (kun wizarden, trin 2).
+// Rolle-tjek for API-routes. Anonyme patienter afvises, medmindre allowAnonymous er sat (kun sagsflowet).
 export async function requireRole(
   role: Role,
   options: { allowAnonymous?: boolean } = {},

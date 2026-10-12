@@ -7,7 +7,7 @@ import type { Role } from "@/lib/types/common";
 
 // Server-side områdevagt (architecture 6.5). Kaldes i område-layouts før noget indhold rendres.
 // Bruger requireRole() fra middleware/session.ts og oversætter fejlkoden til en redirect.
-// Anonyme patienter sendes til /opret/patient, fordi alle /patient-sider kræver konto (undtagen wizarden, som ikke er bygget).
+// Anonyme patienter sendes til /opret/patient, fordi alle /patient-sider kræver konto (undtagen sagsflowet).
 export async function guardArea(role: Role, area: string): Promise<void> {
   try {
     await requireRole(role);
@@ -30,9 +30,9 @@ export async function guardArea(role: Role, area: string): Promise<void> {
   }
 }
 
-// Områdevagt for /start/[requestId] (architecture 6.1, 6.5). Anonyme patienter er tilladt her, fordi det er deres kladde.
-// Ejerskab af forespørgslen tjekkes af API'et (404 for andres), ikke her, så serveren ikke henter forretningsdata.
-export async function guardWizard(): Promise<void> {
+// Områdevagt for /start/[caseId] (architecture 6.1, 6.5). Anonyme patienter er tilladt her, fordi det er deres sag.
+// Ejerskab af sagen tjekkes af API'et (404 for andres), ikke her, så serveren ikke henter forretningsdata.
+export async function guardCaseFlow(): Promise<void> {
   try {
     await requireRole("patient", { allowAnonymous: true });
     return;
@@ -40,7 +40,7 @@ export async function guardWizard(): Promise<void> {
     if (!(error instanceof ApiError)) throw error;
 
     if (error.code === "UNAUTHENTICATED") {
-      // Uden session har der ingen kladde. Brugeren starter forfra på /start.
+      // Uden session har der ingen sag. Brugeren starter forfra på /start.
       redirect("/start");
     }
     if (error.code === "FORBIDDEN") {

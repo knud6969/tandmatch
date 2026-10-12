@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Role } from "@/lib/types/common";
 
 const profileRowSchema = z.object({
-  role: z.enum(["patient", "dentist", "admin"]),
+  role: z.enum(["patient", "clinic", "admin"]),
   is_anonymous: z.boolean(),
   last_active_at: z.string(),
 });
@@ -57,18 +57,4 @@ export async function getPatientFirstName(
     .maybeSingle();
   if (error) throw new Error("patients: select fejlede");
   return (data?.first_name as string | null | undefined) ?? null;
-}
-
-export async function getDentistSummary(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<{ fullName: string; isVerified: boolean } | null> {
-  const { data, error } = await supabase
-    .from("dentists")
-    .select("full_name, is_verified")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw new Error("dentists: select fejlede");
-  if (!data) return null;
-  return { fullName: data.full_name as string, isVerified: data.is_verified as boolean };
 }

@@ -1,13 +1,8 @@
 import type { CONSENT_TYPES } from "@/lib/constants/consents";
-import type { COSMETIC_CATEGORIES } from "@/lib/constants/categories";
-import type { STANDARD_SERVICES } from "@/lib/constants/standard";
 
-export type Role = "patient" | "dentist" | "admin";
+export type Role = "patient" | "clinic" | "admin";
 export type ConsentType = (typeof CONSENT_TYPES)[number];
-export type CosmeticCategory = (typeof COSMETIC_CATEGORIES)[number];
-export type StandardService = (typeof STANDARD_SERVICES)[number];
 export type PriceRange = { min: number; max: number }; // hele kroner
-export type RequestStatus = "draft" | "sent" | "closed" | "expired";
 
 export type ImageDto = {
   id: string;

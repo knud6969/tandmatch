@@ -3,29 +3,22 @@ import type { Role } from "@/lib/types/common";
 export type NavItem = { href: string; label: string };
 
 // Startside for hvert område. Bruges efter login og ved forkert rolle.
+// MIDLERTIDIGT (0.9): patient og clinic peger på "/", fordi /patient og /klinik ikke findes endnu. Sættes til "/patient" og "/klinik", når områdernes sider bygges.
 export const AREA_HOME: Record<Role, string> = {
-  patient: "/patient",
-  dentist: "/tandlaege",
+  patient: "/",
+  clinic: "/",
   admin: "/",
 };
 
-// Navigation pr. rolle (områdenavigation i headeren).
+// Navigation pr. rolle (områdenavigation i headeren). Tomme, til områdernes sider findes (trin 3-5).
 export const AREA_NAV: Record<Role, NavItem[]> = {
-  patient: [
-    { href: "/patient", label: "Mine forespørgsler" },
-    { href: "/patient/anmeldelser", label: "Anmeldelser" },
-    { href: "/patient/samtykker", label: "Samtykker og data" },
-  ],
-  dentist: [
-    { href: "/tandlaege", label: "Indbakke" },
-    { href: "/tandlaege/anmeldelser", label: "Anmeldelser" },
-    { href: "/tandlaege/profil", label: "Profil" },
-  ],
+  patient: [],
+  clinic: [],
   admin: [],
 };
 
 export const AREA_LABEL: Record<Role, string> = {
   patient: "patienter",
-  dentist: "tandlæger",
+  clinic: "klinikker",
   admin: "administratorer",
 };

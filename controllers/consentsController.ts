@@ -6,7 +6,7 @@ import type { ConsentDto, GrantedConsentDto, WithdrawResultDto } from "@/lib/typ
 import { ApiError } from "@/middleware/http";
 import { createSupabaseAdminClient } from "@/models/db/admin";
 import { confirmConsentCleanup, insertConsent, listConsents, withdrawConsent } from "@/models/consentsModel";
-import { removeImageObjects } from "@/models/imagesModel";
+import { removeImageObjects } from "@/models/cleanupModel";
 import { deleteAccountData } from "@/services/accountDeletion";
 import type { Session } from "@/middleware/session";
 
@@ -27,7 +27,7 @@ export async function grantOwnConsent(
     throw new ApiError(400, "CONSENT_VERSION_MISMATCH", "Samtykketeksten er opdateret. Læs den igen og accepter.");
   }
   if (input.type === "health_data_sharing" && session.isAnonymous) {
-    throw new ApiError(403, "ACCOUNT_REQUIRED", "Opret en konto for at give samtykke til deling med tandlæger.");
+    throw new ApiError(403, "ACCOUNT_REQUIRED", "Opret en konto for at give samtykke til deling med klinikker.");
   }
 
   const consent = await insertConsent(supabase, {

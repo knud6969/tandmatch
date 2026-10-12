@@ -15,5 +15,4 @@ export type MeDto = {
   isAnonymous: boolean;
   displayName: string | null;
   anonymousExpiresAt: string | null;
-  dentistVerified?: boolean;
 };

@@ -54,13 +54,7 @@ export async function signup(
   }
 
   const metadata: Record<string, string> =
-    input.role === "patient"
-      ? { role: "patient", first_name: input.firstName }
-      : {
-          role: "dentist",
-          full_name: input.fullName,
-          authorization_id: input.authorizationId,
-        };
+    { role: "patient", first_name: input.firstName }; // Klinik-signup kommer i 1.1.
 
   const userId = await signUp(supabase, input.email, input.password, metadata);
 
@@ -72,7 +66,7 @@ export async function signup(
 }
 
 // Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
-// Kladde, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
+// Sag, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
 export async function convertAnonymous(
   supabase: SupabaseClient,
   session: Session,

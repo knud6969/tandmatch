@@ -24,25 +24,13 @@ export const loginSchema = z
   })
   .strict();
 
-export const signupSchema = z.discriminatedUnion("role", [
+export const signupSchema = z.discriminatedUnion("role", [  // Klinik-signup kommer i 1.1.
   z
     .object({
       role: z.literal("patient"),
       email: emailSchema,
       password: passwordSchema,
       firstName: firstNameSchema,
-    })
-    .strict(),
-  z
-    .object({
-      role: z.literal("dentist"),
-      email: emailSchema,
-      password: passwordSchema,
-      fullName: z.string().trim().min(2, "Angiv dit fulde navn.").max(100),
-      authorizationId: z
-        .string()
-        .trim()
-        .regex(/^[A-Za-z0-9-]{3,20}$/, "Autorisations-ID har et ugyldigt format."),
     })
     .strict(),
 ]);
