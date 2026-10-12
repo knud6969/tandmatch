@@ -67,6 +67,18 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- is_cvr_claimed(): forhåndstjek ved klinik-signup. true, hvis en klinik med CVR'et allerede har en ejer.
+-- Returnerer kun boolean.
+create function public.is_cvr_claimed(p_cvr text)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (select 1 from public.clinics c where c.cvr = p_cvr and c.owner_id is not null);
+$$;
+
+revoke all on function public.is_cvr_claimed(text) from public;
+grant execute on function public.is_cvr_claimed(text) to anon, authenticated, service_role;
+
 -- Spejler auth.users.is_anonymous (konvertering anonym -> konto).
 create function public.handle_auth_user_anonymity_changed()
 returns trigger

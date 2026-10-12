@@ -4,7 +4,7 @@
 -- så klinikkerne mister dem; ai_processing lukker aktive samtaler. Returnerer filstierne, så serveren kan rydde storage.
 -- Idempotent genforsøg, indtil confirm_consent_cleanup() er kaldt.
 create function public.withdraw_consent(p_consent_id uuid)
-returns table (withdrawn_at timestamptz, consent_type public.consent_type, deleted_image_paths text[], closed_conversations integer)
+returns table (withdrawn_at timestamptz, consent_type public.consent_type, deleted_image_paths text[], closed_conversations integer, withdrawn_leads integer)
 language plpgsql security definer set search_path = ''
 as $$
 declare
@@ -14,6 +14,7 @@ declare
   v_paths text[] := '{}';
   v_closed integer := 0;
   v_pending boolean;
+  v_leads integer := 0;
 begin
   if v_uid is null then
     raise exception 'UNAUTHENTICATED' using errcode = '42501';
@@ -33,7 +34,7 @@ begin
       ) select count(*) into v_closed from c;
     end if;
     return query
-      select v_consent.withdrawn_at, v_consent.type, coalesce(v_consent.pending_storage_paths, '{}'), v_closed;
+      select v_consent.withdrawn_at, v_consent.type, coalesce(v_consent.pending_storage_paths, '{}'), v_closed, 0;
     return;
   end if;
 
@@ -47,6 +48,9 @@ begin
     with c as (
       update public.ai_conversations set status = 'closed' where patient_id = v_uid and status = 'active' returning 1
     ) select count(*) into v_closed from c;
+  elsif v_consent.type = 'health_data_sharing' then
+    -- Ubesvarede og accepterede leads uden booking trækkes tilbage, reservationer frigives. Bookede bookinger består.
+    v_leads := public.withdraw_open_leads(v_uid, null);
   end if;
 
   v_pending := (v_consent.type = 'image_upload' and coalesce(array_length(v_paths, 1), 0) > 0)
@@ -57,7 +61,7 @@ begin
          cleanup_done = not v_pending
    where id = p_consent_id;
 
-  return query select v_at, v_consent.type, v_paths, v_closed;
+  return query select v_at, v_consent.type, v_paths, v_closed, v_leads;
 end;
 $$;
 

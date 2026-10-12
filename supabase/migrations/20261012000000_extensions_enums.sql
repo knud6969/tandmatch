@@ -15,7 +15,7 @@ create type public.service_category as enum ('cosmetic', 'general', 'emergency')
 create type public.case_status as enum ('draft', 'submitted', 'closed');
 create type public.case_timeframe as enum ('asap', 'within_2_weeks', 'within_3_months', 'flexible');
 create type public.lead_status as enum ('sent', 'accepted', 'declined', 'booked', 'withdrawn');
-create type public.lead_decline_reason as enum ('no_capacity', 'not_offered', 'needs_referral', 'other');
+create type public.lead_decline_reason as enum ('no_capacity', 'not_offered', 'needs_referral', 'other', 'clinic_left');
 create type public.booking_status as enum ('held', 'booked', 'completed', 'no_show', 'cancelled');
 create type public.booking_actor as enum ('patient', 'clinic');
 create type public.consent_type as enum ('health_data_sharing', 'image_upload', 'ai_processing');

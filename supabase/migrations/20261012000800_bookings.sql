@@ -52,7 +52,7 @@ as $$
   end;
 $$;
 
-create function public.booking_effective_status(p_booking_id uuid)
+create function public.effective_booking_status(p_booking_id uuid)
 returns public.booking_status
 language sql stable security definer set search_path = ''
 as $$
@@ -130,6 +130,10 @@ begin
     raise exception 'INVALID_SERVICE' using errcode = '22023';
   end if;
   v_notice := case when v_emergency then interval '0 minutes' else interval '30 minutes' end;
+  -- Starttider ligger på hele kvarterer (SLOT_STEP_MINUTES = 15), i lokal tid.
+  if extract(minute from v_local_start)::integer % 15 <> 0 or extract(second from v_local_start) <> 0 then
+    raise exception 'SLOT_UNAVAILABLE' using errcode = 'P0001';
+  end if;
   if p_starts_at < now() + v_notice or p_starts_at > now() + interval '60 days' then
     raise exception 'SLOT_UNAVAILABLE' using errcode = 'P0001';
   end if;
@@ -376,6 +380,9 @@ begin
     if p_decline_reason is null then
       raise exception 'DECLINE_REASON_REQUIRED' using errcode = '22023';
     end if;
+    if p_decline_reason = 'clinic_left' then
+      raise exception 'INVALID_DECLINE_REASON' using errcode = '22023';
+    end if;
     if p_decline_note is not null and char_length(p_decline_note) > 200 then
       raise exception 'INVALID_COMMENT' using errcode = '22023';
     end if;
@@ -572,11 +579,95 @@ begin
 end;
 $$;
 
+-- Intern: trækker patientens ubesvarede og accepterede leads (uden booking) tilbage og frigiver held-reservationer.
+-- Bruges af close_case() og withdraw_consent(health_data_sharing). Bookede bookinger består.
+-- p_case_id null = alle patientens sager.
+create function public.withdraw_open_leads(p_patient_id uuid, p_case_id uuid default null)
+returns integer
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_count integer;
+begin
+  update public.bookings b
+     set status = 'cancelled', cancelled_by = 'patient', cancelled_at = now()
+    from public.leads l join public.cases c on c.id = l.case_id
+   where b.lead_id = l.id and b.status = 'held'
+     and c.patient_id = p_patient_id and (p_case_id is null or c.id = p_case_id);
+  with w as (
+    update public.leads l
+       set status = 'withdrawn', withdrawn_at = now()
+      from public.cases c
+     where c.id = l.case_id and c.patient_id = p_patient_id and (p_case_id is null or c.id = p_case_id)
+       and l.status in ('sent', 'accepted')
+    returning 1
+  ) select count(*) into v_count from w;
+  return v_count;
+end;
+$$;
+
+-- close_case(): patienten lukker en sag. Ubesvarede og accepterede leads uden booking trækkes tilbage.
+create function public.close_case(p_case_id uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_case public.cases%rowtype;
+begin
+  if v_uid is null then
+    raise exception 'UNAUTHENTICATED' using errcode = '42501';
+  end if;
+  select * into v_case from public.cases where id = p_case_id and patient_id = v_uid for update;
+  if not found then
+    raise exception 'NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_case.status = 'closed' then
+    return;
+  end if;
+  perform public.withdraw_open_leads(v_uid, p_case_id);
+  perform set_config('tm.system', 'on', true);
+  update public.cases set status = 'closed', closed_at = now() where id = p_case_id;
+  perform set_config('tm.system', '', true);
+  update public.ai_conversations set status = 'closed' where case_id = p_case_id and status = 'active';
+end;
+$$;
+
+-- Klinikken mister sin ejer (konto slettet): leads afvises med 'clinic_left', reservationer frigives og
+-- fremtidige bookinger aflyses. (clinics_guard() sætter status tilbage til 'imported'.)
+create function public.clinics_after_owner_removed()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  update public.bookings
+     set status = 'cancelled', cancelled_by = 'clinic', cancelled_at = now()
+   where clinic_id = new.id and (status = 'held' or (status = 'booked' and starts_at > now()));
+  update public.leads
+     set status = 'declined', decline_reason = 'clinic_left', responded_at = now()
+   where clinic_id = new.id
+     and (status in ('sent', 'accepted')
+          or (status = 'booked' and not exists (
+                select 1 from public.bookings b where b.lead_id = leads.id and b.status in ('held', 'booked', 'completed'))));
+  return null;
+end;
+$$;
+
+create trigger clinics_after_owner_removed
+  after update of owner_id on public.clinics
+  for each row
+  when (old.owner_id is not null and new.owner_id is null)
+  execute function public.clinics_after_owner_removed();
+
 -- Rettigheder
+revoke all on function public.withdraw_open_leads(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.close_case(uuid) from public, anon;
+grant execute on function public.close_case(uuid) to authenticated;
+revoke all on function public.clinics_after_owner_removed() from public, anon, authenticated;
 revoke all on function public.effective_booking_status(public.booking_status, timestamptz, timestamptz) from public, anon;
-revoke all on function public.booking_effective_status(uuid) from public, anon;
+revoke all on function public.effective_booking_status(uuid) from public, anon;
 grant execute on function public.effective_booking_status(public.booking_status, timestamptz, timestamptz) to authenticated, service_role;
-grant execute on function public.booking_effective_status(uuid) to authenticated, service_role;
+grant execute on function public.effective_booking_status(uuid) to authenticated, service_role;
 
 revoke all on function public.release_expired_holds(uuid) from public, anon, authenticated;
 revoke all on function public.assert_slot_bookable(uuid, uuid, timestamptz, timestamptz) from public, anon, authenticated;
