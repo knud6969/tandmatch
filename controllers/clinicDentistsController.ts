@@ -47,8 +47,8 @@ export class ClinicDentistsController {
     this.admin = deps.admin ?? lazyAdminClient();
   }
 
-  private async requireClinicId(): Promise<string> {
-    return (await this.clinics.requireOwn(this.session.userId)).id;
+  private requireClinicId(): Promise<string> {
+    return this.clinics.requireOwnId(this.session.userId);
   }
 
   // Tandlæger med deres porteføljebilleder.
@@ -60,8 +60,8 @@ export class ClinicDentistsController {
 
   async create(input: CreateDentistInput): Promise<DentistDto> {
     const clinicId = await this.requireClinicId();
-    if ((await this.dentists.count(clinicId)) >= MAX_DENTISTS_PER_CLINIC) {
-      throw new ApiError(429, "DENTIST_LIMIT", "Du kan højst oprette 30 tandlæger.");
+    if ((await this.dentists.countForClinic(clinicId)) >= MAX_DENTISTS_PER_CLINIC) {
+      throw new ApiError(429, "DENTIST_LIMIT", `Du kan højst oprette ${MAX_DENTISTS_PER_CLINIC} tandlæger.`);
     }
     return { ...(await this.dentists.create(clinicId, input)), portfolio: [] };
   }
@@ -96,14 +96,16 @@ export class ClinicDentistsController {
     const path = PublicMediaStorage.dentistPhotoPath(clinicId, dentistId);
     // 2.3 (d): upload i public-media efter ejertjekket.
     await new PublicMediaStorage(this.admin()).replace(path, data, "image/jpeg");
-    await this.dentists.setPhotoPath(clinicId, dentistId, path);
-    return { photoUrl: PublicMediaStorage.publicUrl(path, Date.now()) };
+    // 2.3 (d): photo_path og photo_updated_at er ikke i kolonne-grants (M1); skrives af serveren efter upload.
+    const version = await new ClinicDentistsRepository(this.admin()).setPhotoPath(clinicId, dentistId, path);
+    return { photoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
   }
 
   async deletePhoto(dentistId: string): Promise<void> {
     const clinicId = await this.requireClinicId();
     await this.dentists.requireOwn(clinicId, dentistId);
-    await this.dentists.setPhotoPath(clinicId, dentistId, null);
+    // 2.3 (d): photo_path skrives af serveren (M1).
+    await new ClinicDentistsRepository(this.admin()).setPhotoPath(clinicId, dentistId, null);
     // 2.3 (d): sletning i public-media efter ejertjekket.
     await new PublicMediaStorage(this.admin()).remove([PublicMediaStorage.dentistPhotoPath(clinicId, dentistId)]);
   }

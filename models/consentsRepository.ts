@@ -12,7 +12,7 @@ export type NewConsent = {
   grantedWhileAnonymous: boolean;
 };
 
-export type WithdrawConsentResult = {
+type WithdrawConsentResult = {
   withdrawnAt: string;
   consentType: ConsentType;
   deletedImagePaths: string[];

@@ -53,16 +53,12 @@ export class PortfolioController {
     this.admin = deps.admin ?? lazyAdminClient();
   }
 
-  private async requireClinicId(): Promise<string> {
-    return (await this.clinics.requireOwn(this.session.userId)).id;
+  private requireClinicId(): Promise<string> {
+    return this.clinics.requireOwnId(this.session.userId);
   }
 
   private async requireActiveService(serviceId: string | null | undefined): Promise<void> {
-    if (!serviceId) return;
-    const active = await this.services.listActive();
-    if (!active.some((service) => service.id === serviceId)) {
-      throw new ApiError(400, "UNKNOWN_SERVICE", "Ydelsen findes ikke i kataloget.");
-    }
+    if (serviceId) await this.services.requireActive([serviceId]);
   }
 
   // Tandlægen skal tilhøre klinikken (404 ellers). Filen re-encodes (EXIF fjernes), uploades og registreres; fejler
@@ -71,8 +67,8 @@ export class PortfolioController {
     const clinicId = await this.requireClinicId();
     await this.dentists.requireOwn(clinicId, input.dentistId);
     await this.requireActiveService(input.serviceId);
-    if ((await this.portfolio.count(clinicId)) >= MAX_PORTFOLIO_ITEMS_PER_CLINIC) {
-      throw new ApiError(429, "PORTFOLIO_LIMIT", "Du kan højst have 60 porteføljebilleder.");
+    if ((await this.portfolio.countForClinic(clinicId)) >= MAX_PORTFOLIO_ITEMS_PER_CLINIC) {
+      throw new ApiError(429, "PORTFOLIO_LIMIT", `Du kan højst have ${MAX_PORTFOLIO_ITEMS_PER_CLINIC} porteføljebilleder.`);
     }
 
     const { data } = await this.images.reencode(Buffer.from(await file.arrayBuffer()));

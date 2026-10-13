@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { AuthRepository } from "@/models/authRepository";
@@ -13,11 +14,22 @@ export type Session = {
   lastActiveAt: string;
 };
 
-// Læser den aktuelle bruger fra JWT-cookies. Verificerer hos Supabase Auth (getUser), ikke kun cookien.
-// Opdaterer last_active_at for anonyme sessioner (architecture 10.2).
-export async function getSession(): Promise<Session | null> {
+// Brugerens klient og verificerede bruger-id for ét kald. Oprettes én gang pr. request (requireTerms() eller
+// createAuthContext()) og gives videre til requireRole() m.fl. og til controlleren, så Supabase Auth kun slås op og evt.
+// fornyes ét sted pr. request. Flere klienter pr. request fornyede samme refresh token samtidig (architecture 2.4).
+export type AuthContext = { supabase: SupabaseClient; userId: string | null };
+
+// Opretter klienten og verificerer brugeren hos Supabase Auth (getUser), ikke kun cookien.
+export async function createAuthContext(): Promise<AuthContext> {
   const supabase = await createSupabaseServerClient();
   const userId = await new AuthRepository(supabase).findUserId();
+  return { supabase, userId };
+}
+
+// Læser den aktuelle session ud fra konteksten (eller en ny, hvis kalderen ikke har en, fx layouts).
+// Opdaterer last_active_at for anonyme sessioner (architecture 10.2).
+export async function getSession(ctx?: AuthContext): Promise<Session | null> {
+  const { supabase, userId } = ctx ?? (await createAuthContext());
   if (!userId) return null;
 
   const profiles = new ProfilesRepository(supabase);
@@ -36,8 +48,8 @@ export async function getSession(): Promise<Session | null> {
   };
 }
 
-export async function requireSession(): Promise<Session> {
-  const session = await getSession();
+export async function requireSession(ctx?: AuthContext): Promise<Session> {
+  const session = await getSession(ctx);
   if (!session) {
     throw unauthenticated();
   }
@@ -45,8 +57,8 @@ export async function requireSession(): Promise<Session> {
 }
 
 // Kun for en anonym session (konvertering til konto, architecture 7.7). Tjekkes før body læses.
-export async function requireAnonymous(): Promise<Session> {
-  const session = await requireSession();
+export async function requireAnonymous(ctx?: AuthContext): Promise<Session> {
+  const session = await requireSession(ctx);
   if (!session.isAnonymous) {
     throw new ApiError(403, "NOT_ANONYMOUS", "Der er ingen anonym samtale at konvertere.");
   }
@@ -64,9 +76,9 @@ export function requireAccount(session: Session, message: string): Session {
 // Rolle-tjek for API-routes. Anonyme patienter afvises, medmindre allowAnonymous er sat (kun sagsflowet).
 export async function requireRole(
   role: Role,
-  options: { allowAnonymous?: boolean } = {},
+  options: { allowAnonymous?: boolean; ctx?: AuthContext } = {},
 ): Promise<Session> {
-  const session = await requireSession();
+  const session = await requireSession(options.ctx);
   if (session.role !== role) {
     throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
   }

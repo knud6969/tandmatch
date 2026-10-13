@@ -1,20 +1,23 @@
 import "server-only";
 import type { z } from "zod";
+import { MAX_DENTISTS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { createDentistSchema, patchDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistRecordDto } from "@/lib/types/clinics";
+import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
-export type NewDentist = z.infer<typeof createDentistSchema>;
-export type DentistPatch = z.infer<typeof patchDentistSchema>;
+type NewDentist = z.infer<typeof createDentistSchema>;
+type DentistPatch = z.infer<typeof patchDentistSchema>;
 
 type DentistRow = Pick<Tables<"clinic_dentists">, "id" | "full_name" | "title" | "bio" | "photo_path" | "photo_updated_at" | "sort_order">;
 
 const DENTIST_COLUMNS = "id, full_name, title, bio, photo_path, photo_updated_at, sort_order";
 
 // Klinikkens tandlæger (architecture 4.3 `clinic_dentists`): kun visning, intet login. Med brugerens JWT er det kun
-// ejeren, der læser og skriver (RLS). Kun `deleteAllForClinic` kræver service role-klienten (2.3 f).
+// ejeren, der læser og skriver (RLS), og kun kolonnerne i kolonne-grants (M1). `setPhotoPath` kræver service role-klienten
+// (photo_path og photo_updated_at skrives af serveren efter upload, 2.3 d).
 export class ClinicDentistsRepository extends BaseRepository<DentistRow, DentistRecordDto> {
   protected toDto(row: DentistRow): DentistRecordDto {
     return {
@@ -43,13 +46,8 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
     );
   }
 
-  async count(clinicId: string): Promise<number> {
-    const { count, error } = await this.db
-      .from("clinic_dentists")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId);
-    if (error) throw new Error("clinic_dentists: count fejlede");
-    return count ?? 0;
+  async countForClinic(clinicId: string): Promise<number> {
+    return this.count("clinic_dentists", { clinic_id: clinicId });
   }
 
   // Tandlægen, hvis den tilhører klinikken; 404 ellers (architecture 2.4).
@@ -75,6 +73,7 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
         .select(DENTIST_COLUMNS)
         .single(),
       "clinic_dentists: insert fejlede",
+      { DENTIST_LIMIT: new ApiError(429, "DENTIST_LIMIT", `Du kan højst oprette ${MAX_DENTISTS_PER_CLINIC} tandlæger.`) },
     );
     return this.toDto(this.requireRow(row));
   }
@@ -100,12 +99,15 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
     return this.toDto(this.requireRow(row));
   }
 
-  // Stien til portrættet (eller null) - filen i public-media slettes af kalderen.
-  async setPhotoPath(clinicId: string, dentistId: string, path: string | null): Promise<void> {
+  // Stien til portrættet (eller null) - filen i public-media slettes af kalderen. Kun med service role-klienten (2.3 d).
+  // Returnerer versionen (photo_updated_at), som bruges som ?v= i portrættets URL (9.5).
+  async setPhotoPath(clinicId: string, dentistId: string, path: string | null): Promise<string> {
+    const version = new Date().toISOString();
     await this.run(
-      this.db.from("clinic_dentists").update({ photo_path: path, photo_updated_at: new Date().toISOString() }).eq("clinic_id", clinicId).eq("id", dentistId),
+      this.db.from("clinic_dentists").update({ photo_path: path, photo_updated_at: version }).eq("clinic_id", clinicId).eq("id", dentistId),
       "clinic_dentists: foto fejlede",
     );
+    return version;
   }
 
   // Sletter tandlægen; porteføljen følger med via cascade. Filerne i public-media slettes af kalderen.
@@ -115,10 +117,5 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
       "clinic_dentists: delete fejlede",
     );
     this.requireRow(rows[0]);
-  }
-
-  // Kontosletning: alle klinikkens tandlæger (og dermed portefølje) fjernes. Kun med service role-klienten.
-  async deleteAllForClinic(clinicId: string): Promise<void> {
-    await this.run(this.db.from("clinic_dentists").delete().eq("clinic_id", clinicId), "clinic_dentists: delete fejlede");
   }
 }

@@ -1,14 +1,16 @@
 import "server-only";
 import type { z } from "zod";
+import { MAX_PORTFOLIO_ITEMS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { patchPortfolioItemSchema } from "@/lib/schemas/clinics";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
+import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
-export type PortfolioPatch = z.infer<typeof patchPortfolioItemSchema>;
+type PortfolioPatch = z.infer<typeof patchPortfolioItemSchema>;
 
-export type NewPortfolioItem = {
+type NewPortfolioItem = {
   id: string;
   clinicId: string;
   dentistId: string;
@@ -50,13 +52,8 @@ export class PortfolioRepository extends BaseRepository<PortfolioRow, PortfolioI
     );
   }
 
-  async count(clinicId: string): Promise<number> {
-    const { count, error } = await this.db
-      .from("portfolio_items")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId);
-    if (error) throw new Error("portfolio_items: count fejlede");
-    return count ?? 0;
+  async countForClinic(clinicId: string): Promise<number> {
+    return this.count("portfolio_items", { clinic_id: clinicId });
   }
 
   // Billedets sti til sletning af filen, hvis det tilhører klinikken; 404 ellers.
@@ -95,6 +92,13 @@ export class PortfolioRepository extends BaseRepository<PortfolioRow, PortfolioI
         .select(PORTFOLIO_COLUMNS)
         .single(),
       "portfolio_items: insert fejlede",
+      {
+        PORTFOLIO_LIMIT: new ApiError(
+          429,
+          "PORTFOLIO_LIMIT",
+          `Du kan højst have ${MAX_PORTFOLIO_ITEMS_PER_CLINIC} porteføljebilleder.`,
+        ),
+      },
     );
     return this.toDto(this.requireRow(row));
   }

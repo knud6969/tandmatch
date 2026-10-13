@@ -11,11 +11,13 @@ import {
   MAX_OPENING_HOUR_WINDOWS,
   MAX_PRICE_DKK,
   MAX_PRICE_ROWS,
+  MAX_SERVICE_GROUPS,
   PRICE_NOTE_MAX_CHARS,
   SERVICE_DURATION_MAX_MINUTES,
   SERVICE_DURATION_MIN_MINUTES,
   TIME_BLOCK_NOTE_MAX_CHARS,
   TRUSTPILOT_URL_PREFIXES,
+  WEEKDAYS,
 } from "@/lib/constants/clinics";
 
 // Felter om klinikken, delt af klinik-signup (lib/schemas/auth.ts) og redigering af profilen.
@@ -124,6 +126,8 @@ const priceRowSchema = z
   .strict()
   .refine((row) => row.priceMax >= row.priceMin, { message: "Højeste pris skal være mindst den laveste." });
 
+export type NewClinicPrice = z.infer<typeof priceRowSchema>;
+
 export const putPricesSchema = z
   .object({
     prices: z
@@ -135,18 +139,30 @@ export const putPricesSchema = z
   })
   .strict();
 
+// Valgte kategorier: erstatter hele valget (PUT, architecture 10.8).
+export const putServiceGroupsSchema = z
+  .object({
+    groupIds: z
+      .array(z.uuid("Ugyldig kategori."))
+      .max(MAX_SERVICE_GROUPS, "For mange kategorier.")
+      .refine((ids) => new Set(ids).size === ids.length, { message: "Hver kategori må kun optræde én gang." }),
+  })
+  .strict();
+
 // Åbningstider: erstatter hele listen (PUT). Lokal tid i Europe/Copenhagen.
 const timeOfDaySchema = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/, "Angiv klokkeslæt som TT:MM.");
 
 const openingHoursRowSchema = z
   .object({
-    weekday: z.number().int().min(1, "Ugedagen skal være 1-7.").max(7, "Ugedagen skal være 1-7."),
+    weekday: z.literal(WEEKDAYS, "Ugedagen skal være 1-7."),
     opensAt: timeOfDaySchema,
     closesAt: timeOfDaySchema,
     isEmergency: z.boolean(),
   })
   .strict()
   .refine((row) => row.opensAt < row.closesAt, { message: "Åbningstiden skal ligge før lukketiden." });
+
+export type NewOpeningHours = z.infer<typeof openingHoursRowSchema>;
 
 export const putOpeningHoursSchema = z
   .object({
@@ -182,6 +198,8 @@ export const createTimeBlockSchema = z
   .refine((block) => Date.parse(block.startsAt) < Date.parse(block.endsAt), {
     message: "Starten skal ligge før slutningen.",
   });
+
+export type NewTimeBlock = z.infer<typeof createTimeBlockSchema>;
 
 export const timeBlocksQuerySchema = z
   .object({

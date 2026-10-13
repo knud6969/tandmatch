@@ -17,7 +17,7 @@ import { IMAGE_ACCEPT, ImagePrepareError, prepareImage } from "@/views/utils/pre
 import { DENTIST_BIO_MAX_CHARS } from "@/lib/constants/clinics";
 import { createDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistDto } from "@/lib/types/clinics";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
 
 type Loaded = { dentists: DentistDto[]; services: ServiceDto[] };
 type Field = "fullName" | "title" | "bio";
@@ -26,9 +26,9 @@ type DentistValues = { fullName: string; title: string; bio: string };
 async function loadAll(): Promise<Loaded> {
   const [dentists, services] = await Promise.all([
     apiRequest<{ dentists: DentistDto[] }>("/api/clinics/me/dentists"),
-    apiRequest<{ services: ServiceDto[] }>("/api/services"),
+    apiRequest<{ groups: ServiceGroupDto[] }>("/api/services"),
   ]);
-  return { dentists: dentists.dentists, services: services.services };
+  return { dentists: dentists.dentists, services: services.groups.flatMap((group) => group.services) };
 }
 
 // Tandlæger med portræt og portefølje (architecture 4.3 `clinic_dentists`, 9.5, 10.8). Tandlæger er kun til visning

@@ -67,6 +67,10 @@ test.describe.configure({ mode: "serial" });
 
 test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
+  // IP-rate limits (signup og billedupload, 10 pr. time pr. IP) gælder pr. klient-IP. Hver kørsel får sin egen (falske)
+  // IP, så gentagne kørsler fra localhost ikke rammer grænserne.
+  const fakeIp = `10.${1 + Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
+  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": fakeIp });
   const mobile = testInfo.project.name === "mobil";
   const cvr = uniqueCvr();
   const email = `e2e-klinik-${testInfo.project.name}-${Date.now()}@example.com`;

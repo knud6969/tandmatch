@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isTransientAuthError } from "@/models/db/authErrors";
 import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/models/db/config";
 import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/middleware/termsCookie";
 import { safeInternalPath } from "@/lib/navigation/paths";
@@ -47,7 +48,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, cacheHeaders) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
@@ -55,15 +56,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, { ...options, ...AUTH_COOKIE_OPTIONS });
         }
+        // Svar med auth-cookies må ikke caches af CDN eller proxy (anbefalet af @supabase/ssr).
+        for (const [key, value] of Object.entries(cacheHeaders)) {
+          response.headers.set(key, value);
+        }
       },
     },
   });
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
 
   const needsLogin = LOGIN_REQUIRED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
-  if (needsLogin && !user) {
+  // En midlertidig fejl hos Supabase Auth betyder ikke, at brugeren er logget ud: siden får lov at rendere, og
+  // områdevagten i layoutet prøver igen (og viser fejlsiden, hvis Auth stadig ikke svarer) frem for at sende til login.
+  if (needsLogin && !user && !isTransientAuthError(authError)) {
     const target = safeInternalPath(`${pathname}${search}`);
     const loginPath = target ? `/login?naeste=${encodeURIComponent(target)}` : "/login";
     return redirectTo(request, loginPath, response);

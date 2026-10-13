@@ -4,14 +4,14 @@ import { anonymousExpiresAt } from "@/lib/constants/sessions";
 import type { MeDto } from "@/lib/types/auth";
 import type { Session } from "@/middleware/session";
 import { PatientsRepository } from "@/models/patientsRepository";
-import { ProfilesRepository } from "@/models/profilesRepository";
+import { ClinicsRepository } from "@/models/clinicsRepository";
 
 // Den indloggede bruger: rolle og visningsnavn (architecture 10.2). For en klinik følger id, navn og status.
-export type MeDeps = { patients: PatientsRepository; profiles: ProfilesRepository };
+export type MeDeps = { patients: PatientsRepository; clinics: ClinicsRepository };
 
 export class MeController {
   private readonly patients: PatientsRepository;
-  private readonly profiles: ProfilesRepository;
+  private readonly clinics: ClinicsRepository;
 
   constructor(
     supabase: SupabaseClient,
@@ -19,14 +19,15 @@ export class MeController {
     deps: Partial<MeDeps> = {},
   ) {
     this.patients = deps.patients ?? new PatientsRepository(supabase);
-    this.profiles = deps.profiles ?? new ProfilesRepository(supabase);
+    this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
   }
 
   async get(): Promise<MeDto> {
     const displayName =
       this.session.role === "patient" ? ((await this.patients.findById(this.session.userId))?.firstName ?? null) : null;
 
-    const clinic = this.session.role === "clinic" ? await this.profiles.findClinicSummary(this.session.userId) : null;
+    const own = this.session.role === "clinic" ? await this.clinics.findOwn(this.session.userId) : null;
+    const clinic = own ? { id: own.id, name: own.name, status: own.status } : null;
 
     return {
       id: this.session.userId,

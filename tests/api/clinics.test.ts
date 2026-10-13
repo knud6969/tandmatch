@@ -57,38 +57,165 @@ async function patientClient() {
   return c;
 }
 
-async function serviceIds(c: TestClient, count = 2): Promise<string[]> {
+type ServiceGroup = { id: string; slug: string; name: string; description: string; services: { id: string; slug: string; category: string; groupId: string; groupSlug: string }[] };
+
+async function catalog(c: TestClient): Promise<ServiceGroup[]> {
   const r = await c.get("/api/services");
   assert.equal(r.status, 200);
-  return r.body.services.slice(0, count).map((s: { id: string }) => s.id);
+  return r.body.groups;
+}
+
+// Vælger kategorien for de første behandlinger i kataloget (prisreglen kræver valgt kategori) og returnerer id'erne.
+async function serviceIds(c: TestClient, count = 2): Promise<string[]> {
+  const groups = await catalog(c);
+  const services = groups.flatMap((g) => g.services).slice(0, count);
+  const put = await c.put("/api/clinics/me/service-groups", { groupIds: [...new Set(services.map((s) => s.groupId))] });
+  assert.equal(put.status, 200, JSON.stringify(put.body));
+  return services.map((s) => s.id);
 }
 
 describe("ydelseskatalog", () => {
-  it("er offentligt og indeholder undersøgelse og en akutydelse", async () => {
+  it("er offentligt, grupperet i kategorier og indeholder undersøgelse og en akutydelse", async () => {
     const c = await newClientWithTerms();
-    const r = await c.get("/api/services");
-    assert.equal(r.status, 200);
-    const slugs = r.body.services.map((s: { slug: string }) => s.slug);
-    assert.ok(slugs.includes("undersoegelse"));
-    assert.ok(r.body.services.some((s: { category: string }) => s.category === "emergency"));
-    for (const s of r.body.services) {
-      assert.deepEqual(Object.keys(s).sort(), ["category", "defaultDurationMin", "description", "id", "name", "slug"]);
+    const groups = await catalog(c);
+    assert.ok(groups.length >= 14);
+    const all = groups.flatMap((g) => g.services);
+    assert.ok(all.length >= 53);
+    assert.ok(all.some((s) => s.slug === "undersoegelse"));
+    assert.ok(all.some((s) => s.category === "emergency"));
+    for (const g of groups) {
+      assert.deepEqual(Object.keys(g).sort(), ["description", "id", "name", "services", "slug"]);
+      assert.ok(g.services.length > 0, "kategorier uden behandlinger udelades");
+      for (const s of g.services) {
+        assert.deepEqual(Object.keys(s).sort(), ["category", "defaultDurationMin", "description", "groupId", "groupSlug", "id", "name", "slug"]);
+        assert.equal(s.groupId, g.id);
+        assert.equal(s.groupSlug, g.slug);
+      }
     }
+    // Typen emergency hører præcis til kategorien akut.
+    assert.ok(all.filter((s) => s.groupSlug === "akut").every((s) => s.category === "emergency"));
+    assert.ok(all.filter((s) => s.groupSlug !== "akut").every((s) => s.category !== "emergency"));
+    // Kategorierne følger sort_order: forebyggelse først, akut sidst.
+    assert.equal(groups[0].slug, "forebyggelse");
+    assert.equal(groups[groups.length - 1].slug, "akut");
   });
 
-  it("kan filtreres på kategori, og ukendt kategori giver 400", async () => {
+  it("kan filtreres på overordnet type, og ukendt type giver 400", async () => {
     const c = await newClientWithTerms();
     const r = await c.get("/api/services?category=cosmetic");
     assert.equal(r.status, 200);
-    assert.ok(r.body.services.length > 0);
-    assert.ok(r.body.services.every((s: { category: string }) => s.category === "cosmetic"));
+    const services = r.body.groups.flatMap((g: ServiceGroup) => g.services);
+    assert.ok(services.length > 0);
+    assert.ok(services.every((s: { category: string }) => s.category === "cosmetic"));
+    assert.ok(r.body.groups.every((g: ServiceGroup) => g.slug !== "akut"), "kategorier uden behandlinger efter filter udelades");
     assert.equal((await c.get("/api/services?category=andet")).status, 400);
+  });
+
+  it("skjuler inaktive behandlinger og kategorier", async () => {
+    const c = await newClientWithTerms();
+    const groups = await catalog(c);
+    const group = groups.find((g) => g.slug === "bidskinner")!;
+    const service = group.services[0];
+    await admin.from("services").update({ is_active: false }).eq("id", service.id);
+    try {
+      const afterService = (await catalog(c)).find((g) => g.slug === "bidskinner")!;
+      assert.equal(afterService.services.length, group.services.length - 1);
+      await admin.from("service_groups").update({ is_active: false }).eq("id", group.id);
+      assert.equal((await catalog(c)).some((g) => g.slug === "bidskinner"), false);
+    } finally {
+      await admin.from("service_groups").update({ is_active: true }).eq("id", group.id);
+      await admin.from("services").update({ is_active: true }).eq("id", service.id);
+    }
   });
 
   it("kræver vilkårs-accept", async () => {
     const r = await new TestClient().get("/api/services");
     assert.equal(r.status, 403);
     assert.equal(r.body.error.code, "TERMS_REQUIRED");
+  });
+});
+
+describe("egen klinik: valgte kategorier", () => {
+  it("PUT erstatter valget, GET læser det, og tomt valg er tilladt", async () => {
+    const { c } = await signupClinic();
+    const groups = await catalog(c);
+    assert.deepEqual((await c.get("/api/clinics/me/service-groups")).body, { groupIds: [] });
+    const two = [groups[2].id, groups[0].id];
+    const put = await c.put("/api/clinics/me/service-groups", { groupIds: two });
+    assert.equal(put.status, 200, JSON.stringify(put.body));
+    assert.deepEqual([...put.body.groupIds].sort(), [...two].sort());
+    assert.deepEqual([...(await c.get("/api/clinics/me/service-groups")).body.groupIds].sort(), [...two].sort());
+    const one = await c.put("/api/clinics/me/service-groups", { groupIds: [groups[1].id] });
+    assert.deepEqual(one.body.groupIds, [groups[1].id]);
+    assert.deepEqual((await c.put("/api/clinics/me/service-groups", { groupIds: [] })).body.groupIds, []);
+  });
+
+  it("afviser ukendte, inaktive, ugyldige og dublerede kategorier", async () => {
+    const { c } = await signupClinic();
+    const groups = await catalog(c);
+    const unknown = await c.put("/api/clinics/me/service-groups", { groupIds: ["00000000-0000-4000-8000-000000000000"] });
+    assert.equal(unknown.status, 400);
+    assert.equal(unknown.body.error.code, "UNKNOWN_SERVICE_GROUP");
+    for (const body of [{ groupIds: ["ikke-uuid"] }, { groupIds: [groups[0].id, groups[0].id] }, { groupIds: "x" }, { groupIds: [], extra: 1 }, {}]) {
+      assert.equal((await c.put("/api/clinics/me/service-groups", body)).status, 400, JSON.stringify(body));
+    }
+    await admin.from("service_groups").update({ is_active: false }).eq("id", groups[3].id);
+    try {
+      assert.equal((await c.put("/api/clinics/me/service-groups", { groupIds: [groups[3].id] })).status, 400);
+    } finally {
+      await admin.from("service_groups").update({ is_active: true }).eq("id", groups[3].id);
+    }
+  });
+
+  it("pris i en kategori, der ikke er valgt, giver 409 SERVICE_GROUP_NOT_SELECTED og ændrer intet", async () => {
+    const { c } = await signupClinic();
+    const groups = await catalog(c);
+    const [a] = groups[0].services;
+    const [other] = groups[1].services;
+    await c.put("/api/clinics/me/service-groups", { groupIds: [groups[0].id] });
+    const ok = await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a.id, priceMin: 100, priceMax: 200, durationMin: 30 }] });
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const bad = await c.put("/api/clinics/me/prices", {
+      prices: [
+        { serviceId: a.id, priceMin: 999, priceMax: 999, durationMin: 30 },
+        { serviceId: other.id, priceMin: 100, priceMax: 200, durationMin: 30 },
+      ],
+    });
+    assert.equal(bad.status, 409);
+    assert.equal(bad.body.error.code, "SERVICE_GROUP_NOT_SELECTED");
+    // Udskiftningen er atomar: den gamle liste er uændret.
+    const after = (await c.get("/api/clinics/me/prices")).body.prices;
+    assert.equal(after.length, 1);
+    assert.deepEqual(after[0].price, { min: 100, max: 200 });
+  });
+
+  it("fravalg af en kategori sletter priserne i den, og kun dem", async () => {
+    const { c } = await signupClinic();
+    const groups = await catalog(c);
+    const a = groups[0].services[0];
+    const b = groups[1].services[0];
+    await c.put("/api/clinics/me/service-groups", { groupIds: [groups[0].id, groups[1].id] });
+    await c.put("/api/clinics/me/prices", {
+      prices: [
+        { serviceId: a.id, priceMin: 100, priceMax: 200, durationMin: 30 },
+        { serviceId: b.id, priceMin: 300, priceMax: 400, durationMin: 30 },
+      ],
+    });
+    await c.put("/api/clinics/me/service-groups", { groupIds: [groups[1].id] });
+    const prices = (await c.get("/api/clinics/me/prices")).body.prices;
+    assert.deepEqual(prices.map((p: { serviceId: string }) => p.serviceId), [b.id]);
+  });
+
+  it("er kun synligt for ejeren, og patienter får 403", async () => {
+    const x = await signupClinic();
+    const y = await signupClinic();
+    const groups = await catalog(x.c);
+    await x.c.put("/api/clinics/me/service-groups", { groupIds: [groups[0].id] });
+    assert.deepEqual((await y.c.get("/api/clinics/me/service-groups")).body.groupIds, []);
+    const p = await patientClient();
+    assert.equal((await p.get("/api/clinics/me/service-groups")).status, 403);
+    assert.equal((await p.put("/api/clinics/me/service-groups", { groupIds: [] })).status, 403);
+    assert.equal((await (await newClientWithTerms()).get("/api/clinics/me/service-groups")).status, 401);
   });
 });
 
@@ -637,8 +764,26 @@ describe("sletning af klinikkonto", () => {
     assert.equal((await p.del("/api/clinics/me", { confirm: "SLET" })).status, 403);
   });
 
-  it("gør klinikken importeret, fjerner filer og tandlæger og logger ud", async () => {
+  it("rydder også rækkerne, når ejeren slettes uden om API'et (triggeren)", async () => {
     const { c, userId, clinicId } = await signupClinic();
+    await admin.from("clinics").update({ import_source: "cvr" }).eq("id", clinicId);
+    const [a] = await serviceIds(c, 1);
+    await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a, priceMin: 1, priceMax: 2, durationMin: 30 }] });
+    await c.patch("/api/clinics/me", { email: "privat@slettes.test", website: "https://slettes.test" });
+    const del = await admin.auth.admin.deleteUser(userId);
+    assert.ifError(del.error);
+    createdUserIds.delete(userId);
+    assert.equal((await admin.from("clinic_prices").select("service_id").eq("clinic_id", clinicId)).data?.length, 0);
+    const row = await admin.from("clinics").select("status, email, website").eq("id", clinicId).single();
+    assert.deepEqual(row.data, { status: "imported", email: null, website: null });
+    await admin.from("clinics").delete().eq("id", clinicId);
+  });
+
+  // En importeret klinik, der er overtaget via CVR (import_source sat), bliver `imported` med bevarede grunddata.
+  // Hvad der sker med en klinik uden import_source (selvoprettet), afventer brugerens beslutning (åbent spørgsmål 28).
+  it("gør en overtaget importeret klinik importeret igen, fjerner filer og rækker og logger ud", async () => {
+    const { c, userId, clinicId } = await signupClinic();
+    await admin.from("clinics").update({ import_source: "cvr" }).eq("id", clinicId);
     const img = await jpegWithExif();
     const logo = await c.postForm("/api/clinics/me/logo", imageForm(img));
     const d = await c.post("/api/clinics/me/dentists", { fullName: "Dr. Slettes" });
@@ -681,6 +826,8 @@ describe("sletning af klinikkonto", () => {
     assert.equal((await admin.from("portfolio_items").select("id").eq("clinic_id", clinicId)).data?.length, 0);
     assert.equal((await admin.from("clinic_prices").select("service_id").eq("clinic_id", clinicId)).data?.length, 0);
     assert.equal((await admin.from("clinic_time_blocks").select("id").eq("clinic_id", clinicId)).data?.length, 0);
+    assert.equal((await admin.from("clinic_service_groups").select("group_id").eq("clinic_id", clinicId)).data?.length, 0);
+    assert.equal(clinic.data?.logo_path, null);
     const kept = await admin
       .from("clinics")
       .select("name, address, postal_code, city, phone, description, email, website, trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_entered_by")
@@ -709,6 +856,7 @@ describe("sletning af klinikkonto", () => {
   });
   it("bevarer Trustpilot, som admin har indtastet,", async () => {
     const { c, userId, clinicId } = await signupClinic();
+    await admin.from("clinics").update({ import_source: "cvr" }).eq("id", clinicId);
     await c.patch("/api/clinics/me", { description: "Tekst" });
     await admin
       .from("clinics")
@@ -732,5 +880,67 @@ describe("sletning af klinikkonto", () => {
     assert.equal(row.data?.trustpilot_score, 4.8);
     assert.equal(row.data?.trustpilot_entered_by, "admin");
     await admin.from("clinics").delete().eq("id", clinicId);
+  });
+});
+
+describe("lofter og rate limit", () => {
+  it("den 11. billedupload i en time fra samme IP giver 429 RATE_LIMITED (logo, portræt og portefølje deler grænsen)", async () => {
+    const { c } = await signupClinic();
+    const d = await c.post("/api/clinics/me/dentists", { fullName: "Dr. Grænse" });
+    const img = await jpegWithExif();
+    for (let i = 0; i < 4; i++) assert.equal((await c.postForm("/api/clinics/me/logo", imageForm(img))).status, 200);
+    for (let i = 0; i < 3; i++) assert.equal((await c.postForm(`/api/clinics/me/dentists/${d.body.id}/photo`, imageForm(img))).status, 200);
+    for (let i = 0; i < 3; i++) {
+      const r = await c.postForm(
+        "/api/clinics/me/portfolio",
+        imageForm(img, { dentistId: d.body.id, patientConsentConfirmed: "true", consentTextVersion: PORTFOLIO_CONSENT_VERSION }),
+      );
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+    }
+    for (const send of [
+      () => c.postForm("/api/clinics/me/logo", imageForm(img)),
+      () => c.postForm(`/api/clinics/me/dentists/${d.body.id}/photo`, imageForm(img)),
+      () => c.postForm("/api/clinics/me/portfolio", imageForm(img, { dentistId: d.body.id, patientConsentConfirmed: "true", consentTextVersion: PORTFOLIO_CONSENT_VERSION })),
+    ]) {
+      const r = await send();
+      assert.equal(r.status, 429);
+      assert.equal(r.body.error.code, "RATE_LIMITED");
+    }
+    // Andre kald end uploads rammes ikke.
+    assert.equal((await c.get("/api/clinics/me")).status, 200);
+    // En anden IP har sin egen grænse.
+    const other = await signupClinic();
+    assert.equal((await other.c.postForm("/api/clinics/me/logo", imageForm(img))).status, 200);
+  });
+
+  it("den 201. blokerede tid giver 429 TIME_BLOCK_LIMIT (også i databasen)", async () => {
+    const { c, clinicId } = await signupClinic();
+    const rows = Array.from({ length: 200 }, (_, i) => ({
+      clinic_id: clinicId,
+      starts_at: new Date(Date.UTC(2031, 0, 1 + i, 8)).toISOString(),
+      ends_at: new Date(Date.UTC(2031, 0, 1 + i, 9)).toISOString(),
+    }));
+    assert.ifError((await admin.from("clinic_time_blocks").insert(rows)).error);
+    const r = await c.post("/api/clinics/me/time-blocks", { startsAt: "2032-01-01T08:00:00Z", endsAt: "2032-01-01T09:00:00Z" });
+    assert.equal(r.status, 429, JSON.stringify(r.body));
+    assert.equal(r.body.error.code, "TIME_BLOCK_LIMIT");
+  });
+
+  it("den 31. tandlæge giver 429 DENTIST_LIMIT", async () => {
+    const { c, clinicId } = await signupClinic();
+    assert.ifError((await admin.from("clinic_dentists").insert(Array.from({ length: 30 }, (_, i) => ({ clinic_id: clinicId, full_name: `Dr. ${i}` })))).error);
+    const r = await c.post("/api/clinics/me/dentists", { fullName: "Dr. For mange" });
+    assert.equal(r.status, 429);
+    assert.equal(r.body.error.code, "DENTIST_LIMIT");
+  });
+
+  it("afviser klinik-website uden http(s), og tom PATCH returnerer den uændrede klinik", async () => {
+    const { c } = await signupClinic();
+    assert.equal((await c.patch("/api/clinics/me", { website: "javascript:alert(1)" })).status, 400);
+    assert.equal((await c.patch("/api/clinics/me", { website: "klinik.dk" })).status, 400);
+    const before = (await c.get("/api/clinics/me")).body;
+    const empty = await c.patch("/api/clinics/me", {});
+    assert.equal(empty.status, 200);
+    assert.equal(empty.body.name, before.name);
   });
 });

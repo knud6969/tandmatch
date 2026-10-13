@@ -3,7 +3,6 @@ import { jsonResponse, readJson, withApi } from "@/middleware/http";
 import { enforceIpRateLimit } from "@/middleware/rateLimit";
 import { getSession } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
-import { createSupabaseServerClient } from "@/models/db/supabase";
 import { SessionController } from "@/controllers/sessionController";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
@@ -12,11 +11,11 @@ import { SessionController } from "@/controllers/sessionController";
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
   const input = await readJson(req, anonymousSessionSchema);
-  const existing = gate.userId !== null ? await getSession() : null;
+  const existing = gate.userId !== null ? await getSession(gate) : null;
   if (gate.userId === null) {
     await enforceIpRateLimit("anonymous-session", req);
   }
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = gate;
   const result = await new SessionController(supabase, existing).createAnonymous(gate, input);
   return jsonResponse(result.body, result.status);
 });

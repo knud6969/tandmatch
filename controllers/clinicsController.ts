@@ -7,6 +7,7 @@ import type {
   patchClinicSchema,
   putOpeningHoursSchema,
   putPricesSchema,
+  putServiceGroupsSchema,
   timeBlocksQuerySchema,
 } from "@/lib/schemas/clinics";
 import type { ClinicPriceDto, ClinicRecordDto, OpeningHoursDto, OwnClinicDto, TimeBlockDto } from "@/lib/types/clinics";
@@ -24,6 +25,7 @@ import { ImageProcessingService } from "@/services/imageProcessingService";
 
 type PatchClinicInput = z.infer<typeof patchClinicSchema>;
 type PutPricesInput = z.infer<typeof putPricesSchema>;
+type PutServiceGroupsInput = z.infer<typeof putServiceGroupsSchema>;
 type PutOpeningHoursInput = z.infer<typeof putOpeningHoursSchema>;
 type CreateTimeBlockInput = z.infer<typeof createTimeBlockSchema>;
 type TimeBlocksQuery = z.infer<typeof timeBlocksQuerySchema>;
@@ -69,8 +71,13 @@ export class ClinicsController {
     return this.clinics.requireOwn(this.session.userId);
   }
 
+  private requireClinicId(): Promise<string> {
+    return this.clinics.requireOwnId(this.session.userId);
+  }
+
   private logoUrl(clinic: ClinicRecordDto): string | null {
-    return clinic.logoPath ? PublicMediaStorage.publicUrl(clinic.logoPath, Date.parse(clinic.updatedAt)) : null;
+    if (!clinic.logoPath) return null;
+    return PublicMediaStorage.publicUrl(clinic.logoPath, clinic.logoUpdatedAt ? Date.parse(clinic.logoUpdatedAt) : undefined);
   }
 
   // Forhåndsvisning af den fulde profil uanset status (architecture 10.8).
@@ -132,52 +139,61 @@ export class ClinicsController {
   // Sletter kontoen (architecture 10.8). Bekræftelsen ("SLET") er valideret i routen. Klinikken bliver `imported`;
   // routen rydder cookies bagefter.
   async deleteAccount(): Promise<void> {
-    // 2.3 (d, f): filer i public-media og auth-brugeren.
-    await new AccountDeletionService(this.admin()).deleteClinicAccount(this.session.userId);
+    // Klinik-id'et hentes med brugerens egen klient (ejertjek); service role bruges kun til filer og auth-bruger.
+    const clinicId = await this.requireClinicId();
+    // 2.3 (d, f): filer i public-media og auth-brugeren. Triggeren clinics_after_owner_removed() rydder rækkerne (5.3).
+    await new AccountDeletionService(this.admin()).deleteClinicAccount(clinicId, this.session.userId);
+  }
+
+  async listServiceGroupIds(): Promise<string[]> {
+    return this.clinics.listServiceGroupIds(await this.requireClinicId());
+  }
+
+  // Erstatter de valgte kategorier; priser i fravalgte kategorier slettes i samme transaktion (5.3).
+  async putServiceGroups(input: PutServiceGroupsInput): Promise<string[]> {
+    await this.requireClinicId();
+    return this.clinics.setServiceGroups(input.groupIds);
   }
 
   async listPrices(): Promise<ClinicPriceDto[]> {
-    const clinic = await this.requireClinic();
-    return this.clinics.listPrices(clinic.id);
+    return this.clinics.listPrices(await this.requireClinicId());
   }
 
-  // Erstatter hele prislisten. Kun aktive ydelser i kataloget kan prissættes.
+  // Erstatter hele prislisten i én transaktion. Kun aktive behandlinger i kategorier, klinikken har valgt (409
+  // SERVICE_GROUP_NOT_SELECTED); databasen tjekker det samme i triggeren.
   async putPrices(input: PutPricesInput): Promise<ClinicPriceDto[]> {
-    const clinic = await this.requireClinic();
-    const active = new Set((await this.services.listActive()).map((service) => service.id));
-    if (input.prices.some((price) => !active.has(price.serviceId))) {
-      throw new ApiError(400, "UNKNOWN_SERVICE", "En af ydelserne findes ikke i kataloget.");
+    const clinicId = await this.requireClinicId();
+    const services = await this.services.requireActive(input.prices.map((price) => price.serviceId));
+    const selected = new Set(await this.clinics.listServiceGroupIds(clinicId));
+    if (services.some((service) => !selected.has(service.groupId))) {
+      throw new ApiError(409, "SERVICE_GROUP_NOT_SELECTED", "Vælg først kategorien, før du angiver priser i den.");
     }
-    await this.clinics.replacePrices(clinic.id, input.prices);
-    return this.clinics.listPrices(clinic.id);
+    await this.clinics.replacePrices(input.prices);
+    return this.clinics.listPrices(clinicId);
   }
 
   async listOpeningHours(): Promise<OpeningHoursDto[]> {
-    const clinic = await this.requireClinic();
-    return this.availability.listOpeningHours(clinic.id);
+    return this.availability.listOpeningHours(await this.requireClinicId());
   }
 
   // Erstatter alle åbningstider (overlap er afvist af skemaet og af triggeren).
   async putOpeningHours(input: PutOpeningHoursInput): Promise<OpeningHoursDto[]> {
-    const clinic = await this.requireClinic();
-    await this.availability.replaceOpeningHours(clinic.id, input.hours);
-    return this.availability.listOpeningHours(clinic.id);
+    const clinicId = await this.requireClinicId();
+    await this.availability.replaceOpeningHours(input.hours);
+    return this.availability.listOpeningHours(clinicId);
   }
 
   async listTimeBlocks(query: TimeBlocksQuery): Promise<TimeBlockDto[]> {
-    const clinic = await this.requireClinic();
-    return this.availability.listTimeBlocks(clinic.id, query);
+    return this.availability.listTimeBlocks(await this.requireClinicId(), query);
   }
 
   async createTimeBlock(input: CreateTimeBlockInput): Promise<TimeBlockDto> {
-    const clinic = await this.requireClinic();
-    return this.availability.createTimeBlock(clinic.id, input);
+    return this.availability.createTimeBlock(await this.requireClinicId(), input);
   }
 
   // 404, hvis blokeringen ikke tilhører klinikken.
   async deleteTimeBlock(blockId: string): Promise<void> {
-    const clinic = await this.requireClinic();
-    await this.availability.deleteTimeBlock(clinic.id, blockId);
+    await this.availability.deleteTimeBlock(await this.requireClinicId(), blockId);
   }
 
   // Logo (architecture 9.5): samme behandling som patientbilleder (magic bytes, re-encoding, EXIF fjernes).
@@ -189,8 +205,8 @@ export class ClinicsController {
     const path = PublicMediaStorage.logoPath(clinic.id);
     // 2.3 (d): upload i public-media og logo_path (ikke i kolonne-grants), efter ejertjekket.
     await new PublicMediaStorage(this.admin()).replace(path, data, "image/jpeg");
-    await new ClinicsRepository(this.admin()).setLogoPath(clinic.id, path);
-    return { logoUrl: PublicMediaStorage.publicUrl(path, Date.now()) };
+    const version = await new ClinicsRepository(this.admin()).setLogoPath(clinic.id, path);
+    return { logoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
   }
 
   async deleteLogo(): Promise<void> {

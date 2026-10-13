@@ -7,7 +7,7 @@ import type { Tables } from "@/models/db/database.types";
 
 type PatientRow = Pick<Tables<"patients">, "first_name" | "postal_code">;
 
-export type PatientPatch = z.infer<typeof patchPatientSchema>;
+type PatientPatch = z.infer<typeof patchPatientSchema>;
 
 export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto> {
   protected toDto(row: PatientRow): PatientMeDto {

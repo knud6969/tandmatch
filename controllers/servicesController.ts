@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { servicesQuerySchema } from "@/lib/schemas/services";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/types/services";
 import type { Session } from "@/middleware/session";
 import { ServicesRepository } from "@/models/servicesRepository";
 
@@ -23,7 +23,7 @@ export class ServicesController {
     this.services = deps.services ?? new ServicesRepository(supabase);
   }
 
-  list(query: ServicesQuery): Promise<ServiceDto[]> {
-    return this.services.listActive(query.category);
+  list(query: ServicesQuery): Promise<ServiceGroupDto[]> {
+    return this.services.listGroups(query.category);
   }
 }

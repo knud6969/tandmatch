@@ -1,8 +1,8 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { createSupabaseServerClient } from "@/models/db/supabase";
+import { createAuthContext } from "@/middleware/session";
 import { AUTH_COOKIE_OPTIONS } from "@/models/db/config";
-import { AuthRepository } from "@/models/authRepository";
 import { TermsRepository } from "@/models/termsRepository";
 import {
   TERMS_COOKIE,
@@ -30,23 +30,25 @@ export async function setTermsCookie(payload: TermsPayload): Promise<void> {
 
 // Uden session er en gyldig cookie garanteret (terms er ikke null). Med session kan den mangle,
 // hvis accepten allerede ligger i terms_acceptances.
-export type TermsGate =
+// `supabase` er requestens ene klient (middleware/session.ts, AuthContext): routen giver den videre til
+// requireRole() og controlleren.
+export type TermsGate = { supabase: SupabaseClient } & (
   | { userId: null; terms: TermsPayload }
-  | { userId: string; terms: TermsPayload | null };
+  | { userId: string; terms: TermsPayload | null }
+);
 
 // Kræver gyldig vilkårs-accept (architecture 2.5, 10.2).
 // Uden session: gyldig signeret cookie kræves.
 // Med session: accept i terms_acceptances for aktuelle versioner, ellers overføres cookie-accepten (indsættes).
 export async function requireTerms(): Promise<TermsGate> {
   const terms = await readCurrentTermsCookie();
-  const supabase = await createSupabaseServerClient();
-  const userId = await new AuthRepository(supabase).findUserId();
+  const { supabase, userId } = await createAuthContext();
 
   if (!userId) {
     if (!terms) {
       throw termsRequiredError();
     }
-    return { userId: null, terms };
+    return { supabase, userId: null, terms };
   }
 
   const termsRepo = new TermsRepository(supabase);
@@ -57,7 +59,7 @@ export async function requireTerms(): Promise<TermsGate> {
     }
     await termsRepo.upsertAcceptance(userId, terms);
   }
-  return { userId, terms };
+  return { supabase, userId, terms };
 }
 
 export function termsRequiredError(): ApiError {

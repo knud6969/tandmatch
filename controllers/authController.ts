@@ -8,6 +8,7 @@ import type { Session } from "@/middleware/session";
 import type { TermsGate } from "@/middleware/termsGate";
 import { AuthRepository } from "@/models/authRepository";
 import { PatientsRepository } from "@/models/patientsRepository";
+import { ClinicsRepository } from "@/models/clinicsRepository";
 import { ProfilesRepository } from "@/models/profilesRepository";
 import { TermsRepository } from "@/models/termsRepository";
 
@@ -19,6 +20,7 @@ type ConvertInput = z.infer<typeof convertSchema>;
 export type AuthDeps = {
   auth: AuthRepository;
   profiles: ProfilesRepository;
+  clinics: ClinicsRepository;
   patients: PatientsRepository;
   terms: TermsRepository;
 };
@@ -26,6 +28,7 @@ export type AuthDeps = {
 export class AuthController {
   private readonly auth: AuthRepository;
   private readonly profiles: ProfilesRepository;
+  private readonly clinics: ClinicsRepository;
   private readonly patients: PatientsRepository;
   private readonly terms: TermsRepository;
 
@@ -36,6 +39,7 @@ export class AuthController {
   ) {
     this.auth = deps.auth ?? new AuthRepository(supabase);
     this.profiles = deps.profiles ?? new ProfilesRepository(supabase);
+    this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
     this.patients = deps.patients ?? new PatientsRepository(supabase);
     this.terms = deps.terms ?? new TermsRepository(supabase);
   }
@@ -83,7 +87,7 @@ export class AuthController {
     if (input.role === "patient") {
       return { role: "patient", first_name: input.firstName };
     }
-    if (await this.profiles.isCvrClaimed(input.cvr)) {
+    if (await this.clinics.isCvrClaimed(input.cvr)) {
       throw new ApiError(409, "CLINIC_EXISTS", "Der findes allerede en konto for dette CVR-nummer.");
     }
     return {

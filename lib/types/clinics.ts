@@ -1,13 +1,15 @@
-import type { CLINIC_STATUSES } from "@/lib/constants/clinics";
+import type { CLINIC_STATUSES, CLINIC_TIERS, WEEKDAYS } from "@/lib/constants/clinics";
 import type { PriceRange, TrustpilotInfo } from "@/lib/types/common";
 import type { ReviewStats } from "@/lib/types/reviews";
 
 export type ClinicStatus = (typeof CLINIC_STATUSES)[number];
+export type ClinicTier = (typeof CLINIC_TIERS)[number];
+export type Weekday = (typeof WEEKDAYS)[number];
 
 // Kort om brugerens egen klinik, vist i GET /api/me (architecture 10.2).
 export type ClinicSummaryDto = { id: string; name: string; status: ClinicStatus };
 
-export type OpeningHoursDto = { weekday: number; opensAt: string; closesAt: string; isEmergency: boolean };
+export type OpeningHoursDto = { weekday: Weekday; opensAt: string; closesAt: string; isEmergency: boolean };
 
 export type ClinicPriceDto = {
   serviceId: string;
@@ -56,6 +58,7 @@ export type ClinicRecordDto = {
   email: string | null;
   website: string | null;
   logoPath: string | null;
+  logoUpdatedAt: string | null;
   trustpilot: TrustpilotInfo;
   updatedAt: string;
 };
@@ -63,7 +66,7 @@ export type ClinicRecordDto = {
 export type ClinicListItemDto = {
   id: string;
   name: string;
-  tier: "basic" | "full";
+  tier: ClinicTier;
   canReceiveLeads: boolean; // status === "verified"
   address: string;
   postalCode: string;

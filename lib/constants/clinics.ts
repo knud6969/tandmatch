@@ -1,12 +1,15 @@
 // Klinikker (architecture 4.2, 4.3, 5.1). Værdierne skal svare til enum clinic_status og check constraints i databasen.
 export const CLINIC_STATUSES = ["imported", "registered", "verified"] as const;
 
-// Danske visningsnavne. `registered` vises kun for klinikken selv; offentligheden ser den som `imported` (5.1 regel 11).
+// Danske visningsnavne. `registered` vises kun for klinikken selv; offentligheden ser den ikke (5.1 regel 11).
 export const CLINIC_STATUS_LABEL = {
   imported: "Ikke oprettet",
   registered: "Oprettet, afventer verificering",
   verified: "Verificeret",
 } as const satisfies Record<(typeof CLINIC_STATUSES)[number], string>;
+
+// Niveauer i oversigten (architecture 6.6): basis (grunddata) og fuld (verificeret).
+export const CLINIC_TIERS = ["basic", "full"] as const;
 
 // Hvem der har indtastet Trustpilot-data (architecture 4.3 `trustpilot_entered_by`, 8.4). Trustpilot scrapes aldrig.
 export const TRUSTPILOT_ENTERED_BY = ["clinic", "admin"] as const;
@@ -27,12 +30,15 @@ export const DENTIST_TITLE_MAX_CHARS = 100;
 export const DENTIST_BIO_MAX_CHARS = 1000;
 export const PORTFOLIO_CAPTION_MAX_CHARS = 200;
 
-// Rimelige lofter i API'et (ikke i databasen).
+// Lofter. Håndhæves af API'et og i databasen med de samme tal (triggere og replace_*-funktioner, architecture 7.6).
+// Tallene skal ændres begge steder samtidig.
 export const MAX_DENTISTS_PER_CLINIC = 30;
 export const MAX_PORTFOLIO_ITEMS_PER_CLINIC = 60;
 export const MAX_PRICE_DKK = 1_000_000;
 export const MAX_PRICE_ROWS = 100;
 export const MAX_OPENING_HOUR_WINDOWS = 42; // højst seks vinduer pr. ugedag
+export const MAX_TIME_BLOCKS_PER_CLINIC = 200;
+export const MAX_SERVICE_GROUPS = 100; // teknisk loft på antal valgte kategorier (kataloget har 14)
 
 // ISO-ugedage (1 = mandag … 7 = søndag, architecture 4.3 `clinic_opening_hours`).
 export const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;

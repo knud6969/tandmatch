@@ -21,6 +21,7 @@ export async function createSupabaseServerClient() {
           for (const { name, value, options } of cookiesToSet) {
             cookieStore.set(name, value, { ...options, ...AUTH_COOKIE_OPTIONS });
           }
+          // Cache-headerne fra setAll sættes af proxy.ts for sider; API-ruter og sider, der læser cookies(), er dynamiske.
         } catch {
           // Kaldes fra en kontekst uden skrivning af cookies (fx server component). Session opfriskes i proxy.ts.
         }

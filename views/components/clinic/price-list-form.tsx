@@ -15,7 +15,7 @@ import { PRICE_NOTE_MAX_CHARS, SERVICE_DURATION_MAX_MINUTES, SERVICE_DURATION_MI
 import { SERVICE_CATEGORIES, SERVICE_CATEGORY_LABEL } from "@/lib/constants/services";
 import { putPricesSchema } from "@/lib/schemas/clinics";
 import type { ClinicPriceDto } from "@/lib/types/clinics";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
 
 type Row = { on: boolean; min: string; max: string; duration: string; note: string };
 type Rows = Record<string, Row>;
@@ -23,10 +23,10 @@ type Loaded = { services: ServiceDto[]; prices: ClinicPriceDto[] };
 
 async function loadAll(): Promise<Loaded> {
   const [services, prices] = await Promise.all([
-    apiRequest<{ services: ServiceDto[] }>("/api/services"),
+    apiRequest<{ groups: ServiceGroupDto[] }>("/api/services"),
     apiRequest<{ prices: ClinicPriceDto[] }>("/api/clinics/me/prices"),
   ]);
-  return { services: services.services, prices: prices.prices };
+  return { services: services.groups.flatMap((group) => group.services), prices: prices.prices };
 }
 
 function toRows(services: ServiceDto[], prices: ClinicPriceDto[]): Rows {
@@ -106,6 +106,11 @@ function PriceEditor({ services, initialPrices }: { services: ServiceDto[]; init
     setSaveError(null);
     setSaving(true);
     try {
+      // Midlertidigt (til prislisten får kategorivalg, 1.9.5): prisreglen kræver valgte kategorier, så de udledes af priserne.
+      await apiRequest("/api/clinics/me/service-groups", {
+        method: "PUT",
+        body: { groupIds: [...new Set(services.filter((s) => rows[s.id].on).map((s) => s.groupId))] },
+      });
       const result = await apiRequest<{ prices: ClinicPriceDto[] }>("/api/clinics/me/prices", {
         method: "PUT",
         body: parsed.data,

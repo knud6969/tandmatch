@@ -1,12 +1,13 @@
 import "server-only";
-import type { OpeningHoursDto, TimeBlockDto } from "@/lib/types/clinics";
+import { MAX_OPENING_HOUR_WINDOWS, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
+import type { NewOpeningHours, NewTimeBlock } from "@/lib/schemas/clinics";
+import type { OpeningHoursDto, TimeBlockDto, Weekday } from "@/lib/types/clinics";
+import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
 type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at" | "is_emergency">;
 type TimeBlockRow = Pick<Tables<"clinic_time_blocks">, "id" | "starts_at" | "ends_at" | "note">;
-
-export type NewTimeBlock = { startsAt: string; endsAt: string; note?: string | null };
 
 const HOURS_COLUMNS = "weekday, opens_at, closes_at, is_emergency";
 const BLOCK_COLUMNS = "id, starts_at, ends_at, note";
@@ -19,7 +20,7 @@ const toHourMinute = (time: string) => time.slice(0, 5);
 export class AvailabilityRepository extends BaseRepository {
   private hoursToDto(row: OpeningHoursRow): OpeningHoursDto {
     return {
-      weekday: row.weekday,
+      weekday: row.weekday as Weekday, // check 1-7 i databasen
       opensAt: toHourMinute(row.opens_at),
       closesAt: toHourMinute(row.closes_at),
       isEmergency: row.is_emergency,
@@ -43,27 +44,14 @@ export class AvailabilityRepository extends BaseRepository {
     return rows.map((row) => this.hoursToDto(row));
   }
 
-  // Erstatter hele listen. Triggeren afviser overlap mod eksisterende rækker, så de gamle fjernes først. Falder
-  // indsættelsen, forsøges de gamle rækker genskabt, så klinikken ikke står uden åbningstider.
-  async replaceOpeningHours(clinicId: string, hours: OpeningHoursDto[]): Promise<void> {
-    const toRow = (hour: OpeningHoursDto) => ({
-      clinic_id: clinicId,
-      weekday: hour.weekday,
-      opens_at: hour.opensAt,
-      closes_at: hour.closesAt,
-      is_emergency: hour.isEmergency,
+  // Erstatter hele listen i én transaktion (replace_opening_hours). Overlap afvises af triggeren og ruller alt tilbage,
+  // så en fejl efterlader de gamle åbningstider uændret.
+  async replaceOpeningHours(hours: NewOpeningHours[]): Promise<void> {
+    await this.rpc("replace_opening_hours", { p_hours: hours }, {
+      OPENING_HOURS_OVERLAP: new ApiError(400, "VALIDATION_ERROR", "Åbningstider på samme dag må ikke overlappe."),
+      OPENING_HOURS_LIMIT: new ApiError(400, "VALIDATION_ERROR", `Du kan højst have ${MAX_OPENING_HOUR_WINDOWS} åbningstider.`),
+      INVALID_INPUT: new ApiError(400, "VALIDATION_ERROR", "Oplysningerne er ugyldige."),
     });
-    const previous = await this.listOpeningHours(clinicId);
-    await this.run(this.db.from("clinic_opening_hours").delete().eq("clinic_id", clinicId), "clinic_opening_hours: delete fejlede");
-    if (hours.length === 0) return;
-    try {
-      await this.run(this.db.from("clinic_opening_hours").insert(hours.map(toRow)), "clinic_opening_hours: insert fejlede");
-    } catch (err) {
-      if (previous.length > 0) {
-        await this.db.from("clinic_opening_hours").insert(previous.map(toRow));
-      }
-      throw err;
-    }
   }
 
   // Blokeringer, der overlapper intervallet (hver grænse er valgfri), sorteret efter start.
@@ -83,6 +71,9 @@ export class AvailabilityRepository extends BaseRepository {
         .select(BLOCK_COLUMNS)
         .single(),
       "clinic_time_blocks: insert fejlede",
+      {
+        TIME_BLOCK_LIMIT: new ApiError(429, "TIME_BLOCK_LIMIT", `Du kan højst have ${MAX_TIME_BLOCKS_PER_CLINIC} blokerede tider.`),
+      },
     );
     return this.blockToDto(this.requireRow(row));
   }
@@ -94,10 +85,5 @@ export class AvailabilityRepository extends BaseRepository {
       "clinic_time_blocks: delete fejlede",
     );
     this.requireRow(rows[0]);
-  }
-
-  // Kontosletning: alle blokerede tider. Kun med service role-klienten.
-  async deleteAllTimeBlocks(clinicId: string): Promise<void> {
-    await this.run(this.db.from("clinic_time_blocks").delete().eq("clinic_id", clinicId), "clinic_time_blocks: delete fejlede");
   }
 }

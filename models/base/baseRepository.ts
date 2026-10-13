@@ -47,6 +47,15 @@ export abstract class BaseRepository<TRow = unknown, TDto = TRow> {
     return this.run<T>(this.db.rpc(name, args), `${name} fejlede`, known);
   }
 
+  // Antal rækker i en tabel med de givne kolonne-værdier (fx `{ clinic_id }`). Fejl oversættes som i `run`.
+  protected async count(table: string, where: Record<string, string>): Promise<number> {
+    let query = this.db.from(table).select("*", { count: "exact", head: true });
+    for (const [column, value] of Object.entries(where)) query = query.eq(column, value);
+    const { count, error } = await query;
+    mapDbError(error, {}, `${table}: count fejlede`);
+    return count ?? 0;
+  }
+
   // Find eller kast: 404 som standard (vi skelner ikke mellem "findes ikke" og "ingen adgang", architecture 2.4),
   // eller den fejl, kalderen angiver (fx 403, hvor 2.4 tillader det). `require…`-metoder bygges på denne.
   protected requireRow<T>(

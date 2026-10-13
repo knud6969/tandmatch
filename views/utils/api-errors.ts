@@ -1,3 +1,4 @@
+import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
 import { CHAT_MAX_USER_MESSAGES_PER_CONVERSATION, MAX_IMAGE_UPLOAD_BYTES, MAX_IMAGES_PER_CASE } from "@/lib/constants/limits";
 import { ApiRequestError } from "@/views/utils/api-client";
 
@@ -11,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   ANONYMOUS_SESSION_ACTIVE: "Din samtale skal gemmes på en konto. Brug formularen til at oprette konto.",
   TERMS_REQUIRED: "Du skal acceptere brugervilkårene og privatlivspolitikken først.",
   OUTDATED_TERMS: "Vilkårene er opdateret. Læs de nye vilkår og accepter igen.",
+  AUTH_UNAVAILABLE: "Login-tjenesten svarer ikke lige nu. Prøv igen om lidt.",
   UNAUTHENTICATED: "Din session er udløbet. Log ind igen.",
   PROFILE_MISSING: "Kontoen er ikke klar endnu. Prøv igen om lidt.",
   NETWORK: "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
@@ -36,8 +38,11 @@ const MESSAGES: Record<string, string> = {
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",
   TRUSTPILOT_URL_REQUIRED: "Angiv linket til din Trustpilot-side, hvis du angiver score eller antal anmeldelser.",
   UNKNOWN_SERVICE: "En af ydelserne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
-  DENTIST_LIMIT: "Du kan højst oprette 30 tandlæger.",
-  PORTFOLIO_LIMIT: "Du kan højst have 60 porteføljebilleder.",
+  DENTIST_LIMIT: `Du kan højst oprette ${MAX_DENTISTS_PER_CLINIC} tandlæger.`,
+  PORTFOLIO_LIMIT: `Du kan højst have ${MAX_PORTFOLIO_ITEMS_PER_CLINIC} porteføljebilleder.`,
+  TIME_BLOCK_LIMIT: `Du kan højst have ${MAX_TIME_BLOCKS_PER_CLINIC} blokerede tider. Slet nogle gamle, før du tilføjer flere.`,
+  SERVICE_GROUP_NOT_SELECTED: "Vælg først kategorien, før du angiver priser i den.",
+  UNKNOWN_SERVICE_GROUP: "En af kategorierne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
   INVALID_IMAGE: "Billedet kunne ikke bruges. Vælg et JPEG- eller PNG-billede.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };

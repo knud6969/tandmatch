@@ -1,17 +1,30 @@
 import "server-only";
 import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
+import { isTransientAuthError } from "@/models/db/authErrors";
+
+const AUTH_LOOKUP_RETRIES = 2;
 
 // Supabase Auth. Sessionen sættes som cookie af server-klienten (models/db/supabase.ts).
 // Fejl fra Supabase oversættes her til ApiError med danske beskeder uden interne detaljer.
 // Klienten er brugerens (RLS/JWT); kun deleteUser() kræver admin-klienten (architecture 2.3 f).
 export class AuthRepository extends BaseRepository {
-  // Verificerer brugeren hos Supabase Auth (getUser), ikke kun cookien.
+  // Verificerer brugeren hos Supabase Auth (getUser), ikke kun cookien. Mangler eller afvises sessionen, er svaret null.
+  // En midlertidig fejl hos Auth (netværk, 5xx, fx under en databasenulstilling) er ikke en udløbet session: den prøves igen
+  // et par gange og giver derefter 503, så brugeren aldrig sendes til login eller får 401 uden grund.
   async findUserId(): Promise<string | null> {
-    const {
-      data: { user },
-    } = await this.db.auth.getUser();
-    return user?.id ?? null;
+    for (let attempt = 0; ; attempt++) {
+      const {
+        data: { user },
+        error,
+      } = await this.db.auth.getUser();
+      if (user) return user.id;
+      if (!isTransientAuthError(error)) return null;
+      if (attempt >= AUTH_LOOKUP_RETRIES) {
+        throw new ApiError(503, "AUTH_UNAVAILABLE", "Login-tjenesten svarer ikke lige nu. Prøv igen om lidt.");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    }
   }
 
   async signInWithPassword(email: string, password: string): Promise<string> {

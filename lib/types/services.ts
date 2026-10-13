@@ -9,4 +9,15 @@ export type ServiceDto = {
   description: string;
   category: ServiceCategory;
   defaultDurationMin: number;
+  groupId: string;
+  groupSlug: string;
+};
+
+// Katalogets kategori med dens aktive behandlinger (architecture 4.3, 10.4).
+export type ServiceGroupDto = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  services: ServiceDto[];
 };
