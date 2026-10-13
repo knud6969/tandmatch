@@ -11,6 +11,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
+  expect: { timeout: 15_000 }, // next dev kompilerer sider ved første besøg
   reporter: [["list"]],
   use: { baseURL, trace: "retain-on-failure", locale: "da-DK" },
   projects: [
