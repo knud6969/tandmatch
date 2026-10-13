@@ -261,6 +261,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"clinic_import_snapshots": {
+                  Row: {
+                    "address": string,"city": string,"clinic_id": string,"lat": number | null,"lng": number | null,"name": string,"opening_hours": NonNullable<Json>,"phone": string | null,"postal_code": string,"taken_at": string
+                  }
+                  Insert: {
+                    "address": string,"city": string,"clinic_id": string,"lat"?: number | null,"lng"?: number | null,"name": string,"opening_hours"?: NonNullable<Json>,"phone"?: string | null,"postal_code": string,"taken_at"?: string
+                  }
+                  Update: {
+                    "address"?: string,"city"?: string,"clinic_id"?: string,"lat"?: number | null,"lng"?: number | null,"name"?: string,"opening_hours"?: NonNullable<Json>,"phone"?: string | null,"postal_code"?: string,"taken_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "clinic_import_snapshots_clinic_id_fkey"
+      columns: ["clinic_id"]
+isOneToOne: true
+      referencedRelation: "clinics"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"clinic_opening_hours": {
                   Row: {
                     "clinic_id": string,"closes_at": string,"created_at": string,"id": string,"is_emergency": boolean,"opens_at": string,"weekday": number
