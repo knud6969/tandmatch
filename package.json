@@ -11,7 +11,9 @@
     "test:rls": "bash tests/rls/run.sh",
     "test:api": "bash tests/api/run.sh",
     "seed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/seed-demo.ts",
-    "unseed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/unseed-demo.ts"
+    "unseed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/unseed-demo.ts",
+    "test:unit": "vitest run",
+    "test:e2e": "bash tests/e2e/run.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -24,13 +26,15 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.4"
   }
 }
