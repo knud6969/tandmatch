@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Resten af API'et (10.4-10.14), siderne (6), AI-flowet (7) og anmeldelsesflowet (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5); klinikområdets sider (1.6) er i gang. Resten af API'et (10.5-10.7, 10.9-10.14), de øvrige sider (6), AI-flowet (7) og anmeldelsesflowet (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -140,7 +140,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 | Lag | Mappe | Ansvar | Må importere |
 |---|---|---|---|
 | Routing | `app/` | `page.tsx` re-eksporterer en side fra `views/pages/`. `layout.tsx` kalder områdevagten (`guardArea`/`guardCaseFlow`). `route.ts`: (1) `requireTerms()`, (2) `requireSession()`/`requireRole()`/`requireAnonymous()`/`requireAccount()`, (3) evt. `enforceIpRateLimit()`, (4) `parseId`/`readJson`/`readQuery`, (5) opretter controlleren og kalder **én** metode (`new LeadsController(supabase, session).decide(id, input)`), (6) returnerer JSON. Cookies sættes og slettes her (vilkårs-cookien, `clearAuthCookies()` efter sletning). Undtagelser: `/api/session/anonymous` rate-limiter efter validering, fordi grænsen kun gælder uden session; billedupload sender en læser (`imageFileReader`) til controlleren, så filen først læses efter samtykke- og ejertjekket (9.3). Ingen forretningslogik og ingen modelkald. | `middleware/`, `controllers/`, `views/`, `lib/`, og fra `models/` kun `createSupabaseServerClient` |
-| Middleware | `middleware/` | Tværgående request-håndtering: `http.ts` (`ApiError`, `withApi`, `readJson`, `readQuery`, `rejectLargeImage`, `imageFileReader`, `parseId`, `jsonResponse`, `noContent`), `session.ts` (`getSession`, `requireSession`, `requireRole`, `requireAnonymous`, `requireAccount`, `clearAuthCookies`), `termsGate.ts`, `termsCookie.ts`, `rateLimit.ts`, `cron.ts`, `areaGuard.ts` (`guardArea`, `guardCaseFlow`). Funktioner, ikke klasser. Ejerskab af en ressource tjekkes ikke her, men i repositories (`require*`). | `models/`, `lib/` |
+| Middleware | `middleware/` | Tværgående request-håndtering: `http.ts` (`ApiError`, `withApi`, `readJson`, `readQuery`, `rejectLargeImage`, `imageFileReader`, `readImageForm` (multipart med tekstfelter: felterne valideres med zod, før billedet læses og behandles), `parseId`, `jsonResponse`, `noContent`), `session.ts` (`getSession`, `requireSession`, `requireRole`, `requireAnonymous`, `requireAccount`, `clearAuthCookies`), `termsGate.ts`, `termsCookie.ts`, `rateLimit.ts`, `cron.ts`, `areaGuard.ts` (`guardArea`, `guardCaseFlow`). Funktioner, ikke klasser. Ejerskab af en ressource tjekkes ikke her, men i repositories (`require*`). | `models/`, `lib/` |
 | Controller | `controllers/` | Én klasse pr. ressource (`LeadsController` i `leadsController.ts`). **Oprettes pr. request** med `(supabase, session)` og opretter selv de repositories og services, den bruger (2.1.1). Metoderne tager **typet, valideret input** (aldrig `Request`, aldrig cookies), tjekker forretningsregler, kalder repositories og services og returnerer DTO'er. Controllers kalder ikke hinanden; delt logik flyttes til en service. Opretter kun admin-klienten i de tilfælde, der står i 2.3, og giver den videre til det repository, der skal bruge den. | `models/`, `services/`, `middleware/http`, `lib/` |
 | Service | `services/` | Klasser med afhængigheder i constructoren: `RankingService` (sortering og filtrering efter faste kriterier, 6.6), `AvailabilityService` (ledige tider, 6.7), `ai/AiChatService` og `ai/AiSummaryService` (OpenAI-klient og `AI_RULES`), `ImageProcessingService` (sharp: filtype, re-encoding, EXIF fjernes), `AccountDeletionService`. Controlleren kalder fx `chatService.sendTurn(...)` eller `rankingService.rank(...)` og kender ikke detaljerne. Rene hjælpefunktioner (PII-maskering, ordfilter, promptformat) må være funktioner. | `models/`, `lib/`, `middleware/http` (kun `ApiError`) |
 | Model | `models/` | **Repository-klasser**, én pr. tabel/aggregat (`CasesRepository` i `casesRepository.ts`), plus `AuthRepository` (Supabase Auth). Tabel-repositories arver `BaseRepository` (`models/base/baseRepository.ts`); storage-klasserne (`CaseImageStorage`, `PublicMediaStorage`) arver `BaseStorage` (`models/base/baseStorage.ts`). Alle får Supabase-klienten i constructoren (`new CasesRepository(supabase)`). **Eneste lag, der kalder Supabase.** Metoder med faste navne: `findById`, `findOwn`, `list…`, `create`, `update`, `delete`, `require…` (find eller kast 404/403), og ét navngivet kald pr. RPC (`sendLeads(...)`). Bruger brugerens JWT, så RLS altid gælder, medmindre controlleren har givet admin-klienten (2.3). `models/db/` har klientfabrikkerne (`createSupabaseServerClient`, `createSupabaseAdminClient`), env-konfiguration og `mapDbError` (funktioner). | `models/base/`, `models/db/`, `middleware/http` (kun `ApiError`), `lib/` |
@@ -179,7 +179,10 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 
 **Controller-signaturer (besluttet):**
 - Alle controllere med en bruger: `constructor(supabase: SupabaseClient, session: Session, deps: Partial<XDeps> = {})`. Det gælder også `ExportController` (eksporten læser med brugerens JWT, så RLS gælder). Repositories og services bygges i constructoren ud fra `deps` eller standardværdier.
-- Eneste undtagelse er `CronController`, som kaldes af planlagte jobs uden session: `constructor(deps: Partial<CronDeps> = {})`. Den har ingen brugerklient og bruger kun service role-klienten (2.3 g). Nye controllere uden session er ikke tilladt uden at blive beskrevet her.
+- Undtagelser:
+  - `CronController` kaldes af planlagte jobs uden session: `constructor(deps: Partial<CronDeps> = {})`. Den har ingen brugerklient og bruger kun service role-klienten (2.3 g).
+  - Controllere for offentlige routes, som også kan kaldes uden login, tager `session: Session | null`: `ServicesController` (og senere `ClinicDirectoryController`). De bruger kun brugerens klient (anon-nøglen, når der ikke er en session) og aldrig service role.
+  - Nye controllere uden session er ikke tilladt uden at blive beskrevet her.
 - `deps` bruges kun til at erstatte afhængigheder i tests.
 
 **Service role-klienten i controllere (besluttet):**
@@ -258,7 +261,8 @@ lib/
   constants/                 roles, consents, legal, limits, sessions, ai-texts, services, cases, clinics, leads,
                              bookings, reviews
   navigation/                områder og sikre redirect-stier
-  domain/                    regler delt af UI og server: leads.ts (fx canSendMoreLeads), bookings.ts (fx canCancel)
+  domain/                    regler og ren logik delt af UI og server, eller af flere controllere uden at de kalder
+                             hinanden: dentists.ts (attachPortfolio), leads.ts (fx canSendMoreLeads), bookings.ts (fx canCancel)
 supabase/
   config.toml                lokal Supabase (anonyme logins til, e-mailbekræftelse fra)
   migrations/                det samlede sæt (11)
@@ -387,7 +391,7 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseDto> {
 
 ## 3. Roller og rettigheder
 
-Status: rollerne og rettighederne er bygget i databasen (trin 0). API og sider for klinikrollen er [IKKE BYGGET] (trin 1-7).
+Status: rollerne og rettighederne er bygget i databasen (trin 0). Klinikkens signup og opsætnings-API er bygget (trin 1); leads, bookinger og sider er [IKKE BYGGET] (trin 1.6-7).
 
 Rolle gemmes i `profiles.role` (`patient` | `clinic` | `admin`). Rollen sættes ved oprettelse og kan **ikke** ændres af brugeren. `admin` sættes manuelt i databasen.
 
@@ -653,7 +657,7 @@ Tandlæger har intet login og ingen rolle. Leads og bookinger går til klinikken
 | image_path | text not null unique | Bucket `public-media` (9.5) |
 | caption | text null | max 200. Ingen personoplysninger |
 | patient_consent_confirmed_at | timestamptz not null | Klinikken bekræfter, at patienten på billedet har givet samtykke til offentliggørelse. Sættes server-side ved upload |
-| consent_text_version | text not null | Den bekræftelsestekst, klinikken accepterede (`lib/constants/consents.ts`, `PORTFOLIO_CONSENT_TEXT_VERSION`) |
+| consent_text_version | text not null | Den bekræftelsestekst, klinikken accepterede (`lib/constants/consents.ts`, `PORTFOLIO_CONSENT_TEXT_VERSION`). Valideres af serveren mod konstanten, ikke mod `consent_text_versions` (9.5) |
 
 Vises kun for verificerede klinikker.
 
@@ -915,7 +919,7 @@ withdraw_open_leads(...) -> integer
 | `release_expired_holds(clinic_id)` | intern (kaldes kun af funktionerne ovenfor; ingen EXECUTE for `anon`/`authenticated`) | Sætter `held` med `hold_expires_at <= now()` for klinikken til `cancelled` |
 | `complete_due_bookings()` | **kun service role** (planlagt job, `/api/cron/complete-bookings`, hver time) | Sætter `completed`, `completed_at = ends_at + 24 t` for `booked` med `ends_at + interval '24 hours' <= now()`, og `cancelled` for alle `held` med `hold_expires_at <= now()`. Ren oprydning; reglerne bygger på `effective_booking_status()` og `release_expired_holds()`, så intet afhænger af jobbet. Bruger ikke `auth.uid()` |
 | `withdraw_consent(consent_id)`, `confirm_consent_cleanup(consent_id)` | patient (+anonym) | Som før, men billeder hænger på sager. Tilbagetrækning af `image_upload` sletter rækkerne i `case_images` (også på sendte sager), og billederne forsvinder dermed for klinikkerne. Tilbagetrækning af `health_data_sharing` sætter, **hvis patienten ikke har et andet aktivt samtykke af samme type**, alle patientens leads med status `sent`, og `accepted` uden aktiv booking, til `withdrawn` (klinikken mister adgangen, 5.7) og frigiver deres `held`-reservationer. `booked` bookinger består; patienten kan selv aflyse dem (`cancel_booking()`). Nye leads kræver nyt samtykke |
-| Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | Sætter klinikken til `imported` og nulstiller `verified_at`. Alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Afholdte bookinger og anmeldelser består. Patienten ser "Klinikken er ikke længere på TandMatch" og kan vælge en anden klinik |
+| Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | Sætter klinikken til `imported` og nulstiller `verified_at` og `owner_since`. **Bevarer** de offentlige grunddata: navn, adresse, postnummer, by, telefon og åbningstider (samt CVR, koordinater og Trustpilot indtastet af admin). **Sletter** det, klinikken selv har lagt ind: prisliste (`clinic_prices`), blokerede tider (`clinic_time_blocks`), tandlæger (`clinic_dentists`, og dermed `portfolio_items` via cascade), og nulstiller `description`, `logo_path`, `email`, `website` samt Trustpilot-felterne, hvis `trustpilot_entered_by = 'clinic'`. Filerne i `public-media` slettes af `DELETE /api/clinics/me` (10.8), før auth-brugeren slettes. Alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Afholdte bookinger og anmeldelser består. Patienten ser "Klinikken er ikke længere på TandMatch" og kan vælge en anden klinik |
 | `approve_summary(case_id, summary_text)` | patient (+anonym, ejer) | Eneste vej til `summary_text`. Kun `draft`, max 1500 |
 | `store_ai_summary(p_user_id, case_id, …)` | **kun service role** | Skriver det validerede udkast. Tjekker internt, at sagen tilhører `p_user_id` og er `draft` |
 | `append_assistant_message(p_user_id, conversation_id, …)` | **kun service role** | Indsætter assistentbesked (svar, foreløbig vurdering, foreslåede ydelser, akut, out-of-scope, blocked). Tjekker ejer og `active`. Afviser ydelses-id'er, der ikke er aktive i kataloget |
@@ -1247,6 +1251,11 @@ export type AiImageObservation = {
 | Opsummeringer pr. sag / pr. patient pr. døgn | 5 / 20 | 429 `SUMMARY_LIMIT` |
 | Billeder pr. sag | 5, max 4 MB hver | 400/413 |
 | Bekræftede ydelser pr. sag | 5 | 400 |
+| Tandlæger pr. klinik | 30 | 429 `DENTIST_LIMIT` |
+| Porteføljebilleder pr. klinik | 60 | 429 `PORTFOLIO_LIMIT` |
+| Rækker i prislisten | 100 | 400 |
+| Åbningsvinduer pr. klinik | 42 | 400 |
+| Pris pr. ydelse | 0-1.000.000 kr. | 400 |
 | Aktive leads pr. sag (`sent`, `accepted`, `booked`) | 3 | 409 `LEAD_LIMIT` |
 | Leads i alt pr. sag (uanset status) | 10 | 409 `LEAD_TOTAL_LIMIT`; UI tilbyder at starte en ny sag |
 | Reservation af akuttid uden svar | 30 min (eller til starttid) | Reservationen frigives (4.2) |
@@ -1277,6 +1286,8 @@ Lofterne tælles i databasen (triggers og funktionerne i 5.3). Konstanterne stå
 | AI-lofter | se tabellen ovenfor | `limits.ts` | `ai_limits` og funktionerne i 5.3 |
 
 `FIRST_AVAILABLE_SEARCH_DAYS` (14 dage) findes kun i TypeScript, fordi den kun bruges til visning.
+
+Klinikkernes lofter håndhæves af API'et (controllerne) og står i `lib/constants/clinics.ts`: `MAX_DENTISTS_PER_CLINIC = 30`, `MAX_PORTFOLIO_ITEMS_PER_CLINIC = 60`, `MAX_PRICE_ROWS = 100`, `MAX_OPENING_HOUR_WINDOWS = 42` (højst seks pr. ugedag), `MAX_PRICE_DKK = 1_000_000`.
 
 ### 7.7 Anonym samtale: identitet, kontooprettelse og sletning
 
@@ -1393,11 +1404,14 @@ Bygget for forespørgsler; tilpasses til sager.
 
 ### 9.5 `public-media`: logo, tandlæger og portefølje [IKKE BYGGET]
 
-Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id}.jpg`, `clinics/{clinic_id}/portfolio/{item_id}.jpg`.
+Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id}.jpg`, `clinics/{clinic_id}/portfolio/{item_id}.jpg`. Bygget i trin 1.
+
+- **Versionerede URL'er:** logo og tandlægeportrætter overskrives på samme sti, når de udskiftes. Den offentlige URL får derfor en version (`?v=<tidsstempel for seneste upload>`), så browsere og CDN ikke viser et gammelt billede. Porteføljebilleder får en ny sti pr. element og behøver ikke version.
 
 - Offentlig læsning. Ingen skriverettigheder for `authenticated` eller `anon`; serveren skriver og sletter med service role (`PublicMediaStorage`) efter ejertjek (`ClinicsRepository.requireOwn()`).
 - Samme behandling som patientbilleder: størrelsestjek, magic bytes, re-encoding, EXIF fjernes.
 - **Portefølje:** upload kræver, at klinikken afkrydser en bekræftelse af, at patienten på billedet har givet skriftligt samtykke til offentliggørelse, og at billedet ikke viser ansigt eller andet identificerende [ÅBEN, 12.3]. Serveren gemmer `patient_consent_confirmed_at` og `consent_text_version` på `portfolio_items`. Klinikken er dataansvarlig for samtykket. Sletning fjerner rækken og filen.
+- **Porteføljebekræftelsen er klinikkens erklæring, ikke et patientsamtykke.** Den gemmes derfor ikke i `consents` eller `consent_text_versions` (`consent_type` omfatter kun patientens egne samtykker). Den gyldige version står som konstanten `PORTFOLIO_CONSENT_TEXT_VERSION` i `lib/constants/consents.ts`, og serveren afviser andre versioner. Teksten er en pladsholder, der skal gennemgås juridisk (12.4).
 - Vises kun for verificerede klinikker (via `public_clinic_profile()`); filerne er dog offentlige, når de er uploadet.
 
 ---
@@ -1406,7 +1420,7 @@ Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id
 
 Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
 
-**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0). Afsnit 10.4-10.14 er [IKKE BYGGET] i deres helhed. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
+**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1, bortset fra `GET /api/clinics/me/reviews` (6.2). Afsnit 10.5-10.7 og 10.9-10.14 er [IKKE BYGGET] i deres helhed. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 
 ### 10.1 Delte typer
 
@@ -1440,9 +1454,9 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 | GET `/api/terms/status`, POST `/api/terms/accept` | alle (undtaget fra gaten) | uændret (2.5) | uændret | Bygget |
 | POST `/api/session/anonymous` | besøgende, gyldig vilkårs-accept | `{ aiConsent: { textVersion } }` (strict) | **201** `{ caseId, expiresAt }` ved ny session: opretter anonym session, vilkårs-accept, `ai_processing`-samtykke og tom sag. **200** `{ caseId, expiresAt }` ved retry med eksisterende anonym session: gemmer manglende samtykker og returnerer den eksisterende kladde. 409 `ALREADY_AUTHENTICATED` ved permanent konto; 429 ved IP-limit | Bygget |
 | POST `/api/auth/convert` | anonym patient | `{ email, password (8-72), firstName }` | 200 `{ userId, role: "patient" }`; 409 `EMAIL_EXISTS` | Bygget |
-| POST `/api/auth/signup` | besøgende | Diskrimineret på `role`: patient `{ role: "patient", email, password (8-72), firstName (1-50) }`; klinik `{ role: "clinic", email, password (8-72), cvr (8 cifre), clinicName (2-100), address, postalCode, city, phone }` | 201 `{ userId, role }`. Signup-triggeren opretter `profiles` + `patients` eller `profiles` + `clinics` (status `registered`). Findes en **importeret** klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]; har den en ejer: 409 `CLINIC_EXISTS`. Controlleren forhåndstjekker med `is_cvr_claimed()`, fordi fejlen fra triggeren kommer tilbage fra GoTrue som en generisk fejl (4.3). 409 ved aktiv anonym session | Patient: bygget. Klinik: [IKKE BYGGET] (1.1) |
+| POST `/api/auth/signup` | besøgende | Diskrimineret på `role`: patient `{ role: "patient", email, password (8-72), firstName (1-50) }`; klinik `{ role: "clinic", email, password (8-72), cvr (8 cifre), clinicName (2-100), address, postalCode, city, phone }` | 201 `{ userId, role }`. Signup-triggeren opretter `profiles` + `patients` eller `profiles` + `clinics` (status `registered`). Findes en **importeret** klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]; har den en ejer: 409 `CLINIC_EXISTS`. Controlleren forhåndstjekker med `is_cvr_claimed()`, fordi fejlen fra triggeren kommer tilbage fra GoTrue som en generisk fejl (4.3). 409 ved aktiv anonym session | Bygget (patient trin 0, klinik trin 1). `is_cvr_claimed()` kaldes via `ProfilesRepository.isCvrClaimed()` |
 | POST `/api/auth/login`, POST `/api/auth/logout` | | uændret | uændret | Bygget |
-| GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget uden `clinic` ([IKKE BYGGET], 1.1) |
+| GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget. `clinic` hentes via `ProfilesRepository.findClinicSummary()` |
 | GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget uden `phone` ([IKKE BYGGET], 6.1) |
 | DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 | Bygget |
 | GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag | Delvis: i dag kun `cases` og `consents`. `chat` [IKKE BYGGET] (3.3), `leads` (4.1), `bookings` og `reviews` (6.1-6.2) |
@@ -1455,6 +1469,8 @@ IP-rate-limited: login, signup, anonym session, billedupload. Routes, som anonym
 Bygget (trin 0), inkl. `withdrawnLeads`. GET `/api/consents`, POST `/api/consents` (`{ type, textVersion }`; `health_data_sharing` kun permanent), POST `/api/consents/{id}/withdraw` (`{ withdrawnAt, deletedImages, withdrawnLeads, sessionDeleted }`). `withdrawnLeads` er antallet af leads, der blev trukket tilbage ved tilbagetrækning af `health_data_sharing` (5.3); UI fortæller, at bookede tider består og kan aflyses under Bookinger.
 
 ### 10.4 Ydelseskatalog
+
+Bygget i trin 1. Routen er offentlig, så `ServicesController` tager `session: Session | null` (2.1.1).
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
@@ -1591,21 +1607,23 @@ export type SlotDto = { startsAt: string; endsAt: string };
 
 ### 10.8 Egen klinik (rolle `clinic`)
 
+Bygget i trin 1 (undtagen anmeldelser). Billedupload (logo, portræt, portefølje) læses med `readImageForm` (2.1). Lofterne står i 7.6. Delt logik mellem `ClinicsController` (profilens forhåndsvisning) og `ClinicDentistsController` ligger i `lib/domain/dentists.ts` (`attachPortfolio()`), så controllerne ikke kalder hinanden.
+
 | Metode og route | Input | Output |
 |---|---|---|
-| DELETE `/api/clinics/me` | `{ confirm: "SLET" }` | 204. Sletter kontoen (auth-brugeren via `AccountDeletionService`, service role) og klinikkens filer i `public-media` (logo, tandlæger, portefølje); rækker for tandlæger og portefølje slettes. Klinikrækken bliver tilbage som `imported`, og triggeren `clinics_after_owner_removed()` afviser leads med `clinic_left` og aflyser fremtidige bookinger (5.3). Logger ud |
-| GET/PATCH `/api/clinics/me` | PATCH `{ name?, description?, address?, postalCode?, city?, phone?, email?, website?, trustpilotUrl?, trustpilotScore?, trustpilotReviewCount? }` | `ClinicProfileDto & { status: ClinicStatus; cvr: string }` (forhåndsvisning af fuld profil uanset status) |
+| DELETE `/api/clinics/me` | `{ confirm: "SLET" }` | 204. Rækkefølge: (1) sletter klinikkens filer i `public-media` (logo, tandlægeportrætter, portefølje) med service role, (2) sletter auth-brugeren via `AccountDeletionService` (service role), (3) triggeren `clinics_after_owner_removed()` (5.3) gør klinikken til `imported`, sletter prisliste, blokerede tider, tandlæger, portefølje, beskrivelse, logo og klinikindtastet Trustpilot, afviser åbne leads med `clinic_left` og aflyser fremtidige bookinger. **Bevares** som offentlige grunddata: navn, adresse, postnummer, by, telefon og åbningstider (og Trustpilot indtastet af admin). Logger ud |
+| GET/PATCH `/api/clinics/me` | PATCH `{ name?, description?, address?, postalCode?, city?, phone?, email?, website?, trustpilotUrl?, trustpilotScore?, trustpilotReviewCount? }` | `ClinicProfileDto & { status: ClinicStatus; cvr: string }` (forhåndsvisning af fuld profil uanset status). `reviewStats` er `null`, indtil anmeldelser er bygget (6.2) |
 | POST/DELETE `/api/clinics/me/logo` | multipart `file` | `{ logoUrl }` / 204 |
-| GET/PUT `/api/clinics/me/prices` | PUT `{ prices: { serviceId, priceMin, priceMax, durationMin, note? }[] }` (erstatter hele listen) | `{ prices: ClinicPriceDto[] }` |
-| GET/PUT `/api/clinics/me/opening-hours` | PUT `{ hours: { weekday, opensAt: "HH:MM", closesAt: "HH:MM", isEmergency }[] }` | `{ hours: OpeningHoursDto[] }` |
+| GET/PUT `/api/clinics/me/prices` | PUT `{ prices: { serviceId, priceMin, priceMax, durationMin, note? }[] }` (erstatter hele listen; højst 100 rækker; priser 0-1.000.000 kr.) | `{ prices: ClinicPriceDto[] }`; 400 ved overskridelse |
+| GET/PUT `/api/clinics/me/opening-hours` | PUT `{ hours: { weekday, opensAt: "HH:MM", closesAt: "HH:MM", isEmergency }[] }` (højst 42 vinduer) | `{ hours: OpeningHoursDto[] }`; 400 ved overskridelse |
 | GET/POST `/api/clinics/me/time-blocks` | POST `{ startsAt, endsAt, note? }`; GET `?from=&to=` | `{ blocks: { id, startsAt, endsAt, note }[] }` / 201 |
 | DELETE `/api/clinics/me/time-blocks/{id}` | | 204 |
-| GET/POST `/api/clinics/me/dentists` | POST `{ fullName, title?, bio?, sortOrder? }` | `{ dentists: … }` / 201 |
+| GET/POST `/api/clinics/me/dentists` | POST `{ fullName, title?, bio?, sortOrder? }` | `{ dentists: … }` / 201; 429 `DENTIST_LIMIT` ved over 30 tandlæger |
 | PATCH/DELETE `/api/clinics/me/dentists/{id}` | PATCH samme felter valgfri | dentist / 204 (sletter også portræt og portefølje) |
-| POST/DELETE `/api/clinics/me/dentists/{id}/photo` | multipart `file` | `{ photoUrl }` / 204 |
-| POST `/api/clinics/me/portfolio` | multipart: `file`, `dentistId`, `serviceId?`, `caption?`, `patientConsentConfirmed: "true"`, `consentTextVersion` | 201 portfolio item; 400 uden bekræftelse |
+| POST/DELETE `/api/clinics/me/dentists/{id}/photo` | multipart `file` | `{ photoUrl }` (med `?v=`, 9.5) / 204 |
+| POST `/api/clinics/me/portfolio` | multipart: `file`, `dentistId`, `serviceId?`, `caption?`, `patientConsentConfirmed: "true"`, `consentTextVersion` (læses med `readImageForm`; tekstfelterne valideres, før billedet behandles) | 201 portfolio item; 400 uden bekræftelse eller ved forkert `consentTextVersion`; 429 `PORTFOLIO_LIMIT` ved over 60 billeder pr. klinik |
 | PATCH/DELETE `/api/clinics/me/portfolio/{id}` | PATCH `{ caption?, serviceId? }` | item / 204 |
-| GET `/api/clinics/me/reviews` | | `{ reviews: (PublicReviewDto & { replyStatus: ModerationStatus \| null })[] }` |
+| GET `/api/clinics/me/reviews` | | `{ reviews: (PublicReviewDto & { replyStatus: ModerationStatus \| null })[] }`. [IKKE BYGGET] (6.2) |
 
 ### 10.9 Leads
 
@@ -1739,7 +1757,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Trin | Indhold | Status |
 |---|---|---|
 | 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
-| 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | [IKKE BYGGET] |
+| 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | Backend og designgrundlag bygget (1.1-1.5) og testværktøjer (1.7) på `feat/omlaegning-trin-1`. Klinikområdets sider (1.6) er i gang |
 | 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | [IKKE BYGGET] |
 | 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session (med tom sag), billedbehandling og AI-klienten findes i kernen fra trin 0 |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
@@ -1785,6 +1803,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | AI'en nævner priser eller klinikker | Brud på kerneprincip, vildledning | AI'en får ingen pris- eller klinikdata; skema uden felter; filter; provokationstests |
 | Akutte tegn overses af AI'en | Patientsikkerhed | Fast akut-indgang på forsiden og i chatten uafhængigt af AI'en; tests med akutte symptomer |
 | Porteføljebilleder uden gyldigt samtykke | GDPR art. 9, klinikkens ansvar men vores platform | Bekræftelse med tekstversion og tidspunkt; ingen ansigter; juridisk afklaring (12.4) |
+| Ingen IP-rate limit på klinikkernes uploads (logo, portrætter, portefølje) | En kompromitteret eller misbrugt klinikkonto kan uploade mange filer og bruge lagerplads og CPU (sharp) | Lofterne pr. klinik (7.6), maks. filstørrelse, kun permanente klinikkonti. Rate limit som for patienters billedupload er åben (12.3 punkt 25) |
 | Dobbeltbooking ved samtidige kald | To patienter får samme tid | Udelukkelse i databasen, ikke kun tjek i koden; test 7 |
 | Klinikken markerer et besøg som udeblevet for at undgå en anmeldelse | Skæve anmeldelser | `no_show` kan kun sættes inden for 24 timer efter sluttid; tidspunktet gemmes (`no_show_at`) og kan følges op |
 | Ubesvarede leads | Patienten venter | Patienten kan trække et ubesvaret lead tilbage og vælge en anden klinik; intet automatisk udløb |
@@ -1818,7 +1837,8 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Højst 3 aktive og højst 10 leads i alt pr. sag | 4.3, 5.3 |
 | Klinikken mister adgang til sagens indhold og tråd, når patienten trækker leadet tilbage | 4.4, 5.7 |
 | Lukning af en sag (`close_case()`) og tilbagetrækning af delingssamtykke trækker ubesvarede og ubookede leads tilbage og frigiver reservationer; bookede tider består | 4.2, 5.3 |
-| En klinik, der sletter sin konto, bliver `imported`; dens åbne leads afvises med `clinic_left`, og fremtidige bookinger aflyses | 4.2, 5.3 |
+| En klinik, der sletter sin konto, bliver `imported`; dens åbne leads afvises med `clinic_left`, og fremtidige bookinger aflyses. Offentlige grunddata (navn, adresse, postnummer, by, telefon, åbningstider, admin-indtastet Trustpilot) bevares; alt klinikindtastet indhold slettes | 4.2, 5.3, 10.8 |
+| Logo og tandlægeportrætter har versionerede URL'er (`?v=`) | 9.5 |
 | Bookinger starter på hele kvarterer, håndhævet i databasen (check constraint) | 4.2, 6.7 |
 | Klinikkens adgang er tidsafgrænset af `owner_since` og kræver verificeret klinik; klinikker læser beskeder kun via `clinic_lead_messages()` | 4.3, 5.1, 5.7 |
 | Patienter sletter ikke sager direkte; kladder slettes af serveren med service role | 5.4, 10.5 |
@@ -1862,7 +1882,8 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 21. *Afklaret:* lukning af en sag: `close_case()` trækker `sent` og ubookede `accepted` leads tilbage, frigiver reservationer og lader bookede tider bestå (5.3, 10.5).
 22. *Afklaret:* booking-starttider skal ligge på hele kvarterer, håndhævet i databasen (`SLOT_STEP_MINUTES = 15`, 4.2).
 23. *Afklaret:* tilbagetrækning af `health_data_sharing` trækker patientens `sent` og ubookede `accepted` leads tilbage og frigiver reservationer; bookede tider består og kan aflyses af patienten (5.3).
-24. *Afklaret:* en verificeret klinik, der sletter sin konto, bliver `imported`; åbne leads afvises med `clinic_left`, reservationer frigives, og fremtidige bookinger aflyses (5.3, 10.8).
+24. *Afklaret:* en verificeret klinik, der sletter sin konto, bliver `imported`; åbne leads afvises med `clinic_left`, reservationer frigives, og fremtidige bookinger aflyses. Navn, adresse, postnummer, by, telefon og åbningstider bevares; prisliste, blokeringer, beskrivelse, tandlæger, portefølje, logo og klinikindtastet Trustpilot slettes (5.3, 10.8).
+25. **Rate limit på klinikkernes uploads:** skal logo-, portræt- og porteføljeupload have en IP- eller kontobaseret rate limit som patienters billedupload (10 pr. time)? I dag gælder kun lofterne pr. klinik (12.1).
 
 ### 12.4 Udskudt [UDSKUDT]
 
@@ -1877,6 +1898,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 9. Egen kortfliseudbyder.
 10. Reklameregler for klinikkernes priser og profiler.
 11. Trustpilot-data for importerede klinikker: rigtig kilde og opdatering (i prototypen indtaster TandMatch dem manuelt; scraping er ikke tilladt).
+12. Juridisk gennemgang af klinikkens porteføljeerklæring (`PORTFOLIO_CONSENT_TEXT_VERSION`, pladsholdertekst, 9.5).
 
 ### 12.5 Overgang fra den gamle model
 
