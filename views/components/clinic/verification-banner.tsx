@@ -12,7 +12,7 @@ export function VerificationBanner({ status }: { status: ClinicStatus }) {
     );
   }
   return (
-    <Alert tone="warning" title="Afventer verifikation">
+    <Alert tone="warning" title="Afventer verificering">
       Du kan sætte profil, prisliste, åbningstider og tandlæger op nu. Indbakke og kalender er tomme, og patienter
       kan ikke sende dig forespørgsler, før TandMatch har verificeret klinikken.
     </Alert>

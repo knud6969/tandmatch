@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiErrorMessage } from "@/views/utils/api-errors";
 
-type LoadState<T> = { data: T | null; error: string | null; loading: boolean };
+type LoadResult<T> = { data: T | null; error: string | null; loading: boolean };
 
 // Henter data ved første visning og giver en reload. `loader` skal være stabil (en funktion uden for komponenten).
-export function useLoad<T>(loader: () => Promise<T>): LoadState<T> & { reload: () => void } {
-  const [state, setState] = useState<LoadState<T>>({ data: null, error: null, loading: true });
+export function useLoad<T>(loader: () => Promise<T>): LoadResult<T> & { reload: () => void } {
+  const [state, setState] = useState<LoadResult<T>>({ data: null, error: null, loading: true });
   const [version, setVersion] = useState(0);
 
   useEffect(() => {

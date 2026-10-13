@@ -56,10 +56,10 @@ export function DeleteAccount({ clinicName }: { clinicName: string }) {
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           <Alert tone="danger" title={`Du er ved at slette ${clinicName}`}>
             <ul className="list-disc space-y-1 pl-5">
-              <li>Din login og kontoen slettes med det samme, og du bliver logget ud.</li>
-              <li>Åbne forespørgsler (leads) afvises, og patienterne får besked.</li>
+              <li>Dit login og kontoen slettes med det samme, og du bliver logget ud.</li>
+              <li>Åbne forespørgsler (leads) afvises, og patienterne kan se det på deres sag.</li>
               <li>Fremtidige bookinger aflyses.</li>
-              <li>Tandlæger, portræt- og porteføljebilleder, logo, prisliste og tidsstyring slettes.</li>
+              <li>Tandlæger, portræt- og porteføljebilleder, logo, prisliste og blokerede tider slettes.</li>
               <li>Klinikken bliver stående i oversigten som en uverificeret klinik uden ejer, indtil nogen overtager den.</li>
             </ul>
           </Alert>

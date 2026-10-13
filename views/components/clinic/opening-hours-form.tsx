@@ -1,15 +1,16 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
 import { cx } from "@/views/components/ui/cx";
-import { LoadState } from "@/views/components/clinic/load-state";
-import { SaveBar } from "@/views/components/clinic/save-bar";
-import { useLoad } from "@/views/components/clinic/use-load";
+import { TextField } from "@/views/components/ui/text-field";
+import { LoadState } from "@/views/components/ui/load-state";
+import { SaveBar } from "@/views/components/ui/save-bar";
+import { useLoad } from "@/views/utils/use-load";
 import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
+import { useSaveState } from "@/views/utils/use-save-state";
 import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/constants/clinics";
 import { putOpeningHoursSchema } from "@/lib/schemas/clinics";
 import type { OpeningHoursDto } from "@/lib/types/clinics";
@@ -38,11 +39,8 @@ export function OpeningHoursForm() {
 function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
   const [windows, setWindows] = useState(() => fromDto(initial));
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot(windows));
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
-
   const dirty = snapshot(windows) !== savedSnapshot;
+  const saveState = useSaveState(dirty);
 
   function addWindow(weekday: number) {
     setWindows((current) => {
@@ -87,12 +85,10 @@ function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
       .map(({ weekday, opensAt, closesAt, isEmergency }) => ({ weekday, opensAt, closesAt, isEmergency }));
     const parsed = putOpeningHoursSchema.safeParse({ hours });
     if (!parsed.success) {
-      setSaveError(parsed.error.issues[0]?.message ?? "Tjek åbningstiderne.");
+      saveState.setError(parsed.error.issues[0]?.message ?? "Tjek åbningstiderne.");
       return;
     }
-    setSaveError(null);
-    setSaving(true);
-    try {
+    await saveState.save(async () => {
       const result = await apiRequest<{ hours: OpeningHoursDto[] }>("/api/clinics/me/opening-hours", {
         method: "PUT",
         body: parsed.data,
@@ -100,12 +96,7 @@ function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
       const next = fromDto(result.hours);
       setWindows(next);
       setSavedSnapshot(snapshot(next));
-      setSavedAt(new Date());
-    } catch (e) {
-      setSaveError(apiErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
+    });
   }
 
   const hasMonday = windows.some((w) => w.weekday === 1);
@@ -154,7 +145,7 @@ function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
         })}
       </ul>
 
-      <SaveBar dirty={dirty} saving={saving} savedAt={savedAt} error={saveError} label="Gem åbningstider" />
+      <SaveBar {...saveState.props} label="Gem åbningstider" />
     </form>
   );
 }
@@ -170,23 +161,23 @@ function WindowRow({
   onChange: (patch: Partial<Window>) => void;
   onRemove: () => void;
 }) {
-  const id = useId();
-  const timeClass = "min-h-12 w-full rounded-control border border-field-border bg-surface px-3 py-2 text-base text-ink";
   return (
     <div className={cx("flex flex-col gap-3 rounded-control border p-3", w.isEmergency ? "border-warning-line bg-warning-bg" : "border-line")}>
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${id}-fra`} className="text-sm font-semibold text-ink">
-            <span className="sr-only">{dayLabel}: </span>Åbner
-          </label>
-          <input id={`${id}-fra`} type="time" value={w.opensAt} onChange={(e) => onChange({ opensAt: e.target.value })} className={timeClass} required />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${id}-til`} className="text-sm font-semibold text-ink">
-            <span className="sr-only">{dayLabel}: </span>Lukker
-          </label>
-          <input id={`${id}-til`} type="time" value={w.closesAt} onChange={(e) => onChange({ closesAt: e.target.value })} className={timeClass} required />
-        </div>
+        <TextField
+          type="time"
+          label={<><span className="sr-only">{dayLabel}: </span>Åbner</>}
+          value={w.opensAt}
+          onChange={(e) => onChange({ opensAt: e.target.value })}
+          required
+        />
+        <TextField
+          type="time"
+          label={<><span className="sr-only">{dayLabel}: </span>Lukker</>}
+          value={w.closesAt}
+          onChange={(e) => onChange({ closesAt: e.target.value })}
+          required
+        />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink">

@@ -6,14 +6,15 @@ import { Card } from "@/views/components/ui/card";
 import { TextArea } from "@/views/components/ui/text-area";
 import { TextField } from "@/views/components/ui/text-field";
 import { DeleteAccount } from "@/views/components/clinic/delete-account";
-import { LoadState } from "@/views/components/clinic/load-state";
+import { LoadState } from "@/views/components/ui/load-state";
 import { LogoUpload } from "@/views/components/clinic/logo-upload";
-import { SaveBar } from "@/views/components/clinic/save-bar";
-import { useLoad } from "@/views/components/clinic/use-load";
+import { SaveBar } from "@/views/components/ui/save-bar";
+import { useLoad } from "@/views/utils/use-load";
 import { VerificationBanner } from "@/views/components/clinic/verification-banner";
 import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
+import { loadClinic } from "@/views/utils/clinic-loaders";
 import { fieldErrorsFrom, type FieldErrors } from "@/views/utils/field-errors";
+import { useSaveState } from "@/views/utils/use-save-state";
 import { CLINIC_DESCRIPTION_MAX_CHARS } from "@/lib/constants/clinics";
 import { patchClinicSchema } from "@/lib/schemas/clinics";
 import type { OwnClinicDto } from "@/lib/types/clinics";
@@ -32,8 +33,6 @@ type Values = {
   trustpilotReviewCount: string;
 };
 type Field = keyof Values;
-
-const loadClinic = () => apiRequest<OwnClinicDto>("/api/clinics/me");
 
 function toValues(clinic: OwnClinicDto): Values {
   return {
@@ -63,11 +62,8 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
   const [saved, setSaved] = useState(() => toValues(initial));
   const [values, setValues] = useState(saved);
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
-
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
+  const saveState = useSaveState(dirty);
   const set = (field: Field) => (event: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [field]: event.target.value }));
 
@@ -96,23 +92,16 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
     }
     setErrors(result);
     if (!parsed.success || Object.keys(result.fields).length > 0) {
-      setSaveError("Ret felterne markeret med rødt.");
+      saveState.setError("Ret felterne markeret med rødt.");
       return;
     }
-    setSaveError(null);
-    setSaving(true);
-    try {
+    await saveState.save(async () => {
       const next = await apiRequest<OwnClinicDto>("/api/clinics/me", { method: "PATCH", body: parsed.data });
       setClinic(next);
       const nextValues = toValues(next);
       setSaved(nextValues);
       setValues(nextValues);
-      setSavedAt(new Date());
-    } catch (e) {
-      setSaveError(apiErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
+    });
   }
 
   return (
@@ -170,7 +159,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
           </div>
         </Card>
 
-        <SaveBar dirty={dirty} saving={saving} savedAt={savedAt} error={saveError} label="Gem profil" />
+        <SaveBar {...saveState.props} label="Gem profil" />
       </form>
 
       <DeleteAccount clinicName={clinic.name} />

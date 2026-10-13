@@ -10,7 +10,7 @@ export default function ClinicSignupPage() {
   return (
     <Container>
       <PageIntro title="Opret din klinik">
-        <p>Det tager få minutter. Vi bruger CVR-nummeret til at finde jeres virksomhed og til at forebygge dubletter.</p>
+        <p>Det tager få minutter. Vi bruger CVR-nummeret til at forebygge dubletter. TandMatch tjekker klinikken, før den bliver verificeret.</p>
       </PageIntro>
       <Card>
         <ClinicSignupForm />

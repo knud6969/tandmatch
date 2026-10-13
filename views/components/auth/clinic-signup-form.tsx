@@ -17,7 +17,7 @@ type ClinicField = "clinicName" | "cvr" | "address" | "postalCode" | "city" | "p
 
 const EMPTY = { clinicName: "", cvr: "", address: "", postalCode: "", city: "", phone: "", email: "", password: "" };
 
-// Opretter en klinikkonto (architecture 10.2). Klinikken starter som "afventer verifikation" og kan sætte alt op med det samme.
+// Opretter en klinikkonto (architecture 10.2). Klinikken starter som "afventer verificering" og kan sætte alt op med det samme.
 export function ClinicSignupForm() {
   const router = useRouter();
   const { state, refresh } = useSession();
@@ -88,7 +88,7 @@ export function ClinicSignupForm() {
       <fieldset className="flex flex-col gap-5">
         <legend className="mb-1 text-lg font-semibold text-ink">Klinikken</legend>
         <TextField label="Klinikkens navn" name="clinicName" autoComplete="organization" value={values.clinicName} onChange={set("clinicName")} error={errors.fields.clinicName} required />
-        <TextField label="CVR-nummer" name="cvr" inputMode="numeric" maxLength={8} autoComplete="off" hint="8 cifre." value={values.cvr} onChange={set("cvr")} error={errors.fields.cvr} required />
+        <TextField label="CVR-nummer" name="cvr" inputMode="numeric" maxLength={8} autoComplete="off" hint="8 cifre. Vi slår det ikke op automatisk." value={values.cvr} onChange={set("cvr")} error={errors.fields.cvr} required />
         <TextField label="Adresse" name="address" autoComplete="street-address" value={values.address} onChange={set("address")} error={errors.fields.address} required />
         <div className="grid grid-cols-[7rem_1fr] gap-4">
           <TextField label="Postnummer" name="postalCode" inputMode="numeric" maxLength={4} autoComplete="postal-code" value={values.postalCode} onChange={set("postalCode")} error={errors.fields.postalCode} required />
@@ -97,7 +97,7 @@ export function ClinicSignupForm() {
         <TextField label="Telefon" name="phone" type="tel" inputMode="tel" autoComplete="tel" value={values.phone} onChange={set("phone")} error={errors.fields.phone} required />
       </fieldset>
       <fieldset className="flex flex-col gap-5">
-        <legend className="mb-1 text-lg font-semibold text-ink">Din login</legend>
+        <legend className="mb-1 text-lg font-semibold text-ink">Dit login</legend>
         <TextField label="E-mail" name="email" type="email" inputMode="email" autoComplete="email" value={values.email} onChange={set("email")} error={errors.fields.email} required />
         <TextField label="Adgangskode" name="password" type="password" autoComplete="new-password" hint="Mindst 8 tegn." value={values.password} onChange={set("password")} error={errors.fields.password} required />
       </fieldset>

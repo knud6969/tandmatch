@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
-import { Alert } from "@/views/components/ui/alert";
+import { useRef, type ChangeEvent } from "react";
 import { Button } from "@/views/components/ui/button";
+import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
-import { IMAGE_ACCEPT, ImagePrepareError, prepareImage } from "@/views/utils/prepare-image";
+import { IMAGE_ACCEPT } from "@/views/utils/prepare-image";
+import { uploadImage } from "@/views/utils/upload-image";
+import { useAction } from "@/views/utils/use-action";
 
 type LogoUploadProps = {
   logoUrl: string | null;
@@ -15,42 +16,25 @@ type LogoUploadProps = {
 // Logoet gemmes straks ved upload (ikke sammen med resten af profilen). Billedet nedskaleres i browseren først.
 export function LogoUpload({ logoUrl, onChange }: LogoUploadProps) {
   const input = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ tone: "danger" | "success"; text: string } | null>(null);
+  const { busy, message, run } = useAction();
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const prepared = await prepareImage(file, 1024);
-      const form = new FormData();
-      form.set("file", prepared);
-      const result = await apiRequest<{ logoUrl: string }>("/api/clinics/me/logo", { method: "POST", form });
+    await run(async () => {
+      const result = await uploadImage<{ logoUrl: string }>("/api/clinics/me/logo", file, { maxDimension: 1024 });
       onChange(result.logoUrl);
-      setMessage({ tone: "success", text: "Logoet er gemt." });
-    } catch (error) {
-      setMessage({ tone: "danger", text: error instanceof ImagePrepareError ? error.message : apiErrorMessage(error) });
-    } finally {
-      setBusy(false);
-    }
+      return "Logoet er gemt.";
+    });
   }
 
-  async function remove() {
-    setBusy(true);
-    setMessage(null);
-    try {
+  const remove = () =>
+    run(async () => {
       await apiRequest<void>("/api/clinics/me/logo", { method: "DELETE" });
       onChange(null);
-      setMessage({ tone: "success", text: "Logoet er fjernet." });
-    } catch (error) {
-      setMessage({ tone: "danger", text: apiErrorMessage(error) });
-    } finally {
-      setBusy(false);
-    }
-  }
+      return "Logoet er fjernet.";
+    });
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,11 +61,7 @@ export function LogoUpload({ logoUrl, onChange }: LogoUploadProps) {
         </div>
       </div>
       <p className="text-sm text-ink-muted">JPEG eller PNG. Billedet gøres automatisk mindre, og skjulte data som placering fjernes.</p>
-      {message && (
-        <Alert tone={message.tone} role={message.tone === "danger" ? "alert" : "status"}>
-          {message.text}
-        </Alert>
-      )}
+      <StatusMessage message={message} />
     </div>
   );
 }

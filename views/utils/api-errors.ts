@@ -1,6 +1,7 @@
 import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
 import { CHAT_MAX_USER_MESSAGES_PER_CONVERSATION, MAX_IMAGE_UPLOAD_BYTES, MAX_IMAGES_PER_CASE } from "@/lib/constants/limits";
 import { ApiRequestError } from "@/views/utils/api-client";
+import { ImagePrepareError } from "@/views/utils/prepare-image";
 
 // Danske fejlbeskeder ud fra API-fejlkoder (architecture 2.4). Ukendte koder viser serverens danske besked.
 const MESSAGES: Record<string, string> = {
@@ -21,7 +22,7 @@ const MESSAGES: Record<string, string> = {
   CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
   CONVERSATION_CLOSED: "Samtalen er lukket. Du kan stadig lave en opsummering.",
   CHAT_LIMIT: `Samtalen har nået grænsen på ${CHAT_MAX_USER_MESSAGES_PER_CONVERSATION} beskeder. Du kan lave en opsummering af det, du har skrevet.`,
-  RATE_LIMITED: "Du har sendt mange beskeder i dag. Prøv igen i morgen.",
+  RATE_LIMITED: "Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.",
   AI_TIMEOUT: "AI-assistenten svarede ikke i tide. Din besked er ikke gemt. Prøv igen om lidt.",
   AI_UNAVAILABLE: "AI-assistenten er ikke tilgængelig lige nu. Din besked er ikke gemt. Prøv igen om lidt.",
   SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne sag. Ret teksten selv i stedet.",
@@ -44,6 +45,12 @@ const MESSAGES: Record<string, string> = {
   SERVICE_GROUP_NOT_SELECTED: "Vælg først kategorien, før du angiver priser i den.",
   UNKNOWN_SERVICE_GROUP: "En af kategorierne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
   INVALID_IMAGE: "Billedet kunne ikke bruges. Vælg et JPEG- eller PNG-billede.",
+  FORBIDDEN: "Du har ikke adgang til denne handling.",
+  ANONYMOUS_NOT_ALLOWED: "Opret en konto for at fortsætte.",
+  SIGNUP_FAILED: "Kontoen kunne ikke oprettes. Tjek oplysningerne og prøv igen.",
+  PAYLOAD_TOO_LARGE: "Indholdet er for stort. Gør det mindre og prøv igen.",
+  INVALID_JSON: "Oplysningerne kunne ikke læses. Genindlæs siden og prøv igen.",
+  INTERNAL: "Der opstod en fejl hos os. Prøv igen om lidt.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 
@@ -62,6 +69,7 @@ export function usableServerMessage(message: string): string | null {
 }
 
 export function apiErrorMessage(error: unknown): string {
+  if (error instanceof ImagePrepareError) return error.message;
   if (error instanceof ApiRequestError) {
     const known = MESSAGES[error.code];
     if (known) return known;

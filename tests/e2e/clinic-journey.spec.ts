@@ -107,17 +107,33 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
 
     // 3. Prisliste
     await visit(page, "/klinik/prisliste");
-    const firstService = page.locator("ul input[type=checkbox]").first();
-    await firstService.check();
+    // Priserne kræver en valgt kategori: først vælges kategorien, så vises dens behandlinger.
+    const groupBoxes = page.getByRole("group", { name: /Hvilke kategorier/ }).getByRole("checkbox");
+    await expect(page.getByText("Vælg mindst én kategori ovenfor")).toBeVisible();
+    await groupBoxes.first().check();
+    await page.locator("section[aria-labelledby^=kat-] input[type=checkbox]").first().check();
     await page.getByLabel("Pris fra (kr.)").first().fill("500");
     await page.getByLabel("Pris til (kr.)").first().fill("900");
     await page.getByLabel("Varighed (min.)").first().fill("30");
     if (mobile) await expectNoHorizontalScroll(page, "/klinik/prisliste");
-    await page.getByRole("button", { name: /Gem prisliste \(1 ydelse\)/ }).click();
+    await page.getByRole("button", { name: /Gem prisliste \(1 behandling\)/ }).click();
     await expect(page.getByText(/Gemt kl\./).first()).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Pris fra (kr.)").first()).toHaveValue("500");
     await expect(page.getByLabel("Pris til (kr.)").first()).toHaveValue("900");
+
+    // Fravalg af kategorien med priser kræver bekræftelse og sletter priserne.
+    await groupBoxes.first().click();
+    await expect(page.getByText(/Priserne på behandlingerne i denne kategori slettes/)).toBeVisible();
+    await page.getByRole("button", { name: "Behold kategorien" }).click();
+    await expect(groupBoxes.first()).toBeChecked();
+    await groupBoxes.first().click();
+    await page.getByRole("button", { name: /Ja, fravælg/ }).click();
+    await page.getByRole("button", { name: /^Gem prisliste/ }).click();
+    await expect(page.getByText(/Gemt kl\./).first()).toBeVisible();
+    await page.reload();
+    await expect(groupBoxes.first()).not.toBeChecked();
+    await expect(page.getByLabel("Pris fra (kr.)")).toHaveCount(0);
 
     // 4. Åbningstider med akutvindue og blokeret tid
     await visit(page, "/klinik/aabningstider");
@@ -172,6 +188,11 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await upload.click();
     await expect(page.getByText(/Billedet er uploadet/)).toBeVisible();
     await expect(page.getByRole("img", { name: "Pladsholder" })).toBeVisible();
+    // Redigér billedtekst på porteføljebilledet
+    await page.getByRole("button", { name: /^Redigér/ }).click();
+    await page.getByLabel("Billedtekst", { exact: true }).fill("Rettet tekst");
+    await page.getByRole("button", { name: "Gem ændringer" }).click();
+    await expect(page.getByRole("img", { name: "Rettet tekst" })).toBeVisible();
     if (mobile) await expectNoHorizontalScroll(page, "/klinik/tandlaeger");
 
     // 6. Slet kontoen

@@ -9,7 +9,7 @@ const tones: Record<BadgeTone, string> = {
   warning: "bg-warning-bg text-warning-ink ring-warning-line",
 };
 
-// Små etiketter, fx "Pladsholder", "Afventer verifikation" eller "Kommer snart".
+// Små etiketter, fx "Pladsholder", "Afventer verificering" eller "Kommer snart".
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {
   return (
     <span

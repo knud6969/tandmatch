@@ -3,14 +3,12 @@
 import { Badge } from "@/views/components/ui/badge";
 import { Card } from "@/views/components/ui/card";
 import { LinkButton } from "@/views/components/ui/button";
-import { LoadState } from "@/views/components/clinic/load-state";
-import { useLoad } from "@/views/components/clinic/use-load";
+import { LoadState } from "@/views/components/ui/load-state";
+import { useLoad } from "@/views/utils/use-load";
 import { VerificationBanner } from "@/views/components/clinic/verification-banner";
-import { apiRequest } from "@/views/utils/api-client";
+import { loadClinic } from "@/views/utils/clinic-loaders";
 import { CLINIC_STATUS_LABEL } from "@/lib/constants/clinics";
 import type { OwnClinicDto } from "@/lib/types/clinics";
-
-const loadClinic = () => apiRequest<OwnClinicDto>("/api/clinics/me");
 
 type Step = { href: string; title: string; done: boolean; doneText: string; todoText: string };
 
@@ -30,8 +28,8 @@ function stepsFor(clinic: OwnClinicDto): Step[] {
       href: "/klinik/prisliste",
       title: "Prisliste",
       done: clinic.allPrices.length > 0,
-      doneText: `${clinic.allPrices.length} ydelser med pris og varighed.`,
-      todoText: "Vælg de ydelser, I tilbyder, og angiv prisinterval og varighed.",
+      doneText: `${clinic.allPrices.length} behandlinger med pris og varighed.`,
+      todoText: "Vælg jeres behandlingskategorier, og angiv pris og varighed på behandlingerne.",
     },
     {
       href: "/klinik/aabningstider",

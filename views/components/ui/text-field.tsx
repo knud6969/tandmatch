@@ -2,7 +2,7 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "@/views/components/ui/cx";
 
 type TextFieldProps = Omit<ComponentProps<"input">, "id"> & {
-  label: string;
+  label: ReactNode;
   hint?: ReactNode;
   error?: string;
   id?: string;

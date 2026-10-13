@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
-import { LoadState } from "@/views/components/clinic/load-state";
-import { useLoad } from "@/views/components/clinic/use-load";
+import { StatusMessage } from "@/views/components/ui/status-message";
+import { TextField } from "@/views/components/ui/text-field";
+import { LoadState } from "@/views/components/ui/load-state";
+import { useLoad } from "@/views/utils/use-load";
 import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
+import { useAction } from "@/views/utils/use-action";
 import { formatDateTime, fromDateTimeLocal } from "@/views/utils/format";
 import { TIME_BLOCK_NOTE_MAX_CHARS } from "@/lib/constants/clinics";
 import { createTimeBlockSchema } from "@/lib/schemas/clinics";
@@ -31,8 +32,7 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ tone: "danger" | "success"; text: string } | null>(null);
+  const { busy, message, run, fail } = useAction();
 
   async function onAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,40 +42,25 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
       note,
     });
     if (!parsed.success) {
-      setMessage({ tone: "danger", text: parsed.error.issues[0]?.message ?? "Tjek tidspunkterne." });
+      fail(parsed.error.issues[0]?.message ?? "Tjek tidspunkterne.");
       return;
     }
-    setBusy(true);
-    setMessage(null);
-    try {
+    await run(async () => {
       const created = await apiRequest<TimeBlockDto>("/api/clinics/me/time-blocks", { method: "POST", body: parsed.data });
       setBlocks((current) => [...current, created].sort((a, b) => a.startsAt.localeCompare(b.startsAt)));
       setStartsAt("");
       setEndsAt("");
       setNote("");
-      setMessage({ tone: "success", text: "Tiden er blokeret og gemt." });
-    } catch (e) {
-      setMessage({ tone: "danger", text: apiErrorMessage(e) });
-    } finally {
-      setBusy(false);
-    }
+      return "Tiden er blokeret og gemt.";
+    });
   }
 
-  async function onRemove(id: string) {
-    setBusy(true);
-    setMessage(null);
-    try {
+  const onRemove = (id: string) =>
+    run(async () => {
       await apiRequest<void>(`/api/clinics/me/time-blocks/${id}`, { method: "DELETE" });
       setBlocks((current) => current.filter((b) => b.id !== id));
-      setMessage({ tone: "success", text: "Blokeringen er fjernet." });
-    } catch (e) {
-      setMessage({ tone: "danger", text: apiErrorMessage(e) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const fieldClass = "min-h-12 w-full rounded-control border border-field-border bg-surface px-3 py-2 text-base text-ink";
+      return "Blokeringen er fjernet.";
+    });
 
   return (
     <Card className="flex flex-col gap-5">
@@ -87,28 +72,23 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
       </div>
 
       <form onSubmit={onAdd} noValidate className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="block-start" className="text-sm font-semibold text-ink">Fra</label>
-          <input id="block-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className={fieldClass} required />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="block-end" className="text-sm font-semibold text-ink">Til</label>
-          <input id="block-end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className={fieldClass} required />
-        </div>
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label htmlFor="block-note" className="text-sm font-semibold text-ink">Note (kun synlig for jer)</label>
-          <input id="block-note" type="text" maxLength={TIME_BLOCK_NOTE_MAX_CHARS} placeholder="Fx sommerferie" value={note} onChange={(e) => setNote(e.target.value)} className={fieldClass} />
+        <TextField label="Fra" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+        <TextField label="Til" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
+        <div className="sm:col-span-2">
+          <TextField
+            label="Note (kun synlig for jer)"
+            maxLength={TIME_BLOCK_NOTE_MAX_CHARS}
+            placeholder="Fx sommerferie"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
         </div>
         <Button type="submit" disabled={busy} className="sm:col-span-2 sm:self-start">
           Blokér tid
         </Button>
       </form>
 
-      {message && (
-        <Alert tone={message.tone} role={message.tone === "danger" ? "alert" : "status"}>
-          {message.text}
-        </Alert>
-      )}
+      <StatusMessage message={message} />
 
       {blocks.length === 0 ? (
         <p className="text-base text-ink-muted">Ingen kommende blokeringer.</p>
