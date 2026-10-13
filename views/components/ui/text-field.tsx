@@ -31,7 +31,7 @@ export function TextField({ label, hint, error, id, className, ...props }: TextF
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cx(
-          "min-h-12 w-full rounded-lg border bg-surface px-3.5 py-2 text-base text-ink placeholder:text-ink-muted/70",
+          "min-h-12 w-full rounded-control border bg-surface px-3.5 py-2 text-base text-ink placeholder:text-ink-muted/70",
           error ? "border-danger-line" : "border-field-border",
           className,
         )}

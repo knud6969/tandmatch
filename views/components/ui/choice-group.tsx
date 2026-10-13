@@ -35,7 +35,7 @@ export function ChoiceGroup<T extends string>({
             <label
               key={option.value}
               className={cx(
-                "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-4 py-3 text-base text-ink",
+                "flex min-h-12 cursor-pointer items-center gap-3 rounded-control border bg-surface px-4 py-3 text-base text-ink",
                 checked
                   ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
                   : error

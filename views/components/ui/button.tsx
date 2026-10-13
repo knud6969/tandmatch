@@ -6,10 +6,10 @@ export type ButtonVariant = "primary" | "secondary" | "ghost";
 
 // Mindst 48 px høje på mobil (store trykflader). Ghost-knapper i navigation bruger min-h-11 (44 px).
 const base =
-  "inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 text-base font-semibold no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-control px-5 text-base font-semibold no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700",
+  primary: "bg-brand-600 text-on-brand shadow-sm hover:bg-brand-700",
   secondary: "bg-surface text-brand-700 ring-1 ring-inset ring-brand-600 hover:bg-brand-50",
   ghost: "text-brand-700 hover:bg-brand-50",
 };

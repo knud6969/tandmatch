@@ -4,7 +4,7 @@ import { cx } from "@/views/components/ui/cx";
 export function Card({ className, ...props }: ComponentProps<"section">) {
   return (
     <section
-      className={cx("rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8", className)}
+      className={cx("rounded-card border border-line bg-surface p-5 shadow-card sm:p-8", className)}
       {...props}
     />
   );

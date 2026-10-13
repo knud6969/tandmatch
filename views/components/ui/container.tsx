@@ -9,8 +9,8 @@ type ContainerProps = {
 };
 
 const sizes = {
-  narrow: "max-w-xl",
-  wide: "max-w-5xl",
+  narrow: "max-w-narrow",
+  wide: "max-w-wide",
 } as const;
 
 export function Container({ children, size = "narrow", className }: ContainerProps) {

@@ -22,9 +22,9 @@ export function FilterChips<T extends string>({ label, options, value, onChange 
             aria-pressed={active}
             onClick={() => onChange(option.value)}
             className={cx(
-              "min-h-11 rounded-full px-4 text-base font-semibold ring-1 ring-inset transition-colors",
+              "min-h-11 rounded-pill px-4 text-base font-semibold ring-1 ring-inset transition-colors",
               active
-                ? "bg-brand-600 text-white ring-brand-600"
+                ? "bg-brand-600 text-on-brand ring-brand-600"
                 : "bg-surface text-ink ring-field-border hover:bg-brand-50",
             )}
           >

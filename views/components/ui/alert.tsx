@@ -21,7 +21,7 @@ type AlertProps = {
 
 export function Alert({ tone = "info", title, children, role = "status", className }: AlertProps) {
   return (
-    <div role={role} className={cx("rounded-xl border p-4 text-base leading-relaxed", tones[tone], className)}>
+    <div role={role} className={cx("rounded-card border p-4 text-base leading-relaxed", tones[tone], className)}>
       {title && <p className="mb-1 font-semibold">{title}</p>}
       {children}
     </div>

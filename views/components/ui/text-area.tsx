@@ -33,7 +33,7 @@ export function TextArea({ label, hint, error, id, labelHidden, className, ...pr
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cx(
-          "min-h-32 w-full rounded-lg border bg-surface px-3.5 py-2.5 text-base leading-relaxed text-ink placeholder:text-ink-muted/70",
+          "min-h-32 w-full rounded-control border bg-surface px-3.5 py-2.5 text-base leading-relaxed text-ink placeholder:text-ink-muted/70",
           error ? "border-danger-line" : "border-field-border",
           className,
         )}

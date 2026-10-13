@@ -18,7 +18,7 @@ export function CheckboxField({ label, error, id, className, ...props }: Checkbo
       <label
         htmlFor={fieldId}
         className={cx(
-          "flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border bg-surface p-4",
+          "flex min-h-12 cursor-pointer items-start gap-3 rounded-control border bg-surface p-4",
           error ? "border-danger-line" : "border-line hover:border-brand-400",
           className,
         )}

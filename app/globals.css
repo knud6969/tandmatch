@@ -1,38 +1,43 @@
 @import "tailwindcss";
 
 /*
- * TandMatch designsystem. Alle farver, skrifter og radier defineres her.
- * Komponenter må kun bruge disse tokens (fx bg-brand-600, text-ink), ikke rå hex-værdier.
- * Kontrast: tekst ink/ink-muted på canvas og surface er mindst 4.5:1, knapper og feltkanter mindst 3:1.
+ * TandMatch designsystem. Alle farver, skrifter, radier, skygger og afstande defineres her, og kun her.
+ * Komponenter bruger kun disse tokens (fx bg-brand-600, text-ink, rounded-card, shadow-card), aldrig rå farver.
+ * Udtryk: Airbnb-agtigt i tandlægefarver. Hvid baggrund, blå som primærfarve, luft og bløde hjørner.
+ * Kontrast (WCAG AA): ink 16:1 og ink-muted 7:1 på hvid; hvid tekst på brand-600 ca. 5.2:1 og på brand-700 ca. 6.7:1;
+ * brand-700 tekst på hvid ca. 6.7:1; feltkanter (field-border) mindst 3:1 mod hvid; status-tekst mindst 4.5:1 på sin flade.
  */
 @theme {
+  /* Typografi */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     sans-serif;
 
-  /* Primær: dæmpet teal. brand-600 på hvid ca. 5.5:1. */
-  --color-brand-50: #eff9f7;
-  --color-brand-100: #d3f0eb;
-  --color-brand-200: #a8e0d8;
-  --color-brand-300: #6fc8bc;
-  --color-brand-400: #3aaa9e;
-  --color-brand-500: #1f8f85;
-  --color-brand-600: #0f766e;
-  --color-brand-700: #0c5f59;
-  --color-brand-800: #0b4c48;
-  --color-brand-900: #0a3f3c;
+  /* Primær: blå. 600 = knapper og links på lys flade, 700 = hover/tekst, 50-200 = lyse flader. */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-on-brand: #ffffff;
 
-  /* Flader og tekst */
-  --color-canvas: #f5f8f7;
+  /* Flader, tekst og kanter (neutrale gråtoner med et strejf af blå) */
+  --color-canvas: #ffffff;
   --color-surface: #ffffff;
-  --color-ink: #1b2e2c;
-  --color-ink-muted: #4b5f5c;
-  --color-line: #d3dfdc;
-  --color-field-border: #6f8784;
+  --color-surface-muted: #f6f8fb;
+  --color-ink: #162033;
+  --color-ink-muted: #4a5568;
+  --color-line: #e2e8f0;
+  --color-field-border: #718096;
 
   /* Statusfarver: info, advarsel (fx pladsholder, afventer verifikation), fejl, succes */
-  --color-info-bg: #edf5fb;
-  --color-info-line: #9cc3dc;
-  --color-info-ink: #1e4a66;
+  --color-info-bg: #eef4fc;
+  --color-info-line: #a5c3e8;
+  --color-info-ink: #1e3f6b;
   --color-warning-bg: #fff6e0;
   --color-warning-line: #e0b050;
   --color-warning-ink: #5c3600;
@@ -42,6 +47,20 @@
   --color-success-bg: #edf8f1;
   --color-success-line: #8fcaa6;
   --color-success-ink: #155c33;
+
+  /* Bløde hjørner */
+  --radius-control: 0.75rem; /* knapper og felter */
+  --radius-card: 1.25rem; /* kort og paneler */
+  --radius-pill: 9999px; /* chips, badges og søgefelt */
+
+  /* Skygger */
+  --shadow-card: 0 1px 2px rgb(22 32 51 / 0.06), 0 4px 16px rgb(22 32 51 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(22 32 51 / 0.08), 0 8px 28px rgb(22 32 51 / 0.12);
+
+  /* Afstande og sidebredder */
+  --spacing-page-x: 1rem; /* sidemargen på mobil (sm og op: 1.5rem via Container/Header) */
+  --container-narrow: 36rem;
+  --container-wide: 72rem;
 }
 
 @layer base {
