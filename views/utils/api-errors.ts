@@ -33,6 +33,12 @@ const MESSAGES: Record<string, string> = {
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
   EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
+  CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",
+  TRUSTPILOT_URL_REQUIRED: "Angiv linket til din Trustpilot-side, hvis du angiver score eller antal anmeldelser.",
+  UNKNOWN_SERVICE: "En af ydelserne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
+  DENTIST_LIMIT: "Du kan højst oprette 30 tandlæger.",
+  PORTFOLIO_LIMIT: "Du kan højst have 60 porteføljebilleder.",
+  INVALID_IMAGE: "Billedet kunne ikke bruges. Vælg et JPEG- eller PNG-billede.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 
