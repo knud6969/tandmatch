@@ -244,13 +244,13 @@ isOneToOne: false
                   ]
                 },"clinic_dentists": {
                   Row: {
-                    "bio": string | null,"clinic_id": string,"created_at": string,"full_name": string,"id": string,"photo_path": string | null,"sort_order": number,"title": string | null
+                    "bio": string | null,"clinic_id": string,"created_at": string,"full_name": string,"id": string,"photo_path": string | null,"photo_updated_at": string | null,"sort_order": number,"title": string | null
                   }
                   Insert: {
-                    "bio"?: string | null,"clinic_id": string,"created_at"?: string,"full_name": string,"id"?: string,"photo_path"?: string | null,"sort_order"?: number,"title"?: string | null
+                    "bio"?: string | null,"clinic_id": string,"created_at"?: string,"full_name": string,"id"?: string,"photo_path"?: string | null,"photo_updated_at"?: string | null,"sort_order"?: number,"title"?: string | null
                   }
                   Update: {
-                    "bio"?: string | null,"clinic_id"?: string,"created_at"?: string,"full_name"?: string,"id"?: string,"photo_path"?: string | null,"sort_order"?: number,"title"?: string | null
+                    "bio"?: string | null,"clinic_id"?: string,"created_at"?: string,"full_name"?: string,"id"?: string,"photo_path"?: string | null,"photo_updated_at"?: string | null,"sort_order"?: number,"title"?: string | null
                   }
                   Relationships: [
                     {

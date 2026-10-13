@@ -507,7 +507,7 @@ describe("tandlæger", () => {
     assert.equal(file.status, 200);
     const { default: sharp } = await import("sharp");
     assert.equal((await sharp(file.body).metadata()).exif, undefined);
-    assert.ok((await c.get("/api/clinics/me/dentists")).body.dentists[0].photoUrl);
+    assert.match((await c.get("/api/clinics/me/dentists")).body.dentists[0].photoUrl, /\?v=\d+$/);
 
     assert.equal((await c.del(`/api/clinics/me/dentists/${d.body.id}/photo`)).status, 204);
     assert.equal((await c.get("/api/clinics/me/dentists")).body.dentists[0].photoUrl, null);
@@ -652,6 +652,15 @@ describe("sletning af klinikkonto", () => {
     }
     const [a] = await serviceIds(c, 1);
     await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a, priceMin: 1, priceMax: 2, durationMin: 30 }] });
+    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await c.post("/api/clinics/me/time-blocks", { startsAt: "2030-07-01T08:00:00Z", endsAt: "2030-07-02T08:00:00Z" });
+    await c.patch("/api/clinics/me", {
+      description: "Skal slettes",
+      trustpilotUrl: "https://dk.trustpilot.com/review/slettes.test",
+      trustpilotScore: 4.2,
+      trustpilotReviewCount: 10,
+    });
+    const before = await admin.from("clinics").select("name, address, postal_code, city, phone").eq("id", clinicId).single();
 
     const del = await c.del("/api/clinics/me", { confirm: "SLET" });
     assert.equal(del.status, 204);
@@ -668,11 +677,55 @@ describe("sletning af klinikkonto", () => {
     assert.equal(clinic.data?.owner_since, null);
     assert.equal((await admin.from("clinic_dentists").select("id").eq("clinic_id", clinicId)).data?.length, 0);
     assert.equal((await admin.from("portfolio_items").select("id").eq("clinic_id", clinicId)).data?.length, 0);
+    assert.equal((await admin.from("clinic_prices").select("service_id").eq("clinic_id", clinicId)).data?.length, 0);
+    assert.equal((await admin.from("clinic_time_blocks").select("id").eq("clinic_id", clinicId)).data?.length, 0);
+    const kept = await admin
+      .from("clinics")
+      .select("name, address, postal_code, city, phone, description, trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_entered_by")
+      .eq("id", clinicId)
+      .single();
+    assert.equal(kept.data?.description, null);
+    assert.equal(kept.data?.trustpilot_url, null);
+    assert.equal(kept.data?.trustpilot_score, null);
+    assert.equal(kept.data?.trustpilot_review_count, null);
+    assert.equal(kept.data?.trustpilot_entered_by, null);
+    // Offentlige grunddata og åbningstider bevares.
+    assert.deepEqual(
+      { name: kept.data?.name, address: kept.data?.address, postal_code: kept.data?.postal_code, city: kept.data?.city, phone: kept.data?.phone },
+      before.data,
+    );
+    assert.equal((await admin.from("clinic_opening_hours").select("id").eq("clinic_id", clinicId)).data?.length, 1);
     const listed = await admin.storage.from("public-media").list(`clinics/${clinicId}`);
     assert.equal(listed.data?.length ?? 0, 0);
     assert.equal((await admin.auth.admin.getUserById(userId)).data?.user ?? null, null);
 
     // Oprydning af testrækken.
+    await admin.from("clinics").delete().eq("id", clinicId);
+  });
+  it("bevarer Trustpilot, som admin har indtastet,", async () => {
+    const { c, userId, clinicId } = await signupClinic();
+    await c.patch("/api/clinics/me", { description: "Tekst" });
+    await admin
+      .from("clinics")
+      .update({
+        trustpilot_url: "https://dk.trustpilot.com/review/admin.test",
+        trustpilot_score: 4.8,
+        trustpilot_review_count: 50,
+        trustpilot_entered_by: "admin",
+      })
+      .eq("id", clinicId);
+    assert.equal((await c.del("/api/clinics/me", { confirm: "SLET" })).status, 204);
+    createdUserIds.delete(userId);
+    const row = await admin
+      .from("clinics")
+      .select("status, description, trustpilot_url, trustpilot_score, trustpilot_entered_by")
+      .eq("id", clinicId)
+      .single();
+    assert.equal(row.data?.status, "imported");
+    assert.equal(row.data?.description, null);
+    assert.equal(row.data?.trustpilot_url, "https://dk.trustpilot.com/review/admin.test");
+    assert.equal(row.data?.trustpilot_score, 4.8);
+    assert.equal(row.data?.trustpilot_entered_by, "admin");
     await admin.from("clinics").delete().eq("id", clinicId);
   });
 });

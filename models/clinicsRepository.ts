@@ -109,6 +109,25 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
     return row?.id ?? null;
   }
 
+  // Kontosletning: fjerner beskrivelsen, og Trustpilot-felterne hvis klinikken selv har indtastet dem (admin-indtastet
+  // Trustpilot bevares). Samme rækkeopdatering, så den kan gentages. Kun med service role-klienten.
+  async clearClinicEnteredData(clinicId: string): Promise<void> {
+    await this.run(this.db.from("clinics").update({ description: null }).eq("id", clinicId), "clinics: beskrivelse fejlede");
+    await this.run(
+      this.db
+        .from("clinics")
+        .update({ trustpilot_url: null, trustpilot_score: null, trustpilot_review_count: null, trustpilot_updated_at: null, trustpilot_entered_by: null })
+        .eq("id", clinicId)
+        .eq("trustpilot_entered_by", "clinic"),
+      "clinics: trustpilot fejlede",
+    );
+  }
+
+  // Kontosletning: hele prislisten. Kun med service role-klienten.
+  async deleteAllPrices(clinicId: string): Promise<void> {
+    await this.run(this.db.from("clinic_prices").delete().eq("clinic_id", clinicId), "clinic_prices: delete fejlede");
+  }
+
   // Prislisten i katalogets rækkefølge.
   async listPrices(clinicId: string): Promise<ClinicPriceDto[]> {
     const rows = await this.runList<PriceRow>(

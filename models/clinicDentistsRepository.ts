@@ -9,9 +9,9 @@ import { PublicMediaStorage } from "@/models/publicMediaStorage";
 export type NewDentist = z.infer<typeof createDentistSchema>;
 export type DentistPatch = z.infer<typeof patchDentistSchema>;
 
-type DentistRow = Pick<Tables<"clinic_dentists">, "id" | "full_name" | "title" | "bio" | "photo_path" | "sort_order">;
+type DentistRow = Pick<Tables<"clinic_dentists">, "id" | "full_name" | "title" | "bio" | "photo_path" | "photo_updated_at" | "sort_order">;
 
-const DENTIST_COLUMNS = "id, full_name, title, bio, photo_path, sort_order";
+const DENTIST_COLUMNS = "id, full_name, title, bio, photo_path, photo_updated_at, sort_order";
 
 // Klinikkens tandlæger (architecture 4.3 `clinic_dentists`): kun visning, intet login. Med brugerens JWT er det kun
 // ejeren, der læser og skriver (RLS). Kun `deleteAllForClinic` kræver service role-klienten (2.3 f).
@@ -22,7 +22,8 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
       fullName: row.full_name,
       title: row.title,
       bio: row.bio,
-      photoUrl: row.photo_path ? PublicMediaStorage.publicUrl(row.photo_path) : null,
+      photoUrl: row.photo_path ? PublicMediaStorage.publicUrl(row.photo_path, row.photo_updated_at ? Date.parse(row.photo_updated_at) : undefined)
+        : null,
       sortOrder: row.sort_order,
     };
   }
@@ -102,7 +103,7 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
   // Stien til portrættet (eller null) - filen i public-media slettes af kalderen.
   async setPhotoPath(clinicId: string, dentistId: string, path: string | null): Promise<void> {
     await this.run(
-      this.db.from("clinic_dentists").update({ photo_path: path }).eq("clinic_id", clinicId).eq("id", dentistId),
+      this.db.from("clinic_dentists").update({ photo_path: path, photo_updated_at: new Date().toISOString() }).eq("clinic_id", clinicId).eq("id", dentistId),
       "clinic_dentists: foto fejlede",
     );
   }

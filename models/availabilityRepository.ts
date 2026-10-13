@@ -95,4 +95,9 @@ export class AvailabilityRepository extends BaseRepository {
     );
     this.requireRow(rows[0]);
   }
+
+  // Kontosletning: alle blokerede tider. Kun med service role-klienten.
+  async deleteAllTimeBlocks(clinicId: string): Promise<void> {
+    await this.run(this.db.from("clinic_time_blocks").delete().eq("clinic_id", clinicId), "clinic_time_blocks: delete fejlede");
+  }
 }

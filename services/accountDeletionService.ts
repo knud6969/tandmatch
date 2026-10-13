@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthRepository } from "@/models/authRepository";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CleanupRepository } from "@/models/cleanupRepository";
+import { AvailabilityRepository } from "@/models/availabilityRepository";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
@@ -17,6 +18,7 @@ export class AccountDeletionService {
   private readonly auth: AuthRepository;
   private readonly clinics: ClinicsRepository;
   private readonly dentists: ClinicDentistsRepository;
+  private readonly availability: AvailabilityRepository;
   private readonly media: PublicMediaStorage;
 
   constructor(admin: SupabaseClient) {
@@ -25,6 +27,7 @@ export class AccountDeletionService {
     this.auth = new AuthRepository(admin);
     this.clinics = new ClinicsRepository(admin);
     this.dentists = new ClinicDentistsRepository(admin);
+    this.availability = new AvailabilityRepository(admin);
     this.media = new PublicMediaStorage(admin);
   }
 
@@ -36,7 +39,8 @@ export class AccountDeletionService {
   }
 
   // Sletter en klinikkonto (architecture 10.8): filerne i public-media (logo, tandlæger, portefølje), rækkerne for tandlæger
-  // og portefølje, logo-stien og auth-brugeren. Klinikrækken bliver tilbage som `imported`, og triggeren clinics_after_owner_removed() afviser
+  // og portefølje, logo-stien, prisliste, blokerede tider, beskrivelsen og klinikindtastet Trustpilot (admin-indtastet bevares), og auth-brugeren.
+  // Offentlige grunddata (navn, adresse, postnummer, by, telefon, åbningstider) bevares. Klinikrækken bliver tilbage som `imported`, og triggeren clinics_after_owner_removed() afviser
   // leads og aflyser fremtidige bookinger (5.3). Filerne ryddes først, mens ejeren stadig kan slås op; fejler
   // sletningen af brugeren bagefter, kan kontoen slettes igen.
   async deleteClinicAccount(userId: string): Promise<void> {
@@ -45,6 +49,9 @@ export class AccountDeletionService {
       await this.media.removeClinic(clinicId);
       await this.dentists.deleteAllForClinic(clinicId); // portefølje følger med via cascade
       await this.clinics.setLogoPath(clinicId, null);
+      await this.clinics.deleteAllPrices(clinicId);
+      await this.availability.deleteAllTimeBlocks(clinicId);
+      await this.clinics.clearClinicEnteredData(clinicId);
     }
     await this.auth.deleteUser(userId);
   }
