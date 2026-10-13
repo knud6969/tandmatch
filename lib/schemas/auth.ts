@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  clinicAddressSchema,
+  clinicCitySchema,
+  clinicNameSchema,
+  clinicPhoneSchema,
+  cvrSchema,
+  postalCodeSchema,
+} from "@/lib/schemas/clinics";
 
 export const emailSchema = z
   .string()
@@ -24,13 +32,26 @@ export const loginSchema = z
   })
   .strict();
 
-export const signupSchema = z.discriminatedUnion("role", [  // Klinik-signup kommer i 1.1.
+export const signupSchema = z.discriminatedUnion("role", [
   z
     .object({
       role: z.literal("patient"),
       email: emailSchema,
       password: passwordSchema,
       firstName: firstNameSchema,
+    })
+    .strict(),
+  z
+    .object({
+      role: z.literal("clinic"),
+      email: emailSchema,
+      password: passwordSchema,
+      cvr: cvrSchema,
+      clinicName: clinicNameSchema,
+      address: clinicAddressSchema,
+      postalCode: postalCodeSchema,
+      city: clinicCitySchema,
+      phone: clinicPhoneSchema,
     })
     .strict(),
 ]);

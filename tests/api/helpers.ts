@@ -24,11 +24,12 @@ export class TestClient {
     if (this.cookies.size > 0) {
       headers.cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join("; ");
     }
-    if (body !== undefined) headers["content-type"] = "application/json";
+    const isForm = body instanceof FormData;
+    if (body !== undefined && !isForm) headers["content-type"] = "application/json";
     const res = await fetch(BASE_URL + path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       redirect: "manual",
     });
     for (const line of res.headers.getSetCookie()) {
@@ -59,8 +60,18 @@ export class TestClient {
   post(path: string, body?: unknown, headers?: Record<string, string>) {
     return this.request("POST", path, body ?? {}, headers);
   }
+  put(path: string, body: unknown) {
+    return this.request("PUT", path, body);
+  }
+  patch(path: string, body: unknown) {
+    return this.request("PATCH", path, body);
+  }
   del(path: string, body?: unknown) {
     return this.request("DELETE", path, body);
+  }
+  // Multipart (billedupload). fetch sætter selv content-type med boundary.
+  postForm(path: string, form: FormData) {
+    return this.request("POST", path, form);
   }
 
   acceptTerms() {
@@ -103,4 +114,25 @@ export function forgeTermsCookie(secret: string): string {
     ),
   );
   return `${body}.${b64(createHmac("sha256", secret).update(body).digest())}`;
+}
+
+// Et lille, ægte JPEG-billede med EXIF-data (ophavsret), til upload-tests af logo, portræt og portefølje.
+export async function jpegWithExif(): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
+  return sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 200, g: 60, b: 60 } } })
+    .withExif({ IFD0: { Copyright: "hemmelig-ophavsret" } })
+    .jpeg()
+    .toBuffer();
+}
+
+export function imageForm(image: Buffer, fields: Record<string, string> = {}): FormData {
+  const form = new FormData();
+  form.set("file", new Blob([new Uint8Array(image)], { type: "image/jpeg" }), "billede.jpg");
+  for (const [key, value] of Object.entries(fields)) form.set(key, value);
+  return form;
+}
+
+// Tilfældigt 8-cifret CVR-nummer, der ikke findes i CVR-registret (testdata).
+export function randomCvr(): string {
+  return String(10_000_000 + Math.floor(Math.random() * 89_999_999));
 }

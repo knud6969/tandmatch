@@ -112,6 +112,42 @@ export function imageFileReader(req: Request, field: string, maxBytes: number): 
   };
 }
 
+// Læser en multipart-body med ét billede og tekstfelter (fx porteføljebillede, architecture 10.8). Felterne valideres
+// med zod, før noget behandles; manglende bekræftelse giver dermed 400, før billedet røres.
+export async function readImageForm<T>(
+  req: Request,
+  fileField: string,
+  maxBytes: number,
+  fieldsSchema: ZodType<T>,
+): Promise<{ file: File; fields: T }> {
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    throw new ApiError(400, "INVALID_FORM", "Billedet kunne ikke læses.");
+  }
+  const raw: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    if (key !== fileField && typeof value === "string") raw[key] = value;
+  }
+  const parsed = fieldsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ApiError(
+      400,
+      "VALIDATION_ERROR",
+      parsed.error.issues[0]?.message ?? "Ugyldige oplysninger. Tjek felterne og prøv igen.",
+    );
+  }
+  const file = form.get(fileField);
+  if (!(file instanceof File)) {
+    throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+  }
+  if (file.size > maxBytes) {
+    throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+  }
+  return { file, fields: parsed.data };
+}
+
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 // Ugyldigt id og manglende id giver 404 (architecture 2.4: vi skelner ikke, for ikke at lække eksistens).

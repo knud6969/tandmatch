@@ -1,3 +1,4 @@
+import type { ClinicSummaryDto } from "@/lib/types/clinics";
 import type { Role } from "@/lib/types/common";
 
 export type TermsStatusDto = {
@@ -15,4 +16,6 @@ export type MeDto = {
   isAnonymous: boolean;
   displayName: string | null;
   anonymousExpiresAt: string | null;
+  // Kun for rollen clinic (architecture 10.2).
+  clinic?: ClinicSummaryDto;
 };

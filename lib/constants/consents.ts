@@ -42,3 +42,12 @@ export const CONSENT_WITHDRAW_CONSEQUENCE: Record<ConsentType, string> = {
   health_data_sharing:
     "Det påvirker ikke forespørgsler, du allerede har sendt, men din beskrivelse kan ikke deles med nye tandlæger, før du giver samtykke igen.",
 };
+
+// Klinikkens bekræftelse ved upload af porteføljebillede (architecture 9.5). Gemmes på portfolio_items
+// (patient_consent_confirmed_at og consent_text_version), ikke i consents, fordi det ikke er patientens samtykke
+// i platformen, men klinikkens erklæring som dataansvarlig. Juridisk gennemgang mangler [ÅBEN, 12.3].
+export const PORTFOLIO_CONSENT_TEXT_VERSION = "portfolio_consent@v0-prototype";
+
+export const PORTFOLIO_CONSENT_TEXT =
+  "Jeg bekræfter, at patienten på billedet har givet skriftligt samtykke til, at billedet vises offentligt på " +
+  "klinikkens profil på TandMatch, og at billedet ikke viser ansigt eller andet, der kan identificere patienten.";

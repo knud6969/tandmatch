@@ -68,13 +68,33 @@ export class AuthController {
       throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
     }
 
-    const metadata: Record<string, string> = { role: "patient", first_name: input.firstName }; // Klinik-signup kommer i 1.1.
+    const metadata = await this.signupMetadata(input);
     const userId = await this.auth.signUp(input.email, input.password, metadata);
 
     if (gate.terms) {
       await this.terms.upsertAcceptance(userId, gate.terms);
     }
     return { userId, role: input.role };
+  }
+
+  // Metadata, som signup-triggeren handle_new_user() opretter rækkerne ud fra (architecture 4.3).
+  // For en klinik forhåndstjekkes CVR'et, fordi GoTrue oversætter fejlen fra triggeren til en generisk fejl.
+  private async signupMetadata(input: SignupInput): Promise<Record<string, string>> {
+    if (input.role === "patient") {
+      return { role: "patient", first_name: input.firstName };
+    }
+    if (await this.profiles.isCvrClaimed(input.cvr)) {
+      throw new ApiError(409, "CLINIC_EXISTS", "Der findes allerede en konto for dette CVR-nummer.");
+    }
+    return {
+      role: "clinic",
+      cvr: input.cvr,
+      clinic_name: input.clinicName,
+      address: input.address,
+      postal_code: input.postalCode,
+      city: input.city,
+      phone: input.phone,
+    };
   }
 
   // Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
