@@ -24,7 +24,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 |---|---|---|
 | Klinikker verificeres kun i seed-data (`admin_set_clinic_status()`); ingen adminside | Tidsplan | Verifikationsflow (CVR, autorisation) og adminside |
 | Importerede klinikker kommer fra seed-data | Importkilde ikke valgt | Import fra CVR eller andet register (12.3) |
-| En klinik, der opretter sig med et CVR-nummer, som en importeret klinik har, overtager den importerede række uden bevis for ejerskab | Enkelt demoflow | Bevis for ejerskab før overtagelse; verifikation før leads er værnet i dag (12.1) |
+| En klinik, der opretter sig med et CVR-nummer, som en importeret klinik har, overtager den importerede række uden bevis for ejerskab | Enkelt demoflow | Bevis for ejerskab før overtagelse. Værnet i dag: den overtagne klinik er usynlig offentligt og kan ikke modtage leads, før admin har verificeret ejeren (12.1) |
 | Én kalender pr. klinik: kun én booking ad gangen | Enkel dobbeltbookingsregel | Kalender pr. behandler eller stol (12.3) |
 | Ingen e-mailbekræftelse ved kontooprettelse | Enkelt demoflow | Slå e-mailbekræftelse til i Supabase |
 | Ingen CAPTCHA på anonyme sessioner; kun rate limits og lofter | Enkelt demoflow | Cloudflare Turnstile |
@@ -190,6 +190,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 - `createSupabaseAdminClient()` kaldes **kun** fra `lazyAdminClient()` i `models/db/admin.ts` (og fra scripts). Controllere og services kalder den aldrig direkte.
 - En controller, der må bruge service role (2.3), har feltet `private readonly admin: () => SupabaseClient`, sat i constructoren til `deps.admin ?? lazyAdminClient()`. `lazyAdminClient()` returnerer en getter, der opretter klienten ved første kald og genbruger den inden for samme controller-instans (dvs. samme request).
 - Klienten bruges kun ved at give `this.admin()` videre til et repository, en storage-klasse eller en service (`new CaseImageStorage(this.admin())`), og hvert kald har en kommentar med formålet fra 2.3 (fx `// 2.3 (c)`).
+- Service role bruges aldrig til opslag på brugerens vegne. Data, der afgør, hvad der må ske (fx klinikkens id før sletning eller upload), hentes med brugerens klient (`ClinicsRepository.requireOwnId()`), og først derefter bruges `this.admin()` til filer, auth-bruger eller AI-skrivninger.
 - Controllere, der ikke må bruge service role, har ikke feltet. Reviewer tjekker, at `createSupabaseAdminClient` kun findes i `models/db/admin.ts` og `scripts/`.
 
 **Rækker fra databasen valideres ikke med zod (besluttet):**
@@ -321,6 +322,8 @@ Hosting: Supabase-projektet ligger i **EU-region**. Hosting af Next.js-appen: **
 | Extension `btree_gist` | Slået til (i migrationen) | Udelukkelse af overlappende bookinger (4.3 `bookings`) |
 | Migrationer | `supabase/migrations/*` i nummerorden | Skema, RLS, funktioner, katalog |
 
+**Oversigt over persondata:** `docs/security.md` beskriver, hvilke data der behandles, til hvilket formål, hvor længe de opbevares, og hvem der har adgang (vedligeholdes af security-agenten; oprettes i 1.9.7).
+
 **Efter nulstilling af det fælles projekt (arbejdsplan 0.8)** skal det tjekkes, at `pg_policies` er tom for schema `storage` (de gamle storage-policies er væk; det nye sæt opretter ingen for `case-images`), og at der ikke findes gamle buckets (fx `request-images`, `public-profile`); kun `case-images` og `public-media` må findes. Auth > minimum adgangskodelængde: 8 (samme som API'ets validering).
 
 Samme indstillinger står i `supabase/config.toml`, så lokal Supabase (`supabase start`, `supabase db reset`) svarer til det fælles projekt. Tests kører altid lokalt, aldrig mod det fælles projekt.
@@ -336,6 +339,9 @@ Samme indstillinger står i `supabase/config.toml`, så lokal Supabase (`supabas
 - Statuskoder: 200, 201, 204, 400 (validering), 401 (ikke logget ind), 403 (forkert rolle/ejer/manglende samtykke), 404 (findes ikke **eller** ingen adgang; vi skelner ikke), 409 (forkert tilstand, fx lead ikke accepteret, tiden er taget), 413 (fil for stor), 429 (rate limit eller loft), 500.
 - Auth: Supabase Auth med `@supabase/ssr`, session i `httpOnly`, `secure`, `sameSite=lax`-cookies sat af serveren. Browseren bruger aldrig Supabase-klienten selv.
 - Ingen streaming. Alle svar, også AI-svar, returneres som ét samlet JSON-svar efter validering.
+- **Sikkerhedsheadere** sættes for alle sider og routes i `next.config.ts` (`headers()`) [IKKE BYGGET] (1.9):
+  - `Content-Security-Policy`: `default-src 'self'`; `img-src 'self' data: blob:` + Supabase-projektets URL (`public-media` og signerede URL'er fra `case-images`) + OpenStreetMaps fliseserver fra trin 2; `connect-src 'self'`; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`. Scripts og styles så stramt, som Next.js tillader (nonce eller `'self'`); undtagelser dokumenteres i filen.
+  - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` (ældre browsere), `Permissions-Policy` uden kamera/mikrofon/geolokation, undtagen `geolocation=(self)`, når kortet bruger position (trin 2).
 - Mangler gyldig vilkårs-accept, svarer API'et 403 `TERMS_REQUIRED` (2.5).
 
 ### 2.5 Vilkårs-gate
@@ -420,8 +426,8 @@ Alle brugertyper skal først passere vilkårs-gaten (2.5). Brugertyper:
 
 | Status | Har konto | Vises offentligt | Kan modtage leads og bookinger |
 |---|---|---|---|
-| `imported` | nej | grunddata og Trustpilot, hvis kendt (6.6, niveau "basis"). Ingen egne anmeldelser | nej |
-| `registered` | ja | som `imported` (basis) [PROTOTYPE]. Klinikken kan udfylde profil, prisliste, åbningstider, tandlæger og portefølje og se en forhåndsvisning | nej |
+| `imported` (og `owner_id is null`) | nej | grunddata og Trustpilot, hvis kendt (6.6, niveau "basis"). Ingen egne anmeldelser | nej |
+| `registered` | ja | **nej, usynlig offentligt**, indtil den er verificeret. Det gælder også en importeret klinik, der er overtaget via CVR: den forsvinder fra oversigten, indtil ejeren er verificeret, så en uverificeret ejer aldrig kan ændre, hvad patienter ser. Klinikken kan udfylde profil, prisliste, åbningstider, tandlæger og portefølje og se en forhåndsvisning | nej |
 | `verified` | ja | fuld profil (niveau "fuld"): priser, ledige tider, tandlæger, portefølje, egne anmeldelser og prisnøjagtighed, kan vælges | ja |
 
 Status ændres kun af admin (eller seed via `admin_set_clinic_status()`, 5.3). Den præcise visuelle udformning af basisniveauet designes senere.
@@ -548,7 +554,7 @@ Rækkerne oprettes af triggeren på `auth.users` (security definer), ikke af API
 |---|---|---|
 | anonym | (ingen) | `profiles(role='patient', is_anonymous=true)` + `patients(first_name=null)` |
 | patient | `role`, `first_name` | `profiles(role='patient')` + `patients(first_name)` |
-| klinik | `role`, `cvr`, `clinic_name`, `address`, `postal_code`, `city`, `phone` | `profiles(role='clinic')` + `clinics(owner_id, status='registered', …)`. Findes en importeret klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]. Har klinikken med CVR'et allerede en ejer, kaster triggeren `CLINIC_EXISTS` |
+| klinik | `role`, `cvr`, `clinic_name`, `address`, `postal_code`, `city`, `phone` | `profiles(role='clinic')` + `clinics(owner_id, status='registered', …)`. Findes en importeret klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE, 12.1]; klinikken bliver `registered` og dermed usynlig offentligt, indtil ejeren er verificeret. Har klinikken med CVR'et allerede en ejer, kaster triggeren `CLINIC_EXISTS` |
 
 Ukendt rolle eller ugyldige metadata får signup til at fejle i databasen. GoTrue oversætter fejl fra triggeren til en generisk fejl, så API'et **forhåndstjekker CVR'et** med `is_cvr_claimed(p_cvr)` (5.3) og svarer selv 409 `CLINIC_EXISTS`, før signup kaldes. Triggerens tjek er det sidste værn.
 
@@ -625,14 +631,14 @@ Klinikken vælger først de kategorier, den arbejder med, og prissætter derefte
 | Felt | Type | Note |
 |---|---|---|
 | id | uuid PK | |
-| owner_id | uuid FK profiles on delete set null, **unique**, null | Kontoen. `null` for importerede klinikker. Når ejeren slettes, kører triggeren `clinics_after_owner_removed()` (5.3): klinikken går tilbage til `imported`, `verified_at` nulstilles, og leads og bookinger håndteres som beskrevet dér |
+| owner_id | uuid FK profiles on delete set null, **unique**, null | Kontoen. `null` for importerede klinikker. Når ejeren slettes, kører triggeren `clinics_after_owner_removed()` (5.3): en importeret klinik går tilbage til `imported` med bevarede grunddata; en klinik, der oprettede sig selv (`import_source is null`), slettes helt |
 | status | clinic_status not null | Se 3. Ændres kun af admin/service role (trigger `clinics_guard()`) |
 | cvr | text null, unique | check `^[0-9]{8}$`. Kan ikke ændres af klinikken |
 | name | text not null | |
 | description | text null | max 1000 tegn |
 | address, postal_code, city | text not null | Offentlige erhvervsoplysninger |
 | lat, lng | double precision null | Fra import eller `postal_codes`. Præcis geokodning [ÅBEN] |
-| phone, email, website | text null | Offentlig kontakt |
+| phone, email, website | text null | Offentlig kontakt. `website` har check `website ~ '^https?://'` [IKKE BYGGET] (1.9.1); vises som link med `rel="noopener noreferrer nofollow ugc"` og `target="_blank"` |
 | logo_path | text null | Bucket `public-media` (9.5) |
 | logo_updated_at | timestamptz null | Sættes, når logoet uploades; bruges som `?v=` i logoets URL (9.5). [IKKE BYGGET] (1.9); i dag bruges `updated_at` |
 | trustpilot_url | text null | Skal starte med `https://dk.trustpilot.com/` eller `https://www.trustpilot.com/` |
@@ -882,7 +888,7 @@ Status: bygget i migrationssættet og dækket af RLS-testene i `tests/rls/` (tri
 8. **Ingen `auth.uid()` i funktioner, der kun kaldes med service role.** Her er `auth.uid()` tom. Sådanne funktioner tager bruger-id'et som parameter og tjekker selv ejerskab og tilstand (fx `try_consume_anonymous_ai_call(p_user_id)`, `append_assistant_message(p_user_id, …)`).
 9. **Låst opsummering.** `cases.summary_text` ændres kun via `approve_summary()`.
 10. **Storage uden klientskrivning.** Hverken `authenticated` eller `anon` kan skrive, slette eller læse i `case-images`. Signerede URL'er laves af serveren med service role efter en RLS-beskyttet læsning af stien (9.2). `public-media` er offentlig læsbar; skrivning kun med service role (9.5).
-11. **Offentlige klinikdata læses kun via `public_*`-funktioner.** Tabellerne `clinics`, `clinic_prices`, `clinic_opening_hours`, `clinic_dentists` og `portfolio_items` har ingen SELECT-policy for `anon` eller andre end ejeren. Så styrer funktionerne, hvilket niveau (basis eller fuld) hver klinik vises med. `public_*` returnerer en `registered` klinik med status `imported`, så offentligheden ikke kan skelne en oprettet, ikke verificeret klinik fra en importeret.
+11. **Offentlige klinikdata læses kun via `public_*`-funktioner.** Tabellerne `clinics`, `clinic_prices`, `clinic_opening_hours`, `clinic_dentists` og `portfolio_items` har ingen SELECT-policy for `anon` eller andre end ejeren. Så styrer funktionerne, hvilke klinikker der vises, og på hvilket niveau. **Synlighed (besluttet):** `public_*` returnerer kun klinikker med status `verified` (fuldt niveau) og klinikker med status `imported` og `owner_id is null` (basisniveau). En `registered` klinik er usynlig offentligt, indtil den er verificeret, også hvis den er en overtaget importeret klinik. [IKKE BYGGET] (1.9.1): i dag maskeres `registered` som `imported`; det udgår.
 12. **Kolonne-grants.** Hvor en ejer må opdatere en tabel, men kun nogle felter, begrænses `UPDATE` med kolonne-grants til `authenticated` (ud over policy og trigger):
 
 | Tabel | `authenticated` må opdatere |
@@ -890,7 +896,8 @@ Status: bygget i migrationssættet og dækket af RLS-testene i `tests/rls/` (tri
 | `clinics` | `name`, `description`, `address`, `postal_code`, `city`, `phone`, `email`, `website`, `trustpilot_url`, `trustpilot_score`, `trustpilot_review_count`. `lat`/`lng` sættes af `clinics_guard()` ud fra postnummeret, og `logo_path` skrives af serveren med service role efter upload (9.5) |
 | `patients` | `first_name`, `postal_code`, `phone` |
 | `cases` | `postal_code`, `preferred_timeframe` |
-| `portfolio_items` | `caption`, `service_id` |
+| `portfolio_items` | `caption`, `service_id` (INSERT kun med service role; `image_path`, `clinic_id`, `dentist_id` og samtykkefelterne kan ikke ændres af klienten) |
+| `clinic_dentists` | INSERT og UPDATE kun på `clinic_id`, `full_name`, `title`, `bio`, `sort_order`. `photo_path` og `photo_updated_at` skrives kun af serveren med service role efter upload (`setPhotoPath`, 2.3 d) [IKKE BYGGET] (1.9.1): i dag kan ejeren skrive dem direkte |
 | `messages` | `read_at` |
 
 Alle andre kolonner skrives kun af triggers og funktionerne i 5.3.
@@ -965,7 +972,7 @@ withdraw_open_leads(...) -> integer
 | `release_expired_holds(clinic_id)` | intern (kaldes kun af funktionerne ovenfor; ingen EXECUTE for `anon`/`authenticated`) | Sætter `held` med `hold_expires_at <= now()` for klinikken til `cancelled` |
 | `complete_due_bookings()` | **kun service role** (planlagt job, `/api/cron/complete-bookings`, hver time) | Sætter `completed`, `completed_at = ends_at + 24 t` for `booked` med `ends_at + interval '24 hours' <= now()`, og `cancelled` for alle `held` med `hold_expires_at <= now()`. Ren oprydning; reglerne bygger på `effective_booking_status()` og `release_expired_holds()`, så intet afhænger af jobbet. Bruger ikke `auth.uid()` |
 | `withdraw_consent(consent_id)`, `confirm_consent_cleanup(consent_id)` | patient (+anonym) | Som før, men billeder hænger på sager. Tilbagetrækning af `image_upload` sletter rækkerne i `case_images` (også på sendte sager), og billederne forsvinder dermed for klinikkerne. Tilbagetrækning af `health_data_sharing` sætter, **hvis patienten ikke har et andet aktivt samtykke af samme type**, alle patientens leads med status `sent`, og `accepted` uden aktiv booking, til `withdrawn` (klinikken mister adgangen, 5.7) og frigiver deres `held`-reservationer. `booked` bookinger består; patienten kan selv aflyse dem (`cancel_booking()`). Nye leads kræver nyt samtykke |
-| Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | Sætter klinikken til `imported` og nulstiller `verified_at` og `owner_since`. **Bevarer** de offentlige grunddata: navn, adresse, postnummer, by, telefon og åbningstider (samt CVR, koordinater og Trustpilot indtastet af admin). **Sletter** det, klinikken selv har lagt ind: prisliste (`clinic_prices`), blokerede tider (`clinic_time_blocks`), tandlæger (`clinic_dentists`, og dermed `portfolio_items` via cascade), og `clinic_service_groups`, og nulstiller `description`, `logo_path`, `logo_updated_at`, `email`, `website` samt Trustpilot-felterne, hvis `trustpilot_entered_by = 'clinic'`. Oprydningen sker i triggeren (besluttet), så den er atomar og også virker, når en konto slettes uden om API'et; service role bruges kun til filer og auth-bruger (2.3). Filerne i `public-media` slettes af `DELETE /api/clinics/me` (10.8), før auth-brugeren slettes. [IKKE BYGGET] (1.9): i dag sletter `AccountDeletionService.deleteClinicAccount()` rækkerne før auth-brugeren og bevarer fejlagtigt e-mail og website; det flyttes til triggeren med en ny migration. Alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Afholdte bookinger og anmeldelser består. Patienten ser "Klinikken er ikke længere på TandMatch" og kan vælge en anden klinik |
+| Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | **Altid først:** alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Derefter afhænger resten af, om klinikken stammer fra en import:<br>**(a) `import_source is not null`** (importeret klinik, der var overtaget): klinikken sættes til `imported`, `verified_at` og `owner_since` nulstilles. **Bevarer** de offentlige grunddata: navn, adresse, postnummer, by, telefon og åbningstider (samt CVR, koordinater og Trustpilot indtastet af admin). **Sletter** det, klinikken selv har lagt ind: prisliste (`clinic_prices`), valgte kategorier (`clinic_service_groups`), blokerede tider (`clinic_time_blocks`), tandlæger (`clinic_dentists`, og dermed `portfolio_items` via cascade), og nulstiller `description`, `logo_path`, `logo_updated_at`, `email`, `website` samt Trustpilot-felterne, hvis `trustpilot_entered_by = 'clinic'`. Afholdte bookinger og anmeldelser består, og patienten ser "Klinikken er ikke længere på TandMatch".<br>**(b) `import_source is null`** (klinikken oprettede sig selv): **hele klinikrækken slettes**. Alle rækker, der peger på klinikken, slettes med via cascade: klinikdata, leads (og dermed beskeder og bookinger) samt anmeldelser og svar. FK'erne `leads.clinic_id`, `bookings.clinic_id`, `reviews.clinic_id` og `review_replies.clinic_id` er derfor `on delete cascade` (1.9.1). Patienten mister sine leads, bookinger og anmeldelser for klinikken (12.3 punkt 28).<br>Oprydningen sker i triggeren (besluttet), så den er atomar og også virker, når en konto slettes uden om API'et; service role bruges kun til filer og auth-bruger (2.3). Filerne i `public-media` slettes af `DELETE /api/clinics/me` (10.8), før auth-brugeren slettes. [IKKE BYGGET] (1.9.1): i dag gør triggeren kun lead- og bookingdelen, og `AccountDeletionService.deleteClinicAccount()` rydder rækkerne (inkl. e-mail og website, commit `1599eecd`) og bevarer altid rækken som `imported` |
 | `approve_summary(case_id, summary_text)` | patient (+anonym, ejer) | Eneste vej til `summary_text`. Kun `draft`, max 1500 |
 | `store_ai_summary(p_user_id, case_id, …)` | **kun service role** | Skriver det validerede udkast. Tjekker internt, at sagen tilhører `p_user_id` og er `draft` |
 | `append_assistant_message(p_user_id, conversation_id, …)` | **kun service role** | Indsætter assistentbesked (svar, foreløbig vurdering, foreslåede ydelser, akut, out-of-scope, blocked). Tjekker ejer og `active`. Afviser ydelses-id'er, der ikke er aktive i kataloget |
@@ -976,7 +983,7 @@ withdraw_open_leads(...) -> integer
 | `moderate(kind, id, status, reason)` | admin | **[IKKE BYGGET]** (heller ikke planlagt i demoen). Seed-anmeldelser er forhåndsgodkendte |
 | `admin_set_clinic_status(clinic_id, status)` | **kun service role** (seed og admin-scripts) [PROTOTYPE] | Sætter `status` og `verified_at` via et transaktionsflag, som `clinics_guard()` kun accepterer fra denne funktion |
 | `clinic_leads(p_status lead_status default null)`, `clinic_lead_detail(lead_id)`, `clinic_lead_images(lead_id)`, `clinic_bookings(from, to)`, `clinic_reviews()` | klinik | Læsefunktioner (5.7). `p_status = null` giver alle |
-| `public_clinics(p_service_ids uuid[], p_clinic_ids uuid[])` | alle, også `anon` | Basisdata (inkl. Trustpilot) for `imported`, `registered` og `verified` klinikker + fulde felter (logo, priser for de angivne ydelser, `has_emergency_hours`) kun for `verified`. Status returneres kun som `imported` eller `verified` (`registered` maskeres som `imported`). Ingen `owner_id`, ingen `cvr` |
+| `public_clinics(p_service_ids uuid[], p_clinic_ids uuid[])` | alle, også `anon` | Kun synlige klinikker (5.1 regel 11): basisdata (inkl. Trustpilot) for `imported` uden ejer og for `verified`, plus fulde felter (logo, priser for de angivne ydelser, `has_emergency_hours`) for `verified`. `registered` returneres aldrig. Ingen `owner_id`, ingen `cvr` |
 | `public_clinic_profile(clinic_id)` | alle | Som ovenfor for én klinik, plus beskrivelse, hele prislisten, åbningstider, tandlæger og portefølje (kun `verified`) |
 | `public_busy_intervals(clinic_ids uuid[], from, to)` | alle | Optagede tidsrum (ikke-udløbne `held`- og `booked`-bookinger samt blokeringer) for verificerede klinikker. Kun `starts_at`/`ends_at`, ingen id'er, ingen typer. Grundlag for ledige tider (6.7) |
 | `public_reviews(clinic_id)`, `public_clinic_review_stats_many(clinic_ids)` | alle | Godkendte anmeldelser og godkendte svar; statistik (4.3, 8.3). Kun for verificerede klinikker |
@@ -1034,7 +1041,7 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 7. `book_slot` afviser: lead der ikke er `accepted`, en andens lead, overlappende tid inkl. en `held`-akuttid (samtidige kald: kun ét lykkes), tid uden for åbningstid, almindelig ydelse i akutvindue, tid i blokering.
 8. `clinic_decide_lead` afviser andre end ejeren af leadets klinik og en ikke-verificeret klinik; et `declined` eller `withdrawn` lead kan ikke accepteres. Accept af et akut-lead inden for 30 minutter gør `held` til `booked`; afvisning frigiver tiden, så en anden kan booke den. Accept efter udløb giver `accepted` uden booking.
 9. Anmeldelse afvises før `ends_at + 24 timer`, ved `no_show`, ved `cancelled` og ved anden anmeldelse af samme booking; den tillades efter fristen, selv om `complete_due_bookings()` ikke har kørt. `mark_booking_no_show` afvises før starttid og efter `ends_at + 24 timer`, men tillades lige efter sluttid.
-10. Besøgende uden session kan kun læse offentlige tabeller og `public_*`-funktioner; `public_*` returnerer ingen priser, tandlæger eller portefølje for `imported`/`registered` klinikker og aldrig `owner_id` eller `cvr`.
+10. Besøgende uden session kan kun læse offentlige tabeller og `public_*`-funktioner; `public_*` returnerer ingen priser, tandlæger eller portefølje for `imported` klinikker, slet ingen `registered` klinikker (heller ikke en overtaget importeret klinik), og aldrig `owner_id` eller `cvr`.
 11. Klinik kan ikke ændre egen `status`, `owner_id` eller `cvr`, og kan ikke redigere en anden kliniks prisliste, åbningstider, tandlæger eller portefølje.
 12. Anonym session kan ikke: kalde `send_leads`, give `health_data_sharing`, oprette en anden kladde, skrive beskeder eller anmeldelser, booke.
 13. Efter kontooprettelse har brugeren samme id og ser fortsat sin kladde, chat, billeder og samtykker; en anden bruger med `case_id` får intet.
@@ -1050,12 +1057,16 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 23. Tilbagetrækning af `health_data_sharing` gør patientens `sent`- og ubookede `accepted`-leads `withdrawn` (klinikken mister adgang) og frigiver `held`; `booked` består.
 24. Når en verificeret kliniks ejer slettes: klinikken bliver `imported`, `sent`/`accepted` leads bliver `declined` med `clinic_left`, `held` frigives, fremtidige `booked` aflyses, afholdte bookinger og anmeldelser består. En klinik kan ikke selv sætte `clinic_left` via `clinic_decide_lead()`.
 25. `book_slot()` og `send_leads()` afviser starttider, der ikke ligger på et helt kvarter (fx 10:07 eller 10:15:30).
-26. Kolonne-grants: `authenticated` kan ikke opdatere andre kolonner end dem i 5.1 regel 12 (fx `cases.status`, `clinics.status`, `messages.body`), selv om RLS-policyen tillader rækken. `public_*` returnerer aldrig status `registered`. `is_cvr_claimed()` returnerer kun boolean.
+26. Kolonne-grants: `authenticated` kan ikke opdatere andre kolonner end dem i 5.1 regel 12 (fx `cases.status`, `clinics.status`, `messages.body`), selv om RLS-policyen tillader rækken. `public_*` returnerer aldrig en `registered` klinik. `is_cvr_claimed()` returnerer kun boolean.
 27. **Overtagelse via CVR:** en ny ejer, der overtager en klinik (CVR-tilknytning efter at den tidligere ejer er slettet), ser ingen leads, beskeder, bookinger, kontaktoplysninger eller anmeldelser med `sent_at` før `owner_since`, hverken direkte eller via `clinic_*`-funktionerne.
 28. En klinik har ingen direkte SELECT på `messages`; `clinic_lead_messages()` returnerer aldrig `sender_id` og intet for en ikke-verificeret klinik, et `withdrawn` lead eller et lead fra før `owner_since`.
 29. En ikke-verificeret klinik kan ikke læse `leads`, kalde `cancel_booking()` eller `mark_booking_no_show()`.
 30. `authenticated` kan ikke kalde `effective_booking_status(uuid)`, ikke slette `cases` direkte, ikke sætte `created_at`/`read_at` ved insert i `ai_messages`/`messages` (triggeren overskriver), og har ikke `TRUNCATE`, `REFERENCES` eller `TRIGGER` på nogen tabel.
 31. (Ligger i testfil `30_quarter_check_and_hardening.sql`.) Tilbagetrækning af ét `health_data_sharing`-samtykke trækker ikke leads tilbage, hvis patienten har et andet aktivt samtykke af samme type.
+32. `public_*` returnerer ikke en `registered` klinik, heller ikke en importeret klinik, der lige er overtaget via CVR; efter `admin_set_clinic_status(..., 'verified')` vises den.
+33. Når ejeren af en selvoprettet klinik slettes, er klinikrækken og alt, der peger på den, væk; når ejeren af en overtaget importeret klinik slettes, er klinikken `imported` med bevarede grunddata og uden klinikindtastet indhold. Begge dele virker også, når auth-brugeren slettes uden om API'et.
+34. Ejeren kan ikke selv skrive `clinic_dentists.photo_path`/`photo_updated_at` eller `portfolio_items.image_path`, og `clinics.website` uden `http(s)://` afvises.
+35. Lofterne for tandlæger (30), portefølje (60), åbningsvinduer (42) og blokeringer (200) afvises i databasen ved direkte insert med brugerens JWT.
 
 API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cookie afvises, ny version kræver ny accept) og "vilkårs-accept giver ikke samtykke" (403 `CONSENT_REQUIRED` ved upload/chat).
 
@@ -1143,7 +1154,7 @@ Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, 
 
 | Niveau | Status | Felter |
 |---|---|---|
-| Basis | `imported`, `registered` [PROTOTYPE for `registered`] | Navn, adresse, kortplacering, kontakt (telefon, web), åbningstider og Trustpilot (hvis kendt). **Ingen egne anmeldelser og ingen prisnøjagtighed.** Kan ikke vælges til leads |
+| Basis | `imported` uden ejer (`registered` vises slet ikke) | Navn, adresse, kortplacering, kontakt (telefon, web), åbningstider og Trustpilot (hvis kendt). **Ingen egne anmeldelser og ingen prisnøjagtighed.** Kan ikke vælges til leads |
 | Fuld | `verified` | Basis + logo, beskrivelse, priser, varighed, første ledige tid og akuttid, tandlæger, portefølje, egne anmeldelser og prisnøjagtighed. Kan vælges |
 
 **Sortering** (patienten vælger én; kriteriet står ved listen):
@@ -1303,6 +1314,7 @@ export type AiImageObservation = {
 | Tandlæger pr. klinik | 30 | 429 `DENTIST_LIMIT` |
 | Porteføljebilleder pr. klinik | 60 | 429 `PORTFOLIO_LIMIT` |
 | Rækker i prislisten | 100 | 400 |
+| Blokerede tider pr. klinik | 200 (alle rækker tæller) | 429 `TIME_BLOCK_LIMIT` |
 | Åbningsvinduer pr. klinik | 42 | 400 |
 | Pris pr. ydelse | 0-1.000.000 kr. | 400 |
 | Aktive leads pr. sag (`sent`, `accepted`, `booked`) | 3 | 409 `LEAD_LIMIT` |
@@ -1336,7 +1348,7 @@ Lofterne tælles i databasen (triggers og funktionerne i 5.3). Konstanterne stå
 
 `FIRST_AVAILABLE_SEARCH_DAYS` (14 dage) findes kun i TypeScript, fordi den kun bruges til visning.
 
-Klinikkernes lofter håndhæves af API'et (controllerne) og står i `lib/constants/clinics.ts`: `MAX_DENTISTS_PER_CLINIC = 30`, `MAX_PORTFOLIO_ITEMS_PER_CLINIC = 60`, `MAX_PRICE_ROWS = 100`, `MAX_OPENING_HOUR_WINDOWS = 42` (højst seks pr. ugedag), `MAX_PRICE_DKK = 1_000_000`.
+Klinikkernes lofter står i `lib/constants/clinics.ts`: `MAX_DENTISTS_PER_CLINIC = 30`, `MAX_PORTFOLIO_ITEMS_PER_CLINIC = 60`, `MAX_PRICE_ROWS = 100`, `MAX_OPENING_HOUR_WINDOWS = 42` (højst seks pr. ugedag), `MAX_TIME_BLOCKS_PER_CLINIC = 200`, `MAX_PRICE_DKK = 1_000_000`. De håndhæves af API'et (pæn fejl) **og i databasen** med de samme tal (triggere på `clinic_dentists`, `portfolio_items`, `clinic_opening_hours`, `clinic_time_blocks`, og i `replace_clinic_prices()`; check på priserne), så de ikke kan omgås ved direkte kald med brugerens JWT [IKKE BYGGET] (1.9.1). Tallene skal ændres begge steder samtidig.
 
 ### 7.7 Anonym samtale: identitet, kontooprettelse og sletning
 
@@ -1667,13 +1679,13 @@ Bygget i trin 1 (undtagen anmeldelser og det, der er markeret 1.9). Billedupload
 
 | Metode og route | Input | Output |
 |---|---|---|
-| DELETE `/api/clinics/me` | `{ confirm: "SLET" }` | 204. Rækkefølge: (1) sletter klinikkens filer i `public-media` (logo, tandlægeportrætter, portefølje) med service role, (2) sletter auth-brugeren via `AccountDeletionService` (service role), (3) triggeren `clinics_after_owner_removed()` (5.3) gør klinikken til `imported`, sletter prisliste, valgte kategorier, blokerede tider, tandlæger, portefølje, beskrivelse, logo, e-mail, website og klinikindtastet Trustpilot, afviser åbne leads med `clinic_left` og aflyser fremtidige bookinger. **Bevares** som offentlige grunddata: navn, adresse, postnummer, by, telefon og åbningstider (og Trustpilot indtastet af admin). Logger ud |
+| DELETE `/api/clinics/me` | `{ confirm: "SLET" }` | 204. Rækkefølge: (0) controlleren henter klinikkens id med **brugerens** klient (`ClinicsRepository.requireOwnId()`), aldrig med service role (2.3), (1) sletter klinikkens filer i `public-media` (logo, tandlægeportrætter, portefølje) med service role, (2) sletter auth-brugeren via `AccountDeletionService` (service role), (3) triggeren `clinics_after_owner_removed()` (5.3) afviser åbne leads med `clinic_left` og aflyser fremtidige bookinger, og derefter: en **importeret** klinik bliver `imported` med bevarede grunddata (navn, adresse, postnummer, by, telefon, åbningstider og Trustpilot indtastet af admin), mens prisliste, valgte kategorier, blokerede tider, tandlæger, portefølje, beskrivelse, logo, e-mail, website og klinikindtastet Trustpilot slettes; en klinik, **der oprettede sig selv** (`import_source is null`), slettes helt. Logger ud |
 | GET/PATCH `/api/clinics/me` | PATCH `{ name?, description?, address?, postalCode?, city?, phone?, email?, website?, trustpilotUrl?, trustpilotScore?, trustpilotReviewCount? }` | `ClinicProfileDto & { status: ClinicStatus; cvr: string }` (forhåndsvisning af fuld profil uanset status). `reviewStats` er `null`, indtil anmeldelser er bygget (6.2) |
 | POST/DELETE `/api/clinics/me/logo` | multipart `file` | `{ logoUrl }` / 204 |
 | GET/PUT `/api/clinics/me/service-groups` [IKKE BYGGET] (1.9) | PUT `{ groupIds: string[] }` (erstatter valget; kun aktive kategorier) | `{ groupIds: string[] }`. PUT kalder `set_clinic_service_groups()`; priser i fravalgte kategorier slettes (UI advarer først) |
 | GET/PUT `/api/clinics/me/prices` | PUT `{ prices: { serviceId, priceMin, priceMax, durationMin, note? }[] }` (erstatter hele listen; højst 100 rækker; priser 0-1.000.000 kr.; kun behandlinger i valgte kategorier) | `{ prices: ClinicPriceDto[] }`; 400 ved overskridelse; 409 `SERVICE_GROUP_NOT_SELECTED`. Fra 1.9 sker udskiftningen i én transaktion via `replace_clinic_prices()`; en tom liste sletter alle priser |
 | GET/PUT `/api/clinics/me/opening-hours` | PUT `{ hours: { weekday, opensAt: "HH:MM", closesAt: "HH:MM", isEmergency }[] }` (højst 42 vinduer) | `{ hours: OpeningHoursDto[] }`; 400 ved overskridelse. Fra 1.9 i én transaktion via `replace_opening_hours()`; en tom liste sletter alle vinduer |
-| GET/POST `/api/clinics/me/time-blocks` | POST `{ startsAt, endsAt, note? }`; GET `?from=&to=` | `{ blocks: { id, startsAt, endsAt, note }[] }` / 201 |
+| GET/POST `/api/clinics/me/time-blocks` | POST `{ startsAt, endsAt, note? }`; GET `?from=&to=` | `{ blocks: { id, startsAt, endsAt, note }[] }` / 201; 429 `TIME_BLOCK_LIMIT` ved over 200 blokeringer [IKKE BYGGET] (1.9) |
 | DELETE `/api/clinics/me/time-blocks/{id}` | | 204 |
 | GET/POST `/api/clinics/me/dentists` | POST `{ fullName, title?, bio?, sortOrder? }` | `{ dentists: … }` / 201; 429 `DENTIST_LIMIT` ved over 30 tandlæger |
 | PATCH/DELETE `/api/clinics/me/dentists/{id}` | PATCH samme felter valgfri | dentist / 204 (sletter også portræt og portefølje) |
@@ -1840,7 +1852,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | `20261012001000_read_functions.sql` | `clinic_*` (inkl. `clinic_lead_messages()`, `clinic_mark_messages_read()`) og `public_*` (5.3, 5.7) |
 | `20261012001100_consent_withdrawal_cleanup.sql` | `withdraw_consent()`, `confirm_consent_cleanup()`, `touch_last_active()`, `consume_rate_limit()` |
 | `20261013000100_dentist_photo_version.sql` | `clinic_dentists.photo_updated_at` (versioneret portræt-URL, 9.5) |
-| `20261014000100_service_groups.sql` [IKKE BYGGET] (1.9) | `service_groups` + startkategorier, `services.group_id` (eksisterende behandlinger placeres, nye indsættes efter `docs/behandlingskatalog.md`), type-check for `akut`, `clinic_service_groups`, trigger på `clinic_prices` (valgt kategori), `set_clinic_service_groups()`, `replace_clinic_prices()`, `replace_opening_hours()`, `clinics.logo_updated_at`, ny version af `clinics_after_owner_removed()` med rækkeoprydningen (inkl. e-mail, website og valgte kategorier), `public_*` med kategori |
+| `20261014000100_service_groups.sql` [IKKE BYGGET] (1.9) | `service_groups` + startkategorier, `services.group_id` (eksisterende behandlinger placeres, nye indsættes efter `docs/behandlingskatalog.md`), type-check for `akut`, `clinic_service_groups`, trigger på `clinic_prices` (valgt kategori), `set_clinic_service_groups()`, `replace_clinic_prices()`, `replace_opening_hours()`, `clinics.logo_updated_at`, ny version af `clinics_after_owner_removed()` med rækkeoprydningen (inkl. e-mail, website og valgte kategorier) og helt sletning af selvoprettede klinikker, `on delete cascade` på `leads.clinic_id`, `bookings.clinic_id`, `reviews.clinic_id` og `review_replies.clinic_id`, `create or replace` af `public_*` (kun `verified` og `imported` uden ejer; kategori pr. behandling), kolonne-grants på `clinic_dentists`, check på `clinics.website`, lofter i databasen (tandlæger, portefølje, åbningsvinduer, blokeringer) |
 
 **Nedskæring** hvis tiden ikke slår til, i denne rækkefølge: portefølje → klinikkens svar på anmeldelser → beskedtråd → kort (listen er nok) → akutvindue (akutvejen bruger almindelige tider). Skæres **aldrig**: isolation af leads og skjulte kontaktoplysninger (RLS), samtykke før chat/upload/deling, AI-reglerne (ingen priser, ingen klinikanbefaling, akut-henvisning), maks. 3 leads, ingen dobbeltbooking, "Slet min samtale" og oprydning af anonyme data.
 
@@ -1857,11 +1869,12 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Klinik læser beskeder direkte og får `sender_id` (patientens bruger-id) | Patientidentitet lækker | Ingen klient-SELECT på `messages` for klinikker; `clinic_lead_messages()` uden `sender_id`; test 28 |
 | Gamle storage-policies eller buckets bliver liggende i det fælles projekt efter nulstilling | Uventet adgang til filer | Tjek efter 0.8 (2.3.1) |
 | Kontaktoplysninger lækker før booking (fx via beskedtråd, DTO, logs eller en join) | Brud på princip 4 | Kontakt kun i `bookings.contact_*`; ingen klient-SELECT på `bookings`; test 5; reviewer tjekker DTO'er |
-| Overtagelse af importeret klinik via CVR uden bevis [PROTOTYPE] | Uvedkommende redigerer en rigtig kliniks grunddata | `cvr` kan ikke ændres; leads kræver verifikation af admin; afklares før rigtige brugere (12.3) |
+| Overtagelse af importeret klinik via CVR uden bevis for ejerskab [PROTOTYPE] | Uvedkommende får kontrol over en rigtig kliniks række og kan blokere den rigtige ejers oprettelse (`CLINIC_EXISTS`) | En overtaget klinik er `registered` og dermed usynlig offentligt, indtil admin har verificeret ejeren, så ændringer aldrig når patienter; `cvr` kan ikke ændres; leads kræver verifikation; ejeren af en fejlagtig overtagelse kan fjernes af admin. Bevis for ejerskab før overtagelse afklares før rigtige brugere (12.3 punkt 6) |
 | Foreløbig vurdering og forklaring af behandlinger | Kan gøre produktet til medicinsk udstyr (MDR) | Fast mærkat, ingen endelige diagnoser, regler samlet i `rules.ts`, faglig vurdering før rigtige patienter (12.4) |
 | AI'en nævner priser eller klinikker | Brud på kerneprincip, vildledning | AI'en får ingen pris- eller klinikdata; skema uden felter; filter; provokationstests |
 | Akutte tegn overses af AI'en | Patientsikkerhed | Fast akut-indgang på forsiden og i chatten uafhængigt af AI'en; tests med akutte symptomer |
 | Porteføljebilleder uden gyldigt samtykke | GDPR art. 9, klinikkens ansvar men vores platform | Bekræftelse med tekstversion og tidspunkt; ingen ansigter; juridisk afklaring (12.4) |
+| Ustabilt logout lige efter en gemning: i ca. 2 af 10 e2e-kørsler (desktop) giver `/api/me` og `/api/clinics/me` 401 efter "Gem profil" og genindlæsning | Klinikken bliver sendt til login | Hypotese: kapløb ved fornyelse af refresh-token mellem `proxy.ts` og samtidige klientkald (refresh token rotation, reuse interval 10 s). Undersøges og rettes i 1.9; færdig, når e2e-testen består i mange gentagne kørsler |
 | Mange uploads fra en klinikkonto (logo, portrætter, portefølje) | Lagerplads og CPU (sharp) | IP-rate limit 10 pr. time (fra 1.9), lofterne pr. klinik (7.6), maks. filstørrelse, kun permanente klinikkonti |
 | Admin ændrer kataloget direkte i databasen | En slettet eller fejlagtigt deaktiveret behandling kan bryde priser og sager | Rækker deaktiveres i stedet for at slettes (FK'er forhindrer sletning); akut-typen håndhæves af trigger; adminside med validering [UDSKUDT] |
 | Dobbeltbooking ved samtidige kald | To patienter får samme tid | Udelukkelse i databasen, ikke kun tjek i koden; test 7 |
@@ -1897,13 +1910,13 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Højst 3 aktive og højst 10 leads i alt pr. sag | 4.3, 5.3 |
 | Klinikken mister adgang til sagens indhold og tråd, når patienten trækker leadet tilbage | 4.4, 5.7 |
 | Lukning af en sag (`close_case()`) og tilbagetrækning af delingssamtykke trækker ubesvarede og ubookede leads tilbage og frigiver reservationer; bookede tider består | 4.2, 5.3 |
-| En klinik, der sletter sin konto, bliver `imported`; dens åbne leads afvises med `clinic_left`, og fremtidige bookinger aflyses. Offentlige grunddata (navn, adresse, postnummer, by, telefon, åbningstider, admin-indtastet Trustpilot) bevares; alt klinikindtastet indhold slettes | 4.2, 5.3, 10.8 |
+| En klinik, der sletter sin konto: åbne leads afvises med `clinic_left`, og fremtidige bookinger aflyses. En importeret klinik bliver `imported`; offentlige grunddata (navn, adresse, postnummer, by, telefon, åbningstider, admin-indtastet Trustpilot) bevares, og alt klinikindtastet indhold slettes. En klinik, der oprettede sig selv, slettes helt | 4.2, 5.3, 10.8 |
 | Logo og tandlægeportrætter har versionerede URL'er (`?v=`) | 9.5 |
 | Bookinger starter på hele kvarterer, håndhævet i databasen (check constraint) | 4.2, 6.7 |
 | Klinikkens adgang er tidsafgrænset af `owner_since` og kræver verificeret klinik; klinikker læser beskeder kun via `clinic_lead_messages()` | 4.3, 5.1, 5.7 |
 | Patienter sletter ikke sager direkte; kladder slettes af serveren med service role | 5.4, 10.5 |
 | Konstanter, som databasen håndhæver, står både i SQL og i `lib/constants/` og ændres samtidig | 7.6 |
-| Importerede og oprettede (ikke verificerede) klinikker vises på basisniveau med Trustpilot, uden egne anmeldelser | 3, 6.6, 8.4 |
+| Offentligt vises kun verificerede klinikker (fuldt niveau) og importerede klinikker uden ejer (basisniveau med Trustpilot, uden egne anmeldelser). `registered` er usynlig, også efter CVR-overtagelse | 3, 5.1, 6.6, 8.4 |
 | Kontaktoplysninger kun i `bookings`, kun synlige for klinikken ved `booked`/`completed` | 4.4, 5.5 |
 | Klinikker læser kun via `clinic_*`-funktioner; offentlige klinikdata kun via `public_*` | 5.1, 5.7 |
 | Ingen dobbeltbooking, håndhævet med udelukkelse i databasen; én kalender pr. klinik [PROTOTYPE] | 4.3 |
@@ -1928,7 +1941,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 7. **Kalender:** én kalender pr. klinik (kun én booking ad gangen) er en forenkling. Skal kapaciteten være pr. tandlæge/stol, eller et tal pr. klinik?
 8. *Afklaret:* beskedtråden er åben fra leadet er sendt, så klinikken kan stille afklarende spørgsmål før accept; kontaktoplysninger er stadig skjult til booking (4.3).
 9. *Afklaret:* kataloget har to niveauer, kategorier og behandlinger. Startindholdet står i `docs/behandlingskatalog.md`, og bagefter vedligeholdes det i databasen uden kodeændringer (4.3).
-10. *Afklaret:* klinikken ser både telefon og e-mail efter booking (4.4). Oprettede, men ikke verificerede klinikker vises på basisniveau ligesom importerede i prototypen (3, 6.6).
+10. *Afklaret:* klinikken ser både telefon og e-mail efter booking (4.4). Oprettede, men ikke verificerede klinikker er usynlige offentligt (ændret ved securitygennemgangen af trin 1, H1; 3, 5.1).
 11. **Porteføljebilleder:** krav til samtykket (skriftligt, opbevares af klinikken), og må billeder vise ansigt?
 12. **Standardsortering:** afstand med position, ellers første ledige tid. Ønsker gruppen en anden standard?
 13. **Præcis geokodning** af klinikadresser (i dag postnummerets centrum, hvis importen ikke har koordinater).
@@ -1942,10 +1955,12 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 21. *Afklaret:* lukning af en sag: `close_case()` trækker `sent` og ubookede `accepted` leads tilbage, frigiver reservationer og lader bookede tider bestå (5.3, 10.5).
 22. *Afklaret:* booking-starttider skal ligge på hele kvarterer, håndhævet i databasen (`SLOT_STEP_MINUTES = 15`, 4.2).
 23. *Afklaret:* tilbagetrækning af `health_data_sharing` trækker patientens `sent` og ubookede `accepted` leads tilbage og frigiver reservationer; bookede tider består og kan aflyses af patienten (5.3).
-24. *Afklaret:* en verificeret klinik, der sletter sin konto, bliver `imported`; åbne leads afvises med `clinic_left`, reservationer frigives, og fremtidige bookinger aflyses. Navn, adresse, postnummer, by, telefon og åbningstider bevares; prisliste, blokeringer, beskrivelse, tandlæger, portefølje, logo og klinikindtastet Trustpilot slettes (5.3, 10.8).
+24. *Afklaret:* når en klinik sletter sin konto, afvises åbne leads med `clinic_left`, reservationer frigives, og fremtidige bookinger aflyses. En importeret klinik bliver `imported`: navn, adresse, postnummer, by, telefon og åbningstider bevares; prisliste, blokeringer, beskrivelse, tandlæger, portefølje, logo, e-mail, website og klinikindtastet Trustpilot slettes. En klinik, der oprettede sig selv (`import_source is null`), slettes helt (5.3, 10.8).
 25. *Afklaret:* klinikkernes uploads får samme IP-rate limit som patienters billedupload, 10 pr. time pr. IP (10.8, 1.9).
 26. *Afklaret:* sletning af klinikkonto sletter også e-mail og website, og rækkeoprydningen ligger i triggeren `clinics_after_owner_removed()` (5.3, 1.9).
 27. *Afklaret:* klinikcontrollerne deler logik ved komposition, ikke en fælles basisklasse (2.1.1).
+28. **Patientens historik, når en selvoprettet klinik slettes:** rækken slettes helt, og via cascade forsvinder patientens leads, beskeder, bookinger og anmeldelser for klinikken. Skal patienten i stedet beholde en historik (fx leads og bookinger med teksten "Klinikken er ikke længere på TandMatch")? Det kræver, at klinikrækken bevares som en skjult "slettet" klinik i stedet for at blive slettet.
+29. *Afklaret:* offentligt vises kun `verified` og `imported` uden ejer; `registered` er usynlig, også efter CVR-overtagelse (5.1 regel 11).
 
 ### 12.4 Udskudt [UDSKUDT]
 
