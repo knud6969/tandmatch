@@ -400,8 +400,10 @@ async function seed(config: Config): Promise<void> {
   const cleaned = await cleanupDemo(admin, false);
   log(`  slettet: ${cleaned.users} brugere, ${cleaned.clinics} klinikker, ${cleaned.files} filer`);
 
-  const serviceRows = must(await admin.from('services').select('id, slug'), 'services') as { id: string; slug: string }[];
+  const serviceRows = must(await admin.from('services').select('id, slug, group_id'), 'services') as { id: string; slug: string; group_id: string }[];
   const serviceId = new Map(serviceRows.map((s) => [s.slug, s.id]));
+  // Kategorierne bag prislisten: klinikken skal have valgt dem, før en pris kan gemmes (clinic_prices_guard).
+  const priceGroupIds = [...new Set(PRICE_BASE.map((p) => serviceRows.find((s) => s.slug === p.slug)?.group_id).filter((id): id is string => !!id))];
   const sid = (slug: string): string => {
     const id = serviceId.get(slug);
     if (!id) throw new Error(`Ydelse mangler i kataloget: ${slug}`);
@@ -452,12 +454,13 @@ async function seed(config: Config): Promise<void> {
     await uploadJpeg(admin, 'public-media', `clinics/${clinicId}/logo.jpg`, logo);
     mustOk(await admin.from('clinics').update({
       import_source: SEED_SOURCE, description: spec.description, email: spec.email.replace('klinik-', 'info-'),
-      website: `https://example.com/${spec.key}`, logo_path: `clinics/${clinicId}/logo.jpg`,
+      website: `https://example.com/${spec.key}`, logo_path: `clinics/${clinicId}/logo.jpg`, logo_updated_at: new Date().toISOString(),
       ...(spec.trustpilot
         ? { trustpilot_url: spec.trustpilot.url, trustpilot_score: spec.trustpilot.score, trustpilot_review_count: spec.trustpilot.count, trustpilot_entered_by: 'clinic' }
         : {}),
     }).eq('id', clinicId), 'opdater klinik');
 
+    mustOk(await admin.from('clinic_service_groups').insert(priceGroupIds.map((groupId) => ({ clinic_id: clinicId, group_id: groupId }))), 'valgte kategorier');
     mustOk(await admin.from('clinic_prices').insert(PRICE_BASE.map((p) => ({
       clinic_id: clinicId, service_id: sid(p.slug),
       price_min: Math.round((p.min * spec.factor) / 5) * 5 - 5,

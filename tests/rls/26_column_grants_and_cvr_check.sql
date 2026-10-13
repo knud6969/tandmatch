@@ -74,11 +74,11 @@ select tt.denied('update public.bookings set status = ' || quote_literal('comple
 select tt.denied('update public.reviews set moderation_status = ' || quote_literal('approved'), 'patient kan ikke godkende egne anmeldelser', '42501');
 select tt.denied('update public.clinics set status = ' || quote_literal('verified'), 'patient kan ikke opdatere klinikker', '42501');
 
--- ---- public_* returnerer aldrig status registered ----
+-- ---- public_* returnerer aldrig en registered klinik ----
 select tt.as_anon();
 select tt.eq((select count(*) from public.public_clinics() where status::text not in ('imported', 'verified'))::int, 0, 'public_clinics() returnerer kun imported/verified');
-select tt.eq((select count(*) from public.public_clinics() where id = tt.cid('R') and status = 'imported')::int, 1, 'registered klinik vises som imported');
-select tt.eq((select status::text from public.public_clinic_profile(tt.cid('R'))), 'imported', 'public_clinic_profile() maskerer registered');
+select tt.eq((select count(*) from public.public_clinics() where id = tt.cid('R'))::int, 0, 'H1: registered klinik vises ikke');
+select tt.eq((select count(*) from public.public_clinic_profile(tt.cid('R')))::int, 0, 'H1: public_clinic_profile() viser ikke registered');
 select tt.eq((select count(*) from public.public_clinics(null, array[tt.cid('R')]) where status::text = 'registered')::int, 0, 'ingen registered ved opslag på id');
 -- Samme for et verificeret → registered skift
 select tt.as_postgres();

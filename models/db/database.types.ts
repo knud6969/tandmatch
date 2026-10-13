@@ -305,6 +305,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"clinic_service_groups": {
+                  Row: {
+                    "clinic_id": string,"created_at": string,"group_id": string
+                  }
+                  Insert: {
+                    "clinic_id": string,"created_at"?: string,"group_id": string
+                  }
+                  Update: {
+                    "clinic_id"?: string,"created_at"?: string,"group_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "clinic_service_groups_clinic_id_fkey"
+      columns: ["clinic_id"]
+isOneToOne: false
+      referencedRelation: "clinics"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "clinic_service_groups_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "service_groups"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"clinic_time_blocks": {
                   Row: {
                     "clinic_id": string,"created_at": string,"ends_at": string,"id": string,"note": string | null,"starts_at": string
@@ -326,13 +351,13 @@ isOneToOne: false
                   ]
                 },"clinics": {
                   Row: {
-                    "address": string,"city": string,"created_at": string,"cvr": string | null,"description": string | null,"email": string | null,"id": string,"import_source": string | null,"lat": number | null,"lng": number | null,"logo_path": string | null,"name": string,"owner_id": string | null,"owner_since": string | null,"phone": string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string | null,"trustpilot_review_count": number | null,"trustpilot_score": number | null,"trustpilot_updated_at": string | null,"trustpilot_url": string | null,"updated_at": string,"verified_at": string | null,"website": string | null
+                    "address": string,"city": string,"created_at": string,"cvr": string | null,"description": string | null,"email": string | null,"id": string,"import_source": string | null,"lat": number | null,"lng": number | null,"logo_path": string | null,"logo_updated_at": string | null,"name": string,"owner_id": string | null,"owner_since": string | null,"phone": string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string | null,"trustpilot_review_count": number | null,"trustpilot_score": number | null,"trustpilot_updated_at": string | null,"trustpilot_url": string | null,"updated_at": string,"verified_at": string | null,"website": string | null
                   }
                   Insert: {
-                    "address": string,"city": string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"name": string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
+                    "address": string,"city": string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name": string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
                   }
                   Update: {
-                    "address"?: string,"city"?: string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"name"?: string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code"?: string,"status"?: Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
+                    "address"?: string,"city"?: string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name"?: string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code"?: string,"status"?: Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
                   }
                   Relationships: [
                     {
@@ -594,18 +619,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"services": {
+                },"service_groups": {
                   Row: {
-                    "category": Database["public"]['Enums']["service_category"],"created_at": string,"default_duration_min": number,"description": string,"id": string,"is_active": boolean,"name": string,"slug": string,"sort_order": number
+                    "created_at": string,"description": string,"id": string,"is_active": boolean,"name": string,"slug": string,"sort_order": number
                   }
                   Insert: {
-                    "category": Database["public"]['Enums']["service_category"],"created_at"?: string,"default_duration_min": number,"description": string,"id"?: string,"is_active"?: boolean,"name": string,"slug": string,"sort_order"?: number
+                    "created_at"?: string,"description": string,"id"?: string,"is_active"?: boolean,"name": string,"slug": string,"sort_order"?: number
                   }
                   Update: {
-                    "category"?: Database["public"]['Enums']["service_category"],"created_at"?: string,"default_duration_min"?: number,"description"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"slug"?: string,"sort_order"?: number
+                    "created_at"?: string,"description"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"slug"?: string,"sort_order"?: number
                   }
                   Relationships: [
                     
+                  ]
+                },"services": {
+                  Row: {
+                    "category": Database["public"]['Enums']["service_category"],"created_at": string,"default_duration_min": number,"description": string,"group_id": string,"id": string,"is_active": boolean,"name": string,"slug": string,"sort_order": number
+                  }
+                  Insert: {
+                    "category": Database["public"]['Enums']["service_category"],"created_at"?: string,"default_duration_min": number,"description": string,"group_id": string,"id"?: string,"is_active"?: boolean,"name": string,"slug": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "category"?: Database["public"]['Enums']["service_category"],"created_at"?: string,"default_duration_min"?: number,"description"?: string,"group_id"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"slug"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "services_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "service_groups"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"terms_acceptances": {
                   Row: {
@@ -797,7 +841,7 @@ isOneToOne: false
                            },
 "public_clinic_profile":
 { Args: { "p_clinic_id": string,"p_service_ids"?: (string)[] }; Returns: {
-              "address": string,"all_prices": Json,"city": string,"dentists": Json,"description": string,"email": string,"has_emergency_hours": boolean,"id": string,"lat": number,"lng": number,"logo_path": string,"name": string,"opening_hours": Json,"phone": string,"postal_code": string,"prices": Json,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string,"trustpilot_review_count": number,"trustpilot_score": number,"trustpilot_updated_at": string,"trustpilot_url": string,"website": string
+              "address": string,"all_prices": Json,"city": string,"dentists": Json,"description": string,"email": string,"has_emergency_hours": boolean,"id": string,"lat": number,"lng": number,"logo_path": string,"logo_updated_at": string,"name": string,"opening_hours": Json,"phone": string,"postal_code": string,"prices": Json,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string,"trustpilot_review_count": number,"trustpilot_score": number,"trustpilot_updated_at": string,"trustpilot_url": string,"website": string
             }[]
                            },
 "public_clinic_review_stats_many":
@@ -807,7 +851,7 @@ isOneToOne: false
                            },
 "public_clinics":
 { Args: { "p_clinic_ids"?: (string)[],"p_service_ids"?: (string)[] }; Returns: {
-              "address": string,"city": string,"has_emergency_hours": boolean,"id": string,"lat": number,"lng": number,"logo_path": string,"name": string,"opening_hours": Json,"phone": string,"postal_code": string,"prices": Json,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string,"trustpilot_review_count": number,"trustpilot_score": number,"trustpilot_updated_at": string,"trustpilot_url": string,"website": string
+              "address": string,"city": string,"has_emergency_hours": boolean,"id": string,"lat": number,"lng": number,"logo_path": string,"logo_updated_at": string,"name": string,"opening_hours": Json,"phone": string,"postal_code": string,"prices": Json,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string,"trustpilot_review_count": number,"trustpilot_score": number,"trustpilot_updated_at": string,"trustpilot_url": string,"website": string
             }[]
                            },
 "public_reviews":
@@ -817,6 +861,15 @@ isOneToOne: false
                            },
 "release_expired_holds":
 { Args: { "p_clinic_id": string }; Returns: number
+                           },
+"replace_clinic_prices":
+{ Args: { "p_prices": Json }; Returns: number
+                           },
+"replace_opening_hours":
+{ Args: { "p_hours": Json }; Returns: number
+                           },
+"require_clinic_editor":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "review_is_approved":
 { Args: { "p_review_id": string }; Returns: boolean
@@ -829,6 +882,9 @@ isOneToOne: false
                            },
 "service_duration_min":
 { Args: { "p_clinic_id": string,"p_service_id": string }; Returns: number
+                           },
+"set_clinic_service_groups":
+{ Args: { "p_group_ids": (string)[] }; Returns: (string)[]
                            },
 "store_ai_summary":
 { Args: { "p_ai_assisted": boolean,"p_case_id": string,"p_model": string,"p_prompt_version": string,"p_summary": Json,"p_user_id": string }; Returns: undefined

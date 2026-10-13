@@ -1,5 +1,5 @@
 -- Test 10: Besøgende uden session kan kun læse offentlige tabeller og public_*-funktioner; public_* returnerer ingen priser,
--- tandlæger eller portefølje for imported/registered klinikker og aldrig owner_id eller cvr.
+-- tandlæger eller portefølje for imported klinikker, slet intet for registered klinikker (H1) og aldrig owner_id eller cvr.
 begin;
 \ir _helpers.sql
 \ir _fixtures.sql
@@ -48,11 +48,11 @@ select tt.ok(tt.vis('select 1 from public.services') > 0, 'anon kan læse aktive
 select tt.ok(tt.vis('select 1 from public.postal_codes') > 0, 'anon kan læse postnumre');
 select tt.ok(tt.vis('select 1 from public.consent_text_versions') > 0, 'anon kan læse samtykketekster');
 
--- public_clinics(): alle 13 klinikker, men kun verificerede med fulde felter
+-- public_clinics(): kun verificerede (fulde felter) og importerede uden ejer; registered er usynlig (H1)
 create temp table pc as select * from public.public_clinics(array[tt.svc('undersoegelse')]);
-select tt.eq((select count(*) from pc)::int, 13, 'public_clinics() viser alle klinikker (verificerede, oprettede og importerede)');
+select tt.eq((select count(*) from pc)::int, 11, 'public_clinics() viser 10 verificerede og 1 importeret (R og A6 er registered)');
 select tt.eq((select count(*) from pc where status = 'verified')::int, 10, 'public_clinics(): 10 verificerede (A6 er nu registered)');
-select tt.eq((select count(*) from pc where status = 'imported')::int, 3, 'public_clinics(): registered maskeres som imported (I, R, A6)');
+select tt.eq((select count(*) from pc where status = 'imported')::int, 1, 'public_clinics(): kun I er importeret; ingen registered maskeres');
 select tt.eq((select count(*) from pc where prices is not null or logo_path is not null or has_emergency_hours is not null)::int,
              (select count(*) from pc where status = 'verified' and (prices is not null))::int, 'kun verificerede har fulde felter');
 select tt.eq((select count(*) from pc where status = 'imported' and (prices is not null or logo_path is not null or has_emergency_hours is not null))::int, 0,
@@ -68,9 +68,10 @@ select tt.ok(not tt.fn_returns_column('public.public_clinic_profile(uuid, uuid[]
 select tt.ok(not tt.fn_returns_column('public.public_clinic_profile(uuid, uuid[])', 'cvr'), 'public_clinic_profile() har ingen cvr');
 select tt.eq((select count(*) from public.public_clinic_profile(tt.cid('I')) where all_prices is null and dentists is null and description is null and prices is null)::int, 1,
              'importeret klinik: ingen prisliste, tandlæger, portefølje eller beskrivelse');
-select tt.eq((select count(*) from public.public_clinic_profile(tt.cid('R')) where all_prices is null and dentists is null and description is null and prices is null)::int, 1,
-             'registered klinik: ingen prisliste, tandlæger, portefølje eller beskrivelse');
-select tt.eq((select status::text from public.public_clinic_profile(tt.cid('R'))), 'imported', 'registered klinik vises som imported i profilen');
+select tt.eq((select count(*) from public.public_clinic_profile(tt.cid('R')))::int, 0, 'H1: registered klinik har ingen offentlig profil');
+select tt.eq((select count(*) from public.public_clinic_profile(tt.cid('A6')))::int, 0, 'H1: verificeret klinik sat til registered forsvinder');
+select tt.eq((select count(*) from pc where id in (tt.cid('R'), tt.cid('A6')))::int, 0, 'H1: registered klinikker er ikke i oversigten');
+select tt.eq((select count(*) from public.public_clinics(null, array[tt.cid('R')]))::int, 0, 'H1: registered klinik kan ikke slås op på id');
 select tt.eq((select jsonb_array_length(dentists) from public.public_clinic_profile(tt.cid('X'))), 1, 'verificeret klinik: tandlæge vises');
 select tt.eq((select jsonb_array_length(dentists -> 0 -> 'portfolio') from public.public_clinic_profile(tt.cid('X'))), 1, 'verificeret klinik: portefølje vises');
 select tt.eq((select jsonb_array_length(all_prices) from public.public_clinic_profile(tt.cid('X'))), 2, 'verificeret klinik: hele prislisten vises');
