@@ -764,6 +764,51 @@ describe("sletning af klinikkonto", () => {
     assert.equal((await p.del("/api/clinics/me", { confirm: "SLET" })).status, 403);
   });
 
+  it("gør en selvoprettet klinik removed: CVR, telefon og åbningstider væk, navn og adresse bevaret, og CVR kan bruges igen", async () => {
+    const { c, userId, cvr, clinicId } = await signupClinic();
+    const img = await jpegWithExif();
+    const logo = await c.postForm("/api/clinics/me/logo", imageForm(img));
+    const [a] = await serviceIds(c, 1);
+    await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a, priceMin: 1, priceMax: 2, durationMin: 30 }] });
+    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await c.patch("/api/clinics/me", { description: "Skal slettes", email: "privat@slettes.test", website: "https://slettes.test" });
+
+    assert.equal((await c.del("/api/clinics/me", { confirm: "SLET" })).status, 204);
+    createdUserIds.delete(userId);
+    assert.equal((await c.get("/api/me")).status, 401);
+    assert.notEqual((await fetchPublic(logo.body.logoUrl)).status, 200);
+
+    const row = await admin
+      .from("clinics")
+      .select("status, cvr, owner_id, phone, name, address, postal_code, city, description, email, website, logo_path, verified_at, owner_since")
+      .eq("id", clinicId)
+      .single();
+    assert.equal(row.data?.status, "removed");
+    assert.equal(row.data?.cvr, null);
+    assert.equal(row.data?.owner_id, null);
+    assert.equal(row.data?.phone, null);
+    assert.equal(row.data?.name, "Testklinikken ApS");
+    assert.equal(row.data?.address, "Testvej 1");
+    assert.equal(row.data?.postal_code, "2100");
+    assert.equal(row.data?.city, "København Ø");
+    assert.deepEqual([row.data?.description, row.data?.email, row.data?.website, row.data?.logo_path, row.data?.verified_at, row.data?.owner_since], [null, null, null, null, null, null]);
+    for (const table of ["clinic_prices", "clinic_service_groups", "clinic_opening_hours", "clinic_time_blocks", "clinic_dentists"]) {
+      assert.equal((await admin.from(table).select("clinic_id").eq("clinic_id", clinicId)).data?.length, 0, table);
+    }
+    assert.equal((await admin.storage.from("public-media").list(`clinics/${clinicId}`)).data?.length ?? 0, 0);
+
+    // Samme CVR kan oprette en ny klinik; den slettede er urørt.
+    const again = await newClientWithTerms();
+    const r = await again.post("/api/auth/signup", clinicBody(cvr));
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    createdUserIds.add(r.body.userId);
+    const me = await again.get("/api/me");
+    assert.notEqual(me.body.clinic.id, clinicId);
+    assert.equal(me.body.clinic.status, "registered");
+    assert.equal((await admin.from("clinics").select("status").eq("id", clinicId).single()).data?.status, "removed");
+    await admin.from("clinics").delete().eq("id", clinicId);
+  });
+
   it("rydder også rækkerne, når ejeren slettes uden om API'et (triggeren)", async () => {
     const { c, userId, clinicId } = await signupClinic();
     await admin.from("clinics").update({ import_source: "cvr" }).eq("id", clinicId);
@@ -780,7 +825,7 @@ describe("sletning af klinikkonto", () => {
   });
 
   // En importeret klinik, der er overtaget via CVR (import_source sat), bliver `imported` med bevarede grunddata.
-  // Hvad der sker med en klinik uden import_source (selvoprettet), afventer brugerens beslutning (åbent spørgsmål 28).
+  // En selvoprettet klinik (import_source null) bliver `removed` (se næste tests).
   it("gør en overtaget importeret klinik importeret igen, fjerner filer og rækker og logger ud", async () => {
     const { c, userId, clinicId } = await signupClinic();
     await admin.from("clinics").update({ import_source: "cvr" }).eq("id", clinicId);

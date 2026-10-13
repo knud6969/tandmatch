@@ -1,4 +1,4 @@
--- Test 32: når en klinikejer slettes (også uden om API'et), rydder triggeren clinics_after_owner_removed() selv alle rækker
+-- Test 32 (importeret/overtaget klinik, import_source sat; selvoprettede klinikker dækkes af test 36): når en klinikejer slettes (også uden om API'et), rydder triggeren clinics_after_owner_removed() selv alle rækker
 -- klinikken har lagt ind (H2/M4), og grunddata bevares. Taget-over-importeret klinik (H1): usynlig, til den er verificeret.
 begin;
 \ir _helpers.sql

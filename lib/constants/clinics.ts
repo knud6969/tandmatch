@@ -1,11 +1,12 @@
 // Klinikker (architecture 4.2, 4.3, 5.1). Værdierne skal svare til enum clinic_status og check constraints i databasen.
-export const CLINIC_STATUSES = ["imported", "registered", "verified"] as const;
+export const CLINIC_STATUSES = ["imported", "registered", "verified", "removed"] as const;
 
 // Danske visningsnavne. `registered` vises kun for klinikken selv; offentligheden ser den ikke (5.1 regel 11).
 export const CLINIC_STATUS_LABEL = {
   imported: "Ikke oprettet",
   registered: "Oprettet, afventer verificering",
   verified: "Verificeret",
+  removed: "Slettet",
 } as const satisfies Record<(typeof CLINIC_STATUSES)[number], string>;
 
 // Niveauer i oversigten (architecture 6.6): basis (grunddata) og fuld (verificeret).
