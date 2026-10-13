@@ -656,6 +656,8 @@ describe("sletning af klinikkonto", () => {
     await c.post("/api/clinics/me/time-blocks", { startsAt: "2030-07-01T08:00:00Z", endsAt: "2030-07-02T08:00:00Z" });
     await c.patch("/api/clinics/me", {
       description: "Skal slettes",
+      email: "privat@slettes.test",
+      website: "https://slettes.test",
       trustpilotUrl: "https://dk.trustpilot.com/review/slettes.test",
       trustpilotScore: 4.2,
       trustpilotReviewCount: 10,
@@ -681,10 +683,13 @@ describe("sletning af klinikkonto", () => {
     assert.equal((await admin.from("clinic_time_blocks").select("id").eq("clinic_id", clinicId)).data?.length, 0);
     const kept = await admin
       .from("clinics")
-      .select("name, address, postal_code, city, phone, description, trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_entered_by")
+      .select("name, address, postal_code, city, phone, description, email, website, trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_entered_by")
       .eq("id", clinicId)
       .single();
     assert.equal(kept.data?.description, null);
+    // En senere ejer af samme CVR må ikke se den slettede kontos e-mail eller hjemmeside (10.8).
+    assert.equal(kept.data?.email, null);
+    assert.equal(kept.data?.website, null);
     assert.equal(kept.data?.trustpilot_url, null);
     assert.equal(kept.data?.trustpilot_score, null);
     assert.equal(kept.data?.trustpilot_review_count, null);

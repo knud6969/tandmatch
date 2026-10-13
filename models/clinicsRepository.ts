@@ -109,10 +109,14 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
     return row?.id ?? null;
   }
 
-  // Kontosletning: fjerner beskrivelsen, og Trustpilot-felterne hvis klinikken selv har indtastet dem (admin-indtastet
-  // Trustpilot bevares). Samme rækkeopdatering, så den kan gentages. Kun med service role-klienten.
+  // Kontosletning: fjerner beskrivelse, e-mail og hjemmeside (architecture 10.8), og Trustpilot-felterne hvis klinikken
+  // selv har indtastet dem (admin-indtastet Trustpilot bevares). Ellers ville en senere ejer af samme CVR se den
+  // slettede kontos e-mail. Idempotent, så sletningen kan gentages. Kun med service role-klienten.
   async clearClinicEnteredData(clinicId: string): Promise<void> {
-    await this.run(this.db.from("clinics").update({ description: null }).eq("id", clinicId), "clinics: beskrivelse fejlede");
+    await this.run(
+      this.db.from("clinics").update({ description: null, email: null, website: null }).eq("id", clinicId),
+      "clinics: klinikdata fejlede",
+    );
     await this.run(
       this.db
         .from("clinics")
