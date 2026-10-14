@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`); migration `20261016000200` mangler at blive kørt i det fælles projekt. Trin 2 er i gang på `feat/omlaegning-trin-2` (backend 2.1-2.3, frontend 2.4). Resten af API'et (10.5-10.7, 10.9-10.14), de øvrige sider (6), AI-flowet (7) og anmeldelsesflowet (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`); migration `20261016000200` mangler at blive kørt i det fælles projekt. Trin 2 er i gang på `feat/omlaegning-trin-2`: rangering, ledige tider, det offentlige klinik-API (10.7), forsiden og informationssiderne er bygget (2.1-2.4); klinikoversigten med kort og klinikprofilen bygges (2.5-2.6). Resten af API'et (10.5-10.7, 10.9-10.14), de øvrige sider (6), AI-flowet (7) og anmeldelsesflowet (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -1129,7 +1129,7 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 | `/klinikker/[clinicId]` | Klinikprofil: grunddata, åbningstider, kort, Trustpilot, anmeldelser og prisnøjagtighed. Verificerede også: beskrivelse, prisliste, første ledige tid, tandlæger med portefølje og "Vælg klinik" (med sag) |
 | `/akut` | Akutvejen: vælg akutydelse (forvalgt hvis kun én), klinikker sorteret efter første ledige akuttid. Patienten vælger klinik og tid, **logger ind eller opretter konto** (kræves), skriver kort hvad der er galt, angiver navn og telefon, giver delingssamtykke og sender. Opretter en sag med `is_emergency = true` og ét lead; tiden **reserveres straks** (`held`) i højst 30 minutter (eller til starttid, hvis den kommer før), så andre ikke kan tage den. Accepterer klinikken inden da, bliver reservationen en booking; afviser den, trækker patienten leadet tilbage, eller udløber reservationen, frigives tiden, og patienten kan vælge en anden klinik. UI viser, hvor længe reservationen gælder. Ingen AI i akutvejen |
 | `/login`, `/opret`, `/opret/patient`, `/opret/klinik` | Login og signup. `/opret/klinik` beder om CVR, klinikkens navn, adresse, postnummer, by, telefon. Teksten må ikke antyde, at CVR slås op i CVR-registret (det gør vi ikke); den forklarer, at CVR bruges til at knytte kontoen til klinikken og til verifikation |
-| `/saadan-virker-det`, `/saadan-tjener-vi-penge`, `/for-klinikker`, `/om-os`, `/kontakt` | Informationssider (statisk indhold, ingen API). Indgangen til chatten er synlig i headeren på alle offentlige sider og patientsider og fører til `/start`. Indtil chatten er bygget (trin 3), styres den af flaget `CHAT_READY` (som `DIRECTORY_READY` for oversigten) og fører til forsiden |
+| `/saadan-virker-det`, `/saadan-tjener-vi-penge`, `/for-klinikker`, `/om-os`, `/kontakt` | Informationssider (statisk indhold, ingen API; bygget i 2.4). "Sådan tjener vi penge" beskriver prototypens model: klinikker betaler for leads, patienter betaler ikke (forretningsmodellen er åben, 12.3 punkt 31). Indgangen til chatten er synlig i headeren på alle offentlige sider og patientsider og fører til `/start`. Indtil chatten er bygget (trin 3), styres den af flaget `CHAT_READY` (som `DIRECTORY_READY` for oversigten) og fører til forsiden |
 | `/vilkaar/accepter`, `/vilkaar`, `/privatliv` | Vilkårs-gaten og tekster (2.5). Bygget |
 
 ### 6.2 Patientflade (`/patient`, rolle `patient`, permanent konto)
@@ -1175,7 +1175,7 @@ En `registered` klinik ser et banner "Afventer verificering" og kan sætte alt o
 
 ### 6.6 Klinikoversigt, rangering og filtre
 
-Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, enhedstestet) og bruges af `ClinicDirectoryController`. Den er **ikke** AI-baseret, og kriterierne vises for patienten.
+Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, enhedstestet) og bruges af `ClinicDirectoryController`. Den er **ikke** AI-baseret, og kriterierne vises for patienten. API og rangering er bygget (2.1-2.3); listen, kortet og profilen i UI bygges i 2.5-2.6. Sorteringsnøglerne og deres danske navne står i `lib/constants/clinics.ts` (`CLINIC_SORTS`, `CLINIC_SORT_LABEL`).
 
 **Visningsniveau pr. klinik** (bestemmes af `public_*`-funktionerne ud fra `clinics.status`):
 
@@ -1197,7 +1197,13 @@ Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, 
 - Standard: `distance`, hvis patienten har angivet postnummer eller position; ellers `first_available`. På `/akut`: `first_available` for akutydelsen, kun klinikker med akuttid.
 - Klinikker uden værdi for kriteriet (fx ingen prisliste, ingen anmeldelser, basisniveau) sorteres **sidst**. Ved lighed: navn.
 - Prissortering og prisvisning gælder kun verificerede klinikker med pris for **alle** valgte ydelser.
-- **Filtre:** ydelser (slugs, flere), maks. afstand (standard 25 km), maks. pris, min. stjerner, kun med akuttid inden for 48 timer, kun klinikker der kan kontaktes (`verified`).
+- **Filtre** (regler som bygget):
+  - **Behandlinger:** slugs i `?services=`, højst `MAX_SELECTED_SERVICES` (5). En ukendt eller inaktiv slug giver 400 `UNKNOWN_SERVICE`.
+  - **Position:** `postalCode` eller `lat`+`lng` (aldrig gemt). Ukendt postnummer giver 400 `UNKNOWN_POSTAL_CODE`; `lat` uden `lng` (eller omvendt) giver 400.
+  - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` = 25) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
+  - **Maks. pris:** `maxPrice` kræver mindst én valgt behandling (ellers 400) og sammenlignes med summen af `price_min` for de valgte behandlinger; klinikker uden pris for alle valgte falder fra.
+  - **Min. stjerner**, **kun med akuttid** inden for `EMERGENCY_FILTER_HOURS` (48 timer) og **kun klinikker, der kan kontaktes** (`verified`).
+  - Ukendte query-parametre ignoreres (`readQuery`).
 - MVP: alle klinikker hentes og sorteres i API'et (få klinikker). Sidevisning [UDSKUDT].
 - Kortet (`views/components/clinic-directory/clinic-map.tsx`) er en klientkomponent, der indlæses dynamisk uden SSR (Leaflet kræver `window`), og viser præcis listens resultat. Markører for niveau "fuld" og "basis" ser tydeligt forskellige ud. Desktop: liste og kort side om side; mobil: skift mellem dem. Fliser fra OpenStreetMap med altid synlig kreditering "© OpenStreetMap-bidragydere" [PROTOTYPE]. CSP skal tillade fliseserveren.
 
@@ -1212,6 +1218,8 @@ Beregnes i `AvailabilityService` (`services/availabilityService.ts`, ingen I/O, 
 - **Grænser:** tidligst `now + MIN_BOOKING_NOTICE_MIN` (30 min, akut 0 min), senest `BOOKING_HORIZON_DAYS` (60 dage). "Første ledige tid" i oversigten søges inden for `FIRST_AVAILABLE_SEARCH_DAYS` (14 dage); ellers "Ingen ledige tider de næste 14 dage".
 - Værdierne står i `lib/constants/bookings.ts` og er MVP-værdier. Dem, databasen også håndhæver, står med samme tal i migrationen (tabel i 7.6).
 - Kun verificerede klinikker har ledige tider.
+- **Første ledige tid i oversigten** måles for de valgte behandlinger (varighederne lagt sammen som én sammenhængende tid); uden valg for Undersøgelse (`EXAMINATION_SERVICE_SLUG`). **Første akuttid** (`firstEmergencyAt`) sættes kun for klinikker med et akutvindue og måles for den valgte akutbehandling, ellers for klinikkens korteste akutbehandling.
+- Tider regnes i `CLINIC_TIME_ZONE` (`Europe/Copenhagen`). `GET /api/clinics/{id}/availability` dækker højst `MAX_AVAILABILITY_RANGE_DAYS` (14) dage pr. kald. Optaget tid hentes med `AvailabilityRepository.listBusyIntervals()` (`public_busy_intervals()`).
 
 ---
 
@@ -1656,6 +1664,8 @@ export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage
 
 ### 10.7 Klinikoversigt og profil (offentligt)
 
+Bygget i trin 2 (2.3). `ClinicDirectoryController` (offentlig, `session: Session | null`) bruger `ClinicDirectoryRepository` (`public_*`-funktionerne), `AvailabilityRepository.listBusyIntervals()`, `RankingService` og `AvailabilityService`. Offentlige anmeldelser og statistik (`public_reviews()`, `public_clinic_review_stats_many()`) læses foreløbig også i `ClinicDirectoryRepository`, ikke i et `ReviewsRepository`; trin 6 kan flytte dem, når anmeldelserne bygges. Trustpilot-felterne mappes ét sted, `trustpilotFromColumns()` i `models/db/mappers.ts`. Filterreglerne og fejlkoderne står i 6.6; beregningen af første ledige tid i 6.7.
+
 ```ts
 // lib/types/clinics.ts
 export type ClinicStatus = (typeof CLINIC_STATUSES)[number]; // "imported" | "registered" | "verified" | "removed" (2.1)
@@ -1678,8 +1688,8 @@ export type ClinicListItemDto = {
   logoUrl: string | null;
   prices: ClinicPriceDto[];            // for de valgte ydelser
   priceForSelection: PriceRange | null;// sum for de valgte ydelser; null hvis en mangler
-  firstAvailableAt: string | null;
-  firstEmergencyAt: string | null;
+  firstAvailableAt: string | null;     // for de valgte behandlinger, ellers Undersøgelse (6.7)
+  firstEmergencyAt: string | null;     // kun klinikker med akutvindue (6.7)
 };
 
 export type ClinicProfileDto = ClinicListItemDto & {
@@ -1695,8 +1705,8 @@ export type SlotDto = { startsAt: string; endsAt: string };
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/clinics` | alle | `?services=slug,slug&postalCode=&lat=&lng=&maxDistanceKm=&maxPrice=&minStars=&emergency=true&contactableOnly=true&sort=price\|rating\|price_accuracy\|distance\|first_available` | `{ clinics: ClinicListItemDto[], sort, criteria: string[] }`. Sorteret af `RankingService` (6.6). `lat/lng` gemmes ikke |
-| GET `/api/clinics/{id}` | alle | `?services=` | `ClinicProfileDto` |
+| GET `/api/clinics` | alle | `?services=slug,slug&postalCode=&lat=&lng=&maxDistanceKm=&maxPrice=&minStars=&emergency=true&contactableOnly=true&sort=price\|rating\|price_accuracy\|distance\|first_available` | `{ clinics: ClinicListItemDto[], sort, criteria: string[] }`. Sorteret af `RankingService` (6.6). `lat/lng` gemmes ikke. 400 `UNKNOWN_SERVICE` (ukendt slug eller over 5), 400 `UNKNOWN_POSTAL_CODE`, 400 ved `lat` uden `lng` eller `maxPrice` uden valgte behandlinger. Ukendte parametre ignoreres |
+| GET `/api/clinics/{id}` | alle | `?services=` (samme regler) | `ClinicProfileDto`. `distanceKm` er altid `null` på profilen; 404 for klinikker, der ikke er offentlige (5.1 regel 11) |
 | GET `/api/clinics/{id}/availability` | alle | `?serviceId=&from=&to=` (max 14 dage pr. kald) | `{ slots: SlotDto[] }`. Kun verificerede; 404 ellers (6.7) |
 | GET `/api/clinics/{id}/reviews` | alle | | `{ stats: ReviewStats, reviews: PublicReviewDto[] }`. 404 for ikke-verificerede klinikker |
 
@@ -1857,7 +1867,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 |---|---|---|
 | 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
 | 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | Bygget og afsluttet på `feat/omlaegning-trin-1` (sidste commit `623314f4`). Ingen åbne kritiske fund. Tests: RLS 36, API 82, unit 6, e2e 6; klinikrejsen 40 af 40 gentagelser uden logud-fejl. Mangler: HSTS tjekket i en produktionsbuild, og migration `20261016000200` køres i det fælles projekt |
-| 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | I gang på `feat/omlaegning-trin-2` (backend 2.1-2.3, frontend 2.4); ellers [IKKE BYGGET] |
+| 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | I gang på `feat/omlaegning-trin-2`: 2.1-2.4 bygget (`4ec5b70e` rangering og ledige tider, `ef133bb3` API, `a3f8d47b` forside og informationssider); frontend bygger 2.5-2.6; 2.7 venter |
 | 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session (med tom sag), billedbehandling og AI-klienten findes i kernen fra trin 0 |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
 | 5 | Klinikkens indbakke: accepter eller afvis | [IKKE BYGGET] |
@@ -2000,6 +2010,8 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 28. *Afklaret:* en selvoprettet klinik, der mister sin ejer, slettes ikke, men får status `removed`. Den er skjult overalt og kan ikke vælges eller overtages; CVR nulstilles, så virksomheden kan oprette sig igen. Klinikindtastet indhold ryddes, og navnet bevares. Patienternes leads, beskeder, bookinger og anmeldelser bevares, og patienten ser "Klinikken er ikke længere på TandMatch". Anmeldelserne forsvinder fra offentligheden, men patienten kan se sin egen (4.2, 5.3).
 29. *Afklaret:* offentligt vises kun `verified` og `imported` uden ejer; `registered` er usynlig, også efter CVR-overtagelse (5.1 regel 11).
 30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). Forslag: `on delete set null` og en `sender_role`-kolonne, så tråden viser "Klinikken" for beskeder uden afsender. Afgøres og bygges med beskedtråden (trin 5.2).
+31. **Forretningsmodel:** prototypen og siden "Sådan tjener vi penge" siger, at klinikker betaler for leads, og at patienter ikke betaler. Pris pr. lead, abonnement, betaling ved booking eller andet er ikke besluttet, og der er ingen betaling i koden.
+32. **API-test til trin 6:** der er endnu ingen API-test af en godkendt anmeldelse eller af en ikke-udløbet `held`-booking gennem API'et (kun i RLS-testene). Tilføjes, når anmeldelser og booking bygges (6.1-6.2).
 
 ### 12.4 Udskudt [UDSKUDT]
 
