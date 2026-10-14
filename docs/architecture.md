@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Migrationerne `20261016000200` og `20261017000100` mangler at blive kørt i det fælles projekt. Resten af API'et (10.5, 10.6, 10.9-10.14 undtagen den offentlige del af 10.13), de øvrige sider (6), AI-flowet (7) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er i gang på `feat/omlaegning-trin-3`: sager, billeder, AI-regler, chat og opsummering er bygget i backend (3.1-3.3; 10.5 undtagen leads, 10.6, 7); sagsflowets sider bygges (3.4). Migrationerne `20261016000200`, `20261017000100` og `20261018000100` mangler at blive kørt i det fælles projekt. Resten af API'et (10.9-10.14 undtagen den offentlige del af 10.13, leads i 10.5), de øvrige sider (6) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -1002,7 +1002,7 @@ withdraw_open_leads(...) -> integer
 | Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | **Altid først:** alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Selve klinikrækken (status og felter) er allerede ændret af `clinics_guard()` i samme UPDATE (4.3); denne AFTER-trigger rydder **rækker i andre tabeller**:<br>**(a) importeret klinik** (`import_source is not null`, nu `imported`): sletter prisliste (`clinic_prices`), valgte kategorier (`clinic_service_groups`), blokerede tider (`clinic_time_blocks`) og tandlæger (`clinic_dentists`, og dermed `portfolio_items` via cascade). Åbningstiderne bevares som offentlige grunddata.<br>**(b) selvoprettet klinik** (`import_source is null`, nu `removed`): sletter det samme og desuden åbningstiderne (`clinic_opening_hours`), fordi klinikken aldrig vises igen. Rækken slettes **ikke**, og der bruges ingen cascade: patienternes leads, beskeder, bookinger og anmeldelser bevares, og patienten ser klinikkens navn og "Klinikken er ikke længere på TandMatch". Anmeldelserne er ikke offentlige (kun verificerede klinikker vises), men patienten ser sin egen. `removed` er endelig, og samme CVR opretter en ny klinik ved signup (CVR er nulstillet; `handle_new_user()`/`is_cvr_claimed()` knytter kun til `imported` uden ejer).<br>I begge tilfælde består afholdte bookinger og anmeldelser. Oprydningen sker i triggerne (besluttet), så den er atomar og også virker, når en konto slettes uden om API'et; service role bruges kun til filer og auth-bruger (2.3). Filerne i `public-media` slettes af `DELETE /api/clinics/me` (10.8), før auth-brugeren slettes |
 | `approve_summary(case_id, summary_text)` | patient (+anonym, ejer) | Eneste vej til `summary_text`. Kun `draft`, max 1500 |
 | `store_ai_summary(p_user_id, case_id, …)` | **kun service role** | Skriver det validerede udkast. Tjekker internt, at sagen tilhører `p_user_id` og er `draft` |
-| `append_assistant_message(p_user_id, conversation_id, …)` | **kun service role** | Indsætter assistentbesked (svar, foreløbig vurdering, foreslåede ydelser, akut, out-of-scope, blocked). Tjekker ejer og `active`. Afviser ydelses-id'er, der ikke er aktive i kataloget |
+| `append_assistant_message(p_user_id, conversation_id, …)` | **kun service role** | Indsætter assistentbesked (svar, foreløbig vurdering, foreslåede ydelser, akut, out-of-scope, blocked). Tjekker ejer og `active`; en lukket samtale accepteres kun, hvis den seneste besked er patientens (svaret på den 30. besked, migration `20261018000100`). Afviser ydelses-id'er, der ikke er aktive i kataloget |
 | `consume_summary_generation(case_id)` | patient (+anonym, ejer) | Én transaktion: `draft`, sagens loft (5), patientens døgnloft (20), for anonyme det globale loft. Øger tællerne |
 | `try_consume_anonymous_ai_call(p_user_id)` | **kun service role** | Atomisk: tjekker at `p_user_id` er anonym, øger dagens tæller og returnerer `true` under loftet `ai_limits.anon_daily_ai_calls` (300). Bruger **ikke** `auth.uid()` (5.1 regel 8) |
 | `consume_rate_limit(key, limit)` | **kun service role** | Uændret. IP kun som hash |
@@ -1129,7 +1129,7 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 | `/start` | Start på chatten uden login: særskilt AI-samtykke (ikke billedsamtykke). Opretter anonym session og tom sag og sender til `/start/[caseId]`. Patienter med konto opretter sagen via `POST /api/cases`. Har sessionen allerede en kladde, fortsættes den |
 | `/start/[caseId]` | **Sagsflowet** for anonyme og patienter med konto, der ejer sagen. Server-vagt `guardCaseFlow()` (patient, anonym tilladt; ejerskab tjekkes af API'et). Trin: 1 chat med billeder (billedsamtykke lige før første upload), 2 bekræft ydelser (AI-forslag, "Jeg er ikke sikker" → Undersøgelse), 3 opsummering (ret og godkend), postnummer og ønsket tidsrum, 4 "Find klinikker" → `/klinikker?sag=[caseId]`. Anonyme ser `AnonymousPatientBanner` (48 timer, opret konto, slet) |
 | `/start/[caseId]/send` | Afsendelse til de valgte klinikker (op til 3, sendt med som `?klinikker=`): opret konto hvis anonym (inline, 7.7), samtykke til deling, oversigt over valgte klinikker med listepris, send. Redirect til `/patient/sag/[caseId]` |
-| `/klinikker` | Klinikoversigt: liste + kort (Leaflet, OpenStreetMap) + filtre (ydelse, afstand/postnummer, maks. pris, min. bedømmelse, kun med ledig akuttid, kun klinikker, der kan kontaktes) og sortering (6.6). Med `?sag=` er sagens bekræftede ydelser og postnummer forvalgt, og patienten kan markere op til 3 klinikker til sammenligning og afsendelse [IKKE BYGGET] (trin 4). Kortet viser de samme klinikker som listen. Filtre og sortering spejles i URL'en med samme nøgler som API'et (`views/utils/clinic-query.ts`), så profil/tilbage og deling bevarer dem; `akut=1` slår akutfilteret til, og `sag` bevares. Patientens position kan stå i URL'en som `lat`/`lng` afrundet til ca. 1 km (aldrig gemt på serveren). I akutvisningen henvises også til tandlægevagten (1813) uden for åbningstid, især når listen er tom. Bygget i 2.5 og 2.8 |
+| `/klinikker` | Klinikoversigt: liste + kort (Leaflet, OpenStreetMap) + filtre (ydelse, afstand/postnummer, maks. pris, min. bedømmelse, kun med ledig akuttid, kun klinikker, der kan kontaktes) og sortering (6.6). Med `?sag=` er sagens bekræftede ydelser og postnummer forvalgt, og patienten kan markere op til 3 klinikker til sammenligning og afsendelse [IKKE BYGGET] (trin 4). Kortet viser de samme klinikker som listen. Filtre og sortering spejles i URL'en med samme nøgler som API'et (`views/utils/clinic-query.ts`), så profil/tilbage og deling bevarer dem; `akut=1` slår akutfilteret til, og `sag` bevares. Postnummer og filtre står i URL'en; "Brug min position" (`lat`/`lng`) gør **ikke** (besluttet): positionen holdes kun i komponentens tilstand og sendes til API'et, men gemmes aldrig i URL'en eller på serveren. I akutvisningen henvises også til tandlægevagten (1813) uden for åbningstid, især når listen er tom. Bygget i 2.5 og 2.8 |
 | `/klinikker/[clinicId]` | Klinikprofil: grunddata, åbningstider, kort, Trustpilot, anmeldelser og prisnøjagtighed. Verificerede også: beskrivelse, prisliste, første ledige tid, tandlæger med portefølje. Bygget i 2.6. "Vælg klinik" med `?sag=`, og at profil/tilbage bevarer sag og valgte klinikker, er udskudt til trin 4. [PROTOTYPE]: siden hentes i browseren, så sidetitlen er generisk, og en ukendt eller skjult klinik giver en fejlside med HTTP 200 i stedet for 404; serverside-hentning med titel og 404 kommer senere |
 | `/akut` | Akutvejen: vælg akutydelse (forvalgt hvis kun én), klinikker sorteret efter første ledige akuttid. Patienten vælger klinik og tid, **logger ind eller opretter konto** (kræves), skriver kort hvad der er galt, angiver navn og telefon, giver delingssamtykke og sender. Opretter en sag med `is_emergency = true` og ét lead; tiden **reserveres straks** (`held`) i højst 30 minutter (eller til starttid, hvis den kommer før), så andre ikke kan tage den. Accepterer klinikken inden da, bliver reservationen en booking; afviser den, trækker patienten leadet tilbage, eller udløber reservationen, frigives tiden, og patienten kan vælge en anden klinik. UI viser, hvor længe reservationen gælder. Ingen AI i akutvejen |
 | `/login`, `/opret`, `/opret/patient`, `/opret/klinik` | Login og signup. `/opret/klinik` beder om CVR, klinikkens navn, adresse, postnummer, by, telefon. Teksten må ikke antyde, at CVR slås op i CVR-registret (det gør vi ikke); den forklarer, at CVR bruges til at knytte kontoen til klinikken og til verifikation |
@@ -1227,9 +1227,11 @@ Beregnes i `AvailabilityService` (`services/availabilityService.ts`, ingen I/O, 
 
 ---
 
-## 7. AI-flowet [IKKE BYGGET]
+## 7. AI-flowet
 
-OpenAI-klienten, PII-maskering, fejlhåndtering og skrivevejen via service role findes og genbruges (`services/ai/openai.ts`, `pii.ts`, `errors.ts`). Prompts, skemaer, regler og guard skrives om.
+Status: backend og AI-lag er bygget i trin 3 (3.1-3.3: `dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering); siderne for sagsflowet bygges i 3.4. AI-laget ligger i `services/ai/` (regler, prompts, skemaer, guard, `aiChatService.ts`, `aiSummaryService.ts`, `modelClient.ts`) samt `services/aiImageService.ts`.
+
+**Testklient:** med `AI_FAKE_CLIENT=1` bruger serveren `FakeAiClient` (`services/ai/fakeAiClient.ts`) i stedet for OpenAI, men kun når `NODE_ENV !== 'production'`. `tests/api/run.sh` og `tests/e2e/run.sh` sætter variablen, så testene ikke kalder OpenAI. Provokationstestene i `tests/ai/` bruger den rigtige model.
 
 ### 7.1 Overblik
 
@@ -1302,7 +1304,7 @@ export type OutOfScopeTopic = "price" | "clinic_recommendation";
 export type AiChatTurn = {
   reply: string;                        // max 700. Spørgsmål, forklaring, procesvejledning
   preliminaryAssessment: string | null; // max 400. Altid foreløbig; null hvis rules.ts slår vurdering fra
-  suggestedServices: string[];          // max 5 slugs fra kataloget; ukendte fjernes af serveren
+  suggestedServices: string[];          // max 5 slugs fra kataloget; en ukendt slug afviser svaret (ét nyt forsøg, derefter fast tekst, 7.5)
   emergency: boolean;                   // akutte tegn
   outOfScopeTopics: OutOfScopeTopic[];
   readyForSummary: boolean;             // aktiverer kun en knap
@@ -1562,7 +1564,7 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 | GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget. `clinic` hentes via `ClinicsRepository.findOwn()` |
 | GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget uden `phone` ([IKKE BYGGET], 6.1) |
 | DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 | Bygget |
-| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag | Delvis: i dag kun `cases` og `consents`. `chat` [IKKE BYGGET] (3.3), `leads` (4.1), `bookings` og `reviews` (6.1-6.2) |
+| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag | Delvis: `cases`, `chat` (3.3) og `consents` er bygget. `leads` [IKKE BYGGET] (4.1), `bookings` og `reviews` (6.1-6.2) |
 | GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Sletter `{case_id}/`-mapper og auth-brugeren | Bygget |
 
 IP-rate-limited (10 pr. time): login, signup, anonym session, patienters billedupload og klinikkernes billedupload (10.8). Routes, som anonyme må kalde, kalder `touch_last_active()`.
@@ -1586,6 +1588,8 @@ export type ServiceGroupDto = { id: string; slug: string; name: string; descript
 | GET `/api/services` | alle | `?category=` (overordnet type, valgfri) | `{ groups: ServiceGroupDto[] }`: aktive kategorier med deres aktive behandlinger, begge sorteret efter `sort_order`. Kategorier uden aktive behandlinger (efter filter) udelades. Det er den eneste hentning af kataloget; views laver selv en flad liste ved behov |
 
 ### 10.5 Sager (patient)
+
+Bygget i trin 3 (3.1 og 3.3), undtagen `POST`/`GET /api/cases/{id}/leads` (4.1). Filer: `controllers/{cases,caseImages,summary}Controller.ts`, `models/{cases,caseImages,caseServices,summary}Repository.ts`, `services/caseImageUrlService.ts` (signerede URL'er), `lib/schemas/cases.ts`, `lib/domain/cases.ts` (`canSendCase`; kan flyttes til `lib/domain/leads.ts` i 4.1). `CASE_LEAD_STATUSES` og `CASE_ACTIVE_LEAD_STATUSES` ligger midlertidigt i `lib/constants/cases.ts` og flyttes til `lib/constants/leads.ts` i 4.1.
 
 ```ts
 // lib/types/cases.ts
@@ -1622,15 +1626,15 @@ export type CaseListItemDto = {
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/cases` | patient | | `{ cases: CaseListItemDto[] }` |
-| POST `/api/cases` | kun patient med konto | `{}` | 201 `CaseDto` |
+| GET `/api/cases` | kun patient med konto (anonyme: 403) | | `{ cases: CaseListItemDto[] }`. Indtil 4.1/6.1 har leads tom `clinicName`, og `nextBooking` er `null` |
+| POST `/api/cases` | kun patient med konto (anonyme: 403) | `{}` | 201 `CaseDto` |
 | GET `/api/cases/{id}` | patient (+anonym), ejer | | `CaseDto` |
 | PATCH `/api/cases/{id}` | patient (+anonym), `draft` | `{ postalCode?, preferredTimeframe? }` | `CaseDto` |
 | DELETE `/api/cases/{id}` | patient (+anonym), `draft` | | 204. Controlleren tjekker ejer og kladde med brugerens JWT og sletter derefter sagen og billedfilerne med service role (der er ingen DELETE-policy på `cases`, 5.4) |
 | PUT `/api/cases/{id}/services` | patient (+anonym), `draft` | `{ services: { serviceId, suggestedByAi }[] }` (1-5) | `CaseDto` |
 | POST `/api/cases/{id}/images` | patient (+anonym), `draft`, aktivt `image_upload` | multipart `file` | 201 `ImageDto` |
 | DELETE `/api/cases/{id}/images/{imageId}` | patient (+anonym), `draft` | | 204 |
-| POST `/api/cases/{id}/summary` | patient (+anonym), `draft`, aktivt `ai_processing` | `{}` | `SummaryResponse` |
+| POST `/api/cases/{id}/summary` | patient (+anonym), `draft`, aktivt `ai_processing` | `{}` | `SummaryResponse`. Udkastet gemmes, også når billeder bør tages om; `retakeImages` fortæller patienten det, men blokerer ikke godkendelsen |
 | PUT `/api/cases/{id}/summary` | patient (+anonym), `draft` | `{ summaryText }` (max 1500) | `{ summaryText, summaryApprovedAt }` |
 | POST `/api/cases/{id}/leads` | patient med konto, aktivt `health_data_sharing` | `{ clinicIds: string[] }` (1-3; samlet ≤ 3 med de **aktive** leads og ≤ 10 med alle leads på sagen) | 201 `{ leads: PatientLeadDto[] }`; 403 `ACCOUNT_REQUIRED`; 409 `LEAD_LIMIT`, `LEAD_TOTAL_LIMIT`, `CLINIC_ALREADY_CONTACTED`, `CLINIC_NOT_AVAILABLE`, `CASE_NOT_READY` |
 | POST `/api/leads/{id}/withdraw` | patient, ejer af sagen, lead `sent` | `{}` | `PatientLeadDto` (status `withdrawn`); 409 hvis leadet er besvaret |
@@ -1648,6 +1652,8 @@ export type SummaryResponse = {
 ```
 
 ### 10.6 AI-chat (patient)
+
+Bygget i trin 3 (3.3): `controllers/chatController.ts`, `models/chatRepository.ts`, `lib/schemas/chat.ts`, `services/ai/{aiChatService,aiSummaryService,modelClient,fakeAiClient}.ts` og `services/aiImageService.ts` (billeder til AI'en). Svaret på patientens 30. besked gemmes, selvom samtalen dermed er lukket (migration `20261018000100`, 5.3).
 
 ```ts
 // lib/types/ai.ts (fortsat)
@@ -1876,14 +1882,14 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
 | 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | Bygget og afsluttet på `feat/omlaegning-trin-1` (sidste commit `623314f4`). Ingen åbne kritiske fund. Tests: RLS 36, API 82, unit 6, e2e 6; klinikrejsen 40 af 40 gentagelser uden logud-fejl. Mangler: HSTS tjekket i en produktionsbuild, og migration `20261016000200` køres i det fælles projekt |
 | 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | Bygget og afsluttet på `feat/omlaegning-trin-2` (sidste commit `98c6a022`; 2.1-2.6 i `4ec5b70e`, `6286c8ed`, `a3f8d47b`, `ea70980b`; 2.8 rettelser efter review). Tests: RLS 36, API 112, unit 54, e2e 16 (begge viewports), gentagelser 40/40 uden ustabilitet, ingen CSP-fejl. `tests/e2e/run.sh` kører `npm run seed:demo` før Playwright (spring over med `E2E_SKIP_SEED=1`). Mangler: migrationerne `20261016000200` og `20261017000100` køres i det fælles projekt. Forsidens `ClinicPreview` er stadig illustrationer, ikke rigtige klinikker |
-| 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session (med tom sag), billedbehandling og AI-klienten findes i kernen fra trin 0 |
+| 3 | AI-chat med billeder, forslag til ydelser og opsummering | I gang på `feat/omlaegning-trin-3`: 3.1-3.3 bygget (`dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering); frontend bygger 3.4; 3.5 venter |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
 | 5 | Klinikkens indbakke: accepter eller afvis | [IKKE BYGGET] |
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | [IKKE BYGGET] |
 | 7 | Akutvej, demodata og finpudsning | [IKKE BYGGET] |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
-**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Efter trin 2 er der 23 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser) og `20261017000100` (trin 2). De første 21 er kørt i det fælles projekt (senest `20261016000100` den 2026-10-14); `20261016000200` og `20261017000100` er endnu ikke kørt der (brugeren kører dem). Nye ændringer kommer som nye filer (2.6). Sættet:
+**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 24 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2) og `20261018000100` (trin 3). De første 21 er kørt i det fælles projekt (senest `20261016000100` den 2026-10-14); `20261016000200`, `20261017000100` og `20261018000100` er endnu ikke kørt der (brugeren kører dem). Nye ændringer kommer som nye filer (2.6). Sættet:
 
 | Fil | Indhold |
 |---|---|
@@ -1910,6 +1916,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | `20261016000100_clinic_import_snapshot.sql` | `clinic_import_snapshots` (RLS uden policies); `handle_new_user()` gemmer snapshot ved CVR-overtagelse; `clinics_guard()` og `clinics_after_owner_removed()` gendanner grunddata og åbningstider for en ikke-verificeret ejer og sletter snapshottet (4.3) |
 | `20261016000200_services_active_groups.sql` | Policyen på `services` skjuler også behandlinger i en inaktiv kategori (5.4, RLS-test 38). **Ikke kørt i det fælles projekt endnu** (brugeren kører den) |
 | `20261017000100_public_reviews_created_at.sql` | `public_reviews()` returnerer `created_at` i stedet for `created_month`; måneden beregnes i TypeScript (10.13). **Ikke kørt i det fælles projekt endnu** |
+| `20261018000100_ai_reply_after_message_cap.sql` | `append_assistant_message()` accepterer et svar i en lukket samtale, hvis den seneste besked er patientens (svaret på den 30. besked, 5.3). **Ikke kørt i det fælles projekt endnu** |
 
 **Nedskæring** hvis tiden ikke slår til, i denne rækkefølge: portefølje → klinikkens svar på anmeldelser → beskedtråd → kort (listen er nok) → akutvindue (akutvejen bruger almindelige tider). Skæres **aldrig**: isolation af leads og skjulte kontaktoplysninger (RLS), samtykke før chat/upload/deling, AI-reglerne (ingen priser, ingen klinikanbefaling, akut-henvisning), maks. 3 leads, ingen dobbeltbooking, "Slet min samtale" og oprydning af anonyme data.
 
