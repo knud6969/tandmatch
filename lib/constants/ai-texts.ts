@@ -1,11 +1,39 @@
-import type { ImageQuality } from "@/lib/types/ai";
+import type { ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 
 // Faste danske tekster om AI’ens grænser. Skrevet i koden og ikke af modellen (architecture 7.3, 7.5).
-export const AI_BOUNDARY_TEXT = "AI-assistenten giver ikke medicinsk rådgivning. Tandlægen vurderer.";
 
-// Vises når AI-svaret har registreret et emne, der er tandlægens opgave (architecture 7.3).
-export const OUT_OF_SCOPE_NOTICE =
-  "Det er tandlægens opgave at vurdere det. Send din forespørgsel, så får du en personlig vurdering.";
+// Fast tekst over chatten.
+export const AI_BOUNDARY_TEXT =
+  "AI-assistenten giver ikke endelige vurderinger og kender ikke priserne. Klinikken vurderer.";
+
+// Mærkat ved enhver foreløbig vurdering (architecture 7.3).
+// MDR-TILPASNING: vises kun, når AI_RULES.allowPreliminaryAssessment er true.
+export const PRELIMINARY_ASSESSMENT_LABEL = "Foreløbig vurdering fra AI. Klinikken laver den endelige vurdering.";
+
+// Vises når patienten spørger om pris (architecture 7.3).
+export const PRICE_NOTICE_TEXT =
+  "Priserne kommer fra klinikkernes egne prislister, og du kan sortere klinikkerne efter pris, anmeldelser, afstand og første ledige tid i oversigten.";
+
+// Vises når patienten spørger, hvilken klinik der er bedst.
+export const CLINIC_RECOMMENDATION_NOTICE_TEXT =
+  "AI-assistenten anbefaler ikke bestemte klinikker. I oversigten kan du sammenligne klinikkerne efter pris, anmeldelser, afstand og første ledige tid.";
+
+export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
+  price: PRICE_NOTICE_TEXT,
+  clinic_recommendation: CLINIC_RECOMMENDATION_NOTICE_TEXT,
+};
+
+// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den med link til /akut.
+export const EMERGENCY_REFERRAL_TEXT =
+  "Det, du beskriver, kan kræve hurtig hjælp. Søg en akut tid eller kontakt tandlægevagten så hurtigt som muligt. Du kan finde akutte tider under Akut.";
+
+// Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt eller hals).
+export const LIFE_THREATENING_REFERRAL_TEXT =
+  "Har du svært ved at trække vejret eller synke, eller er ansigt eller hals kraftigt hævet, så ring 112 med det samme. Ellers kan du ringe til lægevagten på 1813 eller søge en akut tandlægetid.";
+
+// Fast tekst når AI-svaret blev afvist af filteret to gange (architecture 7.5, række 6).
+export const CHAT_BLOCKED_TEXT =
+  "Det kan jeg desværre ikke hjælpe med her. Prøv at formulere det anderledes, eller skriv din beskrivelse selv.";
 
 export const CHAT_NOT_SHARED_TEXT =
   "Samtalen deles ikke med tandlæger. Det er den opsummering, du godkender, der sendes.";

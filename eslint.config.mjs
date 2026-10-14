@@ -24,7 +24,7 @@ function layer(files, groups, message, ignores = []) {
 
 // Ren kode i services/ uden I/O (architecture 2.1): testes direkte og starter ikke med import "server-only".
 const PURE_SERVICE_FILES = [
-  "services/ai/{rules,errors,forbiddenTerms,guard,pii,promptFormat,schemas}.ts",
+  "services/ai/{rules,errors,forbiddenTerms,guard,pii,promptFormat,schemas,catalogContext}.ts",
   "services/ai/prompts/**/*.ts",
   "services/rankingService.ts",
   "services/availabilityService.ts",
