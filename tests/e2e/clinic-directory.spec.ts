@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Patientens vej gennem klinikoversigten (arbejdsplan 2.5, 2.6): oversigt, filter, kort, profil. Forudsætter demodata
-// (`npm run seed:demo`) med både verificerede og importerede klinikker. Kører i begge viewports (390 og 1280 px).
+// Patientens vej gennem klinikoversigten (arbejdsplan 2.5, 2.6): oversigt, filter, kort, profil. Demodata
+// seedes af tests/e2e/run.sh (`npm run seed:demo`) med både verificerede og importerede klinikker. Kører i begge viewports (390 og 1280 px).
 
 type ApiClinic = { id: string; name: string; tier: "basic" | "full"; website: string | null };
 

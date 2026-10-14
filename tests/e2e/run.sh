@@ -20,6 +20,12 @@ export CRON_SECRET="test-cron-secret-0123456789abcdef"
 export OPENAI_API_KEY="sk-test-not-used"
 export NEXT_TELEMETRY_DISABLED=1
 
+# Demodata til klinikoversigten (tests/e2e/clinic-directory.spec.ts): verificerede og importerede, fiktive klinikker.
+# Seed-scriptet nægter ikke-lokal URL og rydder først tidligere demodata, så det er genkørbart. Spring over med E2E_SKIP_SEED=1.
+if [ "${E2E_SKIP_SEED:-0}" != "1" ]; then
+  npm run --silent seed:demo >/dev/null || { echo "seed:demo fejlede." >&2; exit 2; }
+fi
+
 LOG="${TMPDIR:-/tmp}/tandmatch-e2e-server.log"
 npx next dev -p "$PORT" -H 127.0.0.1 >"$LOG" 2>&1 &
 SERVER_PID=$!
