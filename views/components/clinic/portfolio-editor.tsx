@@ -13,19 +13,21 @@ import { useAction } from "@/views/utils/use-action";
 import { PORTFOLIO_CAPTION_MAX_CHARS } from "@/lib/constants/clinics";
 import { PORTFOLIO_CONSENT_TEXT, PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/types/services";
 
 type PortfolioEditorProps = {
   dentistId: string;
   dentistName: string;
   items: PortfolioItemDto[];
-  services: ServiceDto[];
+  groups: ServiceGroupDto[];
+  // Om klinikken er verificeret og dermed har en offentlig profil (architecture 5.4).
+  verified: boolean;
   onChange: (items: PortfolioItemDto[]) => void;
 };
 
 // Portefølje for én tandlæge. Et billede kan kun uploades, når klinikken bekræfter, at patienten har givet samtykke
 // til offentliggørelse (architecture 9.5). Teksten er konstanten fra lib/constants/consents.ts.
-export function PortfolioEditor({ dentistId, dentistName, items, services, onChange }: PortfolioEditorProps) {
+export function PortfolioEditor({ dentistId, dentistName, items, groups, verified, onChange }: PortfolioEditorProps) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [serviceId, setServiceId] = useState("");
@@ -54,7 +56,9 @@ export function PortfolioEditor({ dentistId, dentistName, items, services, onCha
       setServiceId("");
       setConsent(false);
       if (fileInput.current) fileInput.current.value = "";
-      return "Billedet er uploadet og vises nu på profilen, når klinikken er verificeret.";
+      return verified
+        ? "Billedet er uploadet og vises nu på klinikkens profil."
+        : "Billedet er uploadet. Det vises på profilen, når klinikken er verificeret.";
     });
   }
 
@@ -87,7 +91,7 @@ export function PortfolioEditor({ dentistId, dentistName, items, services, onCha
               <li key={item.id} className="col-span-full">
                 <EditItem
                   item={item}
-                  services={services}
+                  groups={groups}
                   busy={busy}
                   onSave={(values) => onEdit(item.id, values)}
                   onCancel={() => setEditingId(null)}
@@ -130,7 +134,7 @@ export function PortfolioEditor({ dentistId, dentistName, items, services, onCha
             className="min-h-12 w-full rounded-control border border-field-border bg-surface px-3 py-2.5 text-base text-ink file:mr-3 file:rounded-control file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:font-semibold file:text-brand-800"
           />
         </div>
-        <ServiceSelect services={services} value={serviceId} onChange={setServiceId} />
+        <ServiceSelect groups={groups} value={serviceId} onChange={setServiceId} />
         <TextField
           label="Billedtekst (valgfri)"
           hint="Ingen navne eller andre personoplysninger."
@@ -148,14 +152,18 @@ export function PortfolioEditor({ dentistId, dentistName, items, services, onCha
   );
 }
 
-function ServiceSelect({ services, value, onChange }: { services: ServiceDto[]; value: string; onChange: (id: string) => void }) {
+function ServiceSelect({ groups, value, onChange }: { groups: ServiceGroupDto[]; value: string; onChange: (id: string) => void }) {
   return (
     <SelectField label="Behandling (valgfri)" value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Ikke angivet</option>
-      {services.map((service) => (
-        <option key={service.id} value={service.id}>
-          {service.name}
-        </option>
+      {groups.map((group) => (
+        <optgroup key={group.id} label={group.name}>
+          {group.services.map((service) => (
+            <option key={service.id} value={service.id}>
+              {service.name}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </SelectField>
   );
@@ -163,14 +171,14 @@ function ServiceSelect({ services, value, onChange }: { services: ServiceDto[]; 
 
 type EditItemProps = {
   item: PortfolioItemDto;
-  services: ServiceDto[];
+  groups: ServiceGroupDto[];
   busy: boolean;
   onSave: (values: { caption: string; serviceId: string }) => void;
   onCancel: () => void;
 };
 
 // Redigér billedtekst og behandling på et eksisterende porteføljebillede (billedet og samtykket ændres ikke).
-function EditItem({ item, services, busy, onSave, onCancel }: EditItemProps) {
+function EditItem({ item, groups, busy, onSave, onCancel }: EditItemProps) {
   const [caption, setCaption] = useState(item.caption ?? "");
   const [serviceId, setServiceId] = useState(item.serviceId ?? "");
   return (
@@ -192,7 +200,7 @@ function EditItem({ item, services, busy, onSave, onCancel }: EditItemProps) {
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
         />
-        <ServiceSelect services={services} value={serviceId} onChange={setServiceId} />
+        <ServiceSelect groups={groups} value={serviceId} onChange={setServiceId} />
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button type="submit" disabled={busy}>
             {busy ? "Gemmer …" : "Gem ændringer"}

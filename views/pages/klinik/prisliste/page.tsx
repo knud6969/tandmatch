@@ -9,7 +9,7 @@ export default function ClinicPage() {
   return (
     <Container>
       <PageIntro title="Prisliste">
-        <p>Vælg først de behandlingskategorier, I tilbyder, og angiv derefter pris og varighed på behandlingerne.</p>
+        <p>Vælg først de behandlingskategorier, du tilbyder, og angiv derefter pris og varighed på behandlingerne.</p>
       </PageIntro>
       <PriceListForm />
     </Container>

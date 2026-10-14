@@ -9,7 +9,7 @@ export default function ClinicPage() {
   return (
     <Container>
       <PageIntro title="Klinikprofil">
-        <p>Det her ser patienterne på jeres profil. Ændringer gemmes, når du trykker på Gem.</p>
+        <p>Det her ser patienterne på klinikkens profil. Ændringer gemmes, når du trykker på Gem.</p>
       </PageIntro>
       <ClinicForm />
     </Container>

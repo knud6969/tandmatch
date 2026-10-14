@@ -123,6 +123,7 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await expect(page.getByLabel("Pris til (kr.)").first()).toHaveValue("900");
 
     // Fravalg af kategorien med priser kræver bekræftelse og sletter priserne.
+    await page.getByRole("button", { name: "Ændr kategorier" }).click();
     await groupBoxes.first().click();
     await expect(page.getByText(/Priserne på behandlingerne i denne kategori slettes/)).toBeVisible();
     await page.getByRole("button", { name: "Behold kategorien" }).click();
@@ -132,6 +133,7 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await page.getByRole("button", { name: /^Gem prisliste/ }).click();
     await expect(page.getByText(/Gemt kl\./).first()).toBeVisible();
     await page.reload();
+    // Valget er foldet sammen, når der er valgt kategorier; ved ingen valgte vises alle kortene.
     await expect(groupBoxes.first()).not.toBeChecked();
     await expect(page.getByLabel("Pris fra (kr.)")).toHaveCount(0);
 

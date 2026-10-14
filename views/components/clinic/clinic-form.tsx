@@ -130,7 +130,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
           <TextArea
             label="Beskrivelse"
             name="description"
-            hint={`Fortæl kort, hvem I er, og hvad I er gode til. ${values.description.length}/${CLINIC_DESCRIPTION_MAX_CHARS} tegn.`}
+            hint={`Fortæl kort, hvem klinikken er, og hvad klinikken er god til. ${values.description.length}/${CLINIC_DESCRIPTION_MAX_CHARS} tegn.`}
             maxLength={CLINIC_DESCRIPTION_MAX_CHARS}
             value={values.description}
             onChange={set("description")}

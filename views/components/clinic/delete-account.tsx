@@ -60,7 +60,14 @@ export function DeleteAccount({ clinicName }: { clinicName: string }) {
               <li>Åbne forespørgsler (leads) afvises, og patienterne kan se det på deres sag.</li>
               <li>Fremtidige bookinger aflyses.</li>
               <li>Tandlæger, portræt- og porteføljebilleder, logo, prisliste og blokerede tider slettes.</li>
-              <li>Klinikken bliver stående i oversigten som en uverificeret klinik uden ejer, indtil nogen overtager den.</li>
+              <li>
+                Er klinikken oprettet af dig, fjernes den fra TandMatch. Patienter, der har haft kontakt med klinikken, kan
+                stadig se klinikkens navn i deres historik.
+              </li>
+              <li>
+                Har kontoen overtaget en klinik, der var importeret på forhånd, bliver de oprindelige grunddata stående
+                som en uverificeret klinik uden ejer, indtil nogen overtager den.
+              </li>
             </ul>
           </Alert>
           <TextField

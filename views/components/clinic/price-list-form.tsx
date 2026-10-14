@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge } from "@/views/components/ui/badge";
 import { Button } from "@/views/components/ui/button";
-import { Card } from "@/views/components/ui/card";
+import { CheckboxField } from "@/views/components/ui/checkbox-field";
 import { LoadState } from "@/views/components/ui/load-state";
 import { SaveBar } from "@/views/components/ui/save-bar";
 import { TextField } from "@/views/components/ui/text-field";
@@ -160,24 +160,33 @@ function PriceEditor({ groups, initialGroupIds, initialPrices }: EditorProps) {
         altid rette senere.
       </Alert>
 
-      <ServiceGroupPicker groups={groups} selectedIds={groupIds} onToggle={onToggleGroup} disabled={saveState.props.saving} />
-
-      {pendingRemoval && (
-        <Alert tone="warning" title={`Fravælg ${pendingRemoval.name}?`} role="alert">
-          <p>
-            Priserne på behandlingerne i denne kategori slettes, når du gemmer. Du kan fortryde ved at beholde kategorien,
-            før du gemmer.
-          </p>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <Button variant="danger" onClick={() => removeGroup(pendingRemoval)}>
-              Ja, fravælg og slet priserne
-            </Button>
-            <Button variant="ghost" onClick={() => setPendingRemoval(null)}>
-              Behold kategorien
-            </Button>
-          </div>
-        </Alert>
-      )}
+      <ServiceGroupPicker
+        groups={groups}
+        selectedIds={groupIds}
+        onToggle={onToggleGroup}
+        disabled={saveState.props.saving}
+        confirmation={
+          pendingRemoval && {
+            groupId: pendingRemoval.id,
+            content: (
+              <Alert tone="warning" title={`Fravælg ${pendingRemoval.name}?`} role="alert">
+                <p>
+                  Priserne på behandlingerne i denne kategori slettes, når du gemmer. Du kan fortryde ved at beholde
+                  kategorien, før du gemmer.
+                </p>
+                <div className="mt-3 flex flex-col gap-3">
+                  <Button variant="danger" onClick={() => removeGroup(pendingRemoval)}>
+                    Ja, fravælg og slet priserne
+                  </Button>
+                  <Button variant="ghost" onClick={() => setPendingRemoval(null)}>
+                    Behold kategorien
+                  </Button>
+                </div>
+              </Alert>
+            ),
+          }
+        }
+      />
 
       <section aria-labelledby="priser" className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
@@ -188,7 +197,7 @@ function PriceEditor({ groups, initialGroupIds, initialPrices }: EditorProps) {
             <p className="text-base text-ink-muted">Vælg mindst én kategori ovenfor for at sætte priser.</p>
           ) : (
             <p className="text-base text-ink-muted">
-              Sæt flueben ved de behandlinger, I tilbyder, og angiv prisen. Lader du “Pris til” stå tom, bruges samme pris
+              Sæt flueben ved de behandlinger, du tilbyder, og angiv prisen. Lader du “Pris til” stå tom, bruges samme pris
               som “Pris fra” (en fast pris).
             </p>
           )}
@@ -227,21 +236,18 @@ type ServiceRowProps = { service: ServiceDto; row: Row; error?: string; onChange
 
 function ServiceRow({ service, row, error, onChange }: ServiceRowProps) {
   return (
-    <Card className={`flex flex-col gap-4 p-4 sm:p-5 ${row.on ? "border-brand-300" : ""}`}>
-      <label className="flex min-h-12 cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          checked={row.on}
-          onChange={(e) => onChange({ on: e.target.checked })}
-          className="mt-1 size-5 shrink-0 accent-brand-600"
-        />
-        <span className="flex flex-col gap-0.5">
-          <span className="text-base font-semibold text-ink">
+    <div className="flex flex-col gap-4">
+      <CheckboxField
+        label={
+          <>
             {service.name} {row.on && <Badge tone="brand">Tilbydes</Badge>}
-          </span>
-          <span className="text-sm text-ink-muted">{service.description}</span>
-        </span>
-      </label>
+          </>
+        }
+        description={service.description}
+        selected={row.on}
+        checked={row.on}
+        onChange={(e) => onChange({ on: e.target.checked })}
+      />
       {row.on && error && (
         <p role="alert" className="text-sm font-medium text-danger-ink">
           {error}
@@ -285,6 +291,6 @@ function ServiceRow({ service, row, error, onChange }: ServiceRowProps) {
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

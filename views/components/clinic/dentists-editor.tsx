@@ -12,7 +12,7 @@ import { PortfolioEditor } from "@/views/components/clinic/portfolio-editor";
 import { SaveBar } from "@/views/components/ui/save-bar";
 import { useLoad } from "@/views/utils/use-load";
 import { apiRequest } from "@/views/utils/api-client";
-import { loadServiceGroups } from "@/views/utils/clinic-loaders";
+import { loadClinic, loadServiceGroups } from "@/views/utils/clinic-loaders";
 import { fieldErrorsFrom, type FieldErrors } from "@/views/utils/field-errors";
 import { IMAGE_ACCEPT } from "@/views/utils/prepare-image";
 import { uploadImage } from "@/views/utils/upload-image";
@@ -21,18 +21,23 @@ import { useSaveState } from "@/views/utils/use-save-state";
 import { DENTIST_BIO_MAX_CHARS } from "@/lib/constants/clinics";
 import { createDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistDto } from "@/lib/types/clinics";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/types/services";
 
-type Loaded = { dentists: DentistDto[]; services: ServiceDto[] };
+type Loaded = { dentists: DentistDto[]; groups: ServiceGroupDto[]; verified: boolean };
 type Field = "fullName" | "title" | "bio";
 type DentistValues = { fullName: string; title: string; bio: string };
 
 async function loadAll(): Promise<Loaded> {
-  const [dentists, groups] = await Promise.all([
+  const [dentists, groups, selected, clinic] = await Promise.all([
     apiRequest<{ dentists: DentistDto[] }>("/api/clinics/me/dentists"),
     loadServiceGroups(),
+    apiRequest<{ groupIds: string[] }>("/api/clinics/me/service-groups"),
+    loadClinic(),
   ]);
-  return { dentists: dentists.dentists, services: groups.flatMap((group) => group.services) };
+  // Klinikkens egne kategorier står først i behandlingsvalget (optgroup pr. kategori).
+  const own = groups.filter((g) => selected.groupIds.includes(g.id));
+  const others = groups.filter((g) => !selected.groupIds.includes(g.id));
+  return { dentists: dentists.dentists, groups: [...own, ...others], verified: clinic.status === "verified" };
 }
 
 // Tandlæger med portræt og portefølje (architecture 4.3 `clinic_dentists`, 9.5, 10.8). Tandlæger er kun til visning
@@ -40,10 +45,10 @@ async function loadAll(): Promise<Loaded> {
 export function DentistsEditor() {
   const { data, error, loading, reload } = useLoad(loadAll);
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-  return <DentistList initial={data.dentists} services={data.services} />;
+  return <DentistList initial={data.dentists} groups={data.groups} verified={data.verified} />;
 }
 
-function DentistList({ initial, services }: { initial: DentistDto[]; services: ServiceDto[] }) {
+function DentistList({ initial, groups, verified }: { initial: DentistDto[]; groups: ServiceGroupDto[]; verified: boolean }) {
   const [dentists, setDentists] = useState(initial);
 
   const replace = (next: DentistDto) => setDentists((list) => list.map((d) => (d.id === next.id ? next : d)));
@@ -55,7 +60,7 @@ function DentistList({ initial, services }: { initial: DentistDto[]; services: S
         <ul className="grid gap-6">
           {dentists.map((dentist) => (
             <li key={dentist.id}>
-              <DentistCard dentist={dentist} services={services} onChange={replace} onDeleted={() => remove(dentist.id)} />
+              <DentistCard dentist={dentist} groups={groups} verified={verified} onChange={replace} onDeleted={() => remove(dentist.id)} />
             </li>
           ))}
         </ul>
@@ -111,12 +116,13 @@ function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: nu
 
 type DentistCardProps = {
   dentist: DentistDto;
-  services: ServiceDto[];
+  groups: ServiceGroupDto[];
+  verified: boolean;
   onChange: (dentist: DentistDto) => void;
   onDeleted: () => void;
 };
 
-function DentistCard({ dentist, services, onChange, onDeleted }: DentistCardProps) {
+function DentistCard({ dentist, groups, verified, onChange, onDeleted }: DentistCardProps) {
   const photoInput = useRef<HTMLInputElement>(null);
   const [saved, setSaved] = useState(() => toValues(dentist));
   const [values, setValues] = useState(saved);
@@ -209,7 +215,8 @@ function DentistCard({ dentist, services, onChange, onDeleted }: DentistCardProp
         dentistId={dentist.id}
         dentistName={dentist.fullName}
         items={dentist.portfolio}
-        services={services}
+        groups={groups}
+        verified={verified}
         onChange={(portfolio) => onChange({ ...dentist, portfolio })}
       />
 

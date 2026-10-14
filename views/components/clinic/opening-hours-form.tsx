@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
+import { CheckboxField } from "@/views/components/ui/checkbox-field";
 import { cx } from "@/views/components/ui/cx";
 import { TextField } from "@/views/components/ui/text-field";
 import { LoadState } from "@/views/components/ui/load-state";
@@ -104,7 +105,7 @@ function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <Alert tone="info" title="Akutvindue">
-        Sæt flueben ved “Akut”, hvis tidsrummet kun er til akutte patienter. Akutydelser kan også bookes i de almindelige
+        Sæt flueben ved “Akut”, hvis tidsrummet kun er til akutte patienter. Akutbehandlinger kan også bookes i de almindelige
         åbningstider. Dage uden tidsrum er lukket.
       </Alert>
 
@@ -180,12 +181,17 @@ function WindowRow({
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink">
-          <input type="checkbox" checked={w.isEmergency} onChange={(e) => onChange({ isEmergency: e.target.checked })} className="size-5 accent-brand-600" />
-          <span>
-            <span className="sr-only">{dayLabel}: </span>Akutvindue
-          </span>
-        </label>
+        <CheckboxField
+          label={
+            <>
+              <span className="sr-only">{dayLabel}: </span>Akutvindue
+            </>
+          }
+          selected={w.isEmergency}
+          checked={w.isEmergency}
+          onChange={(e) => onChange({ isEmergency: e.target.checked })}
+          className="py-2"
+        />
         <Button variant="danger-outline" onClick={onRemove} className="min-h-11">
           <span className="sr-only">{dayLabel}: </span>Fjern
         </Button>

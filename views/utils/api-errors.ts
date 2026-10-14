@@ -38,7 +38,7 @@ const MESSAGES: Record<string, string> = {
   EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",
   TRUSTPILOT_URL_REQUIRED: "Angiv linket til din Trustpilot-side, hvis du angiver score eller antal anmeldelser.",
-  UNKNOWN_SERVICE: "En af ydelserne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
+  UNKNOWN_SERVICE: "En af behandlingerne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
   DENTIST_LIMIT: `Du kan højst oprette ${MAX_DENTISTS_PER_CLINIC} tandlæger.`,
   PORTFOLIO_LIMIT: `Du kan højst have ${MAX_PORTFOLIO_ITEMS_PER_CLINIC} porteføljebilleder.`,
   TIME_BLOCK_LIMIT: `Du kan højst have ${MAX_TIME_BLOCKS_PER_CLINIC} blokerede tider. Slet nogle gamle, før du tilføjer flere.`,
@@ -62,7 +62,7 @@ const GENERIC = "Der opstod en fejl. Prøv igen om lidt.";
 
 // Serverens besked bruges kun, hvis den er kort og dansk. Engelske standardfejl fra zod (fx "Invalid input") vises ikke.
 const ENGLISH_HINTS = /\b(invalid|expected|too (small|big)|unrecognized|required|received)\b/i;
-export function usableServerMessage(message: string): string | null {
+function usableServerMessage(message: string): string | null {
   const text = message.trim();
   if (text === "" || text.length > 300 || ENGLISH_HINTS.test(text)) return null;
   return text;

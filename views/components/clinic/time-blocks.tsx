@@ -76,7 +76,7 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
         <TextField label="Til" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
         <div className="sm:col-span-2">
           <TextField
-            label="Note (kun synlig for jer)"
+            label="Note (kun synlig for dig)"
             maxLength={TIME_BLOCK_NOTE_MAX_CHARS}
             placeholder="Fx sommerferie"
             value={note}

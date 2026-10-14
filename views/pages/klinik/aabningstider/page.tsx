@@ -10,7 +10,7 @@ export default function OpeningHoursPage() {
   return (
     <Container>
       <PageIntro title="Åbningstider">
-        <p>Ugeskemaet bruges til at vise patienterne ledige tider. Tilføj akutvinduer og bloker tider, når I har lukket.</p>
+        <p>Ugeskemaet bruges til at vise patienterne ledige tider. Tilføj akutvinduer og bloker tider, når klinikken har lukket.</p>
       </PageIntro>
       <OpeningHoursForm />
       <TimeBlocks />

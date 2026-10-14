@@ -29,7 +29,7 @@ function stepsFor(clinic: OwnClinicDto): Step[] {
       title: "Prisliste",
       done: clinic.allPrices.length > 0,
       doneText: `${clinic.allPrices.length} behandlinger med pris og varighed.`,
-      todoText: "Vælg jeres behandlingskategorier, og angiv pris og varighed på behandlingerne.",
+      todoText: "Vælg dine behandlingskategorier, og angiv pris og varighed på behandlingerne.",
     },
     {
       href: "/klinik/aabningstider",
