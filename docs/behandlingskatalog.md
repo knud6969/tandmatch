@@ -1,6 +1,6 @@
 # Bilag: startkatalog over behandlinger
 
-Bilag til `docs/architecture.md` 4.3 (`service_groups`, `services`). Listen er grundlaget for migrationen `20261014000100_service_groups.sql` (arbejdsplan 1.9). Bagefter vedligeholdes kataloget i databasen (admin/service role), ikke i kode og ikke i dette bilag. Bilaget opdateres kun, hvis startindholdet ændres, før migrationen er kørt.
+Bilag til `docs/architecture.md` 4.3 (`service_groups`, `services`). Listen er grundlaget for migrationen `20261014000100_service_groups.sql` (arbejdsplan 1.9), som er kørt. Kataloget vedligeholdes nu i databasen (admin/service role), ikke i kode og ikke i dette bilag; bilaget viser startindholdet og opdateres ikke.
 
 Regler:
 - Slugs er stabile nøgler (`^[a-z0-9_]{2,60}$`). De 14 eksisterende ydelser beholder deres slug og deres `category`; de får kun en kategori (`group_id`), nyt `sort_order` og evt. et justeret navn eller beskrivelse.
@@ -141,4 +141,4 @@ Markering: **(findes)** = eksisterende slug fra `20261012000200_services_catalog
 | `akut_knaekket_tand` | Akut hjælp ved knækket tand | En akut tid, når en tand er knækket eller slået løs. | 45 |
 | `akut_haevelse` | Akut hjælp ved hævelse | En akut tid ved hævelse i mund, kind eller kæbe. | 45 |
 
-I alt 14 kategorier og 54 behandlinger, heraf de 14 eksisterende.
+I alt 14 kategorier og 53 behandlinger: de 14 eksisterende og 39 nye.
