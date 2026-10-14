@@ -875,7 +875,7 @@ isOneToOne: false
                            },
 "public_reviews":
 { Args: { "p_clinic_id": string }; Returns: {
-              "actual_price": number,"created_month": string,"lacked_transparency": boolean,"price_accuracy": Database["public"]['Enums']["price_accuracy"],"reply_created_at": string,"reply_text": string,"review_id": string,"stars": number,"text": string,"transparency_comment": string
+              "actual_price": number,"created_at": string,"lacked_transparency": boolean,"price_accuracy": Database["public"]['Enums']["price_accuracy"],"reply_created_at": string,"reply_text": string,"review_id": string,"stars": number,"text": string,"transparency_comment": string
             }[]
                            },
 "release_expired_holds":

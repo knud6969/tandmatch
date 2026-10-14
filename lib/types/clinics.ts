@@ -104,10 +104,5 @@ export type ClinicListDto = { clinics: ClinicListItemDto[]; sort: ClinicSort; cr
 // En ledig tid (architecture 6.7, 10.7). Tidspunkter som ISO 8601 (UTC).
 export type SlotDto = { startsAt: string; endsAt: string };
 
-// En klinik som public_clinics()/public_clinic_profile() viser den, før controlleren har lagt afstand, anmeldelsesstatistik,
-// pris for valget og første ledige tid på (architecture 10.7). `prices` er alle priser for de forespurgte behandlinger.
-export type PublicClinicRecord = Omit<
-  ClinicListItemDto,
-  "distanceKm" | "reviewStats" | "priceForSelection" | "firstAvailableAt" | "firstEmergencyAt"
->;
-export type PublicClinicProfileRecord = PublicClinicRecord & Pick<ClinicProfileDto, "description" | "email" | "allPrices" | "dentists">;
+// Optaget tid: ikke-udløbne `held`- og `booked`-bookinger samt blokeringer (public_busy_intervals). Halvåbent [start, slut).
+export type BusyInterval = { startsAt: string; endsAt: string };

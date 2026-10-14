@@ -3,24 +3,28 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { DEFAULT_MAX_DISTANCE_KM } from "@/lib/constants/clinics";
 import { FIRST_AVAILABLE_SEARCH_DAYS, MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
+import { DAY_MS } from "@/lib/domain/time";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/constants/services";
 import type { availabilityQuerySchema, clinicProfileQuerySchema, clinicsQuerySchema } from "@/lib/schemas/clinics";
 import type {
   ClinicListDto,
   ClinicListItemDto,
   ClinicProfileDto,
-  PublicClinicProfileRecord,
-  PublicClinicRecord,
   SlotDto,
 } from "@/lib/types/clinics";
 import type { PublicReviewsDto, ReviewStats } from "@/lib/types/reviews";
 import type { ServiceDto } from "@/lib/types/services";
+import type { BusyInterval } from "@/lib/types/clinics";
 import { ApiError, notFound } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { AvailabilityRepository } from "@/models/availabilityRepository";
-import { ClinicDirectoryRepository } from "@/models/clinicDirectoryRepository";
+import {
+  ClinicDirectoryRepository,
+  type PublicClinicProfileRecord,
+  type PublicClinicRecord,
+} from "@/models/clinicDirectoryRepository";
 import { ServicesRepository } from "@/models/servicesRepository";
-import { AvailabilityService, type BusyInterval } from "@/services/availabilityService";
+import { AvailabilityService } from "@/services/availabilityService";
 import { type LatLng, RankingService } from "@/services/rankingService";
 
 type ClinicsQuery = z.infer<typeof clinicsQuerySchema>;
@@ -35,7 +39,6 @@ export type ClinicDirectoryDeps = {
   slots: AvailabilityService;
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
 // De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og akutbehandlingen

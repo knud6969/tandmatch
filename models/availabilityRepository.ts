@@ -1,15 +1,13 @@
 import "server-only";
 import { MAX_OPENING_HOUR_WINDOWS, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { NewOpeningHours, NewTimeBlock } from "@/lib/schemas/clinics";
-import type { OpeningHoursDto, TimeBlockDto, Weekday } from "@/lib/types/clinics";
+import type { BusyInterval, OpeningHoursDto, TimeBlockDto, Weekday } from "@/lib/types/clinics";
 import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
 type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at" | "is_emergency">;
 type TimeBlockRow = Pick<Tables<"clinic_time_blocks">, "id" | "starts_at" | "ends_at" | "note">;
-
-type TimeRange = { startsAt: string; endsAt: string };
 
 const HOURS_COLUMNS = "weekday, opens_at, closes_at, is_emergency";
 const BLOCK_COLUMNS = "id, starts_at, ends_at, note";
@@ -90,8 +88,8 @@ export class AvailabilityRepository extends BaseRepository {
 
   // Optaget tid for verificerede klinikker i [from, to): ikke-udløbne `held`- og `booked`-bookinger samt blokeringer, kun
   // start og slut (ingen id'er, ingen typer, architecture 5.3). Grupperet pr. klinik.
-  async listBusyIntervals(clinicIds: readonly string[], from: Date, to: Date): Promise<Map<string, TimeRange[]>> {
-    const result = new Map<string, TimeRange[]>();
+  async listBusyIntervals(clinicIds: readonly string[], from: Date, to: Date): Promise<Map<string, BusyInterval[]>> {
+    const result = new Map<string, BusyInterval[]>();
     if (clinicIds.length === 0) return result;
     const rows =
       (await this.rpc<{ clinic_id: string; starts_at: string; ends_at: string }[]>("public_busy_intervals", {

@@ -5,17 +5,22 @@ import {
   publicOpeningHoursJsonSchema,
   publicPricesJsonSchema,
 } from "@/lib/schemas/clinics";
-import type {
-  ClinicPriceDto,
-  OpeningHoursDto,
-  PublicClinicProfileRecord,
-  PublicClinicRecord,
-} from "@/lib/types/clinics";
+import { toClinicMonth } from "@/lib/domain/time";
+import type { ClinicListItemDto, ClinicPriceDto, ClinicProfileDto, OpeningHoursDto } from "@/lib/types/clinics";
 import type { PublicReviewDto, ReviewStats } from "@/lib/types/reviews";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Database } from "@/models/db/database.types";
 import { trustpilotFromColumns } from "@/models/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
+
+// En klinik som public_clinics()/public_clinic_profile() viser den, før controlleren har lagt afstand, anmeldelsesstatistik,
+// pris for valget og første ledige tid på (architecture 10.7). `prices` er alle priser for de forespurgte behandlinger.
+export type PublicClinicRecord = Omit<
+  ClinicListItemDto,
+  "distanceKm" | "reviewStats" | "priceForSelection" | "firstAvailableAt" | "firstEmergencyAt"
+>;
+export type PublicClinicProfileRecord = PublicClinicRecord &
+  Pick<ClinicProfileDto, "description" | "email" | "allPrices" | "dentists">;
 
 type Functions = Database["public"]["Functions"];
 type Generated = Functions["public_clinics"]["Returns"][number];
@@ -185,7 +190,7 @@ export class ClinicDirectoryRepository extends BaseRepository<PublicClinicRow, P
       lackedTransparency: row.lacked_transparency,
       transparencyComment: row.transparency_comment,
       verifiedVisit: true,
-      createdMonth: row.created_month,
+      createdMonth: toClinicMonth(row.created_at),
       reply: row.reply_text && row.reply_created_at ? { text: row.reply_text, createdAt: row.reply_created_at } : null,
     }));
   }

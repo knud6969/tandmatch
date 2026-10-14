@@ -6,7 +6,8 @@ import {
   MIN_EMERGENCY_NOTICE_MIN,
   SLOT_STEP_MINUTES,
 } from "@/lib/constants/bookings";
-import type { OpeningHoursDto, SlotDto } from "@/lib/types/clinics";
+import { DAY_MS } from "@/lib/domain/time";
+import type { BusyInterval, OpeningHoursDto, SlotDto } from "@/lib/types/clinics";
 
 // Ledige tider (architecture 6.7). Ren kode uden I/O: åbningstider og optaget tid kommer som indgangsdata fra
 // repositories (public_clinics/public_clinic_profile og public_busy_intervals), og servicen kender hverken models eller
@@ -16,8 +17,6 @@ import type { OpeningHoursDto, SlotDto } from "@/lib/types/clinics";
 // Åbningsvinduer i lokal tid (Europe/Copenhagen). Samme form som OpeningHoursDto.
 export type OpeningWindow = Pick<OpeningHoursDto, "weekday" | "opensAt" | "closesAt" | "isEmergency">;
 
-// Optaget tid: ikke-udløbne `held`- og `booked`-bookinger samt blokeringer (public_busy_intervals). Halvåbent [start, slut).
-export type BusyInterval = { startsAt: string; endsAt: string };
 
 export type SlotQuery = {
   openingHours: readonly OpeningWindow[];
@@ -31,7 +30,6 @@ export type SlotQuery = {
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 
 const zoneFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: CLINIC_TIME_ZONE,
