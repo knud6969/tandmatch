@@ -21,6 +21,31 @@ export function SiteFooter() {
               </li>
             )}
             <li>
+              <Link href="/saadan-virker-det" className={linkClass}>
+                Sådan virker det
+              </Link>
+            </li>
+            <li>
+              <Link href="/saadan-tjener-vi-penge" className={linkClass}>
+                Sådan tjener vi penge
+              </Link>
+            </li>
+            <li>
+              <Link href="/for-klinikker" className={linkClass}>
+                For klinikker
+              </Link>
+            </li>
+            <li>
+              <Link href="/om-os" className={linkClass}>
+                Om os
+              </Link>
+            </li>
+            <li>
+              <Link href="/kontakt" className={linkClass}>
+                Kontakt
+              </Link>
+            </li>
+            <li>
               <Link href="/vilkaar" className={linkClass}>
                 Brugervilkår
               </Link>
