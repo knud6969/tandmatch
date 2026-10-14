@@ -33,6 +33,10 @@ export const hasOrigin = (filters: DirectoryFilters) => filters.position !== nul
 // Bygger forespørgslen til GET /api/clinics. Afstand og pris sendes kun, når de giver mening (API'et afviser maxPrice
 // uden behandlinger).
 export function buildClinicsQuery(filters: DirectoryFilters): string {
+  return buildParams(filters).toString();
+}
+
+function buildParams(filters: DirectoryFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.serviceSlugs.length > 0) params.set("services", filters.serviceSlugs.join(","));
   if (filters.position) {
@@ -50,14 +54,15 @@ export function buildClinicsQuery(filters: DirectoryFilters): string {
   const sortable = filters.sort !== "distance" || hasOrigin(filters);
   const priceSortable = filters.sort !== "price" || filters.serviceSlugs.length > 0;
   if (filters.sort && sortable && priceSortable) params.set("sort", filters.sort);
-  return params.toString();
+  return params;
 }
 
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
 
 // Filtrene som adresselinje til siden selv: samme nøgler som API'et, men akut er `?akut=1`. `?sag=` bevares.
+// Positionen ("Brug min position") kommer aldrig i adressen, kun i komponentens tilstand (besluttet, architecture 6.1).
 export function filtersToSearch(filters: DirectoryFilters, caseId: string | null): string {
-  const params = new URLSearchParams(buildClinicsQuery(filters));
+  const params = buildParams({ ...filters, position: null });
   params.delete("emergency");
   if (filters.emergency) params.set("akut", "1");
   if (caseId) params.set("sag", caseId);
@@ -75,9 +80,6 @@ export function filtersFromSearch(params: URLSearchParams): DirectoryFilters {
   const emergency = params.get("akut") === "1" || params.get("emergency") === "true";
   const services = servicesParamSchema.safeParse(params.get("services") ?? "");
   const postalCode = params.get("postalCode") ?? "";
-  const lat = numberParam(params.get("lat"));
-  const lng = numberParam(params.get("lng"));
-  const position = lat !== null && lng !== null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
   const distance = numberParam(params.get("maxDistanceKm"));
   const price = numberParam(params.get("maxPrice"));
   const stars = numberParam(params.get("minStars"));
@@ -87,8 +89,8 @@ export function filtersFromSearch(params: URLSearchParams): DirectoryFilters {
   return {
     ...DEFAULT_FILTERS,
     serviceSlugs,
-    postalCode: !position && isPostalCode(postalCode) ? postalCode : "",
-    position,
+    postalCode: isPostalCode(postalCode) ? postalCode : "",
+    position: null, // lat/lng i adressen ignoreres bevidst
     maxDistanceKm: distance !== null && distance > 0 ? distance : DEFAULT_MAX_DISTANCE_KM,
     maxPrice: price !== null && price >= 0 && serviceSlugs.length > 0 ? price : null,
     minStars: stars !== null && stars >= 1 && stars <= 5 ? stars : null,

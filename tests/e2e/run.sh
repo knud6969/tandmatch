@@ -18,6 +18,7 @@ export E2E_BASE_URL="http://127.0.0.1:$PORT"
 export TERMS_COOKIE_SECRET="test-terms-cookie-secret-0123456789abcdef"
 export CRON_SECRET="test-cron-secret-0123456789abcdef"
 export OPENAI_API_KEY="sk-test-not-used"
+export AI_FAKE_CLIENT=1
 export NEXT_TELEMETRY_DISABLED=1
 
 # Demodata til klinikoversigten (tests/e2e/clinic-directory.spec.ts): verificerede og importerede, fiktive klinikker.

@@ -135,6 +135,30 @@ test.describe("klinikoversigt og profil", () => {
     await expect(page.getByLabel("Sortér efter")).toHaveValue("rating");
   });
 
+  test("Brug min position står aldrig i adressen, men postnummer gør", async ({ page, context }) => {
+    await context.grantPermissions(["geolocation"]);
+    await context.setGeolocation({ latitude: 55.6761, longitude: 12.5683 });
+    await visit(page, "/klinikker");
+    await expect(page.getByRole("form", { name: "Filtre" })).toBeVisible();
+    const toggleFilters = page.getByRole("button", { name: "Vis filtre" });
+    if (await toggleFilters.isVisible()) await toggleFilters.click();
+    await page.getByRole("button", { name: "Brug min position" }).click();
+    await expect(page.getByText("Din position bruges til afstanden")).toBeVisible();
+    await page.getByLabel("Sortér efter").selectOption("rating");
+    await expect(page).toHaveURL(/sort=rating/);
+    expect(page.url()).not.toMatch(/lat=|lng=/);
+    // Positionen bruges alligevel i forespørgslen til API'et, så afstand kan sorteres.
+    await page.getByLabel("Sortér efter").selectOption("distance");
+    await expect(page.getByTestId("kriterier")).toContainText(/Nærmeste først/);
+    expect(page.url()).not.toMatch(/lat=|lng=|sort=distance/);
+
+    // Lat/lng i en delt adresse ignoreres, mens postnummer bevares.
+    await visit(page, "/klinikker?lat=55.6&lng=12.5&postalCode=2100");
+    await expect(page.getByLabel("Sortér efter")).toBeVisible();
+    await expect(page).toHaveURL(/postalCode=2100/);
+    await expect(page).not.toHaveURL(/lat=|lng=/);
+  });
+
   test("sortering ændrer rækkefølgen og kriterierne", async ({ page }) => {
     await visit(page, "/klinikker?contactableOnly=true");
     const names = page.getByRole("heading", { level: 3 });
