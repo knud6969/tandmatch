@@ -346,9 +346,9 @@ Samme indstillinger står i `supabase/config.toml`, så lokal Supabase (`supabas
 - Auth: Supabase Auth med `@supabase/ssr`, session i `httpOnly`, `secure`, `sameSite=lax`-cookies sat af serveren. Browseren bruger aldrig Supabase-klienten selv.
 - Ingen streaming. Alle svar, også AI-svar, returneres som ét samlet JSON-svar efter validering.
 - **Sikkerhedsheadere** sættes for alle sider og routes i `next.config.ts` (`headers()`) (bygget i 1.9; den præcise CSP og evt. [PROTOTYPE]-kompromiser afgøres af security):
-  - `Content-Security-Policy`: `default-src 'self'`; `img-src 'self' data: blob:` + Supabase-projektets URL (`public-media` og signerede URL'er fra `case-images`) + OpenStreetMaps fliseserver fra trin 2; `connect-src 'self'` (browseren kalder kun vores eget API, aldrig Supabase direkte; Supabase fjernes fra `connect-src` i 1.9.8); `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`. Scripts og styles tillader i prototypen `'unsafe-inline'` [PROTOTYPE, 0.1]; nonce-løsning senere.
+  - `Content-Security-Policy`: `default-src 'self'`; `img-src 'self' data: blob:` + Supabase-projektets URL (`public-media` og signerede URL'er fra `case-images`) + OpenStreetMaps fliseserver fra trin 2; `connect-src 'self'` (browseren kalder kun vores eget API, aldrig Supabase direkte); `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`. Scripts og styles tillader i prototypen `'unsafe-inline'` [PROTOTYPE, 0.1]; nonce-løsning senere.
   - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` (ældre browsere), `Permissions-Policy` uden kamera/mikrofon/geolokation, undtagen `geolocation=(self)`, når kortet bruger position (trin 2).
-  - `Strict-Transport-Security: max-age=63072000; includeSubDomains` sættes kun i produktion (ikke lokalt over http) [IKKE BYGGET] (1.9.8).
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains` sættes kun i produktion (ikke lokalt over http).
 - Mangler gyldig vilkårs-accept, svarer API'et 403 `TERMS_REQUIRED` (2.5).
 
 ### 2.5 Vilkårs-gate
@@ -1023,7 +1023,7 @@ Fjernet fra den gamle model og må ikke genskabes: `send_request`, `decide_respo
 | patients | `id = uid` | kun trigger | `id = uid` (kun `first_name`, `postal_code`, `phone`) | via kontosletning |
 | terms_acceptances | `user_id = uid` eller `is_admin()` | `user_id = uid` | ingen | cascade |
 | consents | `patient_id = uid` | `patient_id = uid`; `health_data_sharing` kræver `is_permanent_user()` | ingen (`withdraw_consent`) | ingen |
-| consent_text_versions, postal_codes, services, service_groups | offentlig (`services` og `service_groups`: kun `is_active` for ikke-admins; policyen på `services` skjuler også behandlinger i en inaktiv kategori [IKKE BYGGET] (1.9.8; i dag skjules de kun af API'et)) | ingen | ingen | ingen |
+| consent_text_versions, postal_codes, services, service_groups | offentlig (`services` og `service_groups`: kun `is_active` for ikke-admins; policyen på `services` skjuler også behandlinger i en inaktiv kategori) | ingen | ingen | ingen |
 | clinic_service_groups | `is_clinic_owner(clinic_id)` | ingen direkte; kun via `set_clinic_service_groups()` | ingen | ingen direkte; kun via `set_clinic_service_groups()` |
 | ai_limits, ai_usage_daily, ai_patient_usage_daily, rate_limits | ingen | ingen | ingen | ingen |
 | clinics | `is_clinic_owner(id)` eller `is_admin()`. Offentligt via `public_*` | kun signup-trigger | `is_clinic_owner(id)` (trigger `clinics_guard()` låser status, ejer, CVR m.m.) | ingen |
