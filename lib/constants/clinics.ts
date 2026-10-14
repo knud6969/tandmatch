@@ -52,3 +52,19 @@ export const WEEKDAY_LABEL = {
   6: "Lørdag",
   7: "Søndag",
 } as const satisfies Record<(typeof WEEKDAYS)[number], string>;
+
+// Oversigt og rangering (architecture 6.6). Sorteringsnøglerne er værdierne i `?sort=`.
+export const CLINIC_SORTS = ["price", "rating", "price_accuracy", "distance", "first_available"] as const;
+
+// Kriteriet, som patienten ser ved listen (6.6).
+export const CLINIC_SORT_LABEL = {
+  price: "Laveste pris først",
+  rating: "Højeste stjerner først",
+  price_accuracy: "Bedste prisnøjagtighed først",
+  distance: "Nærmeste først",
+  first_available: "Tidligste ledige tid først",
+} as const satisfies Record<(typeof CLINIC_SORTS)[number], string>;
+
+export const DEFAULT_MAX_DISTANCE_KM = 25;
+export const EMERGENCY_FILTER_HOURS = 48; // "kun med akuttid inden for 48 timer"
+export const MAX_SELECTED_SERVICES = 5; // som antal bekræftede ydelser pr. sag (7.6)
