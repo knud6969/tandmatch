@@ -52,10 +52,6 @@ export class PortfolioRepository extends BaseRepository<PortfolioRow, PortfolioI
     );
   }
 
-  async countForClinic(clinicId: string): Promise<number> {
-    return this.count("portfolio_items", { clinic_id: clinicId });
-  }
-
   // Billedets sti til sletning af filen, hvis det tilhører klinikken; 404 ellers.
   async requireOwnPath(clinicId: string, itemId: string): Promise<string> {
     const row = await this.run<Pick<PortfolioRow, "image_path">>(
@@ -104,28 +100,24 @@ export class PortfolioRepository extends BaseRepository<PortfolioRow, PortfolioI
   }
 
   async update(clinicId: string, itemId: string, patch: PortfolioPatch): Promise<PortfolioItemDto> {
-    const columns = {
-      ...(patch.caption !== undefined ? { caption: patch.caption } : {}),
-      ...(patch.serviceId !== undefined ? { service_id: patch.serviceId } : {}),
-    };
-    if (Object.keys(columns).length === 0) {
-      const row = await this.run<PortfolioRow>(
-        this.db.from("portfolio_items").select(PORTFOLIO_COLUMNS).eq("clinic_id", clinicId).eq("id", itemId).maybeSingle(),
-        "portfolio_items: select fejlede",
-      );
-      return this.toDto(this.requireRow(row));
-    }
-    const row = await this.run<PortfolioRow>(
-      this.db
-        .from("portfolio_items")
-        .update(columns)
-        .eq("clinic_id", clinicId)
-        .eq("id", itemId)
-        .select(PORTFOLIO_COLUMNS)
-        .maybeSingle(),
+    const row = await this.patchRow(
+      patch,
+      { caption: "caption", serviceId: "service_id" },
+      {
+        update: (columns) =>
+          this.db
+            .from("portfolio_items")
+            .update(columns)
+            .eq("clinic_id", clinicId)
+            .eq("id", itemId)
+            .select(PORTFOLIO_COLUMNS)
+            .maybeSingle(),
+        current: () =>
+          this.db.from("portfolio_items").select(PORTFOLIO_COLUMNS).eq("clinic_id", clinicId).eq("id", itemId).maybeSingle(),
+      },
       "portfolio_items: update fejlede",
     );
-    return this.toDto(this.requireRow(row));
+    return this.toDto(row);
   }
 
   // Kun med service role-klienten (2.3 d).

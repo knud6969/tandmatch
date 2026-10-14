@@ -16,6 +16,6 @@ export const POST = withApi(async (req) => {
     await enforceIpRateLimit("anonymous-session", req);
   }
   const { supabase } = gate;
-  const result = await new SessionController(supabase, existing).createAnonymous(gate, input);
+  const result = await new SessionController(supabase, existing).createAnonymous(gate.userId, gate.terms, input);
   return jsonResponse(result.body, result.status);
 });

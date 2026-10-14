@@ -11,5 +11,5 @@ export const POST = withApi(async (req) => {
   const input = await readJson(req, signupSchema);
   const existing = await getSession(gate);
   const { supabase } = gate;
-  return jsonResponse(await new AuthController(supabase, existing).signup(gate, input), 201);
+  return jsonResponse(await new AuthController(supabase, existing).signup(gate.terms, input), 201);
 });

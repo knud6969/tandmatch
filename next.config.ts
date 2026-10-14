@@ -31,7 +31,8 @@ function contentSecurityPolicy(): string {
     "img-src": ["'self'", "data:", "blob:", ...(supabase ? [supabase] : [])],
     "font-src": ["'self'"],
     // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse).
-    "connect-src": ["'self'", ...(supabase ? [supabase] : [])],
+    // Supabase kaldes kun fra serveren, aldrig fra browseren.
+    "connect-src": ["'self'"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],
@@ -54,6 +55,7 @@ const nextConfig: NextConfig = {
           // Ældre browsere, der ikke kender frame-ancestors.
           { key: "X-Frame-Options", value: "DENY" },
           // Ingen kamera, mikrofon eller position (geolocation=(self) tilføjes, når kortet bruger position, trin 2).
+          ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]),
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },

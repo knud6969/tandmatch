@@ -50,7 +50,6 @@ export class AvailabilityRepository extends BaseRepository {
     await this.rpc("replace_opening_hours", { p_hours: hours }, {
       OPENING_HOURS_OVERLAP: new ApiError(400, "VALIDATION_ERROR", "Åbningstider på samme dag må ikke overlappe."),
       OPENING_HOURS_LIMIT: new ApiError(400, "VALIDATION_ERROR", `Du kan højst have ${MAX_OPENING_HOUR_WINDOWS} åbningstider.`),
-      INVALID_INPUT: new ApiError(400, "VALIDATION_ERROR", "Oplysningerne er ugyldige."),
     });
   }
 

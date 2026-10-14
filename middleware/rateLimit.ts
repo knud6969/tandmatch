@@ -6,9 +6,9 @@ import { RateLimitRepository } from "@/models/rateLimitRepository";
 import { ApiError } from "@/middleware/http";
 
 // Rate limit pr. klient-IP og scope, 10 forsøg pr. time (architecture 7.6).
-export const RATE_LIMIT_PER_HOUR = 10;
+const RATE_LIMIT_PER_HOUR = 10;
 
-export function clientIp(req: Request): string {
+function clientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || req.headers.get("x-real-ip")?.trim() || "unknown";
 }

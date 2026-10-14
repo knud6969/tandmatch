@@ -19,7 +19,8 @@ export const PATCH = withApi(async (req) => {
   return jsonResponse(await new ClinicsController(supabase, session).patch(input));
 });
 
-// Sletter kontoen; klinikken bliver `imported` (architecture 10.8). Kræver bekræftelse med "SLET".
+// Sletter kontoen (architecture 10.8): en selvoprettet klinik bliver `removed`, en overtaget importeret klinik bliver
+// `imported` med grunddata gendannet fra snapshot. Kræver bekræftelse med "SLET".
 export const DELETE = withApi(async (req) => {
   const gate = await requireTerms();
   const session = await requireRole("clinic", { ctx: gate });

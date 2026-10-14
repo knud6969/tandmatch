@@ -32,8 +32,7 @@ export class PatientsController {
   }
 
   async patchMine(input: PatchPatientInput): Promise<PatientMeDto> {
-    await this.patients.update(this.session.userId, input);
-    return this.patients.requireById(this.session.userId);
+    return this.patients.update(this.session.userId, input);
   }
 
   // Sletter alt, også for anonyme (architecture 7.7, 9.4). Bekræftelsen ("SLET") valideres i routen.

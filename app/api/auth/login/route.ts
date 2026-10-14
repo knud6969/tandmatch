@@ -9,5 +9,5 @@ export const POST = withApi(async (req) => {
   await enforceIpRateLimit("login", req);
   const input = await readJson(req, loginSchema);
   const { supabase } = gate;
-  return jsonResponse(await new AuthController(supabase, null).login(gate, input));
+  return jsonResponse(await new AuthController(supabase, null).login(gate.terms, input));
 });

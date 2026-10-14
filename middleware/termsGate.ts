@@ -62,7 +62,7 @@ export async function requireTerms(): Promise<TermsGate> {
   return { supabase, userId, terms };
 }
 
-export function termsRequiredError(): ApiError {
+function termsRequiredError(): ApiError {
   return new ApiError(
     403,
     "TERMS_REQUIRED",

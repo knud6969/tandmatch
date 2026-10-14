@@ -7,7 +7,7 @@ import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
 export const TERMS_COOKIE = "tm_terms";
 export const TERMS_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 12 måneder
 
-export const termsPayloadSchema = z.object({
+const termsPayloadSchema = z.object({
   termsVersion: z.string().min(1).max(40),
   privacyVersion: z.string().min(1).max(40),
   acceptedAt: z.iso.datetime(),
@@ -61,7 +61,7 @@ export async function signTermsPayload(payload: TermsPayload): Promise<string> {
 }
 
 // Returnerer payload hvis signaturen er gyldig og formatet korrekt; ellers null. Versionen tjekkes ikke her.
-export async function verifyTermsCookie(value: string | undefined): Promise<TermsPayload | null> {
+async function verifyTermsCookie(value: string | undefined): Promise<TermsPayload | null> {
   if (!value) return null;
   const parts = value.split(".");
   if (parts.length !== 2) return null;
@@ -83,7 +83,7 @@ export async function verifyTermsCookie(value: string | undefined): Promise<Term
   }
 }
 
-export function isCurrentTerms(payload: TermsPayload): boolean {
+function isCurrentTerms(payload: TermsPayload): boolean {
   return payload.termsVersion === TERMS_VERSION && payload.privacyVersion === PRIVACY_VERSION;
 }
 

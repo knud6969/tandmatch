@@ -1,11 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { MAX_DENTISTS_PER_CLINIC } from "@/lib/constants/clinics";
 import { attachPortfolio } from "@/lib/domain/dentists";
 import type { createDentistSchema, patchDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistDto } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
@@ -60,9 +58,7 @@ export class ClinicDentistsController {
 
   async create(input: CreateDentistInput): Promise<DentistDto> {
     const clinicId = await this.requireClinicId();
-    if ((await this.dentists.countForClinic(clinicId)) >= MAX_DENTISTS_PER_CLINIC) {
-      throw new ApiError(429, "DENTIST_LIMIT", `Du kan højst oprette ${MAX_DENTISTS_PER_CLINIC} tandlæger.`);
-    }
+    // Loftet håndhæves af databasen (trigger, DENTIST_LIMIT); repositoriet oversætter fejlen.
     return { ...(await this.dentists.create(clinicId, input)), portfolio: [] };
   }
 
@@ -95,9 +91,17 @@ export class ClinicDentistsController {
     const { data } = await this.images.reencode(Buffer.from(await file.arrayBuffer()));
     const path = PublicMediaStorage.dentistPhotoPath(clinicId, dentistId);
     // 2.3 (d): upload i public-media efter ejertjekket.
-    await new PublicMediaStorage(this.admin()).replace(path, data, "image/jpeg");
-    // 2.3 (d): photo_path og photo_updated_at er ikke i kolonne-grants (M1); skrives af serveren efter upload.
-    const version = await new ClinicDentistsRepository(this.admin()).setPhotoPath(clinicId, dentistId, path);
+    const storage = new PublicMediaStorage(this.admin());
+    await storage.replace(path, data, "image/jpeg");
+    // 2.3 (d): photo_path og photo_updated_at er ikke i kolonne-grants (M1); skrives af serveren efter upload, kun hvis
+    // brugeren stadig ejer klinikken. Fejler det (fx kontoen er slettet undervejs), fjernes filen igen.
+    let version: string;
+    try {
+      version = await new ClinicDentistsRepository(this.admin()).setPhotoPath(this.session.userId, clinicId, dentistId, path);
+    } catch (err) {
+      await storage.remove([path]).catch(() => {});
+      throw err;
+    }
     return { photoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
   }
 
@@ -105,7 +109,7 @@ export class ClinicDentistsController {
     const clinicId = await this.requireClinicId();
     await this.dentists.requireOwn(clinicId, dentistId);
     // 2.3 (d): photo_path skrives af serveren (M1).
-    await new ClinicDentistsRepository(this.admin()).setPhotoPath(clinicId, dentistId, null);
+    await new ClinicDentistsRepository(this.admin()).setPhotoPath(this.session.userId, clinicId, dentistId, null);
     // 2.3 (d): sletning i public-media efter ejertjekket.
     await new PublicMediaStorage(this.admin()).remove([PublicMediaStorage.dentistPhotoPath(clinicId, dentistId)]);
   }

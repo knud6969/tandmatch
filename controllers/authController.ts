@@ -5,7 +5,7 @@ import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/aut
 import type { AuthUserDto } from "@/lib/types/auth";
 import { ApiError, unauthenticated } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
-import type { TermsGate } from "@/middleware/termsGate";
+import type { TermsPayload } from "@/middleware/termsCookie";
 import { AuthRepository } from "@/models/authRepository";
 import { PatientsRepository } from "@/models/patientsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
@@ -44,11 +44,11 @@ export class AuthController {
     this.terms = deps.terms ?? new TermsRepository(supabase);
   }
 
-  async login(gate: TermsGate, input: LoginInput): Promise<AuthUserDto> {
+  async login(terms: TermsPayload | null, input: LoginInput): Promise<AuthUserDto> {
     const userId = await this.auth.signInWithPassword(input.email, input.password);
 
-    if (gate.terms) {
-      await this.terms.upsertAcceptance(userId, gate.terms);
+    if (terms) {
+      await this.terms.upsertAcceptance(userId, terms);
     }
 
     const profile = await this.profiles.findById(userId);
@@ -64,7 +64,7 @@ export class AuthController {
   }
 
   // En anonym session skal konverteres i stedet for at oprette en ny konto.
-  async signup(gate: TermsGate, input: SignupInput): Promise<AuthUserDto> {
+  async signup(terms: TermsPayload | null, input: SignupInput): Promise<AuthUserDto> {
     if (this.session?.isAnonymous) {
       throw new ApiError(409, "ANONYMOUS_SESSION_ACTIVE", "Din samtale skal konverteres til en konto i stedet.");
     }
@@ -75,8 +75,8 @@ export class AuthController {
     const metadata = await this.signupMetadata(input);
     const userId = await this.auth.signUp(input.email, input.password, metadata);
 
-    if (gate.terms) {
-      await this.terms.upsertAcceptance(userId, gate.terms);
+    if (terms) {
+      await this.terms.upsertAcceptance(userId, terms);
     }
     return { userId, role: input.role };
   }

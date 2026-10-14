@@ -6,7 +6,12 @@ import { mapDbError } from "@/models/db/errors";
 // Svaret fra supabase-js. Klienten er utypet, så rækkernes form angives af repositoriet (TRow, fra
 // models/db/database.types.ts) og stoles på uden runtime-validering (architecture 2.1.1).
 type DbResult = { data: unknown; error: { message: string } | null };
-export type KnownDbErrors = Record<string, ApiError>;
+type KnownDbErrors = Record<string, ApiError>;
+
+// Fejl, som alle database-funktioner kan kaste (raise exception 'INVALID_INPUT').
+const COMMON_RPC_ERRORS = (): KnownDbErrors => ({
+  INVALID_INPUT: new ApiError(400, "VALIDATION_ERROR", "Oplysningerne er ugyldige."),
+});
 
 // Fælles grundlag for alle repositories (architecture 2.1.1). Klienten gives i constructoren og ejes af
 // den, der opretter repositoriet (typisk en controller pr. request). Klassen holder ingen anden tilstand.
@@ -39,21 +44,42 @@ export abstract class BaseRepository<TRow = unknown, TDto = TRow> {
   }
 
   // Kalder en database-funktion (RPC). Navngivne kald pr. funktion hører til i de konkrete repositories.
+  // Kendte fejl, der gælder for alle funktioner (INVALID_INPUT), oversættes her ét sted; `known` tilføjer de særlige.
   protected async rpc<T>(
     name: string,
     args: Record<string, unknown> | undefined,
     known: KnownDbErrors = {},
   ): Promise<T | null> {
-    return this.run<T>(this.db.rpc(name, args), `${name} fejlede`, known);
+    return this.run<T>(this.db.rpc(name, args), `${name} fejlede`, { ...COMMON_RPC_ERRORS(), ...known });
   }
 
-  // Antal rækker i en tabel med de givne kolonne-værdier (fx `{ clinic_id }`). Fejl oversættes som i `run`.
-  protected async count(table: string, where: Record<string, string>): Promise<number> {
-    let query = this.db.from(table).select("*", { count: "exact", head: true });
-    for (const [column, value] of Object.entries(where)) query = query.eq(column, value);
-    const { count, error } = await query;
-    mapDbError(error, {}, `${table}: count fejlede`);
-    return count ?? 0;
+  // Camel-case-patch -> kolonner: kun de felter, der er sat (`undefined` springes over). `map` navngiver kolonnen pr. felt.
+  protected patchColumns<P extends object>(patch: P, map: { [K in keyof P]?: string }): Record<string, unknown> {
+    const columns: Record<string, unknown> = {};
+    for (const key of Object.keys(map) as (keyof P)[]) {
+      const column = map[key];
+      if (column !== undefined && patch[key] !== undefined) columns[column] = patch[key];
+    }
+    return columns;
+  }
+
+  // Opdaterer en række med en patch og returnerer den opdaterede række (find-eller-kast, 404 som standard).
+  // En tom patch ændrer intet: den uændrede række hentes i stedet (architecture 10.8). Forespørgslerne bygges af kalderen,
+  // så filtrene (fx klinik-id) ligger i repositoriet. `update` skal ende i `.select(...).maybeSingle()`.
+  protected async patchRow<P extends object>(
+    patch: P,
+    map: { [K in keyof P]?: string },
+    queries: {
+      update: (columns: Record<string, unknown>) => PromiseLike<DbResult>;
+      current: () => PromiseLike<DbResult>;
+    },
+    fallback: string,
+    known: KnownDbErrors = {},
+  ): Promise<TRow> {
+    const columns = this.patchColumns(patch, map);
+    const empty = Object.keys(columns).length === 0;
+    const row = await this.run<TRow>(empty ? queries.current() : queries.update(columns), fallback, known);
+    return this.requireRow(row);
   }
 
   // Find eller kast: 404 som standard (vi skelner ikke mellem "findes ikke" og "ingen adgang", architecture 2.4),

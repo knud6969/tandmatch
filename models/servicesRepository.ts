@@ -72,7 +72,7 @@ export class ServicesRepository extends BaseRepository<ServiceRow, ServiceDto> {
     if (unique.length === 0) return [];
     const found = this.toDtos(await this.listActiveRows(undefined, unique));
     if (found.length !== unique.length) {
-      throw new ApiError(400, "UNKNOWN_SERVICE", "En af ydelserne findes ikke i kataloget.");
+      throw new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget.");
     }
     return found;
   }

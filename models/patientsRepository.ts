@@ -26,12 +26,17 @@ export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto>
     return this.requireRow(await this.findById(userId));
   }
 
-  async update(userId: string, patch: PatientPatch): Promise<void> {
-    const columns = {
-      ...(patch.firstName !== undefined ? { first_name: patch.firstName } : {}),
-      ...(patch.postalCode !== undefined ? { postal_code: patch.postalCode } : {}),
-    };
-    if (Object.keys(columns).length === 0) return;
-    await this.run(this.db.from("patients").update(columns).eq("id", userId), "patients: update fejlede");
+  async update(userId: string, patch: PatientPatch): Promise<PatientMeDto> {
+    const row = await this.patchRow(
+      patch,
+      { firstName: "first_name", postalCode: "postal_code" },
+      {
+        update: (columns) =>
+          this.db.from("patients").update(columns).eq("id", userId).select("first_name, postal_code").maybeSingle(),
+        current: () => this.db.from("patients").select("first_name, postal_code").eq("id", userId).maybeSingle(),
+      },
+      "patients: update fejlede",
+    );
+    return this.toDto(row);
   }
 }

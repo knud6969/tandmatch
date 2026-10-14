@@ -6,7 +6,7 @@ import type { anonymousSessionSchema } from "@/lib/schemas/session";
 import type { AnonymousSessionDto } from "@/lib/types/session";
 import { ApiError, unauthenticated } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
-import type { TermsGate } from "@/middleware/termsGate";
+import type { TermsPayload } from "@/middleware/termsCookie";
 import { AuthRepository } from "@/models/authRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ConsentsRepository, type NewConsent } from "@/models/consentsRepository";
@@ -22,7 +22,7 @@ export type SessionDeps = {
   cases: CasesRepository;
 };
 
-// `existing` er den aktuelle session, hvis gate.userId er sat (ellers null).
+// `existing` er den aktuelle session, hvis userId er sat (ellers null).
 export class SessionController {
   private readonly auth: AuthRepository;
   private readonly terms: TermsRepository;
@@ -43,7 +43,11 @@ export class SessionController {
   // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke, og en tom sag
   // (architecture 10.2). Der gives kun ai_processing her, aldrig billedsamtykke (9.4). Routen kører IP-rate limit,
   // før en ny anonym bruger oprettes. Versionen i samtykket er den, patienten har set; skemaet kræver den aktuelle.
-  async createAnonymous(gate: TermsGate, input: AnonymousSessionInput): Promise<AnonymousSessionResult> {
+  async createAnonymous(
+    userId: string | null,
+    terms: TermsPayload | null,
+    input: AnonymousSessionInput,
+  ): Promise<AnonymousSessionResult> {
     const aiConsent = (patientId: string): NewConsent => ({
       patientId,
       type: "ai_processing",
@@ -53,7 +57,7 @@ export class SessionController {
 
     // Der er allerede en session (requireTerms har kørt, så den har en accept). Retry-sikkert: det, der mangler
     // (samtykke, sag), oprettes nu, før der svares 200.
-    if (gate.userId !== null) {
+    if (userId !== null) {
       const existing = this.existing;
       if (!existing) {
         throw unauthenticated();
@@ -68,13 +72,17 @@ export class SessionController {
       return { body: { caseId: draft.id, expiresAt: anonymousExpiresAt(existing.lastActiveAt) }, status: 200 };
     }
 
-    const userId = await this.auth.signInAnonymously();
+    // Uden session har requireTerms garanteret en gyldig cookie.
+    if (!terms) {
+      throw new ApiError(403, "TERMS_REQUIRED", "Du skal acceptere brugervilkårene og privatlivspolitikken først.");
+    }
+    const newUserId = await this.auth.signInAnonymously();
 
     let caseId: string;
     try {
-      await this.terms.upsertAcceptance(userId, gate.terms);
-      await this.consents.createMany([aiConsent(userId)]);
-      caseId = (await this.cases.create(userId)).id;
+      await this.terms.upsertAcceptance(newUserId, terms);
+      await this.consents.createMany([aiConsent(newUserId)]);
+      caseId = (await this.cases.create(newUserId)).id;
     } catch (err) {
       // Atomicitet: en anonym session må ikke stå tilbage uden AI-samtykke og sag. Logger ud lokalt.
       // Den anonyme bruger uden data ryddes af oprydningsjobbet.

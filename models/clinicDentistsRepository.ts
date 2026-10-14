@@ -46,10 +46,6 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
     );
   }
 
-  async countForClinic(clinicId: string): Promise<number> {
-    return this.count("clinic_dentists", { clinic_id: clinicId });
-  }
-
   // Tandlægen, hvis den tilhører klinikken; 404 ellers (architecture 2.4).
   async requireOwn(clinicId: string, dentistId: string): Promise<DentistRecordDto> {
     const row = await this.run<DentistRow>(
@@ -79,34 +75,47 @@ export class ClinicDentistsRepository extends BaseRepository<DentistRow, Dentist
   }
 
   async update(clinicId: string, dentistId: string, patch: DentistPatch): Promise<DentistRecordDto> {
-    const columns = {
-      ...(patch.fullName !== undefined ? { full_name: patch.fullName } : {}),
-      ...(patch.title !== undefined ? { title: patch.title } : {}),
-      ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
-      ...(patch.sortOrder !== undefined ? { sort_order: patch.sortOrder } : {}),
-    };
-    if (Object.keys(columns).length === 0) return this.requireOwn(clinicId, dentistId);
-    const row = await this.run<DentistRow>(
-      this.db
-        .from("clinic_dentists")
-        .update(columns)
-        .eq("clinic_id", clinicId)
-        .eq("id", dentistId)
-        .select(DENTIST_COLUMNS)
-        .maybeSingle(),
+    const row = await this.patchRow(
+      patch,
+      { fullName: "full_name", title: "title", bio: "bio", sortOrder: "sort_order" },
+      {
+        update: (columns) =>
+          this.db
+            .from("clinic_dentists")
+            .update(columns)
+            .eq("clinic_id", clinicId)
+            .eq("id", dentistId)
+            .select(DENTIST_COLUMNS)
+            .maybeSingle(),
+        current: () =>
+          this.db.from("clinic_dentists").select(DENTIST_COLUMNS).eq("clinic_id", clinicId).eq("id", dentistId).maybeSingle(),
+      },
       "clinic_dentists: update fejlede",
     );
-    return this.toDto(this.requireRow(row));
+    return this.toDto(row);
   }
 
   // Stien til portrættet (eller null) - filen i public-media slettes af kalderen. Kun med service role-klienten (2.3 d).
+  // Sætter kun stien, hvis brugeren stadig ejer klinikken, og tandlægen tilhører den; 404 ellers (fx efter kontosletning).
   // Returnerer versionen (photo_updated_at), som bruges som ?v= i portrættets URL (9.5).
-  async setPhotoPath(clinicId: string, dentistId: string, path: string | null): Promise<string> {
+  async setPhotoPath(ownerId: string, clinicId: string, dentistId: string, path: string | null): Promise<string> {
+    const owned = await this.run<{ id: string }>(
+      this.db.from("clinics").select("id").eq("id", clinicId).eq("owner_id", ownerId).maybeSingle(),
+      "clinics: select fejlede",
+    );
+    this.requireRow(owned);
     const version = new Date().toISOString();
-    await this.run(
-      this.db.from("clinic_dentists").update({ photo_path: path, photo_updated_at: version }).eq("clinic_id", clinicId).eq("id", dentistId),
+    const row = await this.run<Pick<DentistRow, "id">>(
+      this.db
+        .from("clinic_dentists")
+        .update({ photo_path: path, photo_updated_at: version })
+        .eq("clinic_id", clinicId)
+        .eq("id", dentistId)
+        .select("id")
+        .maybeSingle(),
       "clinic_dentists: foto fejlede",
     );
+    this.requireRow(row);
     return version;
   }
 

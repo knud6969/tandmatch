@@ -84,42 +84,46 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
   // Opdaterer de felter, der er sendt. Klinikken kan kun ændre kolonnerne i kolonne-grants; triggeren
   // clinics_guard() sætter placering ud fra postnummeret og trustpilot_entered_by = 'clinic'.
   async update(clinicId: string, patch: ClinicPatch): Promise<ClinicRecordDto> {
-    const columns = {
-      ...(patch.name !== undefined ? { name: patch.name } : {}),
-      ...(patch.description !== undefined ? { description: patch.description } : {}),
-      ...(patch.address !== undefined ? { address: patch.address } : {}),
-      ...(patch.postalCode !== undefined ? { postal_code: patch.postalCode } : {}),
-      ...(patch.city !== undefined ? { city: patch.city } : {}),
-      ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
-      ...(patch.email !== undefined ? { email: patch.email } : {}),
-      ...(patch.website !== undefined ? { website: patch.website } : {}),
-      ...(patch.trustpilotUrl !== undefined ? { trustpilot_url: patch.trustpilotUrl } : {}),
-      ...(patch.trustpilotScore !== undefined ? { trustpilot_score: patch.trustpilotScore } : {}),
-      ...(patch.trustpilotReviewCount !== undefined ? { trustpilot_review_count: patch.trustpilotReviewCount } : {}),
-    };
-    // Tom PATCH: den uændrede klinik (architecture 10.8).
-    if (Object.keys(columns).length === 0) {
-      const current = await this.run<ClinicRow>(
-        this.db.from("clinics").select(CLINIC_COLUMNS).eq("id", clinicId).maybeSingle(),
-        "clinics: select fejlede",
-      );
-      return this.toDto(this.requireRow(current));
-    }
-    const row = await this.run<ClinicRow>(
-      this.db.from("clinics").update(columns).eq("id", clinicId).select(CLINIC_COLUMNS).maybeSingle(),
+    const row = await this.patchRow(
+      patch,
+      {
+        name: "name",
+        description: "description",
+        address: "address",
+        postalCode: "postal_code",
+        city: "city",
+        phone: "phone",
+        email: "email",
+        website: "website",
+        trustpilotUrl: "trustpilot_url",
+        trustpilotScore: "trustpilot_score",
+        trustpilotReviewCount: "trustpilot_review_count",
+      },
+      {
+        update: (columns) => this.db.from("clinics").update(columns).eq("id", clinicId).select(CLINIC_COLUMNS).maybeSingle(),
+        current: () => this.db.from("clinics").select(CLINIC_COLUMNS).eq("id", clinicId).maybeSingle(),
+      },
       "clinics: update fejlede",
     );
-    return this.toDto(this.requireRow(row));
+    return this.toDto(row);
   }
 
   // Kun med service role-klienten (logo_path og logo_updated_at er ikke i kolonne-grants, architecture 5.1 regel 12;
-  // 2.3 d). Versionen bruges som ?v= i logoets URL (9.5). Returnerer versionen.
-  async setLogoPath(clinicId: string, path: string | null): Promise<string> {
+  // 2.3 d). Sætter kun stien på en klinik, som brugeren stadig ejer (owner_id i selve opdateringen); 404 ellers, fx hvis
+  // kontoen er slettet, mens filen blev behandlet. Versionen bruges som ?v= i logoets URL (9.5). Returnerer versionen.
+  async setLogoPath(ownerId: string, clinicId: string, path: string | null): Promise<string> {
     const version = new Date().toISOString();
-    await this.run(
-      this.db.from("clinics").update({ logo_path: path, logo_updated_at: version }).eq("id", clinicId),
+    const row = await this.run<Pick<ClinicRow, "id">>(
+      this.db
+        .from("clinics")
+        .update({ logo_path: path, logo_updated_at: version })
+        .eq("id", clinicId)
+        .eq("owner_id", ownerId)
+        .select("id")
+        .maybeSingle(),
       "clinics: logo fejlede",
     );
+    this.requireRow(row);
     return version;
   }
 
@@ -137,7 +141,6 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
     return (
       (await this.rpc<string[]>("set_clinic_service_groups", { p_group_ids: groupIds }, {
         UNKNOWN_SERVICE_GROUP: new ApiError(400, "UNKNOWN_SERVICE_GROUP", "En af kategorierne findes ikke i kataloget."),
-        INVALID_INPUT: new ApiError(400, "VALIDATION_ERROR", "Oplysningerne er ugyldige."),
       })) ?? []
     );
   }
@@ -165,8 +168,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
   async replacePrices(prices: NewClinicPrice[]): Promise<void> {
     await this.rpc("replace_clinic_prices", { p_prices: prices }, {
       SERVICE_GROUP_NOT_SELECTED: new ApiError(409, "SERVICE_GROUP_NOT_SELECTED", "Vælg først kategorien, før du angiver priser i den."),
-      UNKNOWN_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af ydelserne findes ikke i kataloget."),
-      INVALID_INPUT: new ApiError(400, "VALIDATION_ERROR", "Oplysningerne er ugyldige."),
+      UNKNOWN_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget."),
     });
   }
 }

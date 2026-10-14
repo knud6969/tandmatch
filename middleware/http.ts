@@ -23,7 +23,7 @@ export function noContent(): Response {
   return new Response(null, { status: 204 });
 }
 
-export function errorResponse(error: ApiError): Response {
+function errorResponse(error: ApiError): Response {
   return Response.json(
     { error: { code: error.code, message: error.message } },
     { status: error.status },

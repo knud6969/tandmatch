@@ -2,10 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
-import { MAX_PORTFOLIO_ITEMS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { createPortfolioItemSchema, patchPortfolioItemSchema } from "@/lib/schemas/clinics";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
@@ -67,9 +65,7 @@ export class PortfolioController {
     const clinicId = await this.requireClinicId();
     await this.dentists.requireOwn(clinicId, input.dentistId);
     await this.requireActiveService(input.serviceId);
-    if ((await this.portfolio.countForClinic(clinicId)) >= MAX_PORTFOLIO_ITEMS_PER_CLINIC) {
-      throw new ApiError(429, "PORTFOLIO_LIMIT", `Du kan højst have ${MAX_PORTFOLIO_ITEMS_PER_CLINIC} porteføljebilleder.`);
-    }
+    // Loftet håndhæves af databasen (trigger, PORTFOLIO_LIMIT); repositoriet oversætter fejlen.
 
     const { data } = await this.images.reencode(Buffer.from(await file.arrayBuffer()));
     const id = randomUUID();

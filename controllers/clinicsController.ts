@@ -136,8 +136,9 @@ export class ClinicsController {
     return this.buildProfile(updated);
   }
 
-  // Sletter kontoen (architecture 10.8). Bekræftelsen ("SLET") er valideret i routen. Klinikken bliver `imported`;
-  // routen rydder cookies bagefter.
+  // Sletter kontoen (architecture 10.8). Bekræftelsen ("SLET") er valideret i routen. En selvoprettet klinik bliver
+  // `removed` (skjult); en overtaget importeret klinik bliver `imported`, med grunddata gendannet fra snapshot. Routen
+  // rydder cookies bagefter.
   async deleteAccount(): Promise<void> {
     // Klinik-id'et hentes med brugerens egen klient (ejertjek); service role bruges kun til filer og auth-bruger.
     const clinicId = await this.requireClinicId();
@@ -159,15 +160,11 @@ export class ClinicsController {
     return this.clinics.listPrices(await this.requireClinicId());
   }
 
-  // Erstatter hele prislisten i én transaktion. Kun aktive behandlinger i kategorier, klinikken har valgt (409
-  // SERVICE_GROUP_NOT_SELECTED); databasen tjekker det samme i triggeren.
+  // Erstatter hele prislisten i én transaktion. Kun aktive behandlinger i kategorier, klinikken har valgt: databasen er
+  // eneste tjek for det (409 SERVICE_GROUP_NOT_SELECTED, oversat i repositoriet).
   async putPrices(input: PutPricesInput): Promise<ClinicPriceDto[]> {
     const clinicId = await this.requireClinicId();
-    const services = await this.services.requireActive(input.prices.map((price) => price.serviceId));
-    const selected = new Set(await this.clinics.listServiceGroupIds(clinicId));
-    if (services.some((service) => !selected.has(service.groupId))) {
-      throw new ApiError(409, "SERVICE_GROUP_NOT_SELECTED", "Vælg først kategorien, før du angiver priser i den.");
-    }
+    await this.services.requireActive(input.prices.map((price) => price.serviceId));
     await this.clinics.replacePrices(input.prices);
     return this.clinics.listPrices(clinicId);
   }
@@ -204,8 +201,16 @@ export class ClinicsController {
     const { data } = await this.images.reencode(Buffer.from(await file.arrayBuffer()));
     const path = PublicMediaStorage.logoPath(clinic.id);
     // 2.3 (d): upload i public-media og logo_path (ikke i kolonne-grants), efter ejertjekket.
-    await new PublicMediaStorage(this.admin()).replace(path, data, "image/jpeg");
-    const version = await new ClinicsRepository(this.admin()).setLogoPath(clinic.id, path);
+    const storage = new PublicMediaStorage(this.admin());
+    await storage.replace(path, data, "image/jpeg");
+    // Sætter kun stien, hvis brugeren stadig ejer klinikken (fx ikke efter kontosletning undervejs); ellers fjernes filen.
+    let version: string;
+    try {
+      version = await new ClinicsRepository(this.admin()).setLogoPath(this.session.userId, clinic.id, path);
+    } catch (err) {
+      await storage.remove([path]).catch(() => {});
+      throw err;
+    }
     return { logoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
   }
 
@@ -214,6 +219,6 @@ export class ClinicsController {
     if (!clinic.logoPath) return;
     // 2.3 (d): sletning i public-media og logo_path efter ejertjekket.
     await new PublicMediaStorage(this.admin()).remove([clinic.logoPath]);
-    await new ClinicsRepository(this.admin()).setLogoPath(clinic.id, null);
+    await new ClinicsRepository(this.admin()).setLogoPath(this.session.userId, clinic.id, null);
   }
 }
