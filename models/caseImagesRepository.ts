@@ -86,6 +86,21 @@ export class CaseImagesRepository extends BaseRepository<ImageRow, CaseImageReco
     );
   }
 
+  // Kun service role (2.3 a, c): AI'ens neutrale beskrivelse af billedet (vinkel, kvalitet, synligt område). Kalderen har
+  // tjekket ejer og kladde. Beskrivelsen er en del af opsummeringen, som patienten godkender.
+  async saveObservation(
+    imageId: string,
+    observation: { view: string; quality: string; description: string },
+  ): Promise<void> {
+    await this.run(
+      this.db
+        .from("case_images")
+        .update({ ai_view: observation.view, ai_quality: observation.quality, ai_description: observation.description })
+        .eq("id", imageId),
+      "case_images: update fejlede",
+    );
+  }
+
   async delete(imageId: string): Promise<void> {
     await this.run(this.db.from("case_images").delete().eq("id", imageId), "case_images: delete fejlede");
   }

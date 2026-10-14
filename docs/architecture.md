@@ -1273,6 +1273,8 @@ Patienter med konto starter med `POST /api/cases` + `POST /api/consents (ai_proc
 
 **Skrivevej:** `ChatController` kalder `AiChatService.sendTurn()` og skriver det validerede svar via `append_assistant_message(p_user_id, …)`; summary-routen kalder `consume_summary_generation()` før OpenAI og skriver via `store_ai_summary(p_user_id, …)`. Begge kræver service role. For anonyme kaldes `try_consume_anonymous_ai_call(session.userId)` før hvert AI-kald.
 
+**Bygget i 3.3 (afvigelser og valg):** ukendte slugs fra modellen **afvises** (nyt forsøg, derefter fast tekst) i stedet for at blive fjernet. Ved `retakeImages` gemmes opsummeringen, kvaliteten gemmes på billedet (`ai_quality`), og `POST /summary` returnerer listen; serveren blokerer ikke godkendelsen. Svaret på den 30. brugerbesked kan gemmes, selvom samtalen er lukket af triggeren (migration `20261018000100`). **Test-mulighed:** `AI_FAKE_CLIENT=1` giver en deterministisk falsk klient (`services/ai/fakeAiClient.ts`) uden netværkskald, men kun når `NODE_ENV !== 'production'`; den sættes kun af `tests/api/run.sh`.
+
 ### 7.3 Hvad AI'en må og ikke må
 
 | Tilladt | Forbudt |

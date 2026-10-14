@@ -170,3 +170,7 @@ export const anonymousNotAllowed = () =>
 export const notDraft = () => new ApiError(409, "NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");
 
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
+
+// AI-tjenesten svarer ikke eller gav et ugyldigt svar (architecture 7.6: timeout og nedbrud giver 503).
+export const aiUnavailable = () =>
+  new ApiError(503, "AI_UNAVAILABLE", "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.");

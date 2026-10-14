@@ -18,6 +18,8 @@ export TEST_BASE_URL="http://127.0.0.1:$PORT"
 export TERMS_COOKIE_SECRET="test-terms-cookie-secret-0123456789abcdef"
 export CRON_SECRET="test-cron-secret-0123456789abcdef"
 export OPENAI_API_KEY="sk-test-not-used"
+# Falsk AI-klient uden netværkskald (services/ai/openai.ts createAiClient). Virker kun når NODE_ENV ikke er production.
+export AI_FAKE_CLIENT=1
 export NEXT_TELEMETRY_DISABLED=1
 
 LOG="${TMPDIR:-/tmp}/tandmatch-test-server.log"

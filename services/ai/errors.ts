@@ -22,3 +22,8 @@ export class AiInvalidOutputError extends Error {
     this.name = "AiInvalidOutputError";
   }
 }
+
+// Fejl fra modellen, som controllere oversætter til 503.
+export function isAiUpstreamError(err: unknown): boolean {
+  return err instanceof AiTimeoutError || err instanceof AiUnavailableError || err instanceof AiInvalidOutputError;
+}

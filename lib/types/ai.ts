@@ -64,3 +64,49 @@ export type ChatTurnResponse = {
   readyForSummary: boolean;
   messagesLeft: number;
 };
+
+// Samtalen og dens beskeder, som repositoriet returnerer dem (camelCase). Slugs/ydelser slås op af controlleren.
+export type AiConversationRecord = {
+  id: string;
+  caseId: string;
+  status: "active" | "closed";
+  userMessageCount: number;
+  promptVersion: string | null;
+  model: string | null;
+  createdAt: string;
+};
+
+export type AiMessageRecord = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  preliminaryAssessment: string | null;
+  suggestedServiceIds: string[];
+  emergency: boolean;
+  outOfScopeTopics: OutOfScopeTopic[];
+  blocked: boolean;
+  readyForSummary: boolean;
+  createdAt: string;
+};
+
+// Dataeksport (GDPR art. 15/20): patientens egne AI-samtaler pr. sag. Beskederne er maskeret, som de er gemt.
+export type ChatExportDto = {
+  caseId: string;
+  status: "active" | "closed";
+  userMessageCount: number;
+  promptVersion: string | null;
+  model: string | null;
+  createdAt: string;
+  messages: AiMessageRecord[];
+};
+
+// Svaret på POST /api/cases/{id}/summary (architecture 10.5).
+export type SummaryResponse = {
+  summary: AiSummary | null;
+  retakeImages: { imageId: string; reason: Exclude<ImageQuality, "ok"> }[];
+  outOfScopeNotice: boolean;
+  fallback: "none" | "write_yourself";
+  generationsLeft: number;
+};
+
+export type ApproveSummaryResponse = { summaryText: string; summaryApprovedAt: string };

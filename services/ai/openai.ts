@@ -1,5 +1,7 @@
 import "server-only";
 import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./errors";
+import { FakeAiClient } from "./fakeAiClient";
+import type { ModelPart, StructuredCallParams, StructuredModelClient } from "./modelClient";
 
 // Eneste sted der kalder OpenAI. Kun server-side. Nøglen læses fra miljøet og logges aldrig.
 // Bruger Responses API med strict JSON Schema. store: false, så OpenAI ikke gemmer kaldet.
@@ -7,24 +9,6 @@ import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./erro
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4o-mini";
-
-export type ModelPart =
-  | { type: "text"; text: string }
-  | { type: "image_jpeg_base64"; data: string };
-
-export type ModelMessage = {
-  role: "user" | "assistant";
-  content: string | ModelPart[];
-};
-
-export type StructuredCallParams = {
-  instructions: string;
-  messages: ModelMessage[];
-  schemaName: string;
-  schema: object;
-  maxOutputTokens: number;
-  timeoutMs: number;
-};
 
 function toInputContent(content: string | ModelPart[]) {
   if (typeof content === "string") return content;
@@ -111,4 +95,24 @@ export async function callStructured(params: StructuredCallParams): Promise<unkn
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Klienten, som AiChatService og AiSummaryService får i constructoren (architecture 2.1.1).
+export class OpenAiClient implements StructuredModelClient {
+  get model(): string {
+    return process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  }
+
+  callStructured(params: StructuredCallParams): Promise<unknown> {
+    return callStructured(params);
+  }
+}
+
+// Vælger klienten. TEST-MULIGHED: AI_FAKE_CLIENT=1 giver en deterministisk falsk klient uden netværkskald, men kun uden for
+// produktion. Variablen sættes kun af tests/api/run.sh; i produktion ignoreres den, og der returneres altid OpenAI-klienten.
+export function createAiClient(): StructuredModelClient {
+  if (process.env.AI_FAKE_CLIENT === "1" && process.env.NODE_ENV !== "production") {
+    return new FakeAiClient();
+  }
+  return new OpenAiClient();
 }

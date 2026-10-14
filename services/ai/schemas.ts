@@ -100,3 +100,7 @@ export const SUMMARY_JSON_SCHEMA = {
   ],
   additionalProperties: false,
 } as const;
+
+// Navne på skemaerne, som sendes til modellen (OpenAI strict json_schema).
+export const CHAT_SCHEMA_NAME = "tandmatch_chat_turn";
+export const SUMMARY_SCHEMA_NAME = "tandmatch_summary";
