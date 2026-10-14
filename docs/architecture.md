@@ -145,7 +145,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 | Controller | `controllers/` | Én klasse pr. ressource (`LeadsController` i `leadsController.ts`). **Oprettes pr. request** med `(supabase, session)` og opretter selv de repositories og services, den bruger (2.1.1). Metoderne tager **typet, valideret input** (aldrig `Request`, aldrig cookies), tjekker forretningsregler, kalder repositories og services og returnerer DTO'er. Controllers kalder ikke hinanden; delt logik flyttes til en service. Opretter kun admin-klienten i de tilfælde, der står i 2.3, og giver den videre til det repository, der skal bruge den. | `models/`, `services/`, `middleware/http`, `lib/` |
 | Service | `services/` | Klasser med afhængigheder i constructoren: `RankingService` (sortering og filtrering efter faste kriterier, 6.6), `AvailabilityService` (ledige tider, 6.7), `ai/AiChatService` og `ai/AiSummaryService` (OpenAI-klient og `AI_RULES`), `ImageProcessingService` (sharp: filtype, re-encoding, EXIF fjernes), `AccountDeletionService`. Controlleren kalder fx `chatService.sendTurn(...)` eller `rankingService.rank(...)` og kender ikke detaljerne. Rene hjælpefunktioner (PII-maskering, ordfilter, promptformat) må være funktioner. | `models/`, `lib/`, `middleware/http` (kun `ApiError`) |
 | Model | `models/` | **Repository-klasser**, én pr. tabel/aggregat (`CasesRepository` i `casesRepository.ts`), plus `AuthRepository` (Supabase Auth). Tabel-repositories arver `BaseRepository` (`models/base/baseRepository.ts`); storage-klasserne (`CaseImageStorage`, `PublicMediaStorage`) arver `BaseStorage` (`models/base/baseStorage.ts`). Alle får Supabase-klienten i constructoren (`new CasesRepository(supabase)`). **Eneste lag, der kalder Supabase.** Metoder med faste navne: `findById`, `findOwn`, `list…`, `create`, `update`, `delete`, `require…` (find eller kast 404/403), og ét navngivet kald pr. RPC (`sendLeads(...)`). Bruger brugerens JWT, så RLS altid gælder, medmindre controlleren har givet admin-klienten (2.3). `models/db/` har klientfabrikkerne (`createSupabaseServerClient`, som kun kaldes af `createAuthContext()`, og `createSupabaseAdminClient`/`lazyAdminClient`), env-konfiguration, `mapDbError` og `authErrors.ts` (`isTransientAuthError()`) (funktioner). | `models/base/`, `models/db/`, `middleware/http` (kun `ApiError`), `lib/` |
-| View | `views/` | `views/pages/` (sideindhold), `views/components/` (UI) og `views/utils/` (`api-client.ts`, `api-errors.ts`, `field-errors.ts`, `format.ts`, `map.ts`, `prepare-image.ts` (nedskalering i browseren før upload), `upload-image.ts`, `use-load.ts`, `use-save-state.ts`, `use-action.ts`, `clinic-loaders.ts`). Generiske komponenter i `views/components/ui/` omfatter bl.a. `status-message.tsx`, `load-state.tsx` og `save-bar.tsx`. Henter og skriver **kun** via `/api/*` med `views/utils/api-client`. Generiske hooks og hjælpere ligger i `views/utils/`, generiske komponenter i `views/components/ui/`; de dubleres ikke i domænemapper. | `views/`, `lib/` |
+| View | `views/` | `views/pages/` (sideindhold), `views/components/` (UI) og `views/utils/` (`api-client.ts`, `api-errors.ts`, `field-errors.ts`, `format.ts`, `map.ts`, `prepare-image.ts` (nedskalering i browseren før upload), `upload-image.ts`, `use-load.ts`, `use-save-state.ts`, `use-action.ts`, `clinic-loaders.ts`, `clinic-query.ts`, `links.ts`). Generiske komponenter i `views/components/ui/` omfatter bl.a. `status-message.tsx`, `load-state.tsx` og `save-bar.tsx`. Henter og skriver **kun** via `/api/*` med `views/utils/api-client`. Generiske hooks og hjælpere ligger i `views/utils/`, generiske komponenter i `views/components/ui/`; de dubleres ikke i domænemapper. | `views/`, `lib/` |
 | Delt | `lib/` | Kode uden afhængigheder til andre lag, brugt af både views og server: `types/` (DTO'er, én fil pr. domæne), `schemas/` (zod, én fil pr. domæne), `constants/` (én fil pr. domæne med både værdier og danske visningsnavne), `navigation/`, `domain/` (regler der skal være ens i UI og server). | `lib/` |
 
 - Alle filer i `middleware/`, `controllers/`, `services/` og `models/` starter med `import "server-only"`. Undtaget er ren kode uden I/O, som testes direkte: i `services/ai/` (`rules.ts`, `errors.ts`, `forbiddenTerms.ts`, `guard.ts`, `pii.ts`, `promptFormat.ts`, `schemas.ts`, `prompts/`) samt `services/rankingService.ts` og `services/availabilityService.ts`. De må ikke importere models eller kalde netværk.
@@ -183,7 +183,7 @@ models/base/, models/db/            basisklasse, Supabase-klienter og db-fejl   
 - Alle controllere med en bruger: `constructor(supabase: SupabaseClient, session: Session, deps: Partial<XDeps> = {})`. Det gælder også `ExportController` (eksporten læser med brugerens JWT, så RLS gælder). Repositories og services bygges i constructoren ud fra `deps` eller standardværdier.
 - Undtagelser:
   - `CronController` kaldes af planlagte jobs uden session: `constructor(deps: Partial<CronDeps> = {})`. Den har ingen brugerklient og bruger kun service role-klienten (2.3 g).
-  - Controllere for offentlige routes, som også kan kaldes uden login, tager `session: Session | null`: `ServicesController` (og senere `ClinicDirectoryController`). De bruger kun brugerens klient (anon-nøglen, når der ikke er en session) og aldrig service role.
+  - Controllere for offentlige routes, som også kan kaldes uden login, tager `session: Session | null`: `ServicesController` og `ClinicDirectoryController`. De bruger kun brugerens klient (anon-nøglen, når der ikke er en session) og aldrig service role.
   - Nye controllere uden session er ikke tilladt uden at blive beskrevet her.
 - `deps` bruges kun til at erstatte afhængigheder i tests.
 
@@ -259,8 +259,9 @@ views/
     layout/, session/, auth/
     chat/                    chatpanel med forslag til ydelser, foreløbig vurdering og akut-henvisning
     case/                    sagsflowet: billeder, samtykke, ydelser, opsummering, send, slet samtale
+    home/                    forsidens sektioner (indgange, "Jeg har ondt")
     clinic-directory/        offentlig oversigt og profil: klinikkort, filtre, kort (Leaflet), sammenligning,
-                             Trustpilot, stjerner, anmeldelser, portefølje
+                             Trustpilot, stjerner, anmeldelser, portefølje, niveaumærke (TierBadge), adresseblok (ClinicWhere)
     clinic/                  klinikområdet: lead-indbakke, lead-kort, beslutning, profil-, prisliste-,
                              åbningstids- og tandlægeformularer, portefølje, kalender, anmeldelser
     patient/                 mine sager, leads, booking, bookinger, samtykker, eksport, anmeldelser
@@ -271,7 +272,10 @@ views/
                              upload-image.ts (uploadImage(url, file, { maxDimension, fields })),
                              use-load.ts (hentning med indlæsnings- og fejltilstand), use-save-state.ts (gem-tilstand),
                              use-action.ts (knaphandlinger med fejl og ventetilstand),
-                             clinic-loaders.ts (fælles hentning af egen klinik og kataloget)
+                             clinic-loaders.ts (fælles hentning af egen klinik og kataloget),
+                             clinic-query.ts (oversigtens filtre ↔ query-parametre/URL),
+                             links.ts (eksterne links med rel="noopener noreferrer nofollow ugc"),
+                             map.ts (Leaflet-opsætning, fliser og kreditering)
     (components/ui/ har de generiske status-message.tsx, load-state.tsx og save-bar.tsx)
 lib/
   types/                     common, auth, consents, patients, ai, services, cases, clinics, leads, bookings,
@@ -1113,7 +1117,7 @@ Alle funktionerne returnerer kun leads med `sent_at >= clinics.owner_since` (og 
 
 ## 6. Sider og routes (App Router)
 
-Status: bygget i trin 1 er `/opret/klinik`, `/klinik` (foreløbig som opsætningsoversigt, se 6.3), `/klinik/profil`, `/klinik/prisliste` (med kategorier, 1.9), `/klinik/aabningstider` og `/klinik/tandlaeger`, samt kernens sider (vilkår, login, `/opret`, `/opret/patient`). Alle andre sider i 6.1-6.4 er [IKKE BYGGET].
+Status: bygget i trin 1 er `/opret/klinik`, `/klinik` (foreløbig som opsætningsoversigt, se 6.3), `/klinik/profil`, `/klinik/prisliste` (med kategorier, 1.9), `/klinik/aabningstider` og `/klinik/tandlaeger`, samt kernens sider (vilkår, login, `/opret`, `/opret/patient`). Bygget i trin 2 (`a3f8d47b`, `ea70980b`): `/`, informationssiderne, `/klinikker` og `/klinikker/[clinicId]`. Alle andre sider i 6.1-6.4 er [IKKE BYGGET].
 
 Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og 1280 px. Design: hvid og blå, farverne i Tailwind-temaet.
 
@@ -1121,12 +1125,12 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 
 | Route | Indhold |
 |---|---|
-| `/` | Forside: kort forklaring, to indgange ("Beskriv dit problem" → `/start`, "Find en klinik" → `/klinikker`) og en tydelig "Jeg har ondt" → `/akut` |
+| `/` | Forside: kort forklaring, to indgange ("Beskriv dit problem" → `/start`, "Find en klinik" → `/klinikker`) og en tydelig "Jeg har ondt" → `/akut`. Indtil `/akut` bygges i trin 7, fører "Jeg har ondt" til `/klinikker?akut=1` (oversigtens akutfilter) |
 | `/start` | Start på chatten uden login: særskilt AI-samtykke (ikke billedsamtykke). Opretter anonym session og tom sag og sender til `/start/[caseId]`. Patienter med konto opretter sagen via `POST /api/cases`. Har sessionen allerede en kladde, fortsættes den |
 | `/start/[caseId]` | **Sagsflowet** for anonyme og patienter med konto, der ejer sagen. Server-vagt `guardCaseFlow()` (patient, anonym tilladt; ejerskab tjekkes af API'et). Trin: 1 chat med billeder (billedsamtykke lige før første upload), 2 bekræft ydelser (AI-forslag, "Jeg er ikke sikker" → Undersøgelse), 3 opsummering (ret og godkend), postnummer og ønsket tidsrum, 4 "Find klinikker" → `/klinikker?sag=[caseId]`. Anonyme ser `AnonymousPatientBanner` (48 timer, opret konto, slet) |
 | `/start/[caseId]/send` | Afsendelse til de valgte klinikker (op til 3, sendt med som `?klinikker=`): opret konto hvis anonym (inline, 7.7), samtykke til deling, oversigt over valgte klinikker med listepris, send. Redirect til `/patient/sag/[caseId]` |
-| `/klinikker` | Klinikoversigt: liste + kort (Leaflet, OpenStreetMap) + filtre (ydelse, afstand/postnummer, maks. pris, min. bedømmelse, kun med ledig akuttid, kun klinikker, der kan kontaktes) og sortering (6.6). Med `?sag=` er sagens bekræftede ydelser og postnummer forvalgt, og patienten kan markere op til 3 klinikker til sammenligning og afsendelse. Kortet viser de samme klinikker som listen |
-| `/klinikker/[clinicId]` | Klinikprofil: grunddata, åbningstider, kort, Trustpilot, anmeldelser og prisnøjagtighed. Verificerede også: beskrivelse, prisliste, første ledige tid, tandlæger med portefølje og "Vælg klinik" (med sag) |
+| `/klinikker` | Klinikoversigt: liste + kort (Leaflet, OpenStreetMap) + filtre (ydelse, afstand/postnummer, maks. pris, min. bedømmelse, kun med ledig akuttid, kun klinikker, der kan kontaktes) og sortering (6.6). Med `?sag=` er sagens bekræftede ydelser og postnummer forvalgt, og patienten kan markere op til 3 klinikker til sammenligning og afsendelse [IKKE BYGGET] (trin 4). Kortet viser de samme klinikker som listen. Filtrene spejles i URL'en (2.8), så profil/tilbage og deling bevarer dem. `?akut=1` slår akutfilteret til. I akutvisningen henvises også til tandlægevagten (1813) uden for åbningstid, især når listen er tom (2.8). Bygget i 2.5 |
+| `/klinikker/[clinicId]` | Klinikprofil: grunddata, åbningstider, kort, Trustpilot, anmeldelser og prisnøjagtighed. Verificerede også: beskrivelse, prisliste, første ledige tid, tandlæger med portefølje. Bygget i 2.6. "Vælg klinik" med `?sag=`, og at profil/tilbage bevarer sag og valgte klinikker, er udskudt til trin 4. [PROTOTYPE]: siden hentes i browseren, så sidetitlen er generisk, og en ukendt eller skjult klinik giver en fejlside med HTTP 200 i stedet for 404; serverside-hentning med titel og 404 kommer senere |
 | `/akut` | Akutvejen: vælg akutydelse (forvalgt hvis kun én), klinikker sorteret efter første ledige akuttid. Patienten vælger klinik og tid, **logger ind eller opretter konto** (kræves), skriver kort hvad der er galt, angiver navn og telefon, giver delingssamtykke og sender. Opretter en sag med `is_emergency = true` og ét lead; tiden **reserveres straks** (`held`) i højst 30 minutter (eller til starttid, hvis den kommer før), så andre ikke kan tage den. Accepterer klinikken inden da, bliver reservationen en booking; afviser den, trækker patienten leadet tilbage, eller udløber reservationen, frigives tiden, og patienten kan vælge en anden klinik. UI viser, hvor længe reservationen gælder. Ingen AI i akutvejen |
 | `/login`, `/opret`, `/opret/patient`, `/opret/klinik` | Login og signup. `/opret/klinik` beder om CVR, klinikkens navn, adresse, postnummer, by, telefon. Teksten må ikke antyde, at CVR slås op i CVR-registret (det gør vi ikke); den forklarer, at CVR bruges til at knytte kontoen til klinikken og til verifikation |
 | `/saadan-virker-det`, `/saadan-tjener-vi-penge`, `/for-klinikker`, `/om-os`, `/kontakt` | Informationssider (statisk indhold, ingen API; bygget i 2.4). "Sådan tjener vi penge" beskriver prototypens model: klinikker betaler for leads, patienter betaler ikke (forretningsmodellen er åben, 12.3 punkt 31). Indgangen til chatten er synlig i headeren på alle offentlige sider og patientsider og fører til `/start`. Indtil chatten er bygget (trin 3), styres den af flaget `CHAT_READY` (som `DIRECTORY_READY` for oversigten) og fører til forsiden |
@@ -1418,7 +1422,7 @@ Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste
 
 ## 8. Anmeldelser og prisnøjagtighed
 
-Status: tabeller, policies og statistikfunktion er bygget i databasen (trin 0). API og sider er [IKKE BYGGET] (trin 2 og 6).
+Status: tabeller, policies og statistikfunktion er bygget i databasen (trin 0). Den offentlige læsning (`GET /api/clinics/{id}/reviews`, statistik i oversigt og profil) er bygget i trin 2. Skrivning, svar og klinikkens visning er [IKKE BYGGET] (trin 6).
 
 ### 8.1 Verifikation: kun efter gennemført booking
 
@@ -1516,7 +1520,7 @@ Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id
 
 Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
 
-**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, bortset fra `GET /api/clinics/me/reviews` (6.2). Afsnit 10.5-10.7 og 10.9-10.14 er [IKKE BYGGET] i deres helhed. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
+**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, bortset fra `GET /api/clinics/me/reviews` (6.2). 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. Afsnit 10.5, 10.6 og 10.9-10.12 og resten af 10.13-10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 
 ### 10.1 Delte typer
 
@@ -1533,8 +1537,8 @@ export type ServiceDto = { id: string; slug: string; name: string; description: 
   groupId: string; groupSlug: string };
 
 // lib/types/reviews.ts
-export type PriceAccuracy = "as_quoted" | "slightly_higher" | "much_higher";
-export type ModerationStatus = "pending" | "approved" | "rejected";
+export type PriceAccuracy = (typeof PRICE_ACCURACY_VALUES)[number];   // lib/constants/reviews.ts
+export type ModerationStatus = (typeof MODERATION_STATUSES)[number];  // lib/constants/reviews.ts
 export type ReviewStats = {
   reviewCount: number; avgStars: number | null; priceAccuracyPct: number | null;
   distribution: { asQuoted: number; slightlyHigher: number; muchHigher: number } | null;
@@ -1664,7 +1668,7 @@ export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage
 
 ### 10.7 Klinikoversigt og profil (offentligt)
 
-Bygget i trin 2 (2.3). `ClinicDirectoryController` (offentlig, `session: Session | null`) bruger `ClinicDirectoryRepository` (`public_*`-funktionerne), `AvailabilityRepository.listBusyIntervals()`, `RankingService` og `AvailabilityService`. Offentlige anmeldelser og statistik (`public_reviews()`, `public_clinic_review_stats_many()`) læses foreløbig også i `ClinicDirectoryRepository`, ikke i et `ReviewsRepository`; trin 6 kan flytte dem, når anmeldelserne bygges. Trustpilot-felterne mappes ét sted, `trustpilotFromColumns()` i `models/db/mappers.ts`. Filterreglerne og fejlkoderne står i 6.6; beregningen af første ledige tid i 6.7.
+Bygget i trin 2 (2.3). `ClinicDirectoryController` (offentlig, `session: Session | null`) bruger `ClinicDirectoryRepository` (`public_*`-funktionerne), `AvailabilityRepository.listBusyIntervals()`, `RankingService` og `AvailabilityService`. Offentlige anmeldelser og statistik (`public_reviews()`, `public_clinic_review_stats_many()`) læses foreløbig også i `ClinicDirectoryRepository`, ikke i et `ReviewsRepository`; trin 6 kan flytte dem, når anmeldelserne bygges. Trustpilot-felterne mappes ét sted, `trustpilotFromColumns()` i `models/db/mappers.ts`. **Mellemformer (besluttet):** `PublicClinicRecord` og `PublicClinicProfileRecord` (rækkerne fra `public_*` før rangering og DTO-formning) er server-interne og ligger i `models/clinicDirectoryRepository.ts`, ikke i `lib/types/` (flyttes i 2.8). Tidsintervaller har én type, `BusyInterval`, som både `AvailabilityRepository` og `AvailabilityService` bruger (2.8). `createdMonth` i `PublicReviewDto` er måneden i dansk tid (`Europe/Copenhagen`) som `"YYYY-MM"` og mappes i repositoriet (2.8). Filterreglerne og fejlkoderne står i 6.6; beregningen af første ledige tid i 6.7.
 
 ```ts
 // lib/types/clinics.ts
@@ -1867,7 +1871,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 |---|---|---|
 | 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
 | 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | Bygget og afsluttet på `feat/omlaegning-trin-1` (sidste commit `623314f4`). Ingen åbne kritiske fund. Tests: RLS 36, API 82, unit 6, e2e 6; klinikrejsen 40 af 40 gentagelser uden logud-fejl. Mangler: HSTS tjekket i en produktionsbuild, og migration `20261016000200` køres i det fælles projekt |
-| 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | I gang på `feat/omlaegning-trin-2`: 2.1-2.4 bygget (`4ec5b70e` rangering og ledige tider, `ef133bb3` API, `a3f8d47b` forside og informationssider); frontend bygger 2.5-2.6; 2.7 venter |
+| 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | I gang på `feat/omlaegning-trin-2`: 2.1-2.6 bygget (`4ec5b70e` rangering og ledige tider, `6286c8ed` API, `a3f8d47b` forside og informationssider, `ea70980b` oversigt med kort og profil). 2.7 (review uden kritiske fund; tester) er i gang; 2.8 (rettelser efter review) venter |
 | 3 | AI-chat med billeder, forslag til ydelser og opsummering | [IKKE BYGGET]. Anonym session (med tom sag), billedbehandling og AI-klienten findes i kernen fra trin 0 |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
 | 5 | Klinikkens indbakke: accepter eller afvis | [IKKE BYGGET] |
