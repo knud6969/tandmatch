@@ -103,6 +103,22 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
     };
   }
 
+  // Det aktive samtykke af en type: den seneste række, hvis den ikke er trukket tilbage (samme regel som
+  // has_active_consent()). null, hvis der ikke er noget aktivt.
+  async findActive(type: ConsentType): Promise<ConsentDto | null> {
+    const row = await this.run(
+      this.db
+        .from("consents")
+        .select(CONSENT_COLUMNS)
+        .eq("type", type)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      "consents: select fejlede",
+    );
+    return row && row.withdrawn_at === null ? this.toDto(row) : null;
+  }
+
   // Bekræfter at oprydningen efter tilbagetrækning er udført (filerne er fjernet fra storage).
   async confirmCleanup(consentId: string): Promise<void> {
     await this.rpc("confirm_consent_cleanup", { p_consent_id: consentId });

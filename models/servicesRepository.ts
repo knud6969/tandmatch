@@ -66,11 +66,16 @@ export class ServicesRepository extends BaseRepository<ServiceRow, ServiceDto> {
     return [...groups.values()];
   }
 
+  // De af behandlingerne, der er aktive (i aktive kategorier). Ukendte og inaktive udelades uden fejl.
+  async findActive(ids: readonly string[]): Promise<ServiceDto[]> {
+    const unique = [...new Set(ids)];
+    return unique.length === 0 ? [] : this.toDtos(await this.listActiveRows(undefined, unique));
+  }
+
   // Kaster 400 UNKNOWN_SERVICE, hvis en af behandlingerne ikke findes eller ikke er aktiv. Returnerer de fundne.
   async requireActive(ids: readonly string[]): Promise<ServiceDto[]> {
     const unique = [...new Set(ids)];
-    if (unique.length === 0) return [];
-    const found = this.toDtos(await this.listActiveRows(undefined, unique));
+    const found = await this.findActive(unique);
     if (found.length !== unique.length) {
       throw new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget.");
     }

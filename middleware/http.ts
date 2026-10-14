@@ -165,3 +165,8 @@ export const unauthenticated = () => new ApiError(401, "UNAUTHENTICATED", "Du sk
 
 export const anonymousNotAllowed = () =>
   new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");
+
+// Sagen er ikke længere en kladde (architecture 10.5): kun kladder kan ændres.
+export const notDraft = () => new ApiError(409, "NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");
+
+export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
