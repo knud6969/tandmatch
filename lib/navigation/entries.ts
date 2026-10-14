@@ -5,6 +5,6 @@
 export const CHAT_HREF = "/start";
 export const CHAT_READY = false;
 
-// Klinikoversigten. Bygges i trin 2 (opgave 2.5). Sæt DIRECTORY_READY til true, når /klinikker findes.
+// Klinikoversigten (opgave 2.5). Sæt DIRECTORY_READY til false for at skjule indgangene.
 export const DIRECTORY_HREF = "/klinikker";
-export const DIRECTORY_READY = false;
+export const DIRECTORY_READY = true;

@@ -52,9 +52,10 @@ export function fromDateTimeLocal(value: string): string {
 const monthFormat = new Intl.DateTimeFormat("da-DK", { month: "long", year: "numeric", timeZone: TIME_ZONE });
 const avgFormat = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-// "2026-10" -> "oktober 2026".
-export function formatMonth(yearMonth: string): string {
-  return monthFormat.format(new Date(`${yearMonth}-15T12:00:00Z`));
+// "2026-10" eller et tidspunkt i måneden (API'et sender første dag i måneden som tidsstempel) -> "oktober 2026".
+export function formatMonth(value: string): string {
+  const date = /^\d{4}-\d{2}$/.test(value) ? new Date(`${value}-15T12:00:00Z`) : new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : monthFormat.format(date);
 }
 
 // Gennemsnit og score med én decimal, fx "4,5".
@@ -72,4 +73,39 @@ export function parseWholeKr(value: string): number | null {
   const cleaned = value.trim().replace(/[\s.]/g, "");
   if (!/^\d+$/.test(cleaned)) return null;
   return Number(cleaned);
+}
+
+const shortDateTimeFormat = new Intl.DateTimeFormat("da-DK", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: TIME_ZONE,
+});
+const dayFormat = new Intl.DateTimeFormat("da-DK", { weekday: "long", day: "numeric", month: "long", timeZone: TIME_ZONE });
+const timeFormat = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE });
+const dayKeyFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE }); // YYYY-MM-DD
+
+// "tir. 14. okt., 09.15" til kompakte kort.
+export function formatShortDateTime(iso: string): string {
+  return shortDateTimeFormat.format(new Date(iso));
+}
+
+// "tirsdag 14. oktober" og "09.15".
+export function formatDay(iso: string): string {
+  return dayFormat.format(new Date(iso));
+}
+export function formatTime(iso: string): string {
+  return timeFormat.format(new Date(iso));
+}
+
+// Dagen i dansk tid som YYYY-MM-DD, til gruppering.
+export function dayKey(iso: string): string {
+  return dayKeyFormat.format(new Date(iso));
+}
+
+// Klokkeslæt fra databasen ("08:00:00") som "08:00".
+export function formatClock(value: string): string {
+  return value.slice(0, 5);
 }

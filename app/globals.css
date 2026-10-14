@@ -85,3 +85,32 @@
     text-wrap: balance;
   }
 }
+
+/*
+ * Kortet (Leaflet, architecture 6.6). Leaflets egen stylesheet ligger uden for lagene og vinder over Tailwind-klasser, så
+ * popup'en rettes her, så den følger temaet: skrift, linkfarve og afstande.
+ */
+.leaflet-container {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-ink);
+}
+.leaflet-container a:not(.leaflet-control-zoom-in, .leaflet-control-zoom-out) {
+  color: var(--color-brand-700);
+}
+.leaflet-container a.map-popup-link.map-popup-link {
+  color: var(--color-on-brand);
+}
+.leaflet-container .leaflet-popup-content {
+  margin: 1rem;
+}
+.leaflet-container .leaflet-popup-content p {
+  margin: 0;
+}
+.leaflet-container .leaflet-popup-content-wrapper {
+  border-radius: var(--radius-card);
+}
+.leaflet-container .leaflet-control-attribution {
+  font-size: 0.75rem;
+  color: var(--color-ink);
+}

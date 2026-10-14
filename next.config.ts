@@ -27,8 +27,8 @@ function contentSecurityPolicy(): string {
     // UNDTAGELSE: Tailwind/Next og React style-attributter kræver inline styles.
     "style-src": ["'self'", "'unsafe-inline'"],
     // Billeder: egne, data:/blob: (forhåndsvisning af valgte filer) og Supabase (public-media, signerede URL'er).
-    // Kortfliser (OpenStreetMap) tilføjes, når kortet bygges (trin 2).
-    "img-src": ["'self'", "data:", "blob:", ...(supabase ? [supabase] : [])],
+    // Kortfliser fra OpenStreetMap (klinikoversigten, architecture 6.6). Ingen andre eksterne billedkilder.
+    "img-src": ["'self'", "data:", "blob:", "https://tile.openstreetmap.org", ...(supabase ? [supabase] : [])],
     "font-src": ["'self'"],
     // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse).
     // Supabase kaldes kun fra serveren, aldrig fra browseren.
@@ -54,9 +54,9 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           // Ældre browsere, der ikke kender frame-ancestors.
           { key: "X-Frame-Options", value: "DENY" },
-          // Ingen kamera, mikrofon eller position (geolocation=(self) tilføjes, når kortet bruger position, trin 2).
+          // Ingen kamera eller mikrofon. Position kun på egen side, og kun når patienten selv trykker "Brug min position".
           ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]),
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
         ],
       },
     ];
