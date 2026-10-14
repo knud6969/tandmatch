@@ -9,6 +9,8 @@ import type { Tables } from "@/models/db/database.types";
 type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at" | "is_emergency">;
 type TimeBlockRow = Pick<Tables<"clinic_time_blocks">, "id" | "starts_at" | "ends_at" | "note">;
 
+type TimeRange = { startsAt: string; endsAt: string };
+
 const HOURS_COLUMNS = "weekday, opens_at, closes_at, is_emergency";
 const BLOCK_COLUMNS = "id, starts_at, ends_at, note";
 
@@ -16,7 +18,7 @@ const BLOCK_COLUMNS = "id, starts_at, ends_at, note";
 const toHourMinute = (time: string) => time.slice(0, 5);
 
 // Klinikkens åbningstider og blokeringer (architecture 4.3, 6.7). Med brugerens JWT: kun ejeren læser og skriver.
-// Udvides i trin 2 med optaget tid til ledige tider.
+// `listBusyIntervals` er offentlig (public_busy_intervals) og giver optaget tid til ledige tider.
 export class AvailabilityRepository extends BaseRepository {
   private hoursToDto(row: OpeningHoursRow): OpeningHoursDto {
     return {
@@ -84,5 +86,24 @@ export class AvailabilityRepository extends BaseRepository {
       "clinic_time_blocks: delete fejlede",
     );
     this.requireRow(rows[0]);
+  }
+
+  // Optaget tid for verificerede klinikker i [from, to): ikke-udløbne `held`- og `booked`-bookinger samt blokeringer, kun
+  // start og slut (ingen id'er, ingen typer, architecture 5.3). Grupperet pr. klinik.
+  async listBusyIntervals(clinicIds: readonly string[], from: Date, to: Date): Promise<Map<string, TimeRange[]>> {
+    const result = new Map<string, TimeRange[]>();
+    if (clinicIds.length === 0) return result;
+    const rows =
+      (await this.rpc<{ clinic_id: string; starts_at: string; ends_at: string }[]>("public_busy_intervals", {
+        p_clinic_ids: [...clinicIds],
+        p_from: from.toISOString(),
+        p_to: to.toISOString(),
+      })) ?? [];
+    for (const row of rows) {
+      const list = result.get(row.clinic_id) ?? [];
+      list.push({ startsAt: row.starts_at, endsAt: row.ends_at });
+      result.set(row.clinic_id, list);
+    }
+    return result;
   }
 }

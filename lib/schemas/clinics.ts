@@ -2,6 +2,8 @@ import { z } from "zod";
 import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
 import {
   CLINIC_DESCRIPTION_MAX_CHARS,
+  CLINIC_SORTS,
+  MAX_SELECTED_SERVICES,
   CLINIC_EMAIL_MAX_CHARS,
   CLINIC_WEBSITE_MAX_CHARS,
   DENTIST_BIO_MAX_CHARS,
@@ -264,3 +266,94 @@ export const patchPortfolioItemSchema = z
     serviceId: z.uuid("Ugyldig ydelse.").nullable().optional(),
   })
   .strict();
+
+// ---------------------------------------------------------------------------------------------------------
+// Offentlig oversigt og profil (architecture 10.7). Query-parametre er altid tekst.
+
+const emptyQueryAsUndefined = (value: unknown) => (value === "" ? undefined : value);
+
+// `?services=slug,slug`: kommaseparerede slugs fra kataloget.
+const servicesParamSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.split(",").map((slug) => slug.trim()).filter((slug) => slug !== "") : value),
+  z
+    .array(z.string().regex(/^[a-z0-9_]{1,60}$/, "Ukendt behandling."))
+    .max(MAX_SELECTED_SERVICES, `Vælg højst ${MAX_SELECTED_SERVICES} behandlinger.`)
+    .transform((slugs) => [...new Set(slugs)]),
+);
+
+const queryNumber = (min: number, max: number, message: string) =>
+  z.preprocess(emptyQueryAsUndefined, z.coerce.number(message).min(min, message).max(max, message));
+
+const queryBoolean = z.preprocess(emptyQueryAsUndefined, z.enum(["true", "false"], { message: "Angiv true eller false." }).transform((v) => v === "true"));
+
+export const clinicsQuerySchema = z
+  .object({
+    services: servicesParamSchema.optional(),
+    postalCode: z.preprocess(emptyQueryAsUndefined, postalCodeSchema).optional(),
+    lat: queryNumber(-90, 90, "Ugyldig position.").optional(),
+    lng: queryNumber(-180, 180, "Ugyldig position.").optional(),
+    maxDistanceKm: queryNumber(0, 20_000, "Ugyldig afstand.").optional(),
+    maxPrice: queryNumber(0, MAX_PRICE_DKK, "Ugyldig pris.").optional(),
+    minStars: queryNumber(1, 5, "Antal stjerner skal være mellem 1 og 5.").optional(),
+    emergency: queryBoolean.optional(),
+    contactableOnly: queryBoolean.optional(),
+    sort: z.preprocess(emptyQueryAsUndefined, z.enum(CLINIC_SORTS, { message: "Ukendt sortering." })).optional(),
+  })
+  .strict()
+  .refine((query) => (query.lat === undefined) === (query.lng === undefined), { message: "Angiv både lat og lng." })
+  .refine((query) => query.maxPrice === undefined || (query.services?.length ?? 0) > 0, {
+    message: "Vælg mindst én behandling for at filtrere på pris.",
+  });
+
+export const clinicProfileQuerySchema = z.object({ services: servicesParamSchema.optional() }).strict();
+
+export const availabilityQuerySchema = z
+  .object({
+    serviceId: z.uuid("Ugyldig behandling."),
+    from: isoDateTime.optional(),
+    to: isoDateTime.optional(),
+  })
+  .strict();
+
+// ---------------------------------------------------------------------------------------------------------
+// jsonb-kolonner fra public_clinics()/public_clinic_profile() (architecture 2.1.1: jsonb parses med zod).
+
+export const publicOpeningHoursJsonSchema = z.array(
+  z.object({
+    weekday: z.literal(WEEKDAYS),
+    opens_at: z.string(),
+    closes_at: z.string(),
+    is_emergency: z.boolean(),
+  }),
+);
+
+export const publicPricesJsonSchema = z.array(
+  z.object({
+    service_id: z.uuid(),
+    service_slug: z.string(),
+    service_name: z.string(),
+    price_min: z.number(),
+    price_max: z.number(),
+    duration_min: z.number(),
+    note: z.string().nullable(),
+  }),
+);
+
+export const publicDentistsJsonSchema = z.array(
+  z.object({
+    id: z.uuid(),
+    full_name: z.string(),
+    title: z.string().nullable(),
+    bio: z.string().nullable(),
+    photo_path: z.string().nullable(),
+    photo_updated_at: z.string().nullable(),
+    portfolio: z.array(
+      z.object({
+        id: z.uuid(),
+        image_path: z.string(),
+        caption: z.string().nullable(),
+        service_name: z.string().nullable(),
+      }),
+    ),
+  }),
+);

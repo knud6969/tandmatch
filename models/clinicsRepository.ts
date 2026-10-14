@@ -5,6 +5,7 @@ import type { ClinicPriceDto, ClinicRecordDto } from "@/lib/types/clinics";
 import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
+import { trustpilotFromColumns } from "@/models/db/mappers";
 
 type ClinicPatch = z.infer<typeof patchClinicSchema>;
 
@@ -40,15 +41,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
       website: row.website,
       logoPath: row.logo_path,
       logoUpdatedAt: row.logo_updated_at,
-      trustpilot: row.trustpilot_url
-        ? {
-            url: row.trustpilot_url,
-            score: row.trustpilot_score,
-            reviewCount: row.trustpilot_review_count,
-            updatedAt: row.trustpilot_updated_at,
-            enteredBy: row.trustpilot_entered_by === "admin" ? "admin" : "clinic",
-          }
-        : null,
+      trustpilot: trustpilotFromColumns(row),
       updatedAt: row.updated_at,
     };
   }
