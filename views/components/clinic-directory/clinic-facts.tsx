@@ -1,3 +1,4 @@
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
 import { formatKm, formatPercent, formatPriceRange, formatShortDateTime } from "@/views/utils/format";
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
@@ -29,7 +30,7 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
               <span className="sr-only"> verificerede anmeldelser</span>
               <span aria-hidden="true"> verificerede</span>
               {stats.priceAccuracyPct !== null && (
-                <span className="block">{formatPercent(stats.priceAccuracyPct)} svarede prisen til prisoverslaget</span>
+                <span className="block">Prisnøjagtighed {formatPercent(stats.priceAccuracyPct)}</span>
               )}
             </>
           ) : (
@@ -55,11 +56,11 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
 
       {full && (
         <p className="text-sm text-ink">
-          <span className="text-ink-muted">{emergency ? "Første akuttid: " : "Første ledige tid: "}</span>
+          <span className="text-ink-muted">{emergency ? "Første akuttid: " : hasServices ? "Første ledige tid: " : "Første ledige tid (undersøgelse): "}</span>
           {nextAt ? (
             <span className="font-semibold">{formatShortDateTime(nextAt)}</span>
           ) : (
-            <span className="text-ink-muted">{emergency ? "ingen akuttid de næste 14 dage" : "ingen ledige tider de næste 14 dage"}</span>
+            <span className="text-ink-muted">{emergency ? `ingen akuttid de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage` : `ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
           )}
         </p>
       )}
@@ -76,9 +77,9 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
 }
 
 // Adresse og evt. afstand på én linje.
-export function ClinicWhere({ clinic }: { clinic: ClinicListItemDto }) {
+export function ClinicWhere({ clinic, size = "sm" }: { clinic: Pick<ClinicListItemDto, "address" | "postalCode" | "city" | "distanceKm">; size?: "sm" | "base" }) {
   return (
-    <p className="text-sm text-ink-muted">
+    <p className={size === "base" ? "text-base text-ink-muted" : "text-sm text-ink-muted"}>
       {clinic.address}, {clinic.postalCode} {clinic.city}
       {clinic.distanceKm !== null && <span className="font-semibold text-ink"> · {formatKm(clinic.distanceKm)}</span>}
     </p>

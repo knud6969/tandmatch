@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AttributionControl, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
-import { Badge } from "@/views/components/ui/badge";
+import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { ClinicFacts, ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
 import { DENMARK_CENTER, DENMARK_ZOOM, MAP_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, mapPoints } from "@/views/utils/map";
 
@@ -99,7 +99,7 @@ export default function ClinicMap({ clinics, hasServices, emergency, highlighted
             <Popup minWidth={220} maxWidth={300} autoPanPaddingTopLeft={[60, 20]}>
               <div className="flex flex-col gap-2 text-ink">
                 <div>
-                  {clinic.tier === "full" ? <Badge tone="brand">Verificeret klinik</Badge> : <Badge>Ikke på TandMatch endnu</Badge>}
+                  <TierBadge tier={clinic.tier} />
                 </div>
                 <p className="text-base font-semibold leading-snug">{clinic.name}</p>
                 <ClinicWhere clinic={clinic} />

@@ -105,9 +105,56 @@ test.describe("klinikoversigt og profil", () => {
     expect(csp()).toEqual([]);
   });
 
+  test("filtre og sortering overlever genindlæsning og tilbage fra profilen", async ({ page }) => {
+    await visit(page, "/klinikker");
+    const toggleFilters = page.getByRole("button", { name: "Vis filtre" });
+    const openFilters = async () => {
+      await expect(page.getByRole("form", { name: "Filtre" })).toBeVisible();
+      if (await toggleFilters.isVisible()) await toggleFilters.click();
+    };
+    await openFilters();
+    await page.getByRole("form", { name: "Filtre" }).getByLabel("Kun klinikker, der kan kontaktes").check();
+    await page.getByLabel("Sortér efter").selectOption("rating");
+    await expect(page).toHaveURL(/contactableOnly=true/);
+    await expect(page).toHaveURL(/sort=rating/);
+
+    // Genindlæsning bevarer valgene.
+    await page.reload();
+    await openFilters();
+    await expect(page.getByLabel("Kun klinikker, der kan kontaktes")).toBeChecked();
+    await expect(page.getByLabel("Sortér efter")).toHaveValue("rating");
+
+    // Profil og tilbage bevarer dem også.
+    const cards = page.getByRole("list").locator("> li").filter({ has: page.getByRole("heading", { level: 3 }) });
+    await expect(cards.first()).toBeVisible();
+    await cards.first().getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}$/);
+    await page.goBack();
+    await openFilters();
+    await expect(page.getByLabel("Kun klinikker, der kan kontaktes")).toBeChecked();
+    await expect(page.getByLabel("Sortér efter")).toHaveValue("rating");
+  });
+
+  test("sortering ændrer rækkefølgen og kriterierne", async ({ page }) => {
+    await visit(page, "/klinikker?contactableOnly=true");
+    const names = page.getByRole("heading", { level: 3 });
+    await expect(names.first()).toBeVisible();
+    await page.getByLabel("Sortér efter").selectOption("rating");
+    await expect(page.getByTestId("kriterier")).toContainText(/stjerner|bedømmelse/i);
+    const response = await page.request.get("/api/clinics?contactableOnly=true&sort=rating");
+    const { clinics } = (await response.json()) as { clinics: ApiClinic[] };
+    await expect(names.first()).toHaveText(clinics[0].name);
+    await page.getByLabel("Sortér efter").selectOption("first_available");
+    await expect(page).toHaveURL(/sort=first_available/);
+    const second = await page.request.get("/api/clinics?contactableOnly=true&sort=first_available");
+    const ordered = ((await second.json()) as { clinics: ApiClinic[] }).clinics;
+    await expect(names.first()).toHaveText(ordered[0].name);
+  });
+
   test("akut fra forsiden aktiverer akutfilteret", async ({ page }) => {
     const csp = watchCsp(page);
     await visit(page, "/klinikker?akut=1");
+    await expect(page.getByRole("form", { name: "Filtre" })).toBeVisible();
     const toggleFilters = page.getByRole("button", { name: "Vis filtre" });
     if (await toggleFilters.isVisible()) await toggleFilters.click();
     await expect(page.getByRole("checkbox", { name: /^Akut Kun klinikker/ })).toBeChecked();

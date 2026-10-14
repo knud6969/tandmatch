@@ -273,7 +273,7 @@ export const patchPortfolioItemSchema = z
 const emptyQueryAsUndefined = (value: unknown) => (value === "" ? undefined : value);
 
 // `?services=slug,slug`: kommaseparerede slugs fra kataloget.
-const servicesParamSchema = z.preprocess(
+export const servicesParamSchema = z.preprocess(
   (value) => (typeof value === "string" ? value.split(",").map((slug) => slug.trim()).filter((slug) => slug !== "") : value),
   z
     .array(z.string().regex(/^[a-z0-9_]{1,60}$/, "Ukendt behandling."))

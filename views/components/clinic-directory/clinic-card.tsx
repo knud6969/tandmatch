@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
-import { Badge } from "@/views/components/ui/badge";
 import { cx } from "@/views/components/ui/cx";
 import { ICONS } from "@/views/components/ui/icons";
+import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { ClinicFacts, ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
 
 type ClinicCardProps = {
@@ -45,7 +45,7 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          {full ? <Badge tone="brand">Verificeret klinik</Badge> : <Badge>Ikke på TandMatch endnu</Badge>}
+          <TierBadge tier={clinic.tier} />
         </div>
         <h3 className="text-lg font-semibold leading-snug text-ink">
           <Link

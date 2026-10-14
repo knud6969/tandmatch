@@ -65,9 +65,9 @@ export function PublicReviewList({ clinicId }: { clinicId: string }) {
             <>
               <p className="text-lg font-semibold text-ink">Prisnøjagtighed {formatPercent(stats.priceAccuracyPct)}</p>
               <p className="text-sm text-ink-muted">
-                Hvor ofte den endelige pris svarede til prisoverslaget
+                Andel af anmeldelserne, hvor den endelige pris svarede til prisoverslaget
                 {stats.distribution &&
-                  ` (${stats.distribution.asQuoted} svarede, ${stats.distribution.slightlyHigher} lidt højere, ${stats.distribution.muchHigher} langt højere)`}
+                  ` (${stats.distribution.asQuoted} som oplyst, ${stats.distribution.slightlyHigher} lidt højere, ${stats.distribution.muchHigher} langt højere)`}
                 .
               </p>
             </>

@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/types/clinics";
 import { Alert } from "@/views/components/ui/alert";
-import { Badge } from "@/views/components/ui/badge";
 import { LinkButton } from "@/views/components/ui/button";
 import { ICONS } from "@/views/components/ui/icons";
 import { LoadState } from "@/views/components/ui/load-state";
 import { AvailabilitySlots } from "@/views/components/clinic-directory/availability-slots";
 import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-loader";
+import { ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
 import { DentistPortfolio } from "@/views/components/clinic-directory/dentist-portfolio";
 import { ExternalLink } from "@/views/components/clinic-directory/external-link";
 import { OpeningHours } from "@/views/components/clinic-directory/opening-hours";
 import { PriceList } from "@/views/components/clinic-directory/price-list";
 import { PublicReviewList } from "@/views/components/clinic-directory/public-review-list";
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
+import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { TrustpilotBlock } from "@/views/components/clinic-directory/trustpilot-block";
 import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
@@ -83,11 +85,11 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
           )}
         </div>
         <div className="flex min-w-0 flex-col gap-2">
-          <div>{full ? <Badge tone="brand">Verificeret klinik</Badge> : <Badge>Ikke på TandMatch endnu</Badge>}</div>
+          <div>
+            <TierBadge tier={clinic.tier} />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{clinic.name}</h1>
-          <p className="text-base text-ink-muted">
-            {clinic.address}, {clinic.postalCode} {clinic.city}
-          </p>
+          <ClinicWhere clinic={clinic} size="base" />
           {full && stats && stats.reviewCount > 0 && stats.avgStars !== null && (
             <p className="text-base text-ink-muted">
               <StarRating value={stats.avgStars} count={stats.reviewCount} size="lg" /> verificerede anmeldelser
@@ -95,11 +97,11 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
           )}
           {full && (
             <p className="text-base text-ink">
-              <span className="text-ink-muted">Første ledige tid: </span>
+              <span className="text-ink-muted">Første ledige tid (undersøgelse): </span>
               {clinic.firstAvailableAt ? (
                 <span className="font-semibold">{formatShortDateTime(clinic.firstAvailableAt)}</span>
               ) : (
-                <span className="text-ink-muted">ingen ledige tider de næste 14 dage</span>
+                <span className="text-ink-muted">{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
               )}
             </p>
           )}
@@ -175,9 +177,7 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
               <div role="region" aria-label={`Kort over ${clinic.name}`} className="isolate h-72 overflow-hidden rounded-card border border-line">
                 <ClinicMapLazy clinics={[clinic]} hasServices={false} emergency={false} popups={false} />
               </div>
-              <p className="text-sm text-ink-muted">
-                {clinic.address}, {clinic.postalCode} {clinic.city}
-              </p>
+              <ClinicWhere clinic={clinic} />
             </Section>
           )}
           {full && (

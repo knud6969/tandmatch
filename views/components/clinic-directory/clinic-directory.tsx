@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EMERGENCY_FILTER_HOURS } from "@/lib/constants/clinics";
 import type { ClinicListDto } from "@/lib/types/clinics";
 import { CHAT_HREF, CHAT_READY } from "@/lib/navigation/entries";
@@ -18,27 +18,13 @@ import { CompareBar, MAX_COMPARE, type CompareChoice } from "@/views/components/
 import { SortSelect } from "@/views/components/clinic-directory/sort-select";
 import { apiRequest } from "@/views/utils/api-client";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
-import { buildClinicsQuery, DEFAULT_FILTERS, hasOrigin, isPostalCode, type DirectoryFilters } from "@/views/utils/clinic-query";
+import { buildClinicsQuery, DEFAULT_FILTERS, filtersFromSearch, filtersToSearch, hasOrigin, type DirectoryFilters } from "@/views/utils/clinic-query";
 import { useLoad } from "@/views/utils/use-load";
 
 type Loaded = ClinicListDto & { query: string };
 type MobileView = "list" | "map";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SLUG = /^[a-z0-9_]{1,60}$/;
-
-// Startfiltre fra adressen: ?akut=1 (forsidens "Jeg har ondt"), ?services=, ?postalCode=.
-function initialFilters(params: URLSearchParams): DirectoryFilters {
-  const emergency = params.get("akut") === "1";
-  const postalCode = params.get("postalCode") ?? "";
-  return {
-    ...DEFAULT_FILTERS,
-    emergency,
-    sort: emergency ? "first_available" : null,
-    serviceSlugs: (params.get("services") ?? "").split(",").filter((slug) => SLUG.test(slug)).slice(0, 5),
-    postalCode: isPostalCode(postalCode) ? postalCode : "",
-  };
-}
 
 function countActive(filters: DirectoryFilters): number {
   return [
@@ -55,7 +41,9 @@ function countActive(filters: DirectoryFilters): number {
 // fra GET /api/clinics. På desktop står de side om side, på mobil skifter man mellem dem.
 export function ClinicDirectory() {
   const params = useSearchParams();
-  const [filters, setFilters] = useState<DirectoryFilters>(() => initialFilters(params));
+  const router = useRouter();
+  const pathname = usePathname();
+  const [filters, setFilters] = useState<DirectoryFilters>(() => filtersFromSearch(params));
   const [resetVersion, setResetVersion] = useState(0);
   const [view, setView] = useState<MobileView>("list");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -63,6 +51,13 @@ export function ClinicDirectory() {
 
   const caseParam = params.get("sag");
   const caseId = caseParam && UUID.test(caseParam) ? caseParam : null;
+
+  // Filtrene spejles i adressen (B16), så genindlæsning, profil og tilbage samt deling bevarer dem.
+  const currentSearch = params.toString();
+  useEffect(() => {
+    const next = filtersToSearch(filters, caseId);
+    if (next !== currentSearch) router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  }, [filters, caseId, currentSearch, pathname, router]);
 
   const query = useMemo(() => buildClinicsQuery(filters), [filters]);
   const loader = useCallback(async (): Promise<Loaded> => ({ ...(await apiRequest<ClinicListDto>(`/api/clinics?${query}`)), query }), [query]);
@@ -108,7 +103,8 @@ export function ClinicDirectory() {
         {filters.emergency && (
           <Alert tone="warning" title="Akut tandpine">
             Her ser du klinikker med en ledig akuttid inden for {EMERGENCY_FILTER_HOURS} timer, sorteret efter den tidligste. Er det
-            livstruende, eller har du svært ved at trække vejret eller synke, så ring 112.
+            livstruende, eller har du svært ved at trække vejret eller synke, så ring 112. Uden for klinikkernes åbningstid kan du
+            kontakte tandlægevagten via 1813.
           </Alert>
         )}
       </header>
@@ -175,6 +171,12 @@ export function ClinicDirectory() {
               {data.clinics.length === 0 ? (
                 <Alert tone="info" title="Ingen klinikker matcher dine valg">
                   <p>Prøv at udvide afstanden, fjerne et filter eller vælge færre behandlinger.</p>
+                  {filters.emergency && (
+                    <p className="mt-2" data-testid="akut-henvisning">
+                      Har du akut tandpine lige nu, så kontakt tandlægevagten via 1813 (uden for åbningstid) eller ring til din egen
+                      tandlæge. Ring 112, hvis det er livstruende.
+                    </p>
+                  )}
                   {activeCount > 0 && (
                     <Button variant="secondary" className="mt-3" onClick={reset}>
                       Nulstil filtre
@@ -210,7 +212,7 @@ export function ClinicDirectory() {
               <div
                 role="region"
                 aria-label="Kort over klinikkerne i listen"
-                className="isolate h-[65dvh] min-h-80 overflow-hidden rounded-card border border-line shadow-card lg:h-[calc(100dvh-8rem)]"
+                className="isolate h-[65dvh] min-h-80 overflow-hidden rounded-card border border-line shadow-card lg:h-[min(calc(100dvh-10rem),44rem)]"
               >
                 <ClinicMapLazy
                   clinics={data.clinics}

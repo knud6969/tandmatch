@@ -63,7 +63,7 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
     if (value !== null) onChange({ maxPrice: value });
   }
 
-  function usePosition() {
+  function requestPosition() {
     setLocationError(null);
     if (!("geolocation" in navigator)) {
       setLocationError("Din browser kan ikke finde din position. Skriv dit postnummer i stedet.");
@@ -178,7 +178,7 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
               onChange={(event) => changePostal(event.target.value)}
               error={postalInvalid ? "Postnummeret skal være fire cifre." : undefined}
             />
-            <Button variant="secondary" onClick={usePosition} disabled={locating}>
+            <Button variant="secondary" onClick={requestPosition} disabled={locating}>
               {locating ? "Finder position …" : "Brug min position"}
             </Button>
             {filters.position && (

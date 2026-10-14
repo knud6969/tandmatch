@@ -1,8 +1,9 @@
-import { DEFAULT_MAX_DISTANCE_KM } from "@/lib/constants/clinics";
+import { CLINIC_SORTS, DEFAULT_MAX_DISTANCE_KM } from "@/lib/constants/clinics";
+import { postalCodeSchema, servicesParamSchema } from "@/lib/schemas/clinics";
 import type { ClinicSort } from "@/lib/types/clinics";
 
-// Patientens filtre i klinikoversigten (architecture 6.6, 10.7). Står i URL'en kun for det, der kommer udefra
-// (?akut=1, ?sag=), og ellers i komponentens tilstand.
+// Patientens filtre i klinikoversigten (architecture 6.6, 10.7). De spejles i URL'en (2.8, B16), så genindlæsning, profil
+// og tilbage samt deling bevarer dem.
 export type DirectoryFilters = {
   serviceSlugs: string[];
   postalCode: string; // tom eller fire cifre
@@ -52,5 +53,47 @@ export function buildClinicsQuery(filters: DirectoryFilters): string {
   return params.toString();
 }
 
-const POSTAL_CODE = /^\d{4}$/;
-export const isPostalCode = (value: string) => POSTAL_CODE.test(value);
+export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
+
+// Filtrene som adresselinje til siden selv: samme nøgler som API'et, men akut er `?akut=1`. `?sag=` bevares.
+export function filtersToSearch(filters: DirectoryFilters, caseId: string | null): string {
+  const params = new URLSearchParams(buildClinicsQuery(filters));
+  params.delete("emergency");
+  if (filters.emergency) params.set("akut", "1");
+  if (caseId) params.set("sag", caseId);
+  return params.toString();
+}
+
+const numberParam = (value: string | null): number | null => {
+  if (value === null || value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+// Omvendt: læser filtrene fra adressen. Ugyldige værdier ignoreres (adressen kan være redigeret eller delt).
+export function filtersFromSearch(params: URLSearchParams): DirectoryFilters {
+  const emergency = params.get("akut") === "1" || params.get("emergency") === "true";
+  const services = servicesParamSchema.safeParse(params.get("services") ?? "");
+  const postalCode = params.get("postalCode") ?? "";
+  const lat = numberParam(params.get("lat"));
+  const lng = numberParam(params.get("lng"));
+  const position = lat !== null && lng !== null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+  const distance = numberParam(params.get("maxDistanceKm"));
+  const price = numberParam(params.get("maxPrice"));
+  const stars = numberParam(params.get("minStars"));
+  const sortParam = params.get("sort");
+  const sort = CLINIC_SORTS.find((candidate) => candidate === sortParam) ?? (emergency ? "first_available" : null);
+  const serviceSlugs = services.success ? services.data : [];
+  return {
+    ...DEFAULT_FILTERS,
+    serviceSlugs,
+    postalCode: !position && isPostalCode(postalCode) ? postalCode : "",
+    position,
+    maxDistanceKm: distance !== null && distance > 0 ? distance : DEFAULT_MAX_DISTANCE_KM,
+    maxPrice: price !== null && price >= 0 && serviceSlugs.length > 0 ? price : null,
+    minStars: stars !== null && stars >= 1 && stars <= 5 ? stars : null,
+    emergency,
+    contactableOnly: params.get("contactableOnly") === "true",
+    sort,
+  };
+}

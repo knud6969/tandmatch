@@ -1,5 +1,5 @@
 // Formatering af datoer, beløb og afstande til dansk visning. Alle tidspunkter vises i dansk tid.
-const TIME_ZONE = "Europe/Copenhagen";
+import { CLINIC_TIME_ZONE as TIME_ZONE } from "@/lib/constants/bookings";
 
 const dateFormat = new Intl.DateTimeFormat("da-DK", { dateStyle: "long", timeZone: TIME_ZONE });
 const dateTimeFormat = new Intl.DateTimeFormat("da-DK", {
@@ -36,13 +36,6 @@ export function formatKm(km: number): string {
   return `${kmFormat.format(km)} km`;
 }
 
-// Værdi til <input type="datetime-local"> i browserens lokale tid.
-export function toDateTimeLocal(iso: string): string {
-  const date = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 // Omvendt: fra datetime-local til ISO 8601 (UTC). Ugyldig værdi returneres uændret, så zod kan afvise den.
 export function fromDateTimeLocal(value: string): string {
   const date = new Date(value);
@@ -52,9 +45,9 @@ export function fromDateTimeLocal(value: string): string {
 const monthFormat = new Intl.DateTimeFormat("da-DK", { month: "long", year: "numeric", timeZone: TIME_ZONE });
 const avgFormat = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-// "2026-10" eller et tidspunkt i måneden (API'et sender første dag i måneden som tidsstempel) -> "oktober 2026".
+// "2026-10" (API'ets createdMonth) -> "oktober 2026".
 export function formatMonth(value: string): string {
-  const date = /^\d{4}-\d{2}$/.test(value) ? new Date(`${value}-15T12:00:00Z`) : new Date(value);
+  const date = new Date(`${value}-15T12:00:00Z`);
   return Number.isNaN(date.getTime()) ? "" : monthFormat.format(date);
 }
 

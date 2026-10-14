@@ -1,6 +1,7 @@
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import { LinkButton } from "@/views/components/ui/button";
 
-export const MAX_COMPARE = 3; // højst tre klinikker pr. sag (architecture 6.1)
+export const MAX_COMPARE = MAX_ACTIVE_LEADS_PER_CASE; // højst tre klinikker pr. sag (architecture 6.1)
 
 export type CompareChoice = { id: string; name: string };
 

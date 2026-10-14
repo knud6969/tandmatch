@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
+import { EXAMINATION_SERVICE_SLUG } from "@/lib/constants/services";
 import type { ClinicPriceDto, SlotDto } from "@/lib/types/clinics";
 import { LoadState } from "@/views/components/ui/load-state";
 import { SelectField } from "@/views/components/ui/select-field";
@@ -11,9 +13,9 @@ import { useLoad } from "@/views/utils/use-load";
 const DAYS_SHOWN = 5;
 const TIMES_PER_DAY = 6;
 
-// Ledige tider de næste 14 dage for en valgt behandling (architecture 6.7, GET /api/clinics/{id}/availability).
+// Ledige tider i det næste døgnvindue (MAX_AVAILABILITY_RANGE_DAYS) for en valgt behandling (architecture 6.7, GET /api/clinics/{id}/availability).
 export function AvailabilitySlots({ clinicId, prices }: { clinicId: string; prices: ClinicPriceDto[] }) {
-  const initial = prices.find((price) => price.serviceSlug === "undersoegelse") ?? prices[0];
+  const initial = prices.find((price) => price.serviceSlug === EXAMINATION_SERVICE_SLUG) ?? prices[0];
   const [serviceId, setServiceId] = useState(initial?.serviceId ?? "");
 
   const loader = useCallback(
@@ -48,7 +50,7 @@ export function AvailabilitySlots({ clinicId, prices }: { clinicId: string; pric
         ))}
       </SelectField>
       <LoadState loading={loading && !data} error={error} onRetry={reload} />
-      {data && days.length === 0 && <p className="text-base text-ink-muted">Ingen ledige tider de næste 14 dage.</p>}
+      {data && days.length === 0 && <p className="text-base text-ink-muted">{`Ingen ledige tider de næste ${MAX_AVAILABILITY_RANGE_DAYS} dage.`}</p>}
       {days.length > 0 && (
         <ul className="flex flex-col gap-3">
           {days.map(([key, slots]) => (
