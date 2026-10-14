@@ -77,6 +77,18 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
   const clinicName = `E2E Testklinik ${testInfo.project.name} ${cvr}`;
   let deleted = false;
 
+  // CSP-fejl i konsollen og securitypolicyviolation-hændelser på klinikkens sider samles og tjekkes til sidst.
+  const cspProblems: string[] = [];
+  page.on("console", (msg) => {
+    const text = msg.text();
+    if (/Content[- ]Security[- ]Policy|Refused to (load|execute|connect|apply|frame)/i.test(text)) cspProblems.push(`${page.url()}: ${text}`);
+  });
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (e) => {
+      console.error(`Content Security Policy-brud: ${e.violatedDirective} ${e.blockedURI}`);
+    });
+  });
+
   try {
     // 1. Opret klinik
     await visit(page, "/opret/klinik");
@@ -206,6 +218,7 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     deleted = true;
     await page.goto("/klinik");
     await expect(page).toHaveURL(/\/log-ind|\/login/);
+    expect(cspProblems, "CSP-fejl i konsollen").toEqual([]);
   } finally {
     if (!deleted) {
       // Oprydning ved fejl midt i forløbet: slet kontoen via API'et med den aktuelle session.
