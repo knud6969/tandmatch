@@ -39,7 +39,7 @@ function extractText(data: unknown): string | null {
   return null;
 }
 
-export async function callStructured(params: StructuredCallParams): Promise<unknown> {
+async function callStructured(params: StructuredCallParams): Promise<unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new AiUnavailableError();
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;

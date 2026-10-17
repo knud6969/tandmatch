@@ -1,3 +1,4 @@
+import "server-only";
 // Opsummering til klinikken (architecture 7.1, 7.2). Klient og regler gives i constructoren. Opsummeringen er
 // beskrivende og indeholder aldrig den foreløbige vurdering fra chatten. Kender ikke databasen: controlleren giver
 // chat, bekræftede ydelser og billeder og gemmer resultatet.

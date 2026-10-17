@@ -1,21 +1,12 @@
+import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
 import type { ServiceDto } from "@/lib/types/services";
 
 // Delte AI-typer (architecture 7.4, 10.6). Skemaerne er strict: ingen felter for pris eller klinikker.
 // MDR-TILPASNING: feltet preliminaryAssessment fjernes eller tvinges til null i services/ai/rules.ts (architecture 7.8).
-export type OutOfScopeTopic = "price" | "clinic_recommendation";
-
-// Chat: ét svar pr. patientbesked
-export type AiChatTurn = {
-  reply: string; // max 700 tegn. Spørgsmål, forklaring, procesvejledning
-  preliminaryAssessment: string | null; // max 400 tegn. Altid foreløbig; null hvis rules.ts slår vurdering fra
-  suggestedServices: string[]; // max 5 slugs fra kataloget
-  emergency: boolean; // akutte tegn
-  outOfScopeTopics: OutOfScopeTopic[];
-  readyForSummary: boolean; // aktiverer kun en knap
-};
-
-export type ImageView = "front" | "upper" | "lower" | "side_left" | "side_right" | "unclear";
-export type ImageQuality = "ok" | "too_dark" | "blurry" | "wrong_angle" | "not_teeth";
+export type OutOfScopeTopic = (typeof OUT_OF_SCOPE_TOPICS)[number];
+export type ImageView = (typeof IMAGE_VIEWS)[number];
+export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 
 export type AiImageObservation = {
   imageRef: string; // case_images.id på serveren (intern "img_n" mappes før lagring)
@@ -50,7 +41,7 @@ export type AiChatMessageDto = {
 
 export type ChatStateDto = {
   conversationId: string | null;
-  status: "active" | "closed";
+  status: ConversationStatus;
   messages: AiChatMessageDto[];
   messagesLeft: number;
   readyForSummary: boolean;
@@ -69,7 +60,7 @@ export type ChatTurnResponse = {
 export type AiConversationRecord = {
   id: string;
   caseId: string;
-  status: "active" | "closed";
+  status: ConversationStatus;
   userMessageCount: number;
   promptVersion: string | null;
   model: string | null;
@@ -92,7 +83,7 @@ export type AiMessageRecord = {
 // Dataeksport (GDPR art. 15/20): patientens egne AI-samtaler pr. sag. Beskederne er maskeret, som de er gemt.
 export type ChatExportDto = {
   caseId: string;
-  status: "active" | "closed";
+  status: ConversationStatus;
   userMessageCount: number;
   promptVersion: string | null;
   model: string | null;

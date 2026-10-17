@@ -1,3 +1,4 @@
+import "server-only";
 // Chat-tur mod sprogmodellen (architecture 7.2, 7.5). Klienten og reglerne gives i constructoren, så reglerne kan
 // strammes (rules.ts) og klienten erstattes af en falsk i tests. Kender hverken databasen, sessionen eller routes:
 // controlleren giver historik, katalog og billeder og gemmer resultatet.

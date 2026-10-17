@@ -2,6 +2,18 @@ import type { ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 
 // Faste danske tekster om AI’ens grænser. Skrevet i koden og ikke af modellen (architecture 7.3, 7.5).
 
+// Åbningsbesked i chatten (vises af UI, skrevet i koden og ikke af modellen).
+export const CHAT_WELCOME_TEXT =
+  "Hej. Beskriv med dine egne ord, hvad du oplever, eller hvad du gerne vil have lavet, fx hvor det sidder, og hvor længe du har haft det. Jeg hjælper dig med at sætte ord på det, så klinikkerne forstår dit behov. Jeg kan ikke stille diagnoser eller sige, hvad det koster.";
+
+// Fast tekst over chatten om personoplysninger (maskeringen i services/ai/pii.ts er kun et sikkerhedsnet).
+export const CHAT_PII_WARNING_TEXT = "Skriv ikke dit navn, din adresse eller kontaktoplysninger.";
+
+// Overskrift på mærkatet ved en foreløbig vurdering, og den forklarende tekst under (AiDisclaimer).
+export const PRELIMINARY_ASSESSMENT_TITLE = "Foreløbig vurdering fra AI";
+export const AI_DISCLAIMER_TEXT =
+  "AI-assistenten kan forklare og give en foreløbig vurdering ud fra det, du skriver. Den er ikke en diagnose og ikke en garanti. Klinikken laver den endelige vurdering.";
+
 // Fast tekst over chatten.
 export const AI_BOUNDARY_TEXT =
   "AI-assistenten giver ikke endelige vurderinger og kender ikke priserne. Klinikken vurderer.";

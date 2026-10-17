@@ -1,6 +1,7 @@
+import "server-only";
 // Falsk modelklient til tests (architecture 7.5, række 9). Kalder aldrig OpenAI og bruger intet netværk.
 // To brugsmåder: enhedstests giver en `script`, der bestemmer svaret; API-testene bruger standardadfærden, som styres
-// af markører i patientens tekst (se nederst). Ren fil uden server-imports.
+// af markører i patientens tekst (se nederst). Kun server-side (import "server-only").
 // Vælges kun af createAiClient() (openai.ts) når AI_FAKE_CLIENT=1 og NODE_ENV ikke er production.
 
 import { AiInvalidOutputError, AiTimeoutError } from "./errors";

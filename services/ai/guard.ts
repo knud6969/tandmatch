@@ -12,6 +12,8 @@ import {
 import type { AiImageObservation, AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./errors";
 import {
+  DEFAULT_CATEGORIES,
+  REPLY_CATEGORIES,
   detectEmergency,
   detectOutOfScopeTopics,
   findForbiddenCategories,
@@ -61,8 +63,14 @@ function emergencyText(lifeThreatening: boolean): string {
   return lifeThreatening ? `${EMERGENCY_REFERRAL_TEXT} ${LIFE_THREATENING_REFERRAL_TEXT}` : EMERGENCY_REFERRAL_TEXT;
 }
 
-function textFilterOptions(rules: AiRules) {
-  return { strictMdrMode: rules.strictMdrMode } as const;
+// Svar til patienten (reply): vurderinger hører kun hjemme i preliminaryAssessment (K2).
+function replyFilterOptions(rules: AiRules) {
+  return { categories: REPLY_CATEGORIES, strictMdrMode: rules.strictMdrMode } as const;
+}
+
+// Den foreløbige vurdering selv: vurderingsord er tilladt her, resten gælder som altid.
+function assessmentFilterOptions(rules: AiRules) {
+  return { categories: DEFAULT_CATEGORIES, strictMdrMode: rules.strictMdrMode } as const;
 }
 
 export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall): Promise<ChatGuardResult> {
@@ -90,9 +98,9 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     // MDR-TILPASNING: slår rules.allowPreliminaryAssessment vurdering fra, tvinges feltet til null.
     const assessment = rules.allowPreliminaryAssessment ? turn.preliminaryAssessment : null;
 
-    if (findForbiddenCategories(turn.reply, textFilterOptions(rules)).length > 0) continue;
+    if (findForbiddenCategories(turn.reply, replyFilterOptions(rules)).length > 0) continue;
     if (assessment !== null) {
-      if (findForbiddenCategories(assessment, textFilterOptions(rules)).length > 0) continue;
+      if (findForbiddenCategories(assessment, assessmentFilterOptions(rules)).length > 0) continue;
       if (!isPhrasedAsPreliminary(assessment)) continue;
     }
     // Ukendte slugs afvises (7.5).
@@ -102,9 +110,11 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     const topics = mergeTopics(turn.outOfScopeTopics, detectedTopics).filter((t) => rules.blockedTopics.includes(t));
     if (emergency) {
       // Akut: ingen almindelig samtale. Ingen forslag, ingen vurdering, ingen opsummering.
+      // Fanger detektionen akut, men modellen ikke, erstattes svaret af den faste henvisning, så der ikke står
+      // almindelige spørgsmål ved siden af (B1).
       return {
         maskedUserMessage,
-        reply: turn.reply,
+        reply: turn.emergency ? turn.reply : emergencyText(detected.lifeThreatening),
         preliminaryAssessment: null,
         suggestedServices: [],
         emergency: true,
@@ -159,7 +169,14 @@ export type SummaryGuardResult = {
   fallback: "none" | "write_yourself";
 };
 
-const SUMMARY_TEXT_CATEGORIES: readonly ForbiddenCategory[] = ["price", "clinic_recommendation", "definitive", "assessment"];
+const SUMMARY_TEXT_CATEGORIES: readonly ForbiddenCategory[] = [
+  "price",
+  "clinic_recommendation",
+  "definitive",
+  "assessment",
+  "speculation",
+];
+const WITHOUT_PRICE: readonly ForbiddenCategory[] = SUMMARY_TEXT_CATEGORIES.filter((c) => c !== "price");
 const IMAGE_TEXT_CATEGORIES: readonly ForbiddenCategory[] = [
   "price",
   "clinic_recommendation",
@@ -167,11 +184,18 @@ const IMAGE_TEXT_CATEGORIES: readonly ForbiddenCategory[] = [
   "image_interpretation",
 ];
 
+// K3: patientens ord åbner kun for kategorien "price", og kun for hele udsagn i patientWishes, som udelukkende består
+// af ord, patienten selv har skrevet (fx "Højst 5000 kr."). Klinik-, endelige, vurderings- og diagnoseord kontrolleres
+// altid, uanset hvad patienten skrev.
+function isPatientsOwnWords(statement: string, patientWords: ReadonlySet<string>): boolean {
+  const words = wordsOf(statement);
+  return words.length > 0 && words.every((w) => patientWords.has(w));
+}
+
 export async function runSummaryGuard(input: SummaryGuardInput, callModel: ModelCall): Promise<SummaryGuardResult> {
   const patientTexts = input.history.filter((m) => m.role === "user").map((m) => maskPii(m.content));
   const detected = mergeTopics(...patientTexts.map((t) => detectOutOfScopeTopics(t, input.rules.blockedTopics)));
-  // Patientens egne ord og tal må genfortælles i tekstfelterne (fx et budget hun selv har nævnt), men ikke i billedfelterne.
-  const allowTerms = unique(patientTexts.flatMap((t) => wordsOf(t)));
+  const patientWords = new Set(patientTexts.flatMap((t) => wordsOf(t)));
   const refToId = new Map(input.images.map((img) => [img.ref, img.imageId]));
 
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
@@ -195,13 +219,15 @@ export async function runSummaryGuard(input: SummaryGuardInput, callModel: Model
     const refsOk = refs.length === input.images.length && new Set(refs).size === refs.length && refs.every((r) => refToId.has(r));
     if (!refsOk) continue;
 
-    const textFields = [draft.summaryText, ...draft.patientWishes, ...draft.patientReportedHistory].join(" ");
-    const textHits = findForbiddenCategories(textFields, {
-      categories: SUMMARY_TEXT_CATEGORIES,
-      strictMdrMode: input.rules.strictMdrMode,
-      allowTerms,
-    });
-    if (textHits.length > 0) continue;
+    const checked = (text: string, categories: readonly ForbiddenCategory[]) =>
+      findForbiddenCategories(text, { categories, strictMdrMode: input.rules.strictMdrMode }).length > 0;
+    const textProblem =
+      checked(draft.summaryText, SUMMARY_TEXT_CATEGORIES) ||
+      draft.patientReportedHistory.some((text) => checked(text, SUMMARY_TEXT_CATEGORIES)) ||
+      draft.patientWishes.some((text) =>
+        checked(text, isPatientsOwnWords(text, patientWords) ? WITHOUT_PRICE : SUMMARY_TEXT_CATEGORIES),
+      );
+    if (textProblem) continue;
 
     const imageProblem = draft.images.some(
       (img) =>

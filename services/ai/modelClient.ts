@@ -1,5 +1,6 @@
+import "server-only";
 // Grænsefladen til sprogmodellen. AiChatService og AiSummaryService får en StructuredModelClient i constructoren,
-// så de kan testes med en falsk klient (architecture 2.1.1). Ren fil uden server-imports.
+// så de kan testes med en falsk klient (architecture 2.1.1). Kun server-side (import "server-only").
 
 export type ModelPart =
   | { type: "text"; text: string }

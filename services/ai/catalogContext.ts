@@ -24,8 +24,3 @@ export function buildCatalogContext(groups: ServiceGroupDto[]): string {
 export function catalogSlugs(groups: ServiceGroupDto[]): Set<string> {
   return new Set(groups.flatMap((group) => group.services.map((service) => service.slug)));
 }
-
-// Ukendte slugs afvises (architecture 7.5, række 5). Dubletter fjernes ikke her: guard afviser dem også.
-export function findUnknownSlugs(slugs: readonly string[], known: ReadonlySet<string>): string[] {
-  return slugs.filter((slug) => !known.has(slug));
-}

@@ -5,12 +5,10 @@
 // guard.ts tvinger det til null, når rules.allowPreliminaryAssessment er false.
 
 import { z } from "zod";
+import { IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
 
-export const OUT_OF_SCOPE_TOPICS = ["price", "clinic_recommendation"] as const;
-export const IMAGE_VIEWS = ["front", "upper", "lower", "side_left", "side_right", "unclear"] as const;
-export const IMAGE_QUALITIES = ["ok", "too_dark", "blurry", "wrong_angle", "not_teeth"] as const;
-
-export const MAX_SUGGESTED_SERVICES = 5;
+export const MAX_SUGGESTED_SERVICES = MAX_CONFIRMED_SERVICES_PER_CASE;
 export const SLUG_PATTERN = /^[a-z0-9_]{2,60}$/;
 
 const slugList = z.array(z.string().regex(SLUG_PATTERN)).max(MAX_SUGGESTED_SERVICES);
@@ -43,9 +41,6 @@ export const summaryModelSchema = z.strictObject({
     .max(5),
   outOfScopeTopics: topics,
 });
-
-export type ModelChatTurn = z.infer<typeof chatTurnSchema>;
-export type ModelSummary = z.infer<typeof summaryModelSchema>;
 
 const topicsJson = { type: "array", items: { type: "string", enum: [...OUT_OF_SCOPE_TOPICS] } };
 const stringArray = { type: "array", items: { type: "string" } };

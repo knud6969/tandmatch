@@ -1,5 +1,8 @@
 // AiChatService og AiSummaryService med en falsk klient i constructoren (architecture 2.1.1). Intet kald til OpenAI.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+// server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.
+vi.mock("server-only", () => ({}));
+
 import type { ServiceGroupDto } from "@/lib/types/services";
 import { AiChatService } from "@/services/ai/aiChatService";
 import { AiSummaryService } from "@/services/ai/aiSummaryService";
