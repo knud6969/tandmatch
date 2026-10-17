@@ -59,3 +59,7 @@ export const IMAGE_QUALITY_LABELS: Record<ImageQuality, string> = {
   wrong_angle: "Forkert vinkel",
   not_teeth: "Viser ikke tænder",
 };
+
+// Fast svar, når AI-modellen ikke kan svare. Turen er brugt, og patientens besked er gemt (architecture 10.6).
+export const CHAT_UNAVAILABLE_TEXT =
+  "Jeg kunne ikke svare lige nu. Prøv at sende din besked igen om lidt, eller skriv din beskrivelse selv.";

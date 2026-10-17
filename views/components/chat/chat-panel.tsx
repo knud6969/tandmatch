@@ -138,6 +138,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
     if (!text || action.busy) return;
     setPending(text);
     setDraft("");
+    let savedWithoutReply = false;
     const ok = await action.run(async () => {
       try {
         const turn = await apiRequest<ChatTurnResponse>(`/api/cases/${caseId}/chat`, { method: "POST", body: { message: text } });
@@ -147,10 +148,20 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
         onTurn();
       } catch (error) {
         if (error instanceof ApiRequestError && error.code === "CONSENT_REQUIRED") setNeedsConsent(true);
+        // Ved AI_UNAVAILABLE er beskeden og et fast svar allerede gemt, og turen er brugt (architecture 10.6).
+        if (error instanceof ApiRequestError && error.code === "AI_UNAVAILABLE") savedWithoutReply = true;
         throw error;
       }
     });
-    if (!ok) setDraft(text); // beskeden er ikke gemt, så patienten kan prøve igen uden at skrive den forfra
+    if (savedWithoutReply) {
+      // Hent samtalen igen i stedet for at lægge beskeden tilbage, så den ikke sendes to gange.
+      setExtra([]);
+      setReadyOverride(null);
+      setMessagesLeftOverride(null);
+      chat.reload();
+    } else if (!ok) {
+      setDraft(text); // beskeden er ikke gemt, så patienten kan prøve igen uden at skrive den forfra
+    }
     setPending(null);
   }
 

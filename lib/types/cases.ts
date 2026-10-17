@@ -14,7 +14,7 @@ export type CaseRecordDto = {
   isEmergency: boolean;
   postalCode: string | null;
   preferredTimeframe: CaseTimeframe | null;
-  aiSummary: unknown | null;
+  aiSummary: AiSummary | null; // zod-parset i CasesRepository (ugyldigt → null)
   summaryText: string | null;
   summaryAiAssisted: boolean;
   summaryApprovedAt: string | null;

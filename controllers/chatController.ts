@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
+import { CHAT_UNAVAILABLE_TEXT } from "@/lib/constants/ai-texts";
 import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "@/lib/constants/limits";
 import type { chatMessageSchema } from "@/lib/schemas/chat";
 import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
@@ -35,7 +36,6 @@ export type ChatDeps = {
 };
 
 // Fast svar, når modelkaldet fejlede efter at turen var reserveret (H1). Skrevet i koden, ikke af modellen.
-const CHAT_MODEL_FAILED_TEXT = "Jeg kunne ikke svare lige nu. Prøv at sende din besked igen om lidt, eller skriv din beskrivelse selv.";
 
 function flatten(groups: ServiceGroupDto[]): ServiceDto[] {
   return groups.flatMap((group) => group.services);
@@ -200,7 +200,7 @@ export class ChatController {
     await new ChatRepository(this.admin())
       .appendAssistantMessage(this.session.userId, {
         conversationId,
-        content: CHAT_MODEL_FAILED_TEXT,
+        content: CHAT_UNAVAILABLE_TEXT,
         preliminaryAssessment: null,
         suggestedServiceIds: [],
         emergency: false,

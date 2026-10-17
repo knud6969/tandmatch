@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { canSendCase } from "@/lib/domain/cases";
 import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/schemas/cases";
-import type { AiSummary } from "@/lib/types/ai";
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/types/cases";
 import { notDraft } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
@@ -85,7 +84,7 @@ export class CasesController {
       suggestedServices,
       images: await this.imageUrls.toDtos(imageRecords),
       hasConversation: conversation.hasConversation,
-      aiSummary: record.aiSummary as AiSummary | null, // allerede zod-parset i CasesRepository
+      aiSummary: record.aiSummary,
       summaryText: record.summaryText,
       summaryApprovedAt: record.summaryApprovedAt,
       submittedAt: record.submittedAt,

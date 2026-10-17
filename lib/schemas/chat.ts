@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHAT_MAX_CHARS } from "@/lib/constants/limits";
+import { CHAT_MAX_CHARS, SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
 
 // Én besked fra patienten (architecture 10.6). Teksten PII-maskeres i AI-laget, før den sendes eller gemmes.
 export const chatMessageSchema = z
@@ -15,13 +15,13 @@ export const chatMessageSchema = z
 // Opsummering: POST har tom body.
 export const generateSummarySchema = z.object({}).strict();
 
-// Patientens rettede og godkendte opsummering (architecture 10.5). Max 1500 tegn, som i databasen.
+// Patientens rettede og godkendte opsummering (architecture 10.5). Max SUMMARY_MAX_CHARS tegn, som i databasen.
 export const approveSummarySchema = z
   .object({
     summaryText: z
       .string({ message: "Skriv en opsummering." })
       .trim()
       .min(1, "Skriv en opsummering.")
-      .max(1500, "Opsummeringen må højst være 1500 tegn."),
+      .max(SUMMARY_MAX_CHARS, `Opsummeringen må højst være ${SUMMARY_MAX_CHARS} tegn.`),
   })
   .strict();
