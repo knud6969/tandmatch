@@ -1,5 +1,4 @@
 import "server-only";
-import { isActiveLead } from "@/lib/domain/leads";
 import { parseAiSummary } from "@/lib/schemas/aiSummary";
 import type { CaseConversationInfo, CaseExportDto, CaseRecordDto } from "@/lib/types/cases";
 import type { LeadStatus } from "@/lib/types/leads";
@@ -165,15 +164,6 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
       "cases: delete fejlede",
     );
     return rows.length > 0;
-  }
-
-  // Antal aktive leads på sagen (sendt, accepteret eller booket). Patienten ser egne leads (RLS).
-  async countActiveLeads(caseId: string): Promise<number> {
-    const rows = await this.runList<{ status: LeadStatus }>(
-      this.db.from("leads").select("status").eq("case_id", caseId),
-      "leads: select fejlede",
-    );
-    return rows.filter((row) => isActiveLead(row.status)).length;
   }
 
   // Om sagen har en AI-samtale, og de ydelser, AI'en senest foreslog (kun id'er; kataloget slås op af controlleren).

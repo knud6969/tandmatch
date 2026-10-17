@@ -181,6 +181,63 @@ describe("send leads", () => {
   });
 });
 
+// Indsætter `count` sager med ét afvist lead hver hos samme klinik via service role (hurtigt vej til døgnloftet).
+async function seedDeclinedLeadsAcrossCases(userId: string, clinicId: string, count: number) {
+  const cases = await admin
+    .from("cases")
+    .insert(Array.from({ length: count }, () => ({ patient_id: userId, postal_code: "2100", preferred_timeframe: "flexible" })))
+    .select("id");
+  assert.ifError(cases.error);
+  const now = new Date().toISOString();
+  const leads = await admin.from("leads").insert(
+    (cases.data ?? []).map((row) => ({ case_id: row.id, clinic_id: clinicId, status: "declined", decline_reason: "other", responded_at: now })),
+  );
+  assert.ifError(leads.error);
+}
+
+describe("lofter: døgn og i alt", () => {
+  it("afviser det 16. lead på 24 timer på tværs af sager (LEAD_DAILY_LIMIT, 429)", async () => {
+    const p = await patient();
+    const [a, b] = await clinics(2);
+    await seedDeclinedLeadsAcrossCases(p.userId, a, 15);
+    const r = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [b] });
+    assert.equal(r.status, 429, JSON.stringify(r.body));
+    assert.equal(errorOf(r), "LEAD_DAILY_LIMIT");
+    assert.equal((await p.c.get(`/api/cases/${p.caseId}/leads`)).body.leads.length, 0);
+  });
+
+  it("canSend er false, og totalLeadCount er 10, når 10 leads er brugt og ingen er aktive", async () => {
+    const p = await patient();
+    const ids = await clinics(10);
+    const now = new Date().toISOString();
+    const inserted = await admin.from("leads").insert(
+      ids.map((clinicId) => ({ case_id: p.caseId, clinic_id: clinicId, status: "declined", decline_reason: "other", responded_at: now })),
+    );
+    assert.ifError(inserted.error);
+    const sag = await p.c.get(`/api/cases/${p.caseId}`);
+    assert.equal(sag.body.leadCount, 0);
+    assert.equal(sag.body.totalLeadCount, 10);
+    assert.equal(sag.body.canSend, false);
+    const [extra] = await clinics(1);
+    const r = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [extra] });
+    assert.equal(r.status, 409);
+    assert.equal(errorOf(r), "LEAD_TOTAL_LIMIT");
+  });
+
+  it("POST /api/auth/convert har samme IP-grænse som signup (11. kald fra samme IP giver 429)", async () => {
+    const ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.77`;
+    const codes: number[] = [];
+    for (let i = 0; i < 11; i++) {
+      const c = await newClientWithTerms();
+      assert.equal((await c.startAnonymous()).status, 201);
+      createdUserIds.add((await c.get("/api/me")).body.id);
+      codes.push((await c.request("POST", "/api/auth/convert", {}, { "x-forwarded-for": ip })).status);
+    }
+    assert.ok(codes.slice(0, 10).every((code) => code === 400), codes.join(","));
+    assert.equal(codes[10], 429);
+  });
+});
+
 describe("tilbagetræk lead", () => {
   it("trækker et ubesvaret lead tilbage og kan derefter sende til en ny klinik", async () => {
     const p = await patient();
@@ -242,7 +299,10 @@ describe("læs leads, sagsoversigt og eksport", () => {
     const cases = await p.c.get("/api/cases");
     const mine = cases.body.cases.find((c: { id: string }) => c.id === p.caseId);
     assert.equal(mine.leads.length, 2);
-    for (const l of mine.leads) assert.equal(l.clinicName, "Leadtest Tandklinik");
+    for (const l of mine.leads) {
+      assert.equal(l.clinicName, "Leadtest Tandklinik");
+      assert.equal(l.removed, false);
+    }
 
     const exported = await p.c.get("/api/patients/me/export");
     assert.equal(exported.status, 200);
@@ -269,5 +329,9 @@ describe("læs leads, sagsoversigt og eksport", () => {
     assert.equal(r.body.leads[0].clinic.name, "Forsvindende Klinik");
     assert.equal(r.body.leads[0].clinic.removed, true);
     assert.equal(r.body.leads[0].clinic.logoUrl, null);
+    const cases = await p.c.get("/api/cases");
+    const mine = cases.body.cases.find((x: { id: string }) => x.id === p.caseId);
+    assert.equal(mine.leads[0].removed, true);
+    assert.equal(mine.leads[0].clinicName, "Forsvindende Klinik");
   });
 });

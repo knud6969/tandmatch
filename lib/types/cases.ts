@@ -45,7 +45,8 @@ export type CaseDto = {
   summaryText: string | null;
   summaryApprovedAt: string | null;
   submittedAt: string | null;
-  leadCount: number; // aktive leads
+  leadCount: number; // aktive leads (sammen med totalLeadCount giver det remainingLeadSlots() uden at hente leads)
+  totalLeadCount: number; // alle leads på sagen, også afviste og tilbagetrukne
   canSend: boolean;
 };
 
@@ -55,7 +56,7 @@ export type CaseListItemDto = {
   isEmergency: boolean;
   serviceNames: string[];
   submittedAt: string | null;
-  leads: { id: string; clinicName: string; status: LeadStatus }[];
+  leads: { id: string; clinicName: string; status: LeadStatus; removed: boolean }[];
   nextBooking: { startsAt: string; clinicName: string } | null;
 };
 

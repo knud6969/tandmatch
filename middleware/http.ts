@@ -173,6 +173,14 @@ export const anonymousNotAllowed = () =>
 // Sagen er ikke længere en kladde (architecture 10.5): kun kladder kan ændres.
 export const notDraft = () => new ApiError(409, "NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");
 
+// Handlingen kræver en konto. Teksten afhænger af handlingen og står kun her (routes, controllere og repositories bruger den).
+export const ACCOUNT_REQUIRED_MESSAGES = {
+  sendLeads: "Opret en konto for at kontakte klinikker.",
+  withdrawLead: "Opret en konto for at trække en henvendelse tilbage.",
+} as const;
+
+export const accountRequired = (message: string) => new ApiError(403, "ACCOUNT_REQUIRED", message);
+
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
 
 // AI-samtykket mangler til chatten. Teksten står kun her.

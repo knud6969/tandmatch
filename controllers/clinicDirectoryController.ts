@@ -75,11 +75,11 @@ export class ClinicDirectoryController {
     this.slots = deps.slots ?? new AvailabilityService();
   }
 
-  // GET /api/clinics: alle synlige klinikker, filtreret og sorteret af RankingService.
+  // GET /api/clinics: alle synlige klinikker (eller kun dem i ?ids=), filtreret og sorteret af RankingService.
   async list(query: ClinicsQuery): Promise<ClinicListDto> {
     const plan = await this.plan(query.services ?? []);
     const origin = await this.resolveOrigin(query);
-    const records = await this.directory.listClinics(plan.priceServiceIds);
+    const records = await this.directory.listClinics(plan.priceServiceIds, query.ids ?? null);
     const context = await this.contextFor(records);
 
     const items = records.map((record) => this.toListItem(record, plan, context, origin));

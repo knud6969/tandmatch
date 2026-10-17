@@ -1,5 +1,6 @@
 import { convertSchema } from "@/lib/schemas/auth";
 import { jsonResponse, readJson, withApi } from "@/middleware/http";
+import { enforceIpRateLimit } from "@/middleware/rateLimit";
 import { requireAnonymous } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
 import { AuthController } from "@/controllers/authController";
@@ -9,6 +10,7 @@ import { AuthController } from "@/controllers/authController";
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();
   const session = await requireAnonymous(gate);
+  await enforceIpRateLimit("signup", req);
   const input = await readJson(req, convertSchema);
   const { supabase } = gate;
   return jsonResponse(await new AuthController(supabase, session).convertAnonymous(input));

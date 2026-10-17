@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { CASE_STATUS_LABEL, CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL } from "@/lib/constants/leads";
-import { canSendCase, canSendMoreLeads } from "@/lib/domain/leads";
+import { canSendCase } from "@/lib/domain/leads";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
 import { Alert } from "@/views/components/ui/alert";
@@ -137,7 +137,7 @@ export function CaseLeads({ caseId }: { caseId: string }) {
   }
 
   const { caseDto, leads, activeCount } = data;
-  const canContactMore = canSendCase(caseDto, caseDto.services.length, activeCount) && canSendMoreLeads(activeCount, leads.length);
+  const canContactMore = canSendCase(caseDto, caseDto.services.length, activeCount, leads.length);
 
   return (
     <div className="flex flex-col gap-6">

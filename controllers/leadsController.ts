@@ -14,7 +14,7 @@ export type LeadsDeps = { leads: LeadsRepository; cases: CasesRepository };
 
 // Patientens leads (architecture 10.5, 10.9): afsendelse til op til 3 klinikker, oversigt og tilbagetrækning.
 // Reglerne (konto, samtykke, verificerede klinikker, lofter) håndhæves af send_leads() og withdraw_lead() i databasen;
-// controlleren tjekker ejerskab først, så en fremmed sag eller et fremmed lead giver 404 (2.4).
+// controlleren tjekker ejerskab af sagen først, og withdraw_lead() giver 404 for et fremmed lead (2.4).
 export class LeadsController {
   private readonly leads: LeadsRepository;
   private readonly cases: CasesRepository;
@@ -31,7 +31,7 @@ export class LeadsController {
   // Sender sagen til de valgte klinikker og returnerer de nye leads.
   async send(caseId: string, input: SendLeadsInput): Promise<PatientLeadDto[]> {
     await this.cases.requireOwn(caseId);
-    await this.leads.send(caseId, input.clinicIds);
+    await this.leads.sendLeads(caseId, input.clinicIds);
     const created = new Set(input.clinicIds);
     return (await this.leads.listForCase(caseId, this.session.userId)).filter((lead) => created.has(lead.clinic.id));
   }
@@ -43,8 +43,7 @@ export class LeadsController {
 
   // Trækker et ubesvaret lead tilbage (409 LEAD_NOT_PENDING, hvis klinikken har svaret).
   async withdraw(leadId: string): Promise<PatientLeadDto> {
-    await this.leads.requireOwn(leadId, this.session.userId);
-    await this.leads.withdraw(leadId);
+    await this.leads.withdrawLead(leadId); // fremmed lead giver NOT_FOUND (404) fra withdraw_lead()
     return this.leads.requireOwn(leadId, this.session.userId);
   }
 }

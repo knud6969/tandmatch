@@ -58,11 +58,11 @@ export class CasesController {
 
   // Samler sagen til DTO'en: bekræftede ydelser, AI-forslag, billeder med friske signerede URL'er og antal leads.
   private async toCaseDto(record: CaseRecordDto): Promise<CaseDto> {
-    const [confirmed, imageRecords, conversation, leadCount] = await Promise.all([
+    const [confirmed, imageRecords, conversation, leadCounts] = await Promise.all([
       this.caseServices.listForCase(record.id),
       this.images.listForCase(record.id),
       this.cases.findConversationInfo(record.id),
-      this.cases.countActiveLeads(record.id),
+      this.leads.countForCase(record.id),
     ]);
     const confirmedIds = new Set(confirmed.map((c) => c.serviceId));
     const catalog = await this.services.findActive([...confirmedIds, ...conversation.suggestedServiceIds]);
@@ -92,22 +92,28 @@ export class CasesController {
       summaryText: record.summaryText,
       summaryApprovedAt: record.summaryApprovedAt,
       submittedAt: record.submittedAt,
-      leadCount,
-      canSend: canSendCase(record, services.length, leadCount),
+      leadCount: leadCounts.active,
+      totalLeadCount: leadCounts.total,
+      canSend: canSendCase(record, services.length, leadCounts.active, leadCounts.total),
     };
   }
 
   // Oversigten over egne sager. Klinikkens navn kommer fra patient_lead_clinics() (også for fjernede klinikker);
   // bookinger kommer med trin 6.
   async list(): Promise<CaseListItemDto[]> {
-    const [rows, clinicNames] = await Promise.all([this.cases.listOwnForList(), this.leads.clinicNamesByLead()]);
+    const [rows, clinics] = await Promise.all([this.cases.listOwnForList(), this.leads.clinicsForList()]);
     return rows.map(({ record, serviceNames, leads }) => ({
       id: record.id,
       status: record.status,
       isEmergency: record.isEmergency,
       serviceNames,
       submittedAt: record.submittedAt,
-      leads: leads.map((lead) => ({ id: lead.id, clinicName: clinicNames.get(lead.id) ?? "", status: lead.status })),
+      leads: leads.map((lead) => ({
+        id: lead.id,
+        clinicName: clinics.get(lead.id)?.name ?? "",
+        status: lead.status,
+        removed: clinics.get(lead.id)?.removed ?? false,
+      })),
       nextBooking: null,
     }));
   }

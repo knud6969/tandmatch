@@ -30,6 +30,10 @@ export const SIGNED_URL_TTL_SECONDS = 300;
 // Leads pr. sag (SQL: send_leads(), trigger på leads).
 export const MAX_ACTIVE_LEADS_PER_CASE = 3;
 export const MAX_TOTAL_LEADS_PER_CASE = 10;
+// Leads pr. patient pr. rullende døgn på tværs af sager og status. Spejler triggeren leads_daily_limit().
+export const MAX_LEADS_PER_PATIENT_DAY = 15;
+// Rate limit pr. IP pr. time på afsendelse af leads (architecture 7.6).
+export const LEADS_SEND_IP_LIMIT_PER_HOUR = 30;
 
 // Oprydning af anonyme sessioner (architecture 7.7).
 export const CLEANUP_BATCH_SIZE = 200;

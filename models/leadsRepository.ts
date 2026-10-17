@@ -1,6 +1,13 @@
 import "server-only";
+import { isActiveLead } from "@/lib/domain/leads";
+import {
+  MAX_ACTIVE_LEADS_PER_CASE,
+  MAX_LEADS_PER_PATIENT_DAY,
+  MAX_TOTAL_LEADS_PER_CASE,
+} from "@/lib/constants/limits";
+import type { LeadStatus } from "@/lib/types/leads";
 import type { LeadExportDto, PatientLeadDto } from "@/lib/types/leads";
-import { ApiError, notFound } from "@/middleware/http";
+import { ACCOUNT_REQUIRED_MESSAGES, accountRequired, ApiError, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
@@ -44,22 +51,33 @@ const lead = (code: string, message: string) => new ApiError(409, code, message)
 
 // Fejl fra send_leads() (architecture 5.3, 10.5). Teksterne står kun her.
 const SEND_ERRORS = (): Record<string, ApiError> => ({
-  ACCOUNT_REQUIRED: new ApiError(403, "ACCOUNT_REQUIRED", "Opret en konto for at kontakte klinikker."),
+  ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.sendLeads),
   CONSENT_REQUIRED: new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til deling med klinikker først."),
   NOT_FOUND: notFound(),
-  INVALID_CLINICS: new ApiError(400, "VALIDATION_ERROR", "Vælg 1-3 forskellige klinikker."),
+  INVALID_CLINICS: new ApiError(400, "VALIDATION_ERROR", `Vælg 1-${MAX_ACTIVE_LEADS_PER_CASE} forskellige klinikker.`),
   CASE_NOT_READY: lead("CASE_NOT_READY", "Sagen er ikke klar til at blive sendt. Godkend opsummeringen og vælg behandling og tidsrum."),
   CLINIC_NOT_AVAILABLE: lead("CLINIC_NOT_AVAILABLE", "En af klinikkerne kan ikke modtage henvendelser lige nu."),
   CLINIC_ALREADY_CONTACTED: lead("CLINIC_ALREADY_CONTACTED", "Du har allerede kontaktet en af klinikkerne med denne sag."),
   // Samtidige afsendelser, der rammer unique (case_id, clinic_id).
   leads_case_id_clinic_id_key: lead("CLINIC_ALREADY_CONTACTED", "Du har allerede kontaktet en af klinikkerne med denne sag."),
-  LEAD_LIMIT: lead("LEAD_LIMIT", "Du kan højst have 3 aktive henvendelser pr. sag. Træk en tilbage for at vælge en anden klinik."),
-  LEAD_TOTAL_LIMIT: lead("LEAD_TOTAL_LIMIT", "Du har nået det samlede antal henvendelser for denne sag."),
+  LEAD_LIMIT: lead(
+    "LEAD_LIMIT",
+    `Du kan højst have ${MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser pr. sag. Træk en tilbage for at vælge en anden klinik.`,
+  ),
+  LEAD_TOTAL_LIMIT: lead(
+    "LEAD_TOTAL_LIMIT",
+    `Du har nået det samlede antal på ${MAX_TOTAL_LEADS_PER_CASE} henvendelser for denne sag.`,
+  ),
+  LEAD_DAILY_LIMIT: new ApiError(
+    429,
+    "LEAD_DAILY_LIMIT",
+    `Du kan højst sende ${MAX_LEADS_PER_PATIENT_DAY} henvendelser i døgnet. Prøv igen i morgen.`,
+  ),
 });
 
 // Fejl fra withdraw_lead().
 const WITHDRAW_ERRORS = (): Record<string, ApiError> => ({
-  ACCOUNT_REQUIRED: new ApiError(403, "ACCOUNT_REQUIRED", "Opret en konto for at kontakte klinikker."),
+  ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.withdrawLead),
   NOT_FOUND: notFound(),
   LEAD_NOT_PENDING: lead("LEAD_NOT_PENDING", "Klinikken har allerede svaret, så henvendelsen kan ikke trækkes tilbage."),
 });
@@ -70,14 +88,38 @@ function priceRange(min: number | null, max: number | null) {
 
 // Leads (architecture 4.3, 10.9). Brugerens JWT, så RLS afgør, at patienten kun ser egne leads. Oprettelse og
 // tilbagetrækning sker kun gennem send_leads() og withdraw_lead() (security definer, tjekker selv ejerskab).
-export class LeadsRepository extends BaseRepository<LeadRow, LeadExportDto> {
-  // Rækken -> eksport-DTO; klinikkens navn sættes af kalderen (listOwnForExport).
-  protected toDto(row: LeadRow): LeadExportDto {
+// Rækkerne mappes direkte til DTO'erne (klinikken kommer fra patient_lead_clinics()), så toDto() i basisklassen ikke bruges.
+export class LeadsRepository extends BaseRepository<PatientLeadRow> {
+  private toPatientDto(row: PatientLeadRow, clinic: LeadClinicRow | undefined, userId: string): PatientLeadDto {
+    return {
+      id: row.id,
+      clinic: {
+        id: row.clinic_id,
+        name: clinic?.name ?? "",
+        city: clinic?.city ?? "",
+        logoUrl: clinic?.logo_path
+          ? PublicMediaStorage.publicUrl(clinic.logo_path, clinic.logo_updated_at ? Date.parse(clinic.logo_updated_at) : undefined)
+          : null,
+        removed: clinic?.removed ?? false,
+      },
+      status: row.status,
+      sentAt: row.sent_at,
+      respondedAt: row.responded_at,
+      listPrice: priceRange(row.list_price_min, row.list_price_max),
+      quotedPrice: priceRange(row.quoted_price_min, row.quoted_price_max),
+      clinicComment: row.clinic_comment,
+      declineReason: row.decline_reason,
+      booking: null,
+      unreadMessages: (row.messages ?? []).filter((m) => m.read_at === null && m.sender_id !== userId).length,
+    };
+  }
+
+  private toExportDto(row: LeadRow, clinicName: string): LeadExportDto {
     return {
       id: row.id,
       caseId: row.case_id,
       clinicId: row.clinic_id,
-      clinicName: "",
+      clinicName,
       status: row.status,
       sentAt: row.sent_at,
       respondedAt: row.responded_at,
@@ -89,50 +131,35 @@ export class LeadsRepository extends BaseRepository<LeadRow, LeadExportDto> {
     };
   }
 
-  private toPatientDto(row: PatientLeadRow, clinic: LeadClinicRow | undefined, userId: string): PatientLeadDto {
-    const base = this.toDto(row);
-    return {
-      id: base.id,
-      clinic: {
-        id: row.clinic_id,
-        name: clinic?.name ?? "",
-        city: clinic?.city ?? "",
-        logoUrl: clinic?.logo_path
-          ? PublicMediaStorage.publicUrl(clinic.logo_path, clinic.logo_updated_at ? Date.parse(clinic.logo_updated_at) : undefined)
-          : null,
-        removed: clinic?.removed ?? false,
-      },
-      status: base.status,
-      sentAt: base.sentAt,
-      respondedAt: base.respondedAt,
-      listPrice: base.listPrice,
-      quotedPrice: base.quotedPrice,
-      clinicComment: base.clinicComment,
-      declineReason: base.declineReason,
-      booking: null,
-      unreadMessages: (row.messages ?? []).filter((m) => m.read_at === null && m.sender_id !== userId).length,
-    };
-  }
-
   // Klinikkerne bag patientens egne leads (patient_lead_clinics(), 10.9), pr. lead-id. Valgfrit indsnævret til én sag.
   private async clinicsByLead(caseId?: string): Promise<Map<string, LeadClinicRow>> {
     const rows = await this.rpc<LeadClinicRow[]>("patient_lead_clinics", caseId ? { p_case_id: caseId } : {});
     return new Map((rows ?? []).map((row) => [row.lead_id, row]));
   }
 
-  // Klinikkens navn pr. lead-id på alle egne sager (til sagsoversigten).
-  async clinicNamesByLead(): Promise<Map<string, string>> {
-    return new Map([...(await this.clinicsByLead())].map(([leadId, clinic]) => [leadId, clinic.name]));
+  // Klinikkens navn og om den er fjernet, pr. lead-id på alle egne sager (til sagsoversigten).
+  async clinicsForList(): Promise<Map<string, { name: string; removed: boolean }>> {
+    const clinics = await this.clinicsByLead();
+    return new Map([...clinics].map(([leadId, clinic]) => [leadId, { name: clinic.name, removed: clinic.removed }]));
+  }
+
+  // Antal leads på sagen: aktive (sendt, accepteret, booket) og i alt (også afviste og tilbagetrukne). RLS: egne leads.
+  async countForCase(caseId: string): Promise<{ active: number; total: number }> {
+    const rows = await this.runList<{ status: LeadStatus }>(
+      this.db.from("leads").select("status").eq("case_id", caseId),
+      "leads: select fejlede",
+    );
+    return { active: rows.filter((row) => isActiveLead(row.status)).length, total: rows.length };
   }
 
   // send_leads(): tjekker konto, ejer, samtykke, godkendt opsummering, verificerede klinikker og lofterne. Returnerer antal.
-  async send(caseId: string, clinicIds: string[]): Promise<number> {
+  async sendLeads(caseId: string, clinicIds: string[]): Promise<number> {
     const created = await this.rpc<number>("send_leads", { p_case_id: caseId, p_clinic_ids: clinicIds }, SEND_ERRORS());
     return created ?? 0;
   }
 
-  // withdraw_lead(): kun fra `sent`. Ejerskab tjekkes i funktionen (fremmed lead giver 404).
-  async withdraw(leadId: string): Promise<void> {
+  // withdraw_lead(): kun fra `sent`. Ejerskab tjekkes i funktionen (fremmed lead giver NOT_FOUND, altså 404).
+  async withdrawLead(leadId: string): Promise<void> {
     await this.rpc("withdraw_lead", { p_lead_id: leadId }, WITHDRAW_ERRORS());
   }
 
@@ -168,6 +195,6 @@ export class LeadsRepository extends BaseRepository<LeadRow, LeadExportDto> {
       "leads: eksport fejlede",
     );
     const clinics = await this.clinicsByLead();
-    return rows.map((row) => ({ ...this.toDto(row), clinicName: clinics.get(row.id)?.name ?? "" }));
+    return rows.map((row) => this.toExportDto(row, clinics.get(row.id)?.name ?? ""));
   }
 }

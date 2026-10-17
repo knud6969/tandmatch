@@ -238,6 +238,25 @@ describe("GET /api/clinics: synlighed og niveauer", () => {
   });
 });
 
+describe("GET /api/clinics: ?ids=", () => {
+  it("returnerer kun de ønskede synlige klinikker; usynlige og ukendte udelades", async () => {
+    const only = await list(`?ids=${clinicA.clinicId}`);
+    assert.deepEqual(only.clinics.map((x) => x.id), [clinicA.clinicId]);
+    const two = await list(`?ids=${clinicA.clinicId},${clinicB.clinicId}&postalCode=2100&maxDistanceKm=500`);
+    assert.deepEqual(two.clinics.map((x) => x.id).sort(), [clinicA.clinicId, clinicB.clinicId].sort());
+    const hidden = await list(`?ids=${registered.clinicId},${removed.clinicId},${randomUUID()}`);
+    assert.deepEqual(hidden.clinics, []);
+  });
+
+  it("afviser flere end 3 og ugyldige id'er med 400", async () => {
+    const c = await newClientWithTerms();
+    const four = [clinicA, clinicB, registered, removed].map((x) => x.clinicId).join(",");
+    assert.equal((await c.get(`/api/clinics?ids=${four}`)).status, 400);
+    assert.equal((await c.get("/api/clinics?ids=ikke-et-uuid")).status, 400);
+    assert.equal((await c.get(`/api/clinics?ids=${clinicA.clinicId},x`)).status, 400);
+  });
+});
+
 describe("GET /api/clinics: filtre og sorteringer", () => {
   it("sorterer efter afstand fra postnummer som standard og viser afstanden", async () => {
     const r = await list("?postalCode=2100&maxDistanceKm=500");

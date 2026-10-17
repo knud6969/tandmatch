@@ -4,7 +4,7 @@ import { getSession } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
 import { ClinicDirectoryController } from "@/controllers/clinicDirectoryController";
 
-const QUERY_KEYS = ["services", "postalCode", "lat", "lng", "maxDistanceKm", "maxPrice", "minStars", "emergency", "contactableOnly", "sort"];
+const QUERY_KEYS = ["ids", "services", "postalCode", "lat", "lng", "maxDistanceKm", "maxPrice", "minStars", "emergency", "contactableOnly", "sort"];
 
 // Offentlig klinikoversigt (architecture 10.7). lat/lng gemmes ikke.
 export const GET = withApi(async (req) => {

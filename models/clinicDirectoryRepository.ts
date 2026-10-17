@@ -135,9 +135,13 @@ export class ClinicDirectoryRepository extends BaseRepository<PublicClinicRow, P
     };
   }
 
-  // Alle synlige klinikker. `serviceIds`: de behandlinger, priserne skal vises for (kun verificerede klinikker har priser).
-  async listClinics(serviceIds: readonly string[] = []): Promise<PublicClinicRecord[]> {
-    const rows = await this.rpc<PublicClinicRow[]>("public_clinics", { p_service_ids: [...serviceIds], p_clinic_ids: null });
+  // Alle synlige klinikker, eller kun `clinicIds` (ukendte og usynlige udelades). `serviceIds`: de behandlinger, priserne
+  // skal vises for (kun verificerede klinikker har priser).
+  async listClinics(serviceIds: readonly string[] = [], clinicIds: readonly string[] | null = null): Promise<PublicClinicRecord[]> {
+    const rows = await this.rpc<PublicClinicRow[]>("public_clinics", {
+      p_service_ids: [...serviceIds],
+      p_clinic_ids: clinicIds ? [...clinicIds] : null,
+    });
     return this.toDtos(rows);
   }
 

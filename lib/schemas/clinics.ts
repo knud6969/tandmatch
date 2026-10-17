@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import {
   CLINIC_DESCRIPTION_MAX_CHARS,
   CLINIC_SORTS,
@@ -281,6 +282,16 @@ export const servicesParamSchema = z.preprocess(
     .transform((slugs) => [...new Set(slugs)]),
 );
 
+// `?ids=uuid,uuid`: højst 3 klinikker (afsendelsessiden henter kun de valgte).
+export const clinicIdsParamSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.split(",").map((id) => id.trim()).filter((id) => id !== "") : value),
+  z
+    .array(z.uuid("Ugyldigt klinik-id."))
+    .min(1, "Angiv mindst ét klinik-id.")
+    .max(MAX_ACTIVE_LEADS_PER_CASE, `Angiv højst ${MAX_ACTIVE_LEADS_PER_CASE} klinikker.`)
+    .transform((ids) => [...new Set(ids)]),
+);
+
 const queryNumber = (min: number, max: number, message: string) =>
   z.preprocess(emptyQueryAsUndefined, z.coerce.number(message).min(min, message).max(max, message));
 
@@ -288,6 +299,7 @@ const queryBoolean = z.preprocess(emptyQueryAsUndefined, z.enum(["true", "false"
 
 export const clinicsQuerySchema = z
   .object({
+    ids: clinicIdsParamSchema.optional(),
     services: servicesParamSchema.optional(),
     postalCode: z.preprocess(emptyQueryAsUndefined, postalCodeSchema).optional(),
     lat: queryNumber(-90, 90, "Ugyldig position.").optional(),
