@@ -38,6 +38,14 @@ Vedligeholdes af security-agenten. Kort oversigt over hvilke data platformen beh
 - **Billedbeskrivelser til klinikken:** `ai_description` vises kun i `clinic_lead_images()`, når patienten har godkendt opsummeringen efter beskrivelsen blev skrevet (`summary_approved_at >= ai_described_at`). Gamle rækker uden tidsstempel er skjulte (fail closed).
 - **Logs:** kun fejltype; aldrig beskeder, svar, billeder eller URL'er.
 
+## Leads (trin 4)
+
+- **Afsendelse** sker kun via `send_leads()` (security definer): kræver permanent konto, ejerskab af sagen, aktivt `health_data_sharing`, godkendt opsummering, verificerede klinikker og lofterne 3 aktive / 10 i alt pr. sag. Routen tjekker desuden konto (403 `ACCOUNT_REQUIRED`) og sagens ejer (404).
+- **Klinikkens navn til patienten** kommer fra `patient_lead_clinics()` (security definer, kun `authenticated`): kun navn, by, logo og `removed` for klinikker på patientens **egne** leads (`cases.patient_id = auth.uid()`). Ingen kontakt, CVR, ejer eller adresse. RLS-test 42.
+- **Tilbagetrækning** via `withdraw_lead()`, som selv tjekker sagens ejer; et fremmed lead giver 404.
+- **Klientlagring:** valget af klinikker gemmes i `sessionStorage` (kun klinik-id og -navn). URL'erne indeholder sags-id, klinik-id'er, behandlings-slugs og postnummer, men ingen fritekst, opsummering eller billeder. `Referrer-Policy: strict-origin-when-cross-origin` sender kun origin til eksterne sider.
+- **Rate limit:** ingen IP-grænse på leads-routerne (besluttet i architecture 10.5); lofterne pr. sag står i databasen. Se kompromis 12.
+
 ## Hvem har adgang
 
 - **Patient:** egne data. Kan eksportere og slette konto, sager og billeder og trække samtykker tilbage.
@@ -67,3 +75,4 @@ Vedligeholdes af security-agenten. Kort oversigt over hvilke data platformen beh
 9. **PII-maskering er regex-baseret** (forbedret i 3.6a: e-mail, telefon, CPR, vejnavn + husnummer, postnummer + by, navneudsagn). Navne og adresser uden disse mønstre når stadig OpenAI. Mundfotos kan vise dele af ansigtet. Maskeringen overmaskerer af og til (fx "bor på Nørrebrogade 12" bliver til "[fjernet]").
 10. ~~Lofterne for chat tælles først efter modelkaldet~~ **Løst i 3.6b** (migration `20261019000100`, `reserve_chat_turn()`). Tilbage står: døgnloftet pr. patient tælles ud fra `ai_messages` og nulstilles, når patienten sletter kladden; de anonyme lofter kan forbruges direkte via PostgREST uden IP-grænse (10 anonyme konti/t pr. IP x 40 kald > globalt loft 300), så det globale anonyme loft kan tømmes (tilgængelighed, ikke datalæk). Se security-rapport 3.6d M1-M2.
 11. **Patienten kan stadig indsætte egne brugerbeskeder direkte** i `ai_messages` (policy `ai_messages_insert_own_user`) uden om `reserve_chat_turn()` og maskeringen ved gemning. Giver ingen modelkald; historikken maskeres igen i prompten. Bør fjernes (3.6d L1).
+12. **Intet loft på leads pr. patient.** Lofterne er pr. sag (3 aktive, 10 i alt). Med 20 opsummeringer pr. døgn kan én konto i teorien sende op til ca. 200 leads pr. døgn (nye sager, tilbagetrækning og gensendelse). Spam mod klinikker, ikke datalæk. Før drift: døgnloft pr. patient i `send_leads()` (ny migration) og evt. IP-grænse på afsendelsen.
