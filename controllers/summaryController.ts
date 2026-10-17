@@ -2,7 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { approveSummarySchema } from "@/lib/schemas/chat";
-import type { AiSummary, ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
+import { buildsOnAiDraft, imageDescription } from "@/lib/domain/summary";
+import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
 import { ApiError, aiUnavailable, consentRequired } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
@@ -20,20 +21,6 @@ import { AiImageService } from "@/services/aiImageService";
 import { SummaryRepository } from "@/models/summaryRepository";
 
 type ApproveInput = z.infer<typeof approveSummarySchema>;
-
-// Reglen for `summary_ai_assisted` (10.5): teksten regnes som erstattet helt, når under halvdelen af patientens ord (3+ tegn)
-// findes i AI-udkastet. Så vises "skrevet med AI-hjælp" ikke for en tekst, patienten har skrevet selv. Uden et AI-udkast på
-// sagen er svaret altid false (databasen gentager det).
-const AI_DRAFT_MIN_SHARED_WORDS = 0.5;
-const WORD = /[\p{L}\p{N}]{3,}/gu;
-
-function buildsOnAiDraft(text: string, draft: AiSummary | null): boolean {
-  if (!draft) return false;
-  const draftWords = new Set(draft.summaryText.toLowerCase().match(WORD) ?? []);
-  const words = text.toLowerCase().match(WORD) ?? [];
-  if (words.length === 0) return false;
-  return words.filter((word) => draftWords.has(word)).length / words.length >= AI_DRAFT_MIN_SHARED_WORDS;
-}
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type SummaryDeps = {
@@ -98,7 +85,9 @@ export class SummaryController {
       throw new ApiError(409, "NO_CONVERSATION", "Fortæl først AI-assistenten om dit ønske, eller skriv opsummeringen selv.");
     }
 
-    const generationsLeft = await this.summary.consumeGeneration(caseId);
+    // 2.3 (a): tællingen kan kun udføres af service role. Serveren giver den verificerede session som bruger, og IP-grænsen
+    // er allerede talt i route.ts.
+    const generationsLeft = await new SummaryRepository(this.admin()).consumeGeneration(this.session.userId, caseId);
 
     const catalog = await this.services.listGroups();
     const confirmed = await this.caseServices.listForCase(caseId);
@@ -133,7 +122,7 @@ export class SummaryController {
         await imagesWrite.saveObservation(image.imageRef, {
           view: image.view,
           quality: image.quality,
-          description: [image.visibleArea, ...image.observations].join(". "),
+          description: imageDescription(image.visibleArea, image.observations),
         });
       }
     }
@@ -150,7 +139,7 @@ export class SummaryController {
   // Patientens rettede opsummering godkendes med approve_summary() (eneste vej til summary_text).
   async approve(caseId: string, input: ApproveInput): Promise<ApproveSummaryResponse> {
     const record = await this.cases.requireOwnDraft(caseId);
-    const aiAssisted = buildsOnAiDraft(input.summaryText, record.aiSummary as AiSummary | null);
+    const aiAssisted = buildsOnAiDraft(input.summaryText, record.aiSummary);
     const summaryApprovedAt = await this.summary.approve(caseId, input.summaryText, aiAssisted);
     return { summaryText: input.summaryText, summaryApprovedAt };
   }

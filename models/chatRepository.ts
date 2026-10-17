@@ -1,8 +1,8 @@
 import "server-only";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/types/ai";
-import { ApiError, consentRequired, notDraft, notFound } from "@/middleware/http";
+import { ApiError, aiConsentRequired, chatLimit, notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import type { Database, Tables } from "@/models/db/database.types";
 
 type ConversationRow = Pick<
   Tables<"ai_conversations">,
@@ -38,22 +38,15 @@ export type NewAssistantMessage = {
   readyForSummary: boolean;
 };
 
-type ReservedTurnRow = {
-  message_id: string;
-  message_content: string;
-  message_created_at: string;
-  user_message_count: number;
-};
+// Udledt af den genererede funktionstype (npm run gen:types), så den følger databasen.
+type ReservedTurnRow = Database["public"]["Functions"]["reserve_chat_turn"]["Returns"][number];
 
 // Den reserverede tur: patientens (maskerede) besked er indsat, og lofterne er talt (reserve_chat_turn).
 export type ReservedTurn = { message: AiMessageRecord; userMessageCount: number };
 
-const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukket eller har nået grænsen for antal beskeder.");
-
-// AI-samtaler og -beskeder (architecture 4.3). Læsning og patientens egne beskeder sker med brugerens JWT (RLS: kun
-// ejeren). `reserveTurn` kaldes også med brugerens JWT: den tjekker og tæller alle lofter, og indsætter patientens besked
-// i én transaktion. `appendAssistantMessage` kan kun udføres af service role (2.3 a): kalderen gives admin-klienten og har
-// tjekket ejer, kladde og samtykke først.
+// AI-samtaler og -beskeder (architecture 4.3). Læsning sker med brugerens JWT (RLS: kun ejeren). `reserveTurn` og
+// `appendAssistantMessage` kan kun udføres af service role (2.3 a): kalderen gives admin-klienten og sender den
+// verificerede brugers id (efter IP-grænsen). Funktionerne tjekker selv ejer, kladde og samtykke for det id.
 export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> {
   protected toDto(row: MessageRow): AiMessageRecord {
     return {
@@ -145,18 +138,18 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
     );
   }
 
-  // Reserverer en chat-tur FØR modelkaldet (architecture 7.6, H1): databasen låser patienten og samtalen, tjekker og
+  // Kun service role (2.3 a). Reserverer en chat-tur FØR modelkaldet (architecture 7.6, H1): databasen låser patienten og samtalen, tjekker og
   // tæller lofterne (30 pr. samtale, døgnloft pr. patient, anonymt døgnloft pr. bruger og globalt) og indsætter patientens
   // maskerede besked i én transaktion. Samtidige kald kan derfor ikke tilsammen overskride et loft.
-  async reserveTurn(conversationId: string, maskedContent: string): Promise<ReservedTurn> {
+  async reserveTurn(userId: string, conversationId: string, maskedContent: string): Promise<ReservedTurn> {
     const data = await this.rpc<ReservedTurnRow[]>(
       "reserve_chat_turn",
-      { p_conversation_id: conversationId, p_content: maskedContent },
+      { p_user_id: userId, p_conversation_id: conversationId, p_content: maskedContent },
       {
         NOT_FOUND: notFound(),
         NOT_DRAFT: notDraft(),
-        CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte."),
-        CHAT_LIMIT: new ApiError(429, "CHAT_LIMIT", "Du har nået grænsen for antal beskeder i samtalen."),
+        CONSENT_REQUIRED: aiConsentRequired(),
+        CHAT_LIMIT: chatLimit(),
         RATE_LIMITED: new ApiError(429, "RATE_LIMITED", "Du har sendt mange beskeder i dag. Prøv igen i morgen."),
         ANON_USER_LIMIT: new ApiError(
           429,
@@ -206,7 +199,7 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
       {
         NOT_FOUND: notFound(),
         CONVERSATION_CLOSED: chatLimit(),
-        CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte."),
+        CONSENT_REQUIRED: aiConsentRequired(),
         INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget."),
       },
     );

@@ -1,10 +1,10 @@
 // Lofter og grænser (architecture 7.6, 9.3). Alle værdier er MVP-værdier.
 // Værdier markeret (SQL) spejler databasen og ændres begge steder i samme commit.
-export const CHAT_MAX_USER_MESSAGES_PER_CONVERSATION = 30;
-export const CHAT_MAX_CHARS = 1000;
-export const CHAT_MAX_DAILY_PER_PATIENT = 100; // (SQL) ai_limits.chat_messages_per_patient_day
-// (SQL) ai_limits.anon_user_daily_ai_calls: AI-kald pr. anonym bruger pr. døgn, så én bruger ikke kan tømme det globale loft.
-export const ANON_MAX_DAILY_AI_CALLS_PER_USER = 40;
+export const CHAT_MAX_USER_MESSAGES_PER_CONVERSATION = 30; // (SQL) ai_limits.chat_messages_per_conversation og ai_messages_after_insert()
+export const CHAT_MAX_CHARS = 1000; // (SQL) ai_limits.chat_message_max_chars
+export const CHAT_MAX_DAILY_PER_PATIENT = 100; // (SQL) ai_limits.chat_messages_per_patient_day (tælles i ai_patient_usage_daily)
+// AI-kald pr. anonym bruger pr. døgn, så én bruger ikke kan tømme det globale loft. ai_limits.anon_user_daily_ai_calls.
+export const ANON_MAX_DAILY_AI_CALLS_PER_USER = 40; // (SQL)
 // Rate limit pr. IP pr. time på chat og opsummering (architecture 7.6). Chatten har brug for mere end de 10 forsøg pr. time,
 // som login og kontooprettelse har, fordi en samtale kan have op til 30 beskeder.
 export const CHAT_IP_LIMIT_PER_HOUR = 120;
@@ -13,6 +13,10 @@ export const CHAT_CONTEXT_MESSAGES = 20;
 export const AI_TIMEOUT_MS = 30_000;
 // (SQL) cases.summary_text og approve_summary(): patientens godkendte opsummering.
 export const SUMMARY_MAX_CHARS = 1500;
+// (SQL) case_images.ai_description: billedbeskrivelsen afkortes til dette, før den gemmes.
+export const IMAGE_DESCRIPTION_MAX_CHARS = 500;
+// Andelen af patientens ord, der skal findes i AI-udkastet, for at teksten regnes som bygget på det (lib/domain/summary.ts).
+export const AI_DRAFT_MIN_SHARED_WORDS = 0.5;
 export const MAX_SUMMARIES_PER_CASE = 5;
 export const MAX_SUMMARIES_PER_PATIENT_PER_DAY = 20;
 export const MAX_CONFIRMED_SERVICES_PER_CASE = 5;

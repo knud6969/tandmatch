@@ -113,13 +113,13 @@ isOneToOne: false
                   ]
                 },"ai_patient_usage_daily": {
                   Row: {
-                    "day": string,"patient_id": string,"summary_generations": number
+                    "chat_messages": number,"day": string,"patient_id": string,"summary_generations": number
                   }
                   Insert: {
-                    "day": string,"patient_id": string,"summary_generations"?: number
+                    "chat_messages"?: number,"day": string,"patient_id": string,"summary_generations"?: number
                   }
                   Update: {
-                    "day"?: string,"patient_id"?: string,"summary_generations"?: number
+                    "chat_messages"?: number,"day"?: string,"patient_id"?: string,"summary_generations"?: number
                   }
                   Relationships: [
                     {
@@ -819,7 +819,7 @@ isOneToOne: false
 { Args: { "p_key": string,"p_limit": number }; Returns: boolean
                            },
 "consume_summary_generation":
-{ Args: { "p_case_id": string }; Returns: number
+{ Args: { "p_case_id": string,"p_user_id": string }; Returns: number
                            },
 "effective_booking_status":
 { Args: { "p_ends_at": string,"p_hold_expires_at": string,"p_status": Database["public"]['Enums']["booking_status"] }; Returns: Database["public"]['Enums']["booking_status"]
@@ -872,9 +872,6 @@ isOneToOne: false
 "participant_messages_last_day":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
-"patient_user_messages_last_day":
-{ Args: Record<PropertyKey, never>; Returns: number
-                           },
 "public_busy_intervals":
 { Args: { "p_clinic_ids": (string)[],"p_from": string,"p_to": string }; Returns: {
               "clinic_id": string,"ends_at": string,"starts_at": string
@@ -913,7 +910,7 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "reserve_chat_turn":
-{ Args: { "p_content": string,"p_conversation_id": string }; Returns: {
+{ Args: { "p_content": string,"p_conversation_id": string,"p_user_id": string }; Returns: {
               "message_content": string,"message_created_at": string,"message_id": string,"user_message_count": number
             }[]
                            },

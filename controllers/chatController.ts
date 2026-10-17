@@ -6,7 +6,7 @@ import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "
 import type { chatMessageSchema } from "@/lib/schemas/chat";
 import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
-import { ApiError, aiUnavailable, consentRequired } from "@/middleware/http";
+import { ApiError, aiConsentRequired, aiUnavailable } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
@@ -14,7 +14,6 @@ import { ChatRepository, type ReservedTurn } from "@/models/chatRepository";
 import { ConsentsRepository } from "@/models/consentsRepository";
 import { lazyAdminClient } from "@/models/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
-import { isAiUpstreamError } from "@/services/ai/errors";
 import { AiChatService } from "@/services/ai/aiChatService";
 import { maskPii } from "@/services/ai/pii";
 import { createAiClient } from "@/services/ai/openai";
@@ -35,15 +34,13 @@ export type ChatDeps = {
   admin: () => SupabaseClient;
 };
 
-// Fast svar, når modelkaldet fejlede efter at turen var reserveret (H1). Skrevet i koden, ikke af modellen.
-
 function flatten(groups: ServiceGroupDto[]): ServiceDto[] {
   return groups.flatMap((group) => group.services);
 }
 
 // AI-chatten på en sag (architecture 7, 10.6). Controlleren kender hverken prompts eller OpenAI: det gør AiChatService.
-// Læsning og reservationen af turen (patientens besked og lofterne) sker med brugerens JWT. Service role bruges kun til
-// assistentens svar (2.3 a), efter ejer-, kladde-, samtykke- og lofttjek.
+// Læsning sker med brugerens JWT. Service role bruges til reservationen af turen og til assistentens svar (2.3 a): begge
+// funktioner kan kun udføres af service role, får den verificerede brugers id og tjekker selv ejer, kladde og samtykke.
 export class ChatController {
   private readonly cases: CasesRepository;
   private readonly consents: ConsentsRepository;
@@ -122,7 +119,7 @@ export class ChatController {
 
     // AI-samtykket (nuværende tekstversion) er en forudsætning (vilkårs-accept giver det ikke, architecture 7.1).
     const consent = await this.consents.findCurrentActive("ai_processing");
-    if (!consent) throw consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte.");
+    if (!consent) throw aiConsentRequired();
 
     let conversation = await this.chat.findConversation(caseId);
     if (!conversation) {
@@ -143,13 +140,15 @@ export class ChatController {
     }
 
     // Patientens tekst maskeres, før den gemmes (maskering er idempotent, så AI-laget kan maskere igen).
-    const reserved = await this.chat.reserveTurn(conversation.id, maskPii(input.message));
+    // 2.3 (a): reservationen kan kun udføres af service role, og IP-grænsen er allerede talt i route.ts.
+    const reserved = await new ChatRepository(this.admin()).reserveTurn(this.session.userId, conversation.id, maskPii(input.message));
     try {
       return await this.answerTurn(caseId, conversation.id, reserved);
     } catch (err) {
       await this.storeFixedAnswer(conversation.id);
-      if (isAiUpstreamError(err)) throw aiUnavailable();
-      throw err;
+      // Turen er gemt: ingen fejl herfra må se ud som en afvist besked.
+      console.error("Chat-tur fejlede efter reservationen:", err instanceof Error ? err.name : "ukendt");
+      throw aiUnavailable();
     }
   }
 

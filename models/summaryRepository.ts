@@ -1,23 +1,26 @@
 import "server-only";
 import { SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
 import type { AiSummary } from "@/lib/types/ai";
-import { ApiError, notDraft, notFound } from "@/middleware/http";
+import { ApiError, consentRequired, notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 
 const limit = (code: string, message: string) => new ApiError(429, code, message);
 
-// Opsummeringens funktioner (architecture 5.3). `consumeGeneration` og `approve` kaldes med patientens JWT (de tjekker
-// ejer og kladde selv). `store` kan kun udføres af service role (2.3 a): kalderen har tjekket ejer, kladde og samtykke først.
+// Opsummeringens funktioner (architecture 5.3). `approve` kaldes med patientens JWT (den tjekker ejer og kladde selv).
+// `consumeGeneration` og `store` kan kun udføres af service role (2.3 a): kalderen gives admin-klienten og sender den
+// verificerede brugers id. Funktionerne tjekker selv ejer, kladde og samtykke for det id.
 export class SummaryRepository extends BaseRepository {
-  // Tæller en generering (sagens loft, døgnloft og for anonyme det globale loft) i én transaktion.
-  // Returnerer, hvor mange genereringer sagen har tilbage.
-  async consumeGeneration(caseId: string): Promise<number> {
+  // Kun service role (2.3 a). Tæller en generering (sagens loft, døgnloft og for anonyme brugerens og det globale loft) i
+  // én transaktion. Returnerer, hvor mange genereringer sagen har tilbage.
+  async consumeGeneration(userId: string, caseId: string): Promise<number> {
     const left = await this.rpc<number>(
       "consume_summary_generation",
-      { p_case_id: caseId },
+      { p_user_id: userId, p_case_id: caseId },
       {
         NOT_FOUND: notFound(),
         NOT_DRAFT: notDraft(),
+        CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan få en opsummering."),
+        ANON_USER_LIMIT: limit("RATE_LIMITED", "Du har brugt dine AI-kald i dag. Opret en konto for at fortsætte, eller prøv igen i morgen."),
         SUMMARY_LIMIT: limit("SUMMARY_LIMIT", "Du har brugt alle opsummeringer på denne sag. Skriv selv videre."),
         DAILY_SUMMARY_LIMIT: limit("SUMMARY_LIMIT", "Du har lavet mange opsummeringer i dag. Prøv igen i morgen."),
         ANON_CAP_REACHED: limit("ANON_CAP_REACHED", "AI-assistenten er optaget lige nu. Opret en konto eller prøv igen senere."),

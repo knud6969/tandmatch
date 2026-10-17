@@ -141,6 +141,47 @@ describe("H1: samtidige chat-ture reserveres atomisk", () => {
   });
 });
 
+describe("3.7b: døgnloft og fejl efter reservationen", () => {
+  it("M1: døgnloftet pr. patient overlever, at sagen slettes og oprettes igen", async () => {
+    await withLimits({ chat_messages_per_patient_day: 2 }, async () => {
+      const p = await account();
+      assert.equal((await say(p, "blegning 1")).status, 201);
+      assert.equal((await say(p, "blegning 2")).status, 201);
+      assert.equal((await say(p, "blegning 3")).status, 429);
+      assert.equal((await p.c.del(`/api/cases/${p.caseId}`)).status, 204);
+      const created = await p.c.post("/api/cases");
+      assert.equal(created.status, 201);
+      const again = await p.c.post(`/api/cases/${created.body.id}/chat`, { message: "blegning 4" });
+      assert.equal(again.status, 429);
+      assert.equal(again.body.error.code, "RATE_LIMITED");
+    });
+  });
+
+  it("fejl efter reservationen giver AI_UNAVAILABLE, og turen ligger i samtalen (frontend henter den igen)", async () => {
+    const p = await account();
+    const failed = await say(p, "test_timeout");
+    assert.equal(failed.status, 503);
+    assert.equal(failed.body.error.code, "AI_UNAVAILABLE");
+    const state = await p.c.get(`/api/cases/${p.caseId}/chat`);
+    assert.equal(state.body.messages[0].role, "user");
+    assert.equal(state.body.messages[0].content, "test_timeout");
+  });
+
+  it("M2: reserve_chat_turn kan ikke kaldes direkte med en bruger-JWT", async () => {
+    const p = await account();
+    await say(p, "blegning");
+    const conv = await admin.from("ai_conversations").select("id").eq("case_id", p.caseId).single();
+    const { createClient } = await import("@supabase/supabase-js");
+    const user = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { persistSession: false },
+    });
+    const res = await user.rpc("reserve_chat_turn", { p_user_id: p.userId, p_conversation_id: conv.data!.id, p_content: "direkte" });
+    assert.ok(res.error, "anon-nøglen kan ikke kalde funktionen");
+    const res2 = await user.rpc("consume_summary_generation", { p_user_id: p.userId, p_case_id: p.caseId });
+    assert.ok(res2.error);
+  });
+});
+
 describe("H1: IP-grænse på chat og opsummering", () => {
   it("chat: grænsen på 120 pr. time pr. IP giver 429 RATE_LIMITED", async () => {
     const p = await anonymous();

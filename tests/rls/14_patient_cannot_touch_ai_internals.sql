@@ -6,9 +6,9 @@ begin;
 \ir _fixtures.sql
 
 select tt.as_user(tt.id('pA'));
--- Kontrol: egen brugerbesked kan indsættes
-select tt.allowed(format('insert into public.ai_messages (conversation_id, patient_id, role, content) values (%L, %L, %L, %L)', tt.id('convS'), tt.id('pA'), 'user', 'Endnu en besked'),
-                  'patient kan indsætte egen brugerbesked (kontrol)');
+-- L1 (3.7b): ikke engang en egen brugerbesked kan indsættes direkte; reserve_chat_turn() er eneste vej (test 39)
+select tt.denied(format('insert into public.ai_messages (conversation_id, patient_id, role, content) values (%L, %L, %L, %L)', tt.id('convS'), tt.id('pA'), 'user', 'Endnu en besked'),
+                 'patient kan ikke indsætte brugerbesked direkte');
 
 select tt.denied(format('update public.ai_conversations set status = %L where id = %L', 'closed', tt.id('convS')), 'patient kan ikke lukke samtalen');
 select tt.denied(format('update public.ai_conversations set user_message_count = 0 where id = %L', tt.id('convS')), 'patient kan ikke nulstille tælleren');

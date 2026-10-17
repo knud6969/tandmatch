@@ -175,6 +175,12 @@ export const notDraft = () => new ApiError(409, "NOT_DRAFT", "Sagen er sendt og 
 
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
 
+// AI-samtykket mangler til chatten. Teksten står kun her.
+export const aiConsentRequired = () => consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte.");
+
+// Samtalen er lukket eller har nået grænsen for antal beskeder (architecture 7.6).
+export const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukket eller har nået grænsen for antal beskeder.");
+
 // AI-tjenesten svarer ikke eller gav et ugyldigt svar (architecture 7.6: timeout og nedbrud giver 503).
 export const aiUnavailable = () =>
   new ApiError(503, "AI_UNAVAILABLE", "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.");
