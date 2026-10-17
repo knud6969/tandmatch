@@ -27,6 +27,14 @@ if [ "${E2E_SKIP_SEED:-0}" != "1" ]; then
   npm run --silent seed:demo >/dev/null || { echo "seed:demo fejlede." >&2; exit 2; }
 fi
 
+# Browseren kalder altid fra 127.0.0.1, så IP-grænsen på anonyme sessioner (10 pr. time) rammes ved flere kørsler i træk.
+# Grænserne nulstilles derfor i den lokale database før hver kørsel (kun localhost, som i tests/rls/run.sh).
+DB_URL="${TEST_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
+case "$DB_URL" in
+  postgresql://*@127.0.0.1:*|postgresql://*@localhost:*) psql "$DB_URL" -q -c "delete from public.rate_limits;" >/dev/null || echo "Kunne ikke nulstille rate_limits (psql)." >&2 ;;
+  *) echo "Afviser: TEST_DB_URL peger ikke på lokal database." >&2; exit 2 ;;
+esac
+
 LOG="${TMPDIR:-/tmp}/tandmatch-e2e-server.log"
 npx next dev -p "$PORT" -H 127.0.0.1 >"$LOG" 2>&1 &
 SERVER_PID=$!
