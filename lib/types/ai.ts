@@ -1,3 +1,5 @@
+import type { z } from "zod";
+import type { aiImageObservationSchema, aiSummarySchema } from "@/lib/constants/ai-schemas";
 import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
 import type { ServiceDto } from "@/lib/types/services";
 
@@ -8,23 +10,11 @@ export type ImageView = (typeof IMAGE_VIEWS)[number];
 export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 
-export type AiImageObservation = {
-  imageRef: string; // case_images.id på serveren (intern "img_n" mappes før lagring)
-  view: ImageView;
-  visibleArea: string; // max 80 tegn
-  observations: string[]; // max 4, hver max 120 tegn. Kun synlige forhold uden fortolkning
-  quality: ImageQuality;
-};
+// Udledt af de fælles skemaer i lib/constants/ai-schemas.ts (imageRef = case_images.id på serveren).
+export type AiImageObservation = z.infer<typeof aiImageObservationSchema>;
 
 // Opsummering (udkast til klinikken). Indeholder ikke den foreløbige vurdering. Patienten godkender altid.
-export type AiSummary = {
-  summaryText: string; // max 800 tegn
-  patientWishes: string[]; // max 5
-  patientReportedHistory: string[]; // max 5
-  suggestedServices: string[]; // max 5 slugs
-  images: AiImageObservation[];
-  outOfScopeTopics: OutOfScopeTopic[];
-};
+export type AiSummary = z.infer<typeof aiSummarySchema>;
 
 // API-typer (architecture 10.6)
 export type AiChatMessageDto = {

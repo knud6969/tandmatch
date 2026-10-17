@@ -5,14 +5,15 @@
 // guard.ts tvinger det til null, når rules.allowPreliminaryAssessment er false.
 
 import { z } from "zod";
-import { IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
+import { OUT_OF_SCOPE_TOPICS, IMAGE_QUALITIES, IMAGE_VIEWS } from "@/lib/constants/ai";
+import { aiImageObservationBase, aiSlugListSchema, aiSummaryBase, aiTopicsSchema, SLUG_PATTERN } from "@/lib/constants/ai-schemas";
 import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
 
+export { SLUG_PATTERN };
 export const MAX_SUGGESTED_SERVICES = MAX_CONFIRMED_SERVICES_PER_CASE;
-export const SLUG_PATTERN = /^[a-z0-9_]{2,60}$/;
 
-const slugList = z.array(z.string().regex(SLUG_PATTERN)).max(MAX_SUGGESTED_SERVICES);
-const topics = z.array(z.enum(OUT_OF_SCOPE_TOPICS)).max(OUT_OF_SCOPE_TOPICS.length);
+const slugList = aiSlugListSchema;
+const topics = aiTopicsSchema;
 
 export const chatTurnSchema = z.strictObject({
   reply: z.string().min(1).max(700),
@@ -23,23 +24,9 @@ export const chatTurnSchema = z.strictObject({
   readyForSummary: z.boolean(),
 });
 
-export const summaryModelSchema = z.strictObject({
-  summaryText: z.string().min(1).max(800),
-  patientWishes: z.array(z.string().min(1).max(200)).max(5),
-  patientReportedHistory: z.array(z.string().min(1).max(200)).max(5),
-  suggestedServices: slugList,
-  images: z
-    .array(
-      z.strictObject({
-        imageRef: z.string().min(1).max(10),
-        view: z.enum(IMAGE_VIEWS),
-        visibleArea: z.string().min(1).max(80),
-        observations: z.array(z.string().min(1).max(120)).max(4),
-        quality: z.enum(IMAGE_QUALITIES),
-      }),
-    )
-    .max(5),
-  outOfScopeTopics: topics,
+// Modellens opsummering: samme form som den færdige, men billederne har en kort intern reference ("img_1").
+export const summaryModelSchema = aiSummaryBase.extend({
+  images: z.array(aiImageObservationBase.extend({ imageRef: z.string().min(1).max(10) })).max(5),
 });
 
 const topicsJson = { type: "array", items: { type: "string", enum: [...OUT_OF_SCOPE_TOPICS] } };

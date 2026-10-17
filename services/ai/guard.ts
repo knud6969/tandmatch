@@ -19,7 +19,6 @@ import {
   findForbiddenCategories,
   isPhrasedAsPreliminary,
   mergeTopics,
-  wordsOf,
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
@@ -184,18 +183,24 @@ const IMAGE_TEXT_CATEGORIES: readonly ForbiddenCategory[] = [
   "image_interpretation",
 ];
 
-// K3: patientens ord åbner kun for kategorien "price", og kun for hele udsagn i patientWishes, som udelukkende består
-// af ord, patienten selv har skrevet (fx "Højst 5000 kr."). Klinik-, endelige, vurderings- og diagnoseord kontrolleres
-// altid, uanset hvad patienten skrev.
-function isPatientsOwnWords(statement: string, patientWords: ReadonlySet<string>): boolean {
-  const words = wordsOf(statement);
-  return words.length > 0 && words.every((w) => patientWords.has(w));
+// K3: patientens ord åbner kun for kategorien "price", og kun for udsagn i patientWishes, der (normaliseret) er en
+// ordret delstreng af én af patientens egne beskeder (fx "Højst 5000 kr."). Ord, der findes spredt i samtalen, er ikke nok:
+// "Min veninde betalte 5000 kr for facader" giver ikke "Facader for 5000 kr". Klinik-, endelige, vurderings- og
+// diagnoseord kontrolleres altid, uanset hvad patienten skrev.
+function normalizeForQuote(text: string): string {
+  return (text.toLowerCase().match(/[\p{L}\d]+(?:[.,]\d+)*/gu) ?? []).join(" ");
+}
+
+function isPatientsOwnWords(statement: string, patientMessages: readonly string[]): boolean {
+  const normalized = normalizeForQuote(statement);
+  if (normalized === "") return false;
+  return patientMessages.some((message) => ` ${message} `.includes(` ${normalized} `));
 }
 
 export async function runSummaryGuard(input: SummaryGuardInput, callModel: ModelCall): Promise<SummaryGuardResult> {
   const patientTexts = input.history.filter((m) => m.role === "user").map((m) => maskPii(m.content));
   const detected = mergeTopics(...patientTexts.map((t) => detectOutOfScopeTopics(t, input.rules.blockedTopics)));
-  const patientWords = new Set(patientTexts.flatMap((t) => wordsOf(t)));
+  const patientMessages = patientTexts.map(normalizeForQuote);
   const refToId = new Map(input.images.map((img) => [img.ref, img.imageId]));
 
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
@@ -225,7 +230,7 @@ export async function runSummaryGuard(input: SummaryGuardInput, callModel: Model
       checked(draft.summaryText, SUMMARY_TEXT_CATEGORIES) ||
       draft.patientReportedHistory.some((text) => checked(text, SUMMARY_TEXT_CATEGORIES)) ||
       draft.patientWishes.some((text) =>
-        checked(text, isPatientsOwnWords(text, patientWords) ? WITHOUT_PRICE : SUMMARY_TEXT_CATEGORIES),
+        checked(text, isPatientsOwnWords(text, patientMessages) ? WITHOUT_PRICE : SUMMARY_TEXT_CATEGORIES),
       );
     if (textProblem) continue;
 

@@ -24,7 +24,6 @@ const word = (alternatives: string) => String.raw`(?<!${L})(?:${alternatives})(?
 // ---------- Priser ----------
 // OBS: "krone" er en behandling i kataloget (tandkrone) og er derfor ikke et prisord. Valuta kræver et tal,
 // bortset fra "kr" og "kroner" alene (kroner efterfulgt af "på tænderne" er behandlingen).
-const NUMBER_WORD = String.raw`(?:en|et|to|tre|fire|fem|seks|syv|otte|ni|ti|elleve|tolv|tyve|tredive|fyrre|halvtreds|nogle|par|flere|mange|adskillige|\d+)`;
 const PRICE_PATTERNS: RegExp[] = [
   rx(String.raw`\d[\d.,\s]*\s*(kr\.?|kroner|dkk|euro|eur|,-)(?!${L})`),
   rx(word(String.raw`kr\.?|dkk|euro|usd`)),
@@ -33,10 +32,12 @@ const PRICE_PATTERNS: RegExp[] = [
   rx(String.raw`${L}*pris(?:en|er|erne|et)?(?:overslag|interval|niveau|forskel|liste|tilbud|spænd)?(?!${L})`),
   rx(String.raw`(?<!${L})pris(?!me)${L}*`), // prismæssigt, prisværdig …
   rx(word(String.raw`koste|koster|kostede|kostet|kostende|kostpris|udgift|udgifter|omkostning|omkostninger|billig|billigt|billigere|billigst|dyr|dyrt|dyre|dyrere|dyrest|gratis|rabat|rabatter|betalingsplan|betalingsmuligheder|egenbetaling|tilskud|takst|taksten|honorar|honorarer|regning|regningen|betale|betaler|betaling|betalingen|økonomi|økonomisk|økonomiske|beløb|beløbet|beløbene|beløbs`)),
-  rx(String.raw`(?<!${L})tusind${L}*`), // fem tusinde, nogle tusinde
-  rx(String.raw`(?<!${L})${NUMBER_WORD}\s+hundrede?(?!${L})|(?<!${L})hundrede?\s+kr`),
+  rx(String.raw`(?<!${L})(?:tusind${L}*|tuss(?:e|er)?(?!${L}))`), // fem tusinde, nogle tusinde, et par tusse
+  rx(String.raw`(?<!${L})hundrede?(?!${L})`), // fyrretyve hundrede, femogtyve hundrede
+  rx(String.raw`(?<![\p{L}\d])\d+(?:[.,]\d+)?[kt](?![\p{L}\d])`), // 4k, 4.5k, 3t
+  rx(String.raw`kostbar${L}*|overkommelig${L}*|investering${L}*|rimelig${L}*|prisvenlig${L}*|(?<!${L})penge(?:ne)?(?!${L})|sygesikring${L}*|sygeforsikring${L}*|dækker\s+(en\s+del|det\s+meste|halvdelen|delvist)|dækkes\s+(helt\s+|delvist\s+)?af`),
   rx(String.raw`${L}*cifret${L}*`), // firecifret beløb
-  rx(word(String.raw`price|prices|pricing|cost|costs|cheap|cheaper|expensive|fee|fees|dollars?|bucks`)),
+  rx(word(String.raw`price|prices|pricing|cost|costs|cheap|cheaper|expensive|fee|fees|dollars?|bucks|thousand|hundred|grand|affordable`)),
 ];
 
 // Beløb i tal uden valuta. Tal med punktum som 3.000 og tal med mellemrum som 4 500 tæller altid. Tal med 5+ cifre
@@ -82,7 +83,7 @@ export function containsAmount(text: string): boolean {
 const CLINIC_NOUN = String.raw`(?:klinik|klinikker|klinikken|tandlæge|tandlæger|tandlægen|tandlægeklinik|tandlægehus|tandlægehuset)`;
 const CLINIC_PATTERNS: RegExp[] = [
   rx(String.raw`(?<!${L})(bedste|bedre|dygtigste|dygtigere|førende|mest\s+erfarne|top|bedst\s+anmeldt|højest\s+rangeret)\s+(${L}+\s+)?${CLINIC_NOUN}`),
-  rx(String.raw`${CLINIC_NOUN}\s+(${L}+\s+){0,2}(er|var|virker)\s+(${L}+\s+)?(bedst|bedre|bedste|god|godt|dårlig|dygtig|dygtigere|anbefalelsesværdig|at\s+foretrække)(?!${L})`),
+  rx(String.raw`${CLINIC_NOUN}\s+(${L}+\s+){0,5}(er|var|virker)\s+(${L}+\s+)?(bedst|bedre|bedste|god|gode|godt|dårlig|dygtig|dygtige|dygtigere|populær|populære|kendt|kendte|pålidelig|pålidelige|fremragende|fantastisk|fantastiske|anbefalelsesværdig|at\s+foretrække)(?!${L})`),
   rx(String.raw`(anbefal${L}*|foreslå${L}*|vælg|vælge|kontakt|book|prøv)[^.!?\n]{0,40}(en\s+bestemt|denne|den\s+her|netop)\s+${CLINIC_NOUN}`),
   rx(String.raw`(anbefal${L}*|vælg|vælge)[^.!?,\n]{0,25}(klinik|klinikker|klinikken)(?!${L})`),
   rx(String.raw`(vælg|vælge|kontakt|book)\s+(klinikken|tandlægen)\s+(med|der|som)`),
@@ -90,6 +91,9 @@ const CLINIC_PATTERNS: RegExp[] = [
   rx(String.raw`(rang(?:ér|er)${L}*)`),
   rx(String.raw`(?<!${L})(trustpilot)[^.!?\n]{0,30}(bedst|højest|flest)`),
   rx(String.raw`(?<!${L})trustpilot`),
+  rx(String.raw`(prøv|kig\s+efter|kig\s+på|søg\s+efter|vælg|gå\s+til|brug|kontakt|book|find|se)\s+(${L}+\s+){0,2}(tandlæger|tandlægerne|klinikker|klinikkerne|klinikken|tandlægen)\s+(i|på|ved|nær|omkring)\s+(?!oversigt|liste|kort|dit\s|dine\s|dit$|dine$)${L}+`),
+  rx(String.raw`(den|en)\s+${CLINIC_NOUN}\s+(med|der|som|hvor)\s+(${L}+\s+){0,2}(flest|højest|højst|bedst|mest|kortest|lavest|billigst|bedre|gode|god)`),
+  rx(String.raw`(populær${L}*|anbefalet${L}*|anbefalede|ansete|velansete|højt\s+ansete|kendt${L}*)\s+(${L}+\s+)?${CLINIC_NOUN}`),
   rx(String.raw`(gode|god|flest|bedste|bedst|mange|positive|fine|høje|højeste|dårlige|negative|fem[-\s]stjernede|\d+\s+stjerner)\s+(${L}+\s+)?(anmeldelse${L}*|stjerne${L}*|score${L}*|rating${L}*|bedømmelse${L}*|omtale${L}*)`),
   rx(String.raw`(?<!${L})klinik${L}*[^.!?\n]{0,60}(?<!${L})anmeldelse${L}*|(?<!${L})anmeldelse${L}*[^.!?\n]{0,60}(?<!${L})klinik${L}*`),
   rx(String.raw`(?<!${L})(en|den)\s+(klinik|tandlæge)(en)?,?\s+(der|som)\s+(har|får|scorer)\s+(${L}+\s+)?(flest|højest|bedst|mest|lavest)`),
@@ -101,14 +105,19 @@ const CLINIC_NAME_PATTERNS: RegExp[] = [
   /(?<!\p{L})(Tandlægerne|Tandlægehuset|Tandlægeklinikken|Tandklinikken|Tandklinik|Dental|Tandlæge)\s+\p{Lu}\p{Ll}+/u,
   /(?<!\p{L})\p{Lu}\p{Ll}+(?:\s+\p{Lu}\p{Ll}+)?\s+(Tandlæger|Tandlægerne|Tandlægehus|Tandlægehuset|Tandlægeklinik|Tandklinik|Klinik|Klinikken|Dental|Tandpleje|Tandlægecenter|Tandlægecentret)(?!\p{L})/u,
   /(?<!\p{L})[Kk]linikken\s+(på|i|ved|hos)\s+\p{Lu}/u,
+  /(?<!\p{L})(?:Dr|Doktor|Læge)\.?\s+\p{Lu}\p{Ll}+/u,
+  /(?<!\p{L})\p{Lu}\p{Ll}+(?:Dental|Dent|Klinik|Tandlæge\p{L}*)(?!\p{L})|(?<!\p{L})(?:Dental|Smile)\p{Lu}\p{Ll}+/u,
+  // Egennavne med stort begyndelsesbogstav midt i en sætning ("Mange roser Tandlægehuset")
+  /(?<![.!?]\s)(?<!^)(?:Tandlægehuset|Tandlægeklinikken|Tandklinikken|Tandlægecentret)(?!\p{L})/u,
 ];
 
 // ---------- Endelige udsagn ----------
 // Diagnoseord (dansk og engelsk). Bruges i "det er …", "du har …" og i vurderingsmønstrene.
-const DIAGNOSIS = String.raw`(?:karies|caries|cavity|cavities|paradentos${L}*|parodont${L}*|periodont${L}*|gingivit${L}*|pulpit${L}*|abces${L}*|abscess${L}*|byld${L}*|infektion${L}*|infection|inflammation${L}*|betændelse${L}*|cyste${L}*|hul(?:ler|let)?|rodbehandling${L}*|root\s+canal|tandsten|knirsk${L}*|bidfejl|tandpine|nerveskade${L}*|tandkødssygdom${L}*|tandløsning|tandkødsbetændelse)`;
+const DIAGNOSIS = String.raw`(?:${L}*(?:betændelse|infektion|inflammation|cyste|abces|abscess|byld|revne|revnen|revner|revnet)${L}*|karies|caries|cavity|cavities|paradentos${L}*|parodont${L}*|periodont${L}*|gingivit${L}*|pulpit${L}*|infection|infected|inflamed|decayed|hul(?:ler|let)?|rodbehandling${L}*|root\s+canal|tandsten|knirsk${L}*|bidfejl|tandpine|nerveskade${L}*|tandkødssygdom${L}*|tandløsning|tandkødsbetændelse)`;
 const DX = String.raw`(?<!${L})${DIAGNOSIS}(?!${L})`;
+const HEV = String.raw`(?:hævet(?!\s+(?:min|mit|mine|beløb\w*|penge\w*|aftalen|kontoen|lønnen|stemmen))|hævelse${L}*|hævede|hæver\s+op|opsvulm${L}*)`;
 const MEDICINE = String.raw`(?:ipren|ibuprofen|panodil|pamol|paracetamol|treo|disprin|kodein|tramadol|antibiotika|penicillin|smertestillende|håndkøbsmedicin|medicin|pille|piller|tablet|tabletter|nellikeolie|saltvand|isterninger|is)`;
-const TREATMENT_ADVICE = String.raw`(?:rodbehandling${L}*|udtrækning${L}*|trække\s+tanden|fyldning${L}*|krone|bro|implantat${L}*|antibiotika|operation${L}*|røntgen)`;
+const TREATMENT_ADVICE = String.raw`(?:rodbehandl${L}*|udtrækning${L}*|trække\s+tanden|trukket|fjernet|boret|extraction|root\s+canal|filling|crown|fyldning${L}*|krone|bro|implantat${L}*|antibiotika|operation${L}*|røntgen)`;
 
 const DEFINITIVE_PATTERNS: RegExp[] = [
   rx(String.raw`helt\s+sikkert|uden\s+tvivl|ingen\s+tvivl|næsten\s+sikkert|næppe\s+andet|kan\s+ikke\s+være\s+andet|(?<!${L})100\s*%|garanti|garanter${L}*|guarantee`),
@@ -118,13 +127,18 @@ const DEFINITIVE_PATTERNS: RegExp[] = [
   rx(String.raw`ingen\s+grund\s+til\s+(at\s+)?(kontakte|gå\s+til|se|opsøge)\s+(en\s+)?tandlæge`),
   rx(String.raw`ikke\s+noget\s+(at\s+(bekymre|være\s+bekymret|gøre\s+ved)|alvorligt|farligt)|ingen\s+grund\s+til\s+(bekymring|at\s+bekymre|at\s+være\s+bekymret)|ikke\s+(alvorlig|farlig)${L}*`),
   rx(String.raw`(?<!${L})(jeg\s+er\s+tandlæge|som\s+tandlæge)`),
-  rx(String.raw`(det\s+kan\s+(sagtens\s+)?vente|er\s+ufarligt|er\s+ufarlig|intet\s+at\s+bekymre)`),
+  rx(String.raw`(det\s+kan\s+(sagtens\s+)?vente|intet\s+at\s+bekymre)`),
   rx(String.raw`kan\s+(godt\s+|sagtens\s+|roligt\s+)+vente|roligt\s+vente|vent\s+og\s+se|vente\s+og\s+se|kan\s+vente\s+med\s+(at\s+)?(gå|kontakte|se|opsøge|booke|bestille)`),
+  // Falsk beroligelse om hastegrad og normalitet
+  rx(String.raw`ikke\s+akut|haster\s+ikke|ingen\s+hast|ikke\s+(noget|nogen)[^.!?\n]{0,10}(der|som)\s+haster|lad\s+det\s+vente|går\s+over\s+(af\s+sig\s+selv|igen|hurtigt)|ufarlig${L}*|harmløs${L}*|(lyder|virker|ser)\s+(helt\s+|ret\s+|ganske\s+)?(mildt|mild|ikke\s+slemt|ikke\s+så\s+slemt)|(er|lyder|virker)\s+(helt\s+|ganske\s+|ret\s+|fuldstændig\s+)?(normalt|normal|almindeligt|almindelig)(?!${L})(?!\s+at\b)|nothing\s+to\s+worry|not\s+urgent|no\s+need\s+to`),
+  // Engelsk
+  rx(String.raw`(your|the)\s+(tooth|teeth|gum|gums)\s+(is|are)\s+(${L}+\s+)?(infected|inflamed|decayed|rotten|damaged|cracked|broken)|you\s+(have|need)\s+(an?\s+)?(${DIAGNOSIS}|root\s+canal|filling|crown|extraction)|(this|it|that)\s+(is|looks|sounds|seems)\s+(like\s+)?(probably\s+|likely\s+|definitely\s+|just\s+)*(an?\s+)?(${L}+\s+)?(${DIAGNOSIS})`),
+  rx(String.raw`kræver\s+(typisk\s+|som\s+regel\s+|ofte\s+|normalt\s+|nok\s+)?(en\s+|et\s+)?${TREATMENT_ADVICE}(?!${L})|(patienten|hun|han)\s+(bør|skal|må|trænger\s+til|har\s+brug\s+for)\s+(at\s+)?(få|have)\s+(trukket\s+|fjernet\s+)?(en\s+|et\s+)?(${L}+\s+)?${TREATMENT_ADVICE}(?!${L})`),
   // Medicinråd og selvbehandling
   rx(word(String.raw`ipren|ibuprofen|panodil|pamol|paracetamol|disprin|kodein|tramadol|håndkøbsmedicin`)),
   rx(String.raw`(?<!${L})(tag|tage|prøv|køb|spis|brug|skyl)\s+(munden\s+)?(en\s+|et\s+|to\s+|nogle\s+|lidt\s+|noget\s+|med\s+)?(${L}+\s+)?${MEDICINE}(?!${L})`),
   // Behandlingsanvisning som endeligt udsagn
-  rx(String.raw`du\s+(skal|må|bør|trænger\s+til|har\s+brug\s+for)\s+(nok\s+|helt\s+sikkert\s+|bestemt\s+|absolut\s+)?(have\s+)?(en\s+|et\s+)?${TREATMENT_ADVICE}(?!${L})`),
+  rx(String.raw`du\s+(skal|må|bør|trænger\s+til|har\s+brug\s+for)\s+(nok\s+|helt\s+sikkert\s+|bestemt\s+|absolut\s+|sandsynligvis\s+|formentlig\s+|muligvis\s+)?(have\s+)?(trukket\s+|fjernet\s+)?(en\s+|et\s+)?${TREATMENT_ADVICE}(?!${L})`),
 ];
 
 // ---------- Strenge MDR-ord (kun når rules.strictMdrMode) ----------
@@ -139,10 +153,10 @@ export const mdrStrictTerms: RegExp[] = [
 // ---------- Vurdering i en tekst, hvor den ikke hører hjemme (reply og opsummeringen) ----------
 // Foreløbige vurderinger hører kun hjemme i preliminaryAssessment, som UI viser med mærkat (architecture 7.3).
 const ASSESSMENT_PATTERNS: RegExp[] = [
-  rx(String.raw`foreløbig\s+vurdering|kan\s+pege\s+på|kunne\s+pege\s+på|peger\s+på|tyder\s+på|kan\s+skyldes|kunne\s+skyldes|skyldes\s+(sandsynligvis|formentlig|nok)|kan\s+være\s+tegn\s+på|kunne\s+være\s+tegn\s+på|ligner\s+tegn`),
-  rx(String.raw`(kan|kunne|måske|muligvis|nok|sandsynligvis|formentlig)\s+(godt\s+)?(være|ligne)\s+(${L}+\s+){0,2}${DX}`),
-  rx(String.raw`(lyder\s+som|ser\s+ud\s+som|ser\s+ud\s+til\s+at\s+være|minder\s+om|ligner)\s+(${L}+\s+){0,3}${DX}`),
-  rx(String.raw`(sandsynligvis|formentlig|nok|muligvis)\s+(${L}+\s+){0,3}${DX}|${DX}\s+(${L}+\s+){0,2}(sandsynligvis|formentlig|muligvis)`),
+  rx(String.raw`(?<!${L})skyldes(?!${L})|højst\s+sandsynlig${L}*|foreløbig\s+vurdering|kan\s+pege\s+på|kunne\s+pege\s+på|peger\s+på|tyder\s+på|kan\s+skyldes|kunne\s+skyldes|skyldes\s+(sandsynligvis|formentlig|nok)|kan\s+være\s+tegn\s+på|kunne\s+være\s+tegn\s+på|ligner\s+tegn`),
+  rx(String.raw`(kan|kunne|måske|muligvis|nok|sandsynligvis|formentlig|may|might|could)\s+(godt\s+)?(være|ligne)\s+(${L}+\s+){0,2}${DX}`),
+  rx(String.raw`(lyder\s+som|ser\s+ud\s+som|ser\s+ud\s+til\s+at\s+være|minder\s+(${L}+\s+)?om|ligner|sounds\s+like|looks\s+like|seems\s+like)\s+(${L}+\s+){0,3}${DX}`),
+  rx(String.raw`(sandsynlig(vis|t)|formentlig|nok|muligvis|probably|likely|possibly)\s+(${L}+\s+){0,3}${DX}|${DX}\s+(${L}+\s+){0,2}(sandsynligvis|formentlig|muligvis|probably)`),
 ];
 
 // Gætteri uden diagnoseord. Kun i opsummeringen, hvor al fortolkning er forbudt.
@@ -212,7 +226,7 @@ export function isPhrasedAsPreliminary(assessment: string): boolean {
 // ---------- Emner patienten spørger om ----------
 const TOPIC_PATTERNS: Record<OutOfScopeTopic, RegExp> = {
   price: rx(
-    String.raw`hvad\s+koster|koster\s+(det|den|de)|hvor\s+meget\s+(koster|skal\s+jeg\s+betale)|hvad\s+ville\s+det\s+koste|${L}*pris(?:en|er|erne)?(?!${L})|hvor\s+dyrt|billig|dyr(?!${L})|(?<!${L})kr(?!${L})|kroner|how\s+much|(?<!${L})cost|` +
+    String.raw`hvad\s+koster|koster\s+(det|den|de)|hvor\s+meget\s+(koster|skal\s+jeg\s+betale)|hvad\s+ville\s+det\s+koste|${L}*pris(?:en|er|erne)?(?!${L})|hvor\s+dyrt|billig|dyr${L}*|(?<!${L})pris${L}*|penge(?:ne)?(?!${L})|tilskud|sygesikring${L}*|hvad\s+(giver|betaler)\s+(man|jeg|folk)\s+(for|i)|(?<!${L})kr(?!${L})|kroner|how\s+much|(?<!${L})cost|` +
       String.raw`hvor\s+meget\s+(skal|vil|må|kommer|ender|bliver)\s+(jeg|det|man|den)[^.!?\n]{0,25}(give|betale|af\s+med|bruge|koste|løbe)|` +
       String.raw`hvad\s+(løber|ender|lander|kommer)\s+(det|den|regningen|behandlingen)[^.!?\n]{0,20}(op|på|til)|hvad\s+bliver\s+(regningen|det\s+til)|hvad\s+skal\s+(jeg|man)\s+(give|betale)|(?<!${L})regning|(?<!${L})betal(e|ing)`,
   ),
@@ -220,6 +234,7 @@ const TOPIC_PATTERNS: Record<OutOfScopeTopic, RegExp> = {
     String.raw`(hvilken|hvilke)\s+(${L}+\s+)?(klinik|tandlæge)|(bedste|bedre|dygtigste|billigste)\s+(${L}+\s+)?(klinik|tandlæge)|anbefal${L}*\s+(du\s+|i\s+)?(en\s+|nogen\s+)?(${L}+\s+)?(klinik|tandlæge)|er\s+(klinik|tandlæge)\w*\s+\p{L}+\s+(god|dygtig)|which\s+(clinic|dentist)|best\s+(clinic|dentist)|` +
       String.raw`hvem\s+(er|ville\s+være|vil\s+være)\s+(den\s+)?(bedst|bedste|dygtigst|dygtigste|billigst|billigste|bedre)|hvem\s+skal\s+jeg\s+(vælge|gå\s+til|booke|kontakte|bruge)|` +
       String.raw`kan\s+du\s+(anbefale|foreslå)\s+(mig\s+)?(nogen|nogle)|anbefal${L}*\s+(du\s+)?(mig\s+)?(nogen|nogle)|` +
+      String.raw`hvilken\s+(en\s+)?(er|ville|vil)\s+(bedst|bedre|dygtigst|bedste)|kender\s+du\s+(en|nogen|nogle)\s+(${L}+\s+)?(klinik|tandlæge)|hvor\s+(finder|får)\s+(jeg\s+)?(en|nogen)\s+(${L}+\s+)?(klinik|tandlæge)|hvor\s+kan\s+jeg\s+finde\s+(en|nogen)\s+(${L}+\s+)?(klinik|tandlæge)|` +
       String.raw`hvor\s+(skal|bør|kan|burde)\s+jeg\s+(gå|henvende\s+mig|tage|rette\s+henvendelse)\s+(hen|til)`,
   ),
 };
@@ -241,19 +256,24 @@ const NEGATED_SYMPTOM = rx(
 );
 const FEVER_TEMPERATURE = String.raw`(?<![\d.,])(?:3[89]|4[0-2])(?:[.,]\d)?\s*(?:grader|°|i\s+temp${L}*|i\s+feber|i\s+temperatur|c(?!${L}))|temp${L}*\s+(?:på\s+|er\s+|over\s+)?(?:3[89]|4[0-2])(?![\d])`;
 const FACE_PART = String.raw`(?:kind|kinden|ansigt|ansigtet|læbe|læben|øjet|hals|halsen|kæbe|kæben|tandkød|tandkødet|gummen)`;
+// Et spørgsmål som "Har du feber eller hævelse?" beskriver ikke et symptom.
+const QUESTION_ABOUT_SYMPTOMS = rx(String.raw`(?:^|(?<=[.!?]\s))(?:har|får|oplever|er\s+der)\s+(?:du|der)\b[^.!?\n]*\?`);
 const EMERGENCY_PATTERNS: RegExp[] = [
   rx(String.raw`(stærke?|voldsomme?|kraftige?|slemme?|uudholdelige?|ulidelige?|frygtelige?|enorme?|vildt|rigtig\s+mange)\s+(${L}+\s+)?(smerte${L}*|ondt)`),
   // Ordstilling og styrke: "så ondt at jeg ikke kan sove", "meget ondt", "rigtig ondt"
   rx(String.raw`(så|meget|rigtig|virkelig|ekstremt|enormt|utroligt|forfærdeligt|frygteligt|helt\s+vildt|vildt|sindssygt|pissende)\s+(ondt|ømt)(?!${L})`),
   rx(String.raw`ikke\s+til\s+at\s+holde\s+ud|kan\s+ikke\s+holde\s+(det|smerten|ondt)\s+(ud|mere)|uudholdelig${L}*|ulidelig${L}*`),
-  rx(String.raw`(kan\s+ikke\s+sove|ikke\s+kunne\s+sove|vågner|vågnede)[^.!?\n]{0,30}(smerte${L}*|ondt)|(smerte${L}*|ondt)[^.!?\n]{0,40}(kan\s+ikke\s+sove|ikke\s+sove|ikke\s+kunne\s+sove|vågner|vågnede)`),
-  rx(String.raw`hæve${L}*|hævet`),
+  rx(String.raw`(kan\s+ikke\s+sove|ikke\s+kunne\s+sove|vågner|vågnede)[^.!?\n]{0,30}(smerte${L}*|ondt)|(smerte${L}*|ondt|tandpine)[^.!?\n]{0,40}(kan\s+ikke\s+sove|ikke\s+sove|ikke\s+kunne\s+sove|vågner|vågnede)`),
+  rx(HEV),
+  rx(String.raw`(ikke\s+sovet|sov\s+ikke|sovet\s+lidt|kunne\s+ikke\s+sove)[^.!?\n]{0,40}(smerte${L}*|ondt|tandpine)`),
+  rx(String.raw`(ondt|smerte${L}*|tandpine)\s+(hele\s+tiden|konstant|døgnet\s+rundt|hele\s+døgnet|uafbrudt)|(konstant|vedvarende)\s+(ondt|smerte${L}*)|kan\s+ikke\s+(spise|tygge)[^.!?\n]{0,40}(ondt|smerte${L}*|tandpine)|(ondt|smerte${L}*|tandpine)[^.!?\n]{0,40}kan\s+ikke\s+(spise|tygge)`),
+  rx(String.raw`(?<![\d.,])(?:3[89]|4[01])[.,]\d(?!\d)`),
   rx(String.raw`feber|høj\s+temperatur|${FEVER_TEMPERATURE}`),
   rx(String.raw`(?<!${L})(pus|byld|bylder|abces${L}*)(?!${L})|${L}*pusholdig${L}*`),
   rx(String.raw`${FACE_PART}\s+(${L}+\s+){0,2}(er|bliver|blev|føles|ser)\s+(${L}+\s+)?(tyk|tykke|opsvulmet|opsvulmede|opsvulmet|skæv|skæve|stor\s+som)|(tyk|tykke|opsvulmet)\s+(kind|læbe|kæbe|hals|ansigt)`),
   rx(String.raw`blød${L}*[^.!?\n]{0,40}(stopper\s+ikke|ikke\s+stoppe|vil\s+ikke\s+stoppe|kraftig|meget|ophører\s+ikke)|(stopper|ophører)\s+ikke[^.!?\n]{0,30}blød`),
   rx(String.raw`bløder\s+og\s+bløder|bløder\s+(hele\s+tiden|konstant|vedvarende|stadig|stadigvæk|igen\s+og\s+igen|i\s+timevis)|bliver\s+ved\s+(med\s+)?at\s+bløde|bløde\s+i\s+timevis`),
-  rx(String.raw`traume|ulykke|slået\s+(en\s+|min\s+|mine\s+)?(tand|tænder)|tand\w*\s+(er\s+)?(slået|røget|faldet)\s+ud|(fik|har\s+fået)\s+(et\s+)?(slag|stød)|slag\s+(i|mod|på)\s+(munden|kæben|ansigtet)|faldet\s+(og|på)|knækket\s+(efter|pga|på\s+grund\s+af)`),
+  rx(String.raw`traume|ulykke|slået\s+(en\s+|min\s+|mine\s+)?(tand|tænder)|tand\w*\s+(${L}+\s+)?(er\s+)?(slået|røget|faldet|røg|faldt|gik)\s+ud|tand\w*\s+(er\s+)?(knækket|brækket|splintret|sprunget)|(knækket|brækket|splintret)\s+(en\s+|min\s+|mine\s+)?(${L}+\s+)?tand|(fik|har\s+fået)\s+(et\s+)?(slag|stød)|slag\s+(i|mod|på)\s+(munden|kæben|ansigtet)|faldet\s+(og|på)|knækket\s+(efter|pga|på\s+grund\s+af)`),
   rx(String.raw`(svært|problemer)\s+ved\s+(at\s+)?(trække\s+vejret|synke|sluge)|vejrtræknings${L}*|kan\s+ikke\s+synke`),
   rx(String.raw`(kan\s+ikke|svært\s+at)\s+(åbne|spærre)\s+(munden|op)`),
   // Engelsk
@@ -262,13 +282,16 @@ const EMERGENCY_PATTERNS: RegExp[] = [
 ];
 const LIFE_THREATENING_PATTERNS: RegExp[] = [
   rx(String.raw`(svært|problemer)\s+ved\s+(at\s+)?(trække\s+vejret|synke|sluge)|vejrtræknings${L}*|kan\s+ikke\s+synke|kan\s+ikke\s+trække\s+vejret|can'?t\s+(breathe|swallow)|cannot\s+(breathe|swallow)`),
-  rx(String.raw`hæve${L}*[^.!?\n]{0,30}(hals|ansigt|øje|tunge)|(hals|ansigt|tunge)[^.!?\n]{0,30}hæve${L}*`),
+  rx(String.raw`${HEV}[^.!?\n]{0,30}(hals|ansigt|øje|tunge)|(hals|ansigt|tunge)[^.!?\n]{0,30}${HEV}`),
 ];
 
 export type EmergencyDetection = { emergency: boolean; lifeThreatening: boolean };
 
 export function detectEmergency(text: string): EmergencyDetection {
-  const cleaned = text.toLowerCase().replace(new RegExp(NEGATED_SYMPTOM.source, "giu"), " ");
+  const cleaned = text
+    .toLowerCase()
+    .replace(new RegExp(NEGATED_SYMPTOM.source, "giu"), " ")
+    .replace(QUESTION_ABOUT_SYMPTOMS, " ");
   const emergency = EMERGENCY_PATTERNS.some((p) => p.test(cleaned));
   const lifeThreatening = LIFE_THREATENING_PATTERNS.some((p) => p.test(cleaned));
   return { emergency: emergency || lifeThreatening, lifeThreatening };
