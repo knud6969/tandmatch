@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CASE_TIMEFRAMES } from "@/lib/constants/cases";
+import { CASE_TIMEFRAME_LABEL, CASE_TIMEFRAMES } from "@/lib/constants/cases";
 import type { CaseDto, CaseTimeframe } from "@/lib/types/cases";
 import { Button } from "@/views/components/ui/button";
 import { ChoiceGroup } from "@/views/components/ui/choice-group";
@@ -11,14 +11,12 @@ import { apiRequest } from "@/views/utils/api-client";
 import { isPostalCode } from "@/views/utils/clinic-query";
 import { useAction } from "@/views/utils/use-action";
 
-const LABELS: Record<CaseTimeframe, string> = {
-  asap: "Så hurtigt som muligt",
-  within_2_weeks: "Inden for 2 uger",
-  within_3_months: "Inden for 3 måneder",
-  flexible: "Jeg er fleksibel",
+type Props = {
+  caseDto: CaseDto;
+  onSaved: () => void;
+  onBack: () => void;
+  onContinue: () => void;
 };
-
-type Props = { caseDto: CaseDto; onSaved: () => void; onBack: () => void; onContinue: () => void };
 
 // Ønsket tidsrum og postnummer. Postnummeret bruges til afstanden i klinikoversigten.
 export function TimeframeStep({ caseDto, onSaved, onBack, onContinue }: Props) {
@@ -36,7 +34,10 @@ export function TimeframeStep({ caseDto, onSaved, onBack, onContinue }: Props) {
     const ok = await action.run(async () => {
       await apiRequest(`/api/cases/${caseDto.id}`, {
         method: "PATCH",
-        body: { ...(timeframe ? { preferredTimeframe: timeframe } : {}), ...(postalCode ? { postalCode } : {}) },
+        body: {
+          ...(timeframe ? { preferredTimeframe: timeframe } : {}),
+          ...(postalCode ? { postalCode } : {}),
+        },
       });
       onSaved();
     });
@@ -53,7 +54,10 @@ export function TimeframeStep({ caseDto, onSaved, onBack, onContinue }: Props) {
       </div>
       <ChoiceGroup
         legend="Ønsket tidsrum"
-        options={CASE_TIMEFRAMES.map((value) => ({ value, label: LABELS[value] }))}
+        options={CASE_TIMEFRAMES.map((value) => ({
+          value,
+          label: CASE_TIMEFRAME_LABEL[value],
+        }))}
         value={timeframe}
         onChange={setTimeframe}
       />

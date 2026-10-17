@@ -86,7 +86,7 @@ export function CaseFlow({ caseId }: { caseId: string }) {
   };
 
   if (caseState.error) {
-    const missing = caseState.error.includes("kunne ikke finde");
+    const missing = caseState.errorCode === "NOT_FOUND";
     return (
       <div className="mx-auto flex w-full max-w-narrow flex-col gap-4 px-4 py-8 sm:px-6">
         <LoadState loading={false} error={caseState.error} onRetry={caseState.reload} />
@@ -107,11 +107,21 @@ export function CaseFlow({ caseId }: { caseId: string }) {
   }
 
   if (caseDto.status !== "draft") {
+    const closed = caseDto.status === "closed";
     return (
       <div className="mx-auto flex w-full max-w-narrow flex-col gap-4 px-4 py-8 sm:px-6">
-        <Alert tone="info" title="Sagen er sendt">
-          <p>Sagen kan ikke ændres, fordi den allerede er sendt. Du kan følge den under Mine sager.</p>
+        <Alert tone="info" title={closed ? "Sagen er lukket" : "Sagen er sendt"}>
+          <p>
+            {closed
+              ? "Sagen kan ikke ændres, fordi den er lukket. Du kan starte en ny samtale, hvis du har brug for hjælp igen."
+              : "Sagen kan ikke ændres, fordi den allerede er sendt. Du kan følge den under Mine sager."}
+          </p>
         </Alert>
+        {closed && (
+          <Link href="/start" className="font-semibold text-brand-700">
+            Start en ny samtale
+          </Link>
+        )}
       </div>
     );
   }

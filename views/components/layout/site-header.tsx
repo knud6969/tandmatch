@@ -7,7 +7,7 @@ import { useSession } from "@/views/components/session/session-provider";
 import { Button, LinkButton } from "@/views/components/ui/button";
 import { apiRequest } from "@/views/utils/api-client";
 import { AREA_NAV } from "@/lib/navigation/areas";
-import { CHAT_HREF, CHAT_READY, DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
+import { CHAT_HREF, DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
 import { cx } from "@/views/components/ui/cx";
 
 // Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
@@ -61,7 +61,7 @@ export function SiteHeader() {
           TandMatch
         </Link>
 
-        {showPatientEntries && CHAT_READY && (
+        {showPatientEntries && (
           <Link
             href={CHAT_HREF}
             className="hidden min-h-12 flex-1 items-center justify-between gap-3 rounded-pill border border-line bg-surface py-1.5 pr-1.5 pl-5 text-base text-ink-muted no-underline shadow-card transition-shadow hover:shadow-raised md:ml-6 md:flex md:max-w-md"
@@ -106,7 +106,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {showPatientEntries && CHAT_READY && (
+      {showPatientEntries && (
         <div className="border-t border-line px-4 py-3 md:hidden">
           <Link
             href={CHAT_HREF}

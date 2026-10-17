@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AI_BOUNDARY_TEXT,
-  EMERGENCY_REFERRAL_TEXT,
+  CHAT_PII_WARNING_TEXT,
+  CHAT_WELCOME_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
   OUT_OF_SCOPE_NOTICES,
   PRELIMINARY_ASSESSMENT_LABEL,
@@ -22,23 +23,31 @@ import { apiRequest, ApiRequestError } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
-const WELCOME =
-  "Hej. Beskriv med dine egne ord, hvad du oplever, eller hvad du gerne vil have lavet, fx hvor det sidder, og hvor længe du har haft det. Jeg hjælper dig med at sætte ord på det, så klinikkerne forstår dit behov. Jeg kan ikke stille diagnoser eller sige, hvad det koster.";
+// Fast akut-blok over inputfeltet, så den ikke ruller væk, når samtalen fortsætter (architecture 6.1). Kort, så inputfeltet
+// stadig er synligt på en mobilskærm. Den fulde akut-henvisning står i selve svaret i samtalen.
+function EmergencyBlock() {
+  return (
+    <div role="alert" data-testid="akut-blok" className="rounded-control border border-danger-line bg-danger-bg p-3 text-danger-ink">
+      <p className="text-sm font-semibold">Det kan være akut</p>
+      <p className="mt-1 text-sm leading-snug">{LIFE_THREATENING_REFERRAL_TEXT}</p>
+      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <Link href="/klinikker?akut=1" className="inline-flex min-h-11 items-center font-semibold underline">
+          Se klinikker med ledig akuttid
+        </Link>
+        <a href="tel:112" className="inline-flex min-h-11 items-center font-semibold underline">
+          Ring 112
+        </a>
+        <a href="tel:1813" className="inline-flex min-h-11 items-center font-semibold underline">
+          Ring 1813
+        </a>
+      </p>
+    </div>
+  );
+}
 
 function AssistantExtras({ message }: { message: AiChatMessageDto }) {
   return (
     <div className="mt-3 flex flex-col gap-3">
-      {message.emergency && (
-        <Alert tone="danger" title="Det kan være akut" role="alert">
-          <p data-testid="akut-blok">{EMERGENCY_REFERRAL_TEXT}</p>
-          <p className="mt-2">{LIFE_THREATENING_REFERRAL_TEXT}</p>
-          <p className="mt-2">
-            <Link href="/klinikker?akut=1" className="font-semibold">
-              Se klinikker med ledig akuttid
-            </Link>
-          </p>
-        </Alert>
-      )}
       {message.preliminaryAssessment && (
         <div className="rounded-control border border-warning-line bg-warning-bg p-3 text-warning-ink" data-testid="foreloebig-vurdering">
           <p className="mb-1">
@@ -113,6 +122,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
   const messages = [...(state?.messages ?? []), ...extra];
   const messagesLeft = messagesLeftOverride ?? state?.messagesLeft ?? 0;
   const ready = readyOverride ?? state?.readyForSummary ?? false;
+  const hasEmergency = messages.some((m) => m.emergency);
   const hasUserMessage = messages.some((m) => m.role === "user");
   const blockedByConsent = !aiConsentGiven || needsConsent;
 
@@ -151,12 +161,18 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
     <div className="flex flex-col gap-4">
       <Alert tone="info">
         <p className="font-semibold">{AI_BOUNDARY_TEXT}</p>
+        <p className="mt-1" data-testid="pii-advarsel">
+          {CHAT_PII_WARNING_TEXT}
+        </p>
       </Alert>
 
       <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
         <ul
           ref={listRef}
-          className="flex max-h-[52dvh] min-h-48 flex-col gap-3 overflow-y-auto p-4 sm:max-h-[60dvh] sm:p-5"
+          className={cx(
+            "flex min-h-40 flex-col gap-3 overflow-y-auto p-4 sm:p-5",
+            hasEmergency ? "max-h-[30dvh] sm:max-h-[40dvh]" : "max-h-[52dvh] sm:max-h-[60dvh]",
+          )}
           aria-label="Samtale med AI-assistenten"
           aria-live="polite"
         >
@@ -164,7 +180,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
             message={{
               id: "velkommen",
               role: "assistant",
-              content: WELCOME,
+              content: CHAT_WELCOME_TEXT,
               preliminaryAssessment: null,
               suggestedServices: [],
               emergency: false,
@@ -188,9 +204,10 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
               </li>
             </>
           )}
-                  </ul>
+        </ul>
 
-        <div className="sticky bottom-0 border-t border-line bg-surface p-3 sm:p-4">
+        <div className="sticky bottom-0 flex flex-col gap-3 border-t border-line bg-surface p-3 sm:p-4">
+          {hasEmergency && <EmergencyBlock />}
           {blockedByConsent ? (
             <ConsentGate
               type="ai_processing"

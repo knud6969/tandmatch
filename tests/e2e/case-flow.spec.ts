@@ -100,11 +100,29 @@ test.describe("sagsflowet", () => {
 
     // Chat: fast tekst om AI'ens grænser, foreløbig vurdering med mærkat, forslag til behandling.
     await expect(page.getByText("AI-assistenten giver ikke endelige vurderinger")).toBeVisible();
+    // Fast tekst om personoplysninger står over chatten (M1).
+    const pii = page.getByTestId("pii-advarsel");
+    await expect(pii).toHaveText("Skriv ikke dit navn, din adresse eller kontaktoplysninger.");
+    const chatList = page.getByRole("list", { name: "Samtale med AI-assistenten" });
+    expect((await pii.boundingBox())!.y).toBeLessThan((await chatList.boundingBox())!.y);
     await say(page, "Jeg tror jeg har karies", "Kan du beskrive, hvornår det gør ondt?");
     const assessment = page.getByTestId("foreloebig-vurdering");
     await expect(assessment).toContainText("Foreløbig – klinikken vurderer endeligt");
     await say(page, "Jeg vil gerne have hvidere tænder, blegning", /Så kan blegning være relevant/);
     await expect(page.getByTestId("forslag")).toContainText("Blegning");
+
+    // Akut: den faste blok står over inputfeltet og bliver, hvor den er.
+    const input = page.getByLabel("Din besked til AI-assistenten");
+    await input.fill("Jeg har feber og stærke smerter");
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    const akut = page.getByTestId("akut-blok");
+    await expect(akut).toBeVisible();
+    await expect(akut.getByRole("link", { name: "Se klinikker med ledig akuttid" })).toHaveAttribute("href", "/klinikker?akut=1");
+    await expect(akut).toContainText("112");
+    await expect(akut).toContainText("1813");
+    await expect(akut).toBeInViewport();
+    await expect(input).toBeInViewport();
+    await expectNoHorizontalScroll(page);
 
     // Billeder: samtykke først, derefter upload.
     await page.getByRole("button", { name: "Fortsæt til billeder" }).click();
@@ -137,6 +155,11 @@ test.describe("sagsflowet", () => {
     // Opsummering: udkast, ret, godkend.
     await expect(page.getByRole("heading", { name: "Din opsummering" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Næste: find klinikker" })).toHaveCount(0);
+    // Billedbeskrivelser vises pr. billede med mærkat, så patienten godkender dem sammen med opsummeringen.
+    const descriptions = page.getByTestId("billedbeskrivelser");
+    await expect(descriptions).toBeVisible();
+    await expect(descriptions.getByText("Beskrivelse, ikke vurdering")).toHaveCount(1);
+    await expectNoHorizontalScroll(page);
     await page.getByRole("button", { name: "Lav udkast til opsummering" }).click();
     const summary = page.getByLabel("Opsummering til klinikkerne");
     await expect(summary).toHaveValue(/Patienten oplyser/);

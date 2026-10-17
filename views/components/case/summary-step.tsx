@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CHAT_NOT_SHARED_TEXT, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/constants/ai-texts";
+import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/constants/ai-texts";
+import { SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
 import type { SummaryResponse, ApproveSummaryResponse } from "@/lib/types/ai";
 import type { CaseDto } from "@/lib/types/cases";
+import type { ImageDto } from "@/lib/types/common";
 import type { RetakeImage } from "@/views/components/case/images-step";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge } from "@/views/components/ui/badge";
@@ -13,7 +15,8 @@ import { TextArea } from "@/views/components/ui/text-area";
 import { apiRequest } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 
-const MAX_SUMMARY = 1500;
+// AI'ens neutrale billedbeskrivelse. Feltet `description` mangler endnu på ImageDto i lib/types/common.ts (anmodning til backend, 3.6b).
+type DescribedImage = ImageDto & { description?: string | null };
 
 type Props = {
   caseDto: CaseDto;
@@ -80,8 +83,8 @@ export function SummaryStep({ caseDto, retake, onRetake, onChanged, onBack, onGo
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-semibold text-ink">Din opsummering</h2>
         <p className="text-base leading-relaxed text-ink-muted">
-          Det her er en beskrivelse af det, du har fortalt, så klinikkerne hurtigt kan forstå dit behov. Den er ikke en vurdering.
-          Klinikken laver den endelige vurdering. {CHAT_NOT_SHARED_TEXT}
+          Det her er en beskrivelse af det, du har fortalt, så klinikkerne hurtigt kan forstå dit behov. Den er ikke en vurdering. Klinikken
+          laver den endelige vurdering. {CHAT_NOT_SHARED_TEXT}
         </p>
       </div>
 
@@ -99,9 +102,38 @@ export function SummaryStep({ caseDto, retake, onRetake, onChanged, onBack, onGo
           <p className="text-sm text-ink-muted">Du har ikke bekræftet nogen behandlinger endnu.</p>
         )}
         <p className="text-sm text-ink-muted">
-          {caseDto.images.length} billede{caseDto.images.length === 1 ? "" : "r"} vedhæftet.
+          {caseDto.images.length} billede
+          {caseDto.images.length === 1 ? "" : "r"} vedhæftet.
         </p>
       </section>
+
+      {caseDto.images.length > 0 && (
+        <section aria-label="Billedbeskrivelser" className="flex flex-col gap-3" data-testid="billedbeskrivelser">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-base font-semibold text-ink">Dine billeder og AI&apos;ens beskrivelse af dem</h3>
+            <p className="text-sm text-ink-muted">
+              Beskrivelserne er en neutral gengivelse af, hvad billedet viser, og er en del af det, du godkender nedenfor. Klinikken
+              vurderer billederne selv.
+            </p>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {(caseDto.images as DescribedImage[]).map((image, index) => (
+              <li key={image.id} className="flex gap-3 rounded-card border border-line bg-surface p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element -- signeret URL fra lagring, ingen optimering */}
+                <img src={image.url} alt={`Dit billede ${index + 1}`} className="size-20 shrink-0 rounded-control object-cover" />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p>
+                    <Badge tone="neutral">{DESCRIPTION_LABEL}</Badge>
+                  </p>
+                  <p className="text-sm leading-relaxed text-ink">
+                    {image.description ?? "Ingen beskrivelse. Billedet sendes uden AI-beskrivelse."}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {retake.length > 0 && (
         <Alert tone="warning" title="Nogle billeder kan være svære at bruge" role="alert">
@@ -138,12 +170,12 @@ export function SummaryStep({ caseDto, retake, onRetake, onChanged, onBack, onGo
             label="Opsummering til klinikkerne"
             hint="Ret teksten, så den passer til dig. Du skal godkende den, før du kan gå videre."
             value={text}
-            maxLength={MAX_SUMMARY}
+            maxLength={SUMMARY_MAX_CHARS}
             rows={8}
             onChange={(event) => setText(event.target.value)}
           />
           <p className="text-sm text-ink-muted">
-            {text.length} af {MAX_SUMMARY} tegn.
+            {text.length} af {SUMMARY_MAX_CHARS} tegn.
             {generationsLeft !== null && ` Du kan lave ${generationsLeft} nye udkast.`}
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EMERGENCY_FILTER_HOURS } from "@/lib/constants/clinics";
 import type { ClinicListDto } from "@/lib/types/clinics";
-import { CHAT_HREF, CHAT_READY } from "@/lib/navigation/entries";
+import { CHAT_HREF } from "@/lib/navigation/entries";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
 import { cx } from "@/views/components/ui/cx";
@@ -18,7 +18,14 @@ import { CompareBar, MAX_COMPARE, type CompareChoice } from "@/views/components/
 import { SortSelect } from "@/views/components/clinic-directory/sort-select";
 import { apiRequest } from "@/views/utils/api-client";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
-import { buildClinicsQuery, DEFAULT_FILTERS, filtersFromSearch, filtersToSearch, hasOrigin, type DirectoryFilters } from "@/views/utils/clinic-query";
+import {
+  buildClinicsQuery,
+  DEFAULT_FILTERS,
+  filtersFromSearch,
+  filtersToSearch,
+  hasOrigin,
+  type DirectoryFilters,
+} from "@/views/utils/clinic-query";
 import { useLoad } from "@/views/utils/use-load";
 
 type Loaded = ClinicListDto & { query: string };
@@ -56,11 +63,20 @@ export function ClinicDirectory() {
   const currentSearch = params.toString();
   useEffect(() => {
     const next = filtersToSearch(filters, caseId);
-    if (next !== currentSearch) router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+    if (next !== currentSearch)
+      router.replace(next ? `${pathname}?${next}` : pathname, {
+        scroll: false,
+      });
   }, [filters, caseId, currentSearch, pathname, router]);
 
   const query = useMemo(() => buildClinicsQuery(filters), [filters]);
-  const loader = useCallback(async (): Promise<Loaded> => ({ ...(await apiRequest<ClinicListDto>(`/api/clinics?${query}`)), query }), [query]);
+  const loader = useCallback(
+    async (): Promise<Loaded> => ({
+      ...(await apiRequest<ClinicListDto>(`/api/clinics?${query}`)),
+      query,
+    }),
+    [query],
+  );
   const clinics = useLoad(loader);
   const catalog = useLoad(loadServiceGroups);
 
@@ -88,23 +104,18 @@ export function ClinicDirectory() {
       <header className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Find en klinik</h1>
         <p className="max-w-3xl text-base leading-relaxed text-ink-muted sm:text-lg">
-          Sammenlign klinikker uden at skrive til dem først. Priser vises ifølge klinikkens egen prisliste, og klinikken laver altid
-          den endelige vurdering af dit behov.{" "}
-          {CHAT_READY && (
-            <>
-              Vil du hellere beskrive dit problem?{" "}
-              <Link href={CHAT_HREF} className="font-semibold text-brand-700">
-                Start samtalen
-              </Link>
-              .
-            </>
-          )}
+          Sammenlign klinikker uden at skrive til dem først. Priser vises ifølge klinikkens egen prisliste, og klinikken laver altid den
+          endelige vurdering af dit behov. Vil du hellere beskrive dit problem?{" "}
+          <Link href={CHAT_HREF} className="font-semibold text-brand-700">
+            Start samtalen
+          </Link>
+          .
         </p>
         {filters.emergency && (
           <Alert tone="warning" title="Akut tandpine">
             Her ser du klinikker med en ledig akuttid inden for {EMERGENCY_FILTER_HOURS} timer, sorteret efter den tidligste. Er det
-            livstruende, eller har du svært ved at trække vejret eller synke, så ring 112. Uden for klinikkernes åbningstid kan du
-            kontakte tandlægevagten via 1813.
+            livstruende, eller har du svært ved at trække vejret eller synke, så ring 112. Uden for klinikkernes åbningstid kan du kontakte
+            tandlægevagten via 1813.
           </Alert>
         )}
       </header>
@@ -214,17 +225,13 @@ export function ClinicDirectory() {
                 aria-label="Kort over klinikkerne i listen"
                 className="isolate h-[65dvh] min-h-80 overflow-hidden rounded-card border border-line shadow-card lg:h-[min(calc(100dvh-10rem),44rem)]"
               >
-                <ClinicMapLazy
-                  clinics={data.clinics}
-                  hasServices={hasServices}
-                  emergency={filters.emergency}
-                  highlightedId={hoveredId}
-                />
+                <ClinicMapLazy clinics={data.clinics} hasServices={hasServices} emergency={filters.emergency} highlightedId={hoveredId} />
               </div>
               <p className="text-sm text-ink-muted">
                 <span className="font-semibold text-brand-700">Blå markør med hak:</span> verificeret klinik.{" "}
                 <span className="font-semibold text-ink">Lille hvid markør:</span> klinik, der endnu ikke er på TandMatch.
-                {withoutLocation > 0 && ` ${withoutLocation} klinik${withoutLocation === 1 ? "" : "ker"} uden kortplacering vises kun i listen.`}
+                {withoutLocation > 0 &&
+                  ` ${withoutLocation} klinik${withoutLocation === 1 ? "" : "ker"} uden kortplacering vises kun i listen.`}
               </p>
             </div>
           </div>
