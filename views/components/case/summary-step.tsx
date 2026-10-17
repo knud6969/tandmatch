@@ -13,6 +13,7 @@ import { Button, LinkButton } from "@/views/components/ui/button";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { TextArea } from "@/views/components/ui/text-area";
 import { apiRequest } from "@/views/utils/api-client";
+import { clinicsHref } from "@/views/utils/case-links";
 import { useAction } from "@/views/utils/use-action";
 
 // AI'ens neutrale billedbeskrivelse. Feltet `description` mangler endnu på ImageDto i lib/types/common.ts (anmodning til backend, 3.6b).
@@ -26,14 +27,6 @@ type Props = {
   onBack: () => void;
   onGoToImages: () => void;
 };
-
-// Link til klinikoversigten med sagens behandlinger og postnummer (trin 4 overtager valg og afsendelse).
-export function clinicsHref(caseDto: CaseDto): string {
-  const params = new URLSearchParams({ sag: caseDto.id });
-  if (caseDto.services.length > 0) params.set("services", caseDto.services.map((s) => s.slug).join(","));
-  if (caseDto.postalCode) params.set("postalCode", caseDto.postalCode);
-  return `/klinikker?${params.toString()}`;
-}
 
 // Udkast til opsummering, som patienten selv retter og godkender. Opsummeringen er en beskrivelse af det, patienten har
 // fortalt, og ikke en vurdering. Det er den, der deles med klinikkerne, ikke samtalen.

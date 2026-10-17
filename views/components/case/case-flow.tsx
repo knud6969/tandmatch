@@ -13,9 +13,11 @@ import { SummaryStep } from "@/views/components/case/summary-step";
 import { TimeframeStep } from "@/views/components/case/timeframe-step";
 import { AnonymousPatientBanner } from "@/views/components/session/anonymous-patient-banner";
 import { Alert } from "@/views/components/ui/alert";
+import { LinkButton } from "@/views/components/ui/button";
 import { cx } from "@/views/components/ui/cx";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
+import { caseHref } from "@/views/utils/case-links";
 import { useLoad } from "@/views/utils/use-load";
 
 const STEPS = [
@@ -117,10 +119,12 @@ export function CaseFlow({ caseId }: { caseId: string }) {
               : "Sagen kan ikke ændres, fordi den allerede er sendt. Du kan følge den under Mine sager."}
           </p>
         </Alert>
-        {closed && (
+        {closed ? (
           <Link href="/start" className="font-semibold text-brand-700">
             Start en ny samtale
           </Link>
+        ) : (
+          <LinkButton href={caseHref(caseId)}>Se din sag</LinkButton>
         )}
       </div>
     );

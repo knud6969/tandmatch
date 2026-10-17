@@ -1,5 +1,11 @@
 import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
-import { CHAT_MAX_USER_MESSAGES_PER_CONVERSATION, MAX_IMAGE_UPLOAD_BYTES, MAX_IMAGES_PER_CASE } from "@/lib/constants/limits";
+import {
+  CHAT_MAX_USER_MESSAGES_PER_CONVERSATION,
+  MAX_ACTIVE_LEADS_PER_CASE,
+  MAX_IMAGE_UPLOAD_BYTES,
+  MAX_IMAGES_PER_CASE,
+  MAX_TOTAL_LEADS_PER_CASE,
+} from "@/lib/constants/limits";
 import { ApiRequestError } from "@/views/utils/api-client";
 import { ImagePrepareError } from "@/views/utils/prepare-image";
 
@@ -18,7 +24,7 @@ const MESSAGES: Record<string, string> = {
   PROFILE_MISSING: "Kontoen er ikke klar endnu. Prøv igen om lidt.",
   NETWORK: "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
   NOT_FOUND: "Vi kunne ikke finde det, du søgte efter.",
-  CONSENT_REQUIRED: "Du skal give samtykke, før du kan fortsætte.",
+  CONSENT_REQUIRED: "Du skal give samtykke til at dele din beskrivelse med klinikkerne, før du kan sende.",
   CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
   CONVERSATION_CLOSED: "Samtalen er lukket. Du kan stadig lave en opsummering.",
   CHAT_LIMIT: `Samtalen har nået grænsen på ${CHAT_MAX_USER_MESSAGES_PER_CONVERSATION} beskeder. Du kan lave en opsummering af det, du har skrevet.`,
@@ -34,6 +40,12 @@ const MESSAGES: Record<string, string> = {
   SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før sagen sendes.",
   POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før sagen sendes.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
+  LEAD_LIMIT: `Din sag kan højst have ${MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser ad gangen. Træk en henvendelse tilbage, eller vælg færre klinikker.`,
+  LEAD_TOTAL_LIMIT: `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`,
+  CLINIC_ALREADY_CONTACTED: "Du har allerede kontaktet en af klinikkerne med denne sag. Vælg en anden klinik.",
+  CLINIC_NOT_AVAILABLE: "En af klinikkerne kan ikke kontaktes via TandMatch lige nu. Vælg en anden klinik.",
+  CASE_NOT_READY: "Din sag er ikke klar til at blive sendt. Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.",
+  LEAD_NOT_PENDING: "Klinikken har allerede svaret, så henvendelsen kan ikke trækkes tilbage.",
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
   EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",

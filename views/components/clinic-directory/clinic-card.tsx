@@ -12,12 +12,15 @@ type ClinicCardProps = {
   highlighted?: boolean;
   onHover?: (id: string | null) => void;
   // Med ?sag= kan patienten vælge klinikken til sammenligning og afsendelse (kun verificerede).
-  compare?: { selected: boolean; disabled: boolean; onToggle: () => void } | null;
+  // `contacted`: sagen er allerede sendt til klinikken, så den kan ikke vælges igen.
+  compare?: { selected: boolean; disabled: boolean; contacted: boolean; onToggle: () => void } | null;
+  // Med ?sag= fører kortet til profilen med sagen med, så valget bevares.
+  profileHref?: string;
 };
 
 // Klinikkort i Airbnb-stil. Verificerede klinikker har billede/logo, blå kant og mærket "Verificeret"; basisklinikker er
 // dæmpede, uden billede, og siger tydeligt, at de ikke er på TandMatch endnu. Hele kortet er et link til profilen.
-export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, compare }: ClinicCardProps) {
+export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, compare, profileHref }: ClinicCardProps) {
   const full = clinic.tier === "full";
   return (
     <li
@@ -49,7 +52,7 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
         </div>
         <h3 className="text-lg font-semibold leading-snug text-ink">
           <Link
-            href={`/klinikker/${clinic.id}`}
+            href={profileHref ?? `/klinikker/${clinic.id}`}
             className="no-underline after:absolute after:inset-0 after:content-[''] hover:underline"
           >
             {clinic.name}
@@ -59,7 +62,12 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
         <ClinicFacts clinic={clinic} hasServices={hasServices} emergency={emergency} />
       </div>
 
-      {compare && clinic.canReceiveLeads && (
+      {compare && clinic.canReceiveLeads && compare.contacted && (
+        <p className="relative z-10 flex min-h-12 items-center border-t border-line bg-surface-muted px-4 text-base font-semibold text-ink-muted">
+          Du har allerede kontaktet klinikken
+        </p>
+      )}
+      {compare && clinic.canReceiveLeads && !compare.contacted && (
         <label
           className={cx(
             "relative z-10 flex min-h-12 cursor-pointer items-center gap-3 border-t px-4 text-base font-semibold",

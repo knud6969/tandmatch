@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useSearchParams } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/types/clinics";
@@ -9,6 +9,7 @@ import { Alert } from "@/views/components/ui/alert";
 import { LinkButton } from "@/views/components/ui/button";
 import { ICONS } from "@/views/components/ui/icons";
 import { LoadState } from "@/views/components/ui/load-state";
+import { ProfileChoice } from "@/views/components/clinic-directory/profile-choice";
 import { AvailabilitySlots } from "@/views/components/clinic-directory/availability-slots";
 import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-loader";
 import { ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
@@ -21,6 +22,7 @@ import { StarRating } from "@/views/components/clinic-directory/star-rating";
 import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { TrustpilotBlock } from "@/views/components/clinic-directory/trustpilot-block";
 import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
+import { UUID } from "@/views/utils/case-links";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import { formatShortDateTime } from "@/views/utils/format";
 import { phoneHref, safeWebsiteHref, websiteLabel } from "@/views/utils/links";
@@ -53,6 +55,8 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
   }, [clinicId]);
   const { data, loading, error, reload } = useLoad(loader);
   const catalog = useLoad(loadServiceGroups);
+  const sagParam = useSearchParams().get("sag");
+  const caseId = sagParam && UUID.test(sagParam) ? sagParam : null;
 
   if (data?.kind === "missing") notFound();
 
@@ -71,7 +75,7 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
 
   return (
     <div className="mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
-      <Link href="/klinikker" className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
+      <Link href={caseId ? `/klinikker?sag=${caseId}` : "/klinikker"} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
         ← Alle klinikker
       </Link>
 
@@ -104,6 +108,11 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
                 <span className="text-ink-muted">{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
               )}
             </p>
+          )}
+          {full && caseId && clinic.canReceiveLeads && (
+            <div className="mt-1 max-w-md">
+              <ProfileChoice caseId={caseId} clinic={{ id: clinic.id, name: clinic.name }} />
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             {clinic.phone && (

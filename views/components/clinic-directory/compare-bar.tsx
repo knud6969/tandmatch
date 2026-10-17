@@ -1,28 +1,30 @@
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import { LinkButton } from "@/views/components/ui/button";
+import { sendHref } from "@/views/utils/case-links";
+import type { CompareChoice } from "@/views/utils/compare-selection";
 
-export const MAX_COMPARE = MAX_ACTIVE_LEADS_PER_CASE; // højst tre klinikker pr. sag (architecture 6.1)
-
-export type CompareChoice = { id: string; name: string };
+export type { CompareChoice };
 
 // Bund-bar, når patienten kommer fra en sag (?sag=): viser de valgte klinikker (op til 3) og fører videre til afsendelsen.
 export function CompareBar({
   caseId,
   choices,
+  max,
   onRemove,
 }: {
   caseId: string;
   choices: CompareChoice[];
+  // Højst tre minus sagens aktive leads (architecture 6.1, 10.5).
+  max: number;
   onRemove: (id: string) => void;
 }) {
   if (choices.length === 0) return null;
-  const href = `/start/${caseId}/send?klinikker=${choices.map((c) => c.id).join(",")}`;
+  const href = sendHref(caseId, choices.map((c) => c.id));
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface shadow-raised" role="region" aria-label="Valgte klinikker">
       <div className="mx-auto flex max-w-wide flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink">
-            {choices.length} af {MAX_COMPARE} klinikker valgt
+          <p className="text-sm font-semibold text-ink" data-testid="valgte-antal">
+            {choices.length} af {max} mulige klinikker valgt
           </p>
           <ul className="flex flex-wrap gap-2">
             {choices.map((choice) => (

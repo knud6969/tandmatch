@@ -11,7 +11,7 @@ import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 
-type GateType = Extract<ConsentType, "ai_processing" | "image_upload">;
+type GateType = Extract<ConsentType, "ai_processing" | "image_upload" | "health_data_sharing">;
 
 // Har patienten et aktivt samtykke i den aktuelle tekstversion?
 export function hasActiveConsent(consents: ConsentDto[], type: ConsentType): boolean {
@@ -19,7 +19,7 @@ export function hasActiveConsent(consents: ConsentDto[], type: ConsentType): boo
 }
 
 // Særskilt samtykke lige før handlingen (architecture 9.4). Aldrig forudafkrydset og aldrig samlet med andre samtykker.
-export function ConsentGate({ type, onGranted }: { type: GateType; onGranted: () => void }) {
+export function ConsentGate({ type, onGranted, actionLabel = "Giv samtykke og fortsæt" }: { type: GateType; onGranted: () => void; actionLabel?: string }) {
   const [checked, setChecked] = useState(false);
   const action = useAction();
 
@@ -43,7 +43,7 @@ export function ConsentGate({ type, onGranted }: { type: GateType; onGranted: ()
       />
       <StatusMessage message={action.message} />
       <Button onClick={grant} disabled={!checked || action.busy}>
-        {action.busy ? "Gemmer …" : "Giv samtykke og fortsæt"}
+        {action.busy ? "Gemmer …" : actionLabel}
       </Button>
     </div>
   );
