@@ -30,7 +30,11 @@ fi
 LOG="${TMPDIR:-/tmp}/tandmatch-e2e-server.log"
 npx next dev -p "$PORT" -H 127.0.0.1 >"$LOG" 2>&1 &
 SERVER_PID=$!
-cleanup() { kill "$SERVER_PID" 2>/dev/null; pkill -P "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null; git checkout -- CLAUDE.md 2>/dev/null; }
+# next dev skriver sin egen blok i CLAUDE.md. Vi gemmer filen, som den er (også med ucommittede ændringer), og lægger
+# den tilbage bagefter i stedet for git checkout, som ville slette brugerens egne ændringer.
+CLAUDE_BACKUP="$(mktemp)"
+cp CLAUDE.md "$CLAUDE_BACKUP"
+cleanup() { kill "$SERVER_PID" 2>/dev/null; pkill -P "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null; cp "$CLAUDE_BACKUP" CLAUDE.md; rm -f "$CLAUDE_BACKUP"; }
 trap cleanup EXIT
 
 for _ in $(seq 1 90); do
