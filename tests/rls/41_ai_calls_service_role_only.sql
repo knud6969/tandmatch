@@ -34,11 +34,14 @@ insert into public.consents (patient_id, type, text_version) values (tt.id('pA')
 -- Anonym bruger forbruger sit eget døgnloft også ved opsummering
 update public.ai_limits set value = 1 where key = 'anon_user_daily_ai_calls';
 delete from public.ai_anon_user_usage_daily;
+-- API-tests kan have talt op i dag, så testen måler forskellen i stedet for at antage et tomt globalt loft.
+create temp table global_before as select coalesce((select anonymous_calls from public.ai_usage_daily where day = current_date), 0) as n;
+grant select on global_before to public;
 select tt.as_service();
 select tt.allowed(format('select public.consume_summary_generation(%L, %L)', tt.id('pAnon'), tt.id('SAnon')), 'anonym: første opsummering');
 select tt.denied(format('select public.consume_summary_generation(%L, %L)', tt.id('pAnon'), tt.id('SAnon')), 'anonym: eget døgnloft nået', 'ANON_USER_LIMIT');
 select tt.as_postgres();
-select tt.eq((select anonymous_calls from public.ai_usage_daily), 1, 'afvist kald forbrugte intet af det globale loft');
+select tt.eq((select anonymous_calls from public.ai_usage_daily where day = current_date) - (select n from global_before), 1, 'afvist kald forbrugte intet af det globale loft');
 update public.ai_limits set value = 40 where key = 'anon_user_daily_ai_calls';
 
 -- L1: ingen direkte insert i ai_messages

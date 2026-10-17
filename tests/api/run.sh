@@ -23,9 +23,13 @@ export AI_FAKE_CLIENT=1
 export NEXT_TELEMETRY_DISABLED=1
 
 LOG="${TMPDIR:-/tmp}/tandmatch-test-server.log"
+# next dev skriver sin egen blok i CLAUDE.md. Filen gemmes, som den er (også med ucommittede ændringer), og lægges
+# tilbage, når testene er færdige.
+CLAUDE_BACKUP="$(mktemp)"
+cp CLAUDE.md "$CLAUDE_BACKUP"
 npx next dev -p "$PORT" -H 127.0.0.1 >"$LOG" 2>&1 &
 SERVER_PID=$!
-cleanup() { kill "$SERVER_PID" 2>/dev/null; pkill -P "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null; }
+cleanup() { kill "$SERVER_PID" 2>/dev/null; pkill -P "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null; cp "$CLAUDE_BACKUP" CLAUDE.md; rm -f "$CLAUDE_BACKUP"; }
 trap cleanup EXIT
 
 for _ in $(seq 1 90); do
