@@ -10,5 +10,7 @@ export function clinicsHref(caseDto: Pick<CaseDto, "id" | "services" | "postalCo
 
 export const sendHref = (caseId: string, clinicIds: string[]) => `/start/${caseId}/send?klinikker=${clinicIds.join(",")}`;
 export const caseHref = (caseId: string) => `/patient/sag/${caseId}`;
-
-export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Sagens flow (beskrivelse, behandlinger, opsummering) på /start/<id>.
+export const caseFlowHref = (caseId: string) => `/start/${caseId}`;
+// Klinikoversigten for en sag uden andre filtre (fx når sagen ikke kan hentes).
+export const caseDirectoryHref = (caseId: string) => `/klinikker?sag=${caseId}`;

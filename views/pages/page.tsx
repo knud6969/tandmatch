@@ -1,3 +1,4 @@
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { Metadata } from "next";
 import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
 import { ChatEntry } from "@/views/components/home/chat-entry";
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "Find den rigtige klinik til en fair 
 const STEPS = [
   { icon: "chat", title: "Beskriv problemet", text: "Skriv med dine egne ord eller upload et billede. AI hjælper dig med at sætte ord på det." },
   { icon: "tag", title: "Sammenlign klinikker", text: "Se priser fra klinikkens prisliste, anmeldelser og første ledige tid side om side." },
-  { icon: "inbox", title: "Kontakt op til 3 klinikker", text: "Send din beskrivelse til de klinikker, du vil høre fra. De svarer med deres egen vurdering." },
+  { icon: "inbox", title: `Kontakt op til ${MAX_ACTIVE_LEADS_PER_CASE} klinikker`, text: "Send din beskrivelse til de klinikker, du vil høre fra. De svarer med deres egen vurdering." },
   { icon: "calendar", title: "Book din tid", text: "Vælg en ledig tid, og få bekræftelse. Bagefter kan du anmelde besøget." },
 ] as const;
 

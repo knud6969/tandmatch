@@ -4,6 +4,7 @@ import {
   MAX_ACTIVE_LEADS_PER_CASE,
   MAX_IMAGE_UPLOAD_BYTES,
   MAX_IMAGES_PER_CASE,
+  MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/constants/limits";
 import { ApiRequestError } from "@/views/utils/api-client";
@@ -41,6 +42,7 @@ const MESSAGES: Record<string, string> = {
   POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før sagen sendes.",
   POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
   LEAD_LIMIT: `Din sag kan højst have ${MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser ad gangen. Træk en henvendelse tilbage, eller vælg færre klinikker.`,
+  LEAD_DAILY_LIMIT: `Du har sendt henvendelser til mange klinikker i dag. Der kan højst sendes ${MAX_LEADS_PER_PATIENT_DAY} henvendelser pr. døgn. Prøv igen senere.`,
   LEAD_TOTAL_LIMIT: `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`,
   CLINIC_ALREADY_CONTACTED: "Du har allerede kontaktet en af klinikkerne med denne sag. Vælg en anden klinik.",
   CLINIC_NOT_AVAILABLE: "En af klinikkerne kan ikke kontaktes via TandMatch lige nu. Vælg en anden klinik.",

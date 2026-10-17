@@ -8,6 +8,7 @@ import { AttributionControl, MapContainer, Marker, Popup, TileLayer, useMap } fr
 import type { ClinicListItemDto } from "@/lib/types/clinics";
 import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { ClinicFacts, ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
+import { clinicProfileHref } from "@/views/utils/clinic-query";
 import { DENMARK_CENTER, DENMARK_ZOOM, MAP_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, mapPoints } from "@/views/utils/map";
 
 // Markørerne er HTML med Tailwind-klasser fra temaet (ingen rå farver). Verificeret: stor, udfyldt blå med hak.
@@ -70,9 +71,11 @@ type ClinicMapProps = {
   highlightedId?: string | null;
   // Profilsiden viser kun én klinik og behøver ikke popup.
   popups?: boolean;
+  // Oversigtens filtre, som profillinket tager med (så "Alle klinikker" bevarer dem).
+  profileSearch?: string;
 };
 
-export default function ClinicMap({ clinics, hasServices, emergency, highlightedId = null, popups = true }: ClinicMapProps) {
+export default function ClinicMap({ clinics, hasServices, emergency, highlightedId = null, popups = true, profileSearch = "" }: ClinicMapProps) {
   const located = useMemo(() => clinics.filter((clinic) => clinic.location), [clinics]);
   const points = useMemo(() => mapPoints(clinics), [clinics]);
 
@@ -105,7 +108,7 @@ export default function ClinicMap({ clinics, hasServices, emergency, highlighted
                 <ClinicWhere clinic={clinic} />
                 <ClinicFacts clinic={clinic} hasServices={hasServices} emergency={emergency} />
                 <Link
-                  href={`/klinikker/${clinic.id}`}
+                  href={clinicProfileHref(clinic.id, profileSearch)}
                   className="map-popup-link inline-flex min-h-11 items-center justify-center rounded-control bg-brand-600 px-4 text-base font-semibold no-underline hover:bg-brand-700"
                 >
                   Se profil

@@ -87,7 +87,7 @@ test.describe("klinikoversigt og profil", () => {
     await popup.getByRole("link", { name: "Se profil" }).click();
 
     // Profilen (fuldt niveau).
-    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}(\?.*)?$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Prisliste" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Åbningstider" })).toBeVisible();
@@ -128,7 +128,9 @@ test.describe("klinikoversigt og profil", () => {
     const cards = page.getByRole("list").locator("> li").filter({ has: page.getByRole("heading", { level: 3 }) });
     await expect(cards.first()).toBeVisible();
     await cards.first().getByRole("link").first().click();
-    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}(\?.*)?$/);
+    // Tilbagelinket på profilen bevarer oversigtens filtre.
+    await expect(page.getByRole("link", { name: "← Alle klinikker" })).toHaveAttribute("href", /sort=rating/);
     await page.goBack();
     await openFilters();
     await expect(page.getByLabel("Kun klinikker, der kan kontaktes")).toBeChecked();

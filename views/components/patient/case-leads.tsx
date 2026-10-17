@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { CASE_STATUS_LABEL, CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
-import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL } from "@/lib/constants/leads";
-import { canSendCase } from "@/lib/domain/leads";
+import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL, QUOTED_PRICE_LABEL, REMOVED_CLINIC_LABEL } from "@/lib/constants/leads";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
 import { Alert } from "@/views/components/ui/alert";
@@ -15,7 +15,7 @@ import { ICONS } from "@/views/components/ui/icons";
 import { LoadState } from "@/views/components/ui/load-state";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
-import { clinicsHref } from "@/views/utils/case-links";
+import { caseFlowHref, clinicsHref } from "@/views/utils/case-links";
 import { formatDate, formatPriceRange } from "@/views/utils/format";
 import { loadCaseSelection } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
@@ -56,7 +56,7 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
           </div>
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="text-lg font-semibold leading-snug text-ink">
-              {clinic.removed ? "Klinikken er ikke længere på TandMatch" : clinic.name}
+              {clinic.removed ? REMOVED_CLINIC_LABEL : clinic.name}
             </h2>
             {!clinic.removed && <p className="text-sm text-ink-muted">{clinic.city}</p>}
             <div>
@@ -67,18 +67,21 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
 
         <p className="text-sm text-ink-muted">Sendt {formatDate(lead.sentAt)}</p>
 
-        {lead.quotedPrice ? (
-          <p className="text-base text-ink">
-            <span className="font-semibold">{formatPriceRange(lead.quotedPrice.min, lead.quotedPrice.max)}</span>{" "}
-            <span className="text-ink-muted">præciseret af klinikken</span>
-          </p>
-        ) : (
-          lead.listPrice && (
-            <p className="text-base text-ink">
-              <span className="font-semibold">{formatPriceRange(lead.listPrice.min, lead.listPrice.max)}</span>{" "}
-              <span className="text-ink-muted">{PRICE_SOURCE}</span>
-            </p>
-          )
+        {(lead.listPrice || lead.quotedPrice) && (
+          <div className="flex flex-col gap-1">
+            {lead.listPrice && (
+              <p className="text-base text-ink">
+                <span className="font-semibold">{formatPriceRange(lead.listPrice.min, lead.listPrice.max)}</span>{" "}
+                <span className="text-ink-muted">{PRICE_SOURCE}</span>
+              </p>
+            )}
+            {lead.quotedPrice && (
+              <p className="text-base text-ink">
+                <span className="font-semibold">{formatPriceRange(lead.quotedPrice.min, lead.quotedPrice.max)}</span>{" "}
+                <span className="text-ink-muted">{QUOTED_PRICE_LABEL}</span>
+              </p>
+            )}
+          </div>
         )}
 
         {lead.clinicComment && (
@@ -136,8 +139,9 @@ export function CaseLeads({ caseId }: { caseId: string }) {
     );
   }
 
-  const { caseDto, leads, activeCount } = data;
-  const canContactMore = canSendCase(caseDto, caseDto.services.length, activeCount, leads.length);
+  const { caseDto, leads, activeCount, slots } = data;
+  // Serverens canSend tager højde for status, opsummering og begge lofter.
+  const canContactMore = caseDto.canSend;
 
   return (
     <div className="flex flex-col gap-6">
@@ -170,7 +174,7 @@ export function CaseLeads({ caseId }: { caseId: string }) {
       {caseDto.status === "draft" && (
         <Alert tone="info" title="Sagen er ikke sendt endnu">
           <p>Du kan færdiggøre beskrivelsen og vælge klinikker.</p>
-          <LinkButton href={`/start/${caseId}`} variant="secondary" className="mt-3">
+          <LinkButton href={caseFlowHref(caseId)} variant="secondary" className="mt-3">
             Fortsæt sagen
           </LinkButton>
         </Alert>
@@ -195,7 +199,8 @@ export function CaseLeads({ caseId }: { caseId: string }) {
         <Card className="flex flex-col gap-3 p-4 sm:p-5">
           <h2 className="text-lg font-semibold text-ink">Vil du kontakte flere klinikker?</h2>
           <p className="text-base text-ink-muted">
-            En sag kan have op til tre aktive henvendelser ad gangen. Du har {activeCount} nu.
+            En sag kan have op til {MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser ad gangen. Du har {activeCount} nu og kan kontakte{" "}
+            {slots} klinik{slots === 1 ? "" : "ker"} mere.
           </p>
           <LinkButton href={clinicsHref(caseDto)} className="w-full sm:w-fit">
             Kontakt flere klinikker

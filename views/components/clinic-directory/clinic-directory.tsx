@@ -17,13 +17,14 @@ import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-lo
 import { CompareBar } from "@/views/components/clinic-directory/compare-bar";
 import { SortSelect } from "@/views/components/clinic-directory/sort-select";
 import { apiRequest } from "@/views/utils/api-client";
-import { UUID } from "@/views/utils/case-links";
-import { readSelection, writeSelection, type CompareChoice } from "@/views/utils/compare-selection";
-import { useCaseSelection } from "@/views/utils/use-case-selection";
+import { caseFlowHref, caseHref } from "@/views/utils/case-links";
+import { isUuid } from "@/views/utils/ids";
+import { useCaseChoices, type useCaseSelection } from "@/views/utils/use-case-selection";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import {
   buildClinicsQuery,
-  DEFAULT_FILTERS,
+  clinicProfileHref,
+  defaultFilters,
   filtersFromSearch,
   filtersToSearch,
   hasOrigin,
@@ -63,9 +64,10 @@ function CaseSelectionNotice({ caseId, state }: { caseId: string; state: ReturnT
     return (
       <Alert tone="info" title="Du kan ikke kontakte flere klinikker lige nu">
         <p>
-          Din sag har allerede {sag.activeCount} aktive henvendelser. Trækker du en tilbage, bliver der plads til en ny klinik.
+          Din sag har {sag.activeCount} aktive henvendelser og har nået loftet for, hvor mange klinikker den kan sendes til. Trækker du en
+          tilbage, kan der blive plads til en ny klinik.
         </p>
-        <Link href={`/patient/sag/${caseId}`} className="mt-2 inline-block font-semibold text-brand-700">
+        <Link href={caseHref(caseId)} className="mt-2 inline-block font-semibold text-brand-700">
           Gå til din sag
         </Link>
       </Alert>
@@ -75,7 +77,7 @@ function CaseSelectionNotice({ caseId, state }: { caseId: string; state: ReturnT
     return (
       <Alert tone="warning" title="Din sag er ikke klar til at blive sendt">
         <p>Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer, før du kan vælge klinikker.</p>
-        <Link href={`/start/${caseId}`} className="mt-2 inline-block font-semibold text-brand-700">
+        <Link href={caseFlowHref(caseId)} className="mt-2 inline-block font-semibold text-brand-700">
           Tilbage til din sag
         </Link>
       </Alert>
@@ -103,18 +105,10 @@ export function ClinicDirectory() {
   const [view, setView] = useState<MobileView>("list");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const caseParam = params.get("sag");
-  const caseId = caseParam && UUID.test(caseParam) ? caseParam : null;
-  const [picked, setPicked] = useState<CompareChoice[]>(() => (caseId ? readSelection(caseId) : []));
-  const sagContext = useCaseSelection(caseId);
-  const sag = sagContext.data;
+  const caseId = isUuid(caseParam) ? caseParam : null;
+  const choices = useCaseChoices(caseId);
+  const { sag, chosen, canChoose } = choices;
   const prefilled = useRef(false);
-
-  // Valget kan kun være klinikker, sagen ikke allerede er sendt til, og højst så mange, som der er plads til.
-  const chosen = useMemo(
-    () => (sag ? picked.filter((c) => !sag.contactedIds.includes(c.id)).slice(0, sag.slots) : []),
-    [picked, sag],
-  );
-  const canChoose = sag !== null && sag.caseDto.canSend && sag.slots > 0;
 
   // Filtrene spejles i adressen (B16), så genindlæsning, profil og tilbage samt deling bevarer dem.
   const currentSearch = params.toString();
@@ -151,9 +145,9 @@ export function ClinicDirectory() {
 
   const patch = useCallback((change: Partial<DirectoryFilters>) => setFilters((current) => ({ ...current, ...change })), []);
   const reset = useCallback(() => {
-    setFilters(DEFAULT_FILTERS);
+    setFilters(defaultFilters(caseId));
     setResetVersion((v) => v + 1);
-  }, []);
+  }, [caseId]);
 
   const data = clinics.data;
   const updating = data !== null && data.query !== query;
@@ -161,16 +155,8 @@ export function ClinicDirectory() {
   const activeCount = countActive(filters);
   const withoutLocation = data ? data.clinics.filter((clinic) => !clinic.location).length : 0;
 
-  function updatePicked(next: CompareChoice[]) {
-    setPicked(next);
-    if (caseId) writeSelection(caseId, next);
-  }
-
-  function toggleChoice(id: string, name: string) {
-    if (chosen.some((c) => c.id === id)) return updatePicked(chosen.filter((c) => c.id !== id));
-    if (chosen.length >= (sag?.slots ?? 0)) return;
-    updatePicked([...chosen, { id, name }]);
-  }
+  // Profil- og kortlinks tager oversigtens filtre (og sagen) med, så "Alle klinikker" fører tilbage til dem.
+  const directorySearch = filtersToSearch(filters, caseId);
 
   return (
     <div className={cx("mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10", chosen.length > 0 && "pb-40 sm:pb-32")}>
@@ -184,7 +170,7 @@ export function ClinicDirectory() {
           </Link>
           .
         </p>
-        {caseId && <CaseSelectionNotice caseId={caseId} state={sagContext} />}
+        {caseId && <CaseSelectionNotice caseId={caseId} state={choices.state} />}
         {filters.emergency && (
           <Alert tone="warning" title="Akut tandpine">
             Her ser du klinikker med en ledig akuttid inden for {EMERGENCY_FILTER_HOURS} timer, sorteret efter den tidligste. Er det
@@ -278,14 +264,15 @@ export function ClinicDirectory() {
                       emergency={filters.emergency}
                       highlighted={hoveredId === clinic.id}
                       onHover={setHoveredId}
-                      profileHref={caseId ? `/klinikker/${clinic.id}?sag=${caseId}` : undefined}
+                      profileHref={clinicProfileHref(clinic.id, directorySearch)}
                       compare={
-                        caseId && canChoose
+                        caseId && sag
                           ? {
-                              selected: chosen.some((c) => c.id === clinic.id),
-                              disabled: chosen.length >= sag.slots,
+                              selected: choices.isChosen(clinic.id),
+                              selectable: canChoose,
+                              disabled: choices.full,
                               contacted: sag.contactedIds.includes(clinic.id),
-                              onToggle: () => toggleChoice(clinic.id, clinic.name),
+                              onToggle: () => choices.toggle({ id: clinic.id, name: clinic.name }),
                             }
                           : null
                       }
@@ -301,7 +288,13 @@ export function ClinicDirectory() {
                 aria-label="Kort over klinikkerne i listen"
                 className="isolate h-[65dvh] min-h-80 overflow-hidden rounded-card border border-line shadow-card lg:h-[min(calc(100dvh-10rem),44rem)]"
               >
-                <ClinicMapLazy clinics={data.clinics} hasServices={hasServices} emergency={filters.emergency} highlightedId={hoveredId} />
+                <ClinicMapLazy
+                  clinics={data.clinics}
+                  hasServices={hasServices}
+                  emergency={filters.emergency}
+                  highlightedId={hoveredId}
+                  profileSearch={directorySearch}
+                />
               </div>
               <p className="text-sm text-ink-muted">
                 <span className="font-semibold text-brand-700">Blå markør med hak:</span> verificeret klinik.{" "}
@@ -315,7 +308,7 @@ export function ClinicDirectory() {
       </section>
 
       {caseId && canChoose && (
-        <CompareBar caseId={caseId} choices={chosen} max={sag.slots} onRemove={(id) => updatePicked(chosen.filter((c) => c.id !== id))} />
+        <CompareBar caseId={caseId} choices={chosen} max={choices.slots} onRemove={choices.remove} />
       )}
     </div>
   );

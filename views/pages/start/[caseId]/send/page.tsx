@@ -1,3 +1,4 @@
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SendStep } from "@/views/components/case/send-step";
@@ -18,7 +19,7 @@ export default async function SendCasePage({
   return (
     <Container>
       <PageIntro title="Send din sag til klinikkerne">
-        <p>Tjek dit valg, opret en konto, og giv samtykke, før din beskrivelse sendes. Du kan højst have tre aktive henvendelser pr. sag.</p>
+        <p>Tjek dit valg, opret en konto, og giv samtykke, før din beskrivelse sendes. Du kan højst have {MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser pr. sag.</p>
       </PageIntro>
       <Suspense fallback={<p role="status" className="text-base text-ink-muted">Indlæser …</p>}>
         <SendStep caseId={caseId} clinicsParam={typeof klinikker === "string" ? klinikker : null} />

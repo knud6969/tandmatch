@@ -22,7 +22,8 @@ import { StarRating } from "@/views/components/clinic-directory/star-rating";
 import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { TrustpilotBlock } from "@/views/components/clinic-directory/trustpilot-block";
 import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
-import { UUID } from "@/views/utils/case-links";
+import { directoryHref } from "@/views/utils/clinic-query";
+import { isUuid } from "@/views/utils/ids";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import { formatShortDateTime } from "@/views/utils/format";
 import { phoneHref, safeWebsiteHref, websiteLabel } from "@/views/utils/links";
@@ -55,8 +56,10 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
   }, [clinicId]);
   const { data, loading, error, reload } = useLoad(loader);
   const catalog = useLoad(loadServiceGroups);
-  const sagParam = useSearchParams().get("sag");
-  const caseId = sagParam && UUID.test(sagParam) ? sagParam : null;
+  const searchParams = useSearchParams();
+  const caseId = isUuid(searchParams.get("sag")) ? searchParams.get("sag") : null;
+  // Oversigtens filtre ligger i profilens adresse og bevares på tilbagelinket.
+  const backHref = directoryHref(searchParams.toString());
 
   if (data?.kind === "missing") notFound();
 
@@ -75,7 +78,7 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
 
   return (
     <div className="mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
-      <Link href={caseId ? `/klinikker?sag=${caseId}` : "/klinikker"} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
+      <Link href={backHref} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
         ← Alle klinikker
       </Link>
 

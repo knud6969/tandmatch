@@ -88,6 +88,14 @@ async function runFlow(page: Page, caseId: string) {
   await page.screenshot({ path: `test-results/leads-oversigt-${page.viewportSize()!.width}.png` });
   await expect(boxes.nth(3)).toBeDisabled();
   await expectNoHorizontalScroll(page);
+
+  // Compare-baren fylder højst én linje chips (vandret scroll) og dækker ikke sidste kort, når man har scrollet til bunden.
+  const bar = page.getByRole("region", { name: "Valgte klinikker" });
+  expect((await page.getByTestId("valgte-chips").boundingBox())!.height).toBeLessThanOrEqual(60);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const barTop = (await bar.boundingBox())!.y;
+  const lastBox = (await page.locator("ul[aria-busy] > li").last().boundingBox())!;
+  expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(barTop + 1);
   const clinicNames = await page
     .getByRole("region", { name: "Valgte klinikker" })
     .getByRole("button")

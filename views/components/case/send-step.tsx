@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { ClinicListDto, ClinicListItemDto } from "@/lib/types/clinics";
 import type { ConsentDto } from "@/lib/types/consents";
 import type { PatientLeadDto } from "@/lib/types/leads";
@@ -16,7 +17,8 @@ import { Card } from "@/views/components/ui/card";
 import { LoadState } from "@/views/components/ui/load-state";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
-import { caseHref, clinicsHref, UUID } from "@/views/utils/case-links";
+import { caseDirectoryHref, caseFlowHref, caseHref, clinicsHref } from "@/views/utils/case-links";
+import { isUuid } from "@/views/utils/ids";
 import { writeSelection } from "@/views/utils/compare-selection";
 import { formatPriceRange } from "@/views/utils/format";
 import { loadCaseSelection, type CaseSelectionContext } from "@/views/utils/use-case-selection";
@@ -28,11 +30,23 @@ type Loaded = { ctx: CaseSelectionContext; clinics: ClinicListItemDto[] };
 const loadConsents = async (): Promise<ConsentDto[]> => (await apiRequest<{ consents: ConsentDto[] }>("/api/consents")).consents;
 
 // Klinik-id'erne fra ?klinikker= (kommasepareret). Ugyldige og dobbelte id'er fjernes.
-function parseClinicIds(value: string | null): string[] {
-  return [...new Set((value ?? "").split(",").filter((id) => UUID.test(id)))];
+function clinicIdsKey(value: string | null): string {
+  return [...new Set((value ?? "").split(",").filter(isUuid))].join(",");
 }
 
-function ClinicLine({ clinic, hasServices }: { clinic: ClinicListItemDto; hasServices: boolean }) {
+// Sagen og kun de valgte klinikker (API'et tager højst lige så mange, som en sag kan have aktive). Behandlingerne følger med
+// for at få prisen for patientens valg. For mange valgte fanges af kontrollen i SendStep.
+async function loadSendData(caseId: string, idsKey: string): Promise<Loaded> {
+  const ctx = await loadCaseSelection(caseId);
+  if (idsKey === "") return { ctx, clinics: [] };
+  const params = new URLSearchParams({ ids: idsKey.split(",").slice(0, MAX_ACTIVE_LEADS_PER_CASE).join(",") });
+  const slugs = ctx.caseDto.services.map((service) => service.slug).join(",");
+  if (slugs) params.set("services", slugs);
+  const list = await apiRequest<ClinicListDto>(`/api/clinics?${params.toString()}`);
+  return { ctx, clinics: list.clinics };
+}
+
+function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
   return (
     <li className="flex flex-col gap-1 rounded-card border border-line bg-surface p-4" data-testid="valgt-klinik">
       <p className="text-base font-semibold text-ink">{clinic.name}</p>
@@ -46,9 +60,7 @@ function ClinicLine({ clinic, hasServices }: { clinic: ClinicListItemDto; hasSer
             <span className="text-ink-muted">for dit valg, {PRICE_SOURCE}</span>
           </>
         ) : (
-          <span className="text-ink-muted">
-            {hasServices ? "Prisen for dit valg er ikke angivet i klinikkens prisliste" : "Ingen pris for dit valg"}
-          </span>
+          <span className="text-ink-muted">Prisen for dit valg er ikke angivet i klinikkens prisliste</span>
         )}
       </p>
     </li>
@@ -59,22 +71,18 @@ function ClinicLine({ clinic, hasServices }: { clinic: ClinicListItemDto; hasSer
 // samtykke til deling af helbredsdata og send. Klinikken ser først patientens navn og kontaktoplysninger, når leadet er
 // accepteret og en tid er booket.
 export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsParam: string | null }) {
-  const ids = parseClinicIds(clinicsParam);
   const { state } = useSession();
-  const loader = useCallback(async (): Promise<Loaded> => {
-    const ctx = await loadCaseSelection(caseId);
-    const slugs = ctx.caseDto.services.map((s) => s.slug).join(",");
-    const list = await apiRequest<ClinicListDto>(`/api/clinics${slugs ? `?services=${slugs}` : ""}`);
-    return { ctx, clinics: list.clinics };
-  }, [caseId]);
+  const idsKey = clinicIdsKey(clinicsParam);
+  const loader = useCallback(() => loadSendData(caseId, idsKey), [caseId, idsKey]);
   const loaded = useLoad(loader);
   const consents = useLoad(loadConsents);
   const [grantedNow, setGrantedNow] = useState(false);
   const [sent, setSent] = useState<PatientLeadDto[] | null>(null);
   const send = useAction();
 
+  const ids = idsKey === "" ? [] : idsKey.split(",");
   const me = state.status === "ready" ? state.me : null;
-  const backHref = loaded.data ? clinicsHref(loaded.data.ctx.caseDto) : `/klinikker?sag=${caseId}`;
+  const backHref = loaded.data ? clinicsHref(loaded.data.ctx.caseDto) : caseDirectoryHref(caseId);
 
   if (sent) {
     return (
@@ -116,9 +124,9 @@ export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsPara
   } else if (ids.length === 0) {
     blocked = { title: "Du har ikke valgt nogen klinikker", text: "Vælg de klinikker, du vil kontakte, i oversigten.", link: { href: backHref, label: "Vælg klinikker" } };
   } else if (ctx.slots === 0) {
-    blocked = { title: "Du kan ikke kontakte flere klinikker lige nu", text: "Sagen har allerede det højeste antal aktive henvendelser. Trækker du en tilbage, bliver der plads.", link: { href: caseHref(caseId), label: "Gå til din sag" } };
+    blocked = { title: "Du kan ikke kontakte flere klinikker lige nu", text: "Sagen har nået loftet for, hvor mange klinikker den kan sendes til lige nu. Trækker du en henvendelse tilbage, kan der blive plads.", link: { href: caseHref(caseId), label: "Gå til din sag" } };
   } else if (!caseDto.canSend) {
-    blocked = { title: "Din sag er ikke klar til at blive sendt", text: "Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.", link: { href: `/start/${caseId}`, label: "Tilbage til din sag" } };
+    blocked = { title: "Din sag er ikke klar til at blive sendt", text: "Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.", link: { href: caseFlowHref(caseId), label: "Tilbage til din sag" } };
   } else if (ids.length > ctx.slots) {
     blocked = { title: "Du har valgt for mange klinikker", text: `Du kan højst kontakte ${ctx.slots} klinik${ctx.slots === 1 ? "" : "ker"} mere med denne sag.`, link: { href: backHref, label: "Ret dit valg" } };
   } else if (ids.some((id) => ctx.contactedIds.includes(id))) {
@@ -139,7 +147,6 @@ export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsPara
 
   const anonymous = me?.isAnonymous === true;
   const consentGiven = grantedNow || (consents.data !== null && hasActiveConsent(consents.data, "health_data_sharing"));
-  const hasServices = caseDto.services.length > 0;
 
   async function sendCase() {
     await send.run(async () => {
@@ -163,7 +170,7 @@ export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsPara
         </h2>
         <ul className="flex flex-col gap-3">
           {chosenClinics.map((clinic) => (
-            <ClinicLine key={clinic.id} clinic={clinic} hasServices={hasServices} />
+            <ClinicLine key={clinic.id} clinic={clinic} />
           ))}
         </ul>
         <Link href={backHref} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">

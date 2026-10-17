@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import { useState } from "react";
 import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/constants/ai-texts";
 import { SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
@@ -187,7 +188,7 @@ export function SummaryStep({ caseDto, retake, onRetake, onChanged, onBack, onGo
 
       {approved && (
         <Alert tone="success" title="Klar til næste skridt">
-          <p>Næste skridt er at finde klinikker. Her vælger du op til tre, og her opretter du en konto, før noget sendes.</p>
+          <p>Næste skridt er at finde klinikker. Her vælger du op til {MAX_ACTIVE_LEADS_PER_CASE}, og her opretter du en konto, før noget sendes.</p>
           <LinkButton href={clinicsHref(caseDto)} className="mt-3 w-full sm:w-auto">
             Næste: find klinikker
           </LinkButton>

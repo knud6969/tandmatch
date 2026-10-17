@@ -1,3 +1,4 @@
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { Metadata } from "next";
 import { Container } from "@/views/components/ui/container";
 import { PageIntro } from "@/views/components/ui/page-intro";
@@ -17,7 +18,7 @@ export default function HowItWorksPage() {
           <li>Beskriv dit problem med egne ord, eller upload et billede. Du kan chatte uden at logge ind.</li>
           <li>Bekræft, hvilke behandlinger det handler om. Du vælger selv.</li>
           <li>Sammenlign klinikker på pris, anmeldelser, afstand og ledig tid. Du kan ændre kriterierne.</li>
-          <li>Send din beskrivelse til op til 3 klinikker. Til det skal du oprette en bruger og give samtykke, især hvis du har uploadet billeder.</li>
+          <li>Send din beskrivelse til op til {MAX_ACTIVE_LEADS_PER_CASE} klinikker. Til det skal du oprette en bruger og give samtykke, især hvis du har uploadet billeder.</li>
           <li>Book en tid, og skriv en anmeldelse efter besøget.</li>
         </ol>
       </InfoSection>

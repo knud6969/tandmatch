@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { CASE_STATUS_LABEL } from "@/lib/constants/cases";
-import { LEAD_STATUS_LABEL } from "@/lib/constants/leads";
+import { LEAD_STATUS_LABEL, REMOVED_CLINIC_LABEL } from "@/lib/constants/leads";
 import type { CaseListItemDto } from "@/lib/types/cases";
 import { Badge } from "@/views/components/ui/badge";
 import { LinkButton } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
-import { caseHref } from "@/views/utils/case-links";
+import { caseFlowHref, caseHref } from "@/views/utils/case-links";
 import { formatDate } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
@@ -31,7 +31,7 @@ function CaseItem({ item }: { item: CaseListItemDto }) {
           <ul className="flex flex-col gap-1.5" aria-label="Klinikker, sagen er sendt til">
             {item.leads.map((lead) => (
               <li key={lead.id} className="flex flex-wrap items-center justify-between gap-2 text-base">
-                <span className="min-w-0 truncate text-ink">{lead.clinicName || "Klinik"}</span>
+                <span className="min-w-0 truncate text-ink">{lead.removed ? REMOVED_CLINIC_LABEL : lead.clinicName || "Klinik"}</span>
                 <Badge tone={lead.status === "declined" || lead.status === "withdrawn" ? "neutral" : "brand"}>
                   {LEAD_STATUS_LABEL[lead.status]}
                 </Badge>
@@ -45,7 +45,7 @@ function CaseItem({ item }: { item: CaseListItemDto }) {
         )}
         <div>
           {draft ? (
-            <LinkButton href={`/start/${item.id}`} variant="secondary">
+            <LinkButton href={caseFlowHref(item.id)} variant="secondary">
               Fortsæt sagen
             </LinkButton>
           ) : (

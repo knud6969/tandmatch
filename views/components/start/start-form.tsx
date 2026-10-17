@@ -1,5 +1,6 @@
 "use client";
 
+import { caseFlowHref } from "@/views/utils/case-links";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -57,7 +58,7 @@ function AnonymousStart() {
         body: { aiConsent: { textVersion: CONSENT_TEXT_VERSIONS.ai_processing } },
       });
       await refresh();
-      router.push(`/start/${result.caseId}`);
+      router.push(caseFlowHref(result.caseId));
     });
     if (!ok) setChecked(true);
   }
@@ -93,7 +94,7 @@ function ContinueAnonymous() {
         method: "POST",
         body: { aiConsent: { textVersion: CONSENT_TEXT_VERSIONS.ai_processing } },
       });
-      router.push(`/start/${result.caseId}`);
+      router.push(caseFlowHref(result.caseId));
     });
   }
   return (
@@ -120,7 +121,7 @@ function AccountStart() {
   async function create() {
     const ok = await action.run(async () => {
       const created = await apiRequest<CaseDto>("/api/cases", { method: "POST" });
-      router.push(`/start/${created.id}`);
+      router.push(caseFlowHref(created.id));
     });
     return ok;
   }
@@ -134,7 +135,7 @@ function AccountStart() {
           <ul className="flex flex-col gap-2">
             {drafts.map((draft) => (
               <li key={draft.id}>
-                <LinkButton href={`/start/${draft.id}`} variant="secondary" fullWidth>
+                <LinkButton href={caseFlowHref(draft.id)} variant="secondary" fullWidth>
                   Fortsæt kladde{draft.serviceNames.length > 0 ? `: ${draft.serviceNames.join(", ")}` : ""}
                 </LinkButton>
               </li>
