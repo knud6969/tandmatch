@@ -31,7 +31,7 @@ function EmergencyBlock() {
       <p className="text-sm font-semibold">Det kan være akut</p>
       <p className="mt-1 text-sm leading-snug">{LIFE_THREATENING_REFERRAL_TEXT}</p>
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <Link href="/klinikker?akut=1" className="inline-flex min-h-11 items-center font-semibold underline">
+        <Link href="/klinikker?akut=1" className="inline-flex min-h-11 basis-full items-center font-semibold underline sm:basis-auto">
           Se klinikker med ledig akuttid
         </Link>
         <a href="tel:112" className="inline-flex min-h-11 items-center font-semibold underline">
@@ -159,6 +159,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
       setReadyOverride(null);
       setMessagesLeftOverride(null);
       chat.reload();
+      action.clear(); // samtalen viser selv det faste svar, så en fejlboks over feltet er overflødig
     } else if (!ok) {
       setDraft(text); // beskeden er ikke gemt, så patienten kan prøve igen uden at skrive den forfra
     }
