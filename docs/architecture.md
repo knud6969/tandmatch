@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er i gang på `feat/omlaegning-trin-3`: sager, billeder, AI-regler, chat, opsummering og sagsflowets sider er bygget (3.1-3.4; 10.5 undtagen leads, 10.6, 7, `/start`); rettelserne efter review og security (3.6a-c) er bygget, og afslutningen 3.6d er i gang. Migrationerne `20261016000200`, `20261017000100`, `20261018000100`, `20261019000100` og `20261019000200` mangler at blive kørt i det fælles projekt. Resten af API'et (10.9-10.14 undtagen den offentlige del af 10.13, leads i 10.5), de øvrige sider (6) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er i gang på `feat/omlaegning-trin-3`: sager, billeder, AI-regler, chat, opsummering og sagsflowets sider er bygget (3.1-3.4; 10.5 undtagen leads, 10.6, 7, `/start`); rettelserne efter review og security (3.6) er bygget, og rettelsesrunde 3.7 er i gang. Migrationerne `20261016000200`, `20261017000100`, `20261018000100`, `20261019000100` og `20261019000200` mangler at blive kørt i det fælles projekt. Resten af API'et (10.9-10.14 undtagen den offentlige del af 10.13, leads i 10.5), de øvrige sider (6) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -800,7 +800,7 @@ Chatten deles **aldrig** med klinikker. Triggeren `ai_messages_after_insert()` t
 | consent_id | uuid FK consents not null | Det `image_upload`-samtykke, der var aktivt ved upload |
 | storage_path | text not null unique | `{case_id}/{id}.jpg`. Ingen `patient_id` i stien |
 | ai_view, ai_quality | image_view / image_quality null | Fra AI |
-| ai_description | text null | Neutral beskrivelse (7.3), godkendes som del af opsummeringen. Deles kun med klinikken, når patienten har godkendt opsummeringen **efter** beskrivelsen blev skrevet: `clinic_lead_images()` returnerer `ai_description` kun, når `cases.summary_approved_at >= ai_described_at`, ellers `null` (fail closed; migration `20261019000200`) |
+| ai_description | text null | Neutral beskrivelse (7.3), højst 500 tegn (afkortes af serveren før gemning, 3.7b), godkendes som del af opsummeringen. Deles kun med klinikken, når patienten har godkendt opsummeringen **efter** beskrivelsen blev skrevet: `clinic_lead_images()` returnerer den i kolonnen `approved_description`, når `cases.summary_approved_at >= ai_described_at`, ellers er `approved_description` `null` (fail closed; migration `20261019000200`). Klinikkens visning (trin 4-5) skal tåle `null` |
 | ai_described_at | timestamptz null | Sættes af trigger, når `ai_description` skrives eller ændres |
 | width, height, bytes | integer | |
 | created_at | timestamptz | Upload-tidspunkt under `consent_id` |
@@ -1006,10 +1006,10 @@ withdraw_open_leads(...) -> integer
 | `withdraw_consent(consent_id)`, `confirm_consent_cleanup(consent_id)` | patient (+anonym) | Som før, men billeder hænger på sager. Tilbagetrækning af `image_upload` sletter rækkerne i `case_images` (også på sendte sager), og billederne forsvinder dermed for klinikkerne. Tilbagetrækning af `health_data_sharing` sætter, **hvis patienten ikke har et andet aktivt samtykke af samme type**, alle patientens leads med status `sent`, og `accepted` uden aktiv booking, til `withdrawn` (klinikken mister adgangen, 5.7) og frigiver deres `held`-reservationer. `booked` bookinger består; patienten kan selv aflyse dem (`cancel_booking()`). Nye leads kræver nyt samtykke |
 | Trigger `clinics_after_owner_removed()` | på `clinics`, når `owner_id` går fra en værdi til `null` (ejerens konto slettes; ikke en RPC) | **Altid først:** alle klinikkens leads med `sent` eller `accepted` sættes til `declined` med `decline_reason = 'clinic_left'` og `responded_at = now()`; `held`-reservationer frigives (`cancelled`, `cancelled_by = 'clinic'`); fremtidige `booked` bookinger (`starts_at > now()`) aflyses (`cancelled_by = 'clinic'`), og deres leads sættes til `declined` med `clinic_left`. Selve klinikrækken (status og felter) er allerede ændret af `clinics_guard()` i samme UPDATE (4.3); denne AFTER-trigger rydder **rækker i andre tabeller**:<br>**(a) importeret klinik** (`import_source is not null`, nu `imported`): sletter prisliste (`clinic_prices`), valgte kategorier (`clinic_service_groups`), blokerede tider (`clinic_time_blocks`) og tandlæger (`clinic_dentists`, og dermed `portfolio_items` via cascade). Åbningstiderne bevares som offentlige grunddata.<br>**(b) selvoprettet klinik** (`import_source is null`, nu `removed`): sletter det samme og desuden åbningstiderne (`clinic_opening_hours`), fordi klinikken aldrig vises igen. Rækken slettes **ikke**, og der bruges ingen cascade: patienternes leads, beskeder, bookinger og anmeldelser bevares, og patienten ser klinikkens navn og "Klinikken er ikke længere på TandMatch". Anmeldelserne er ikke offentlige (kun verificerede klinikker vises), men patienten ser sin egen. `removed` er endelig, og samme CVR opretter en ny klinik ved signup (CVR er nulstillet; `handle_new_user()`/`is_cvr_claimed()` knytter kun til `imported` uden ejer).<br>I begge tilfælde består afholdte bookinger og anmeldelser. Oprydningen sker i triggerne (besluttet), så den er atomar og også virker, når en konto slettes uden om API'et; service role bruges kun til filer og auth-bruger (2.3). Filerne i `public-media` slettes af `DELETE /api/clinics/me` (10.8), før auth-brugeren slettes |
 | `approve_summary(case_id, summary_text, ai_assisted boolean default null)` | patient (+anonym, ejer) | Eneste vej til `summary_text`. Kun `draft`, max 1500. Sætter `summary_ai_assisted` ud fra parameteren (10.5); uden AI-udkast tvinges den til `false` (migration `20261019000200`) |
-| `reserve_chat_turn(p_conversation_id, p_content)` | patient (+anonym, ejer), med patientens JWT, **før** modelkaldet | Én transaktion: advisory-lås, låser samtalen, tjekker kladde og aktivt `ai_processing`, tæller loftet på 30 pr. samtale, døgnloftet pr. patient (`ai_limits.chat_messages_per_patient_day`), for anonyme loftet pr. anonym bruger (`ai_limits.anon_user_daily_ai_calls` = 40, tabel `ai_anon_user_usage_daily`, intern `consume_anonymous_ai_call()`) og det globale anonyme loft, og indsætter brugerbeskeden (allerede PII-maskeret). Fejler et led, rulles alt tilbage (migration `20261019000100`) |
+| `reserve_chat_turn(p_user_id, p_conversation_id, p_content)` | **kun service role** (serveren, med `p_user_id` fra den verificerede session, efter IP-grænsen og **før** modelkaldet; ingen EXECUTE for `authenticated`) [kontrakt ændres i 3.7b; i dag kaldes den med patientens JWT] | Én transaktion: advisory-lås, låser samtalen, tjekker ejer (`p_user_id`), kladde og aktivt `ai_processing`, tæller loftet på 30 pr. samtale, døgnloftet pr. patient (`ai_limits.chat_messages_per_patient_day`, talt i `ai_patient_usage_daily.chat_messages`, som ikke slettes med sagen [3.7b]), for anonyme loftet pr. anonym bruger (`ai_limits.anon_user_daily_ai_calls` = 40, tabel `ai_anon_user_usage_daily`, intern `consume_anonymous_ai_call()`) og det globale anonyme loft, og indsætter brugerbeskeden (allerede PII-maskeret). Eneste vej til at indsætte en brugerbesked i `ai_messages` (5.4). Fejler et led, rulles alt tilbage (migration `20261019000100`) |
 | `store_ai_summary(p_user_id, case_id, …)` | **kun service role** | Skriver det validerede udkast. Tjekker internt, at sagen tilhører `p_user_id` og er `draft` |
 | `append_assistant_message(p_user_id, conversation_id, …)` | **kun service role** | Indsætter assistentbesked (svar, foreløbig vurdering, foreslåede ydelser, akut, out-of-scope, blocked). Tjekker ejer, kladde og aktivt `ai_processing`; en lukket samtale accepteres kun ved loftet på 30, og kun når den seneste besked er patientens (migrationer `20261018000100` og `20261019000100`). Afviser ydelses-id'er, der ikke er aktive i kataloget |
-| `consume_summary_generation(case_id)` | patient (+anonym, ejer) | Én transaktion: `draft`, sagens loft (5), patientens døgnloft (20), for anonyme det globale loft. Øger tællerne |
+| `consume_summary_generation(p_user_id, case_id)` | **kun service role** (serveren, med `p_user_id` fra den verificerede session, efter IP-grænsen; ingen EXECUTE for `authenticated`) [kontrakt ændres i 3.7b] | Tjekker ejer (`p_user_id`). Én transaktion: `draft`, sagens loft (5), patientens døgnloft (20), for anonyme det globale loft. Øger tællerne |
 | `try_consume_anonymous_ai_call(p_user_id)` | **kun service role** | Atomisk: tjekker at `p_user_id` er anonym, øger dagens tæller og returnerer `true` under loftet `ai_limits.anon_daily_ai_calls` (300). Bruger **ikke** `auth.uid()` (5.1 regel 8) |
 | `consume_rate_limit(key, limit)` | **kun service role** | Uændret. IP kun som hash |
 | `touch_last_active()` | `authenticated` | Uændret |
@@ -1042,7 +1042,7 @@ Fjernet fra den gamle model og må ikke genskabes: `send_request`, `decide_respo
 | cases | `patient_id = uid` | `patient_id = uid` og `status = 'draft'` (trigger: anonym max 1) | `patient_id = uid` og `status = 'draft'` (trigger låser beskyttede felter; kolonne-grants, 5.1 regel 12) | **ingen**. Kladder slettes af serveren med service role efter ejer- og kladdetjek, som også sletter billedfilerne (`DELETE /api/cases/{id}`, 10.5) |
 | case_services | `is_case_owner(case_id)` | `is_case_owner(case_id)` og sagen er `draft` og ydelsen aktiv | ingen | `is_case_owner(case_id)` og sagen er `draft` |
 | ai_conversations | `patient_id = uid` | `patient_id = uid` og `is_case_owner(case_id)` og `draft` og `has_active_consent('ai_processing')` | ingen | cascade |
-| ai_messages | `patient_id = uid` | `patient_id = uid`, samtalen er egen og `active`, `role = 'user'` | ingen | cascade |
+| ai_messages | `patient_id = uid` | **ingen** for `authenticated`: brugerbeskeder indsættes kun af `reserve_chat_turn()` og assistentsvar af `append_assistant_message()` (begge service role). Policyen `ai_messages_insert_own_user` fjernes i 3.7b | ingen | cascade |
 | case_images | `patient_id = uid`. Klinikker via `clinic_lead_images()` | ingen for `authenticated` (service role) | ingen | ingen for `authenticated` (service role) |
 | leads | `is_case_owner(case_id)` eller (`is_clinic_owner(clinic_id)` og klinikken er `verified` og `sent_at >= owner_since`) | **ingen** (kun `send_leads`) | **ingen** (kun funktionerne i 5.3) | ingen |
 | messages | Kun patienten direkte: `sender_id = uid` eller sagens ejer via `is_case_owner`. **Klinikker har ingen SELECT**; de læser via `clinic_lead_messages()` (5.7) | `sender_id = uid` og `is_permanent_user()` og `is_lead_participant(lead_id)` og `is_lead_thread_open(lead_id)` (`created_at`/`read_at` sættes af trigger, 5.1 regel 15) | patienten må sætte `read_at` på modtagne beskeder (kolonne-grant); klinikken via `clinic_mark_messages_read()` | ingen |
@@ -1235,7 +1235,7 @@ Beregnes i `AvailabilityService` (`services/availabilityService.ts`, ingen I/O, 
 
 ## 7. AI-flowet
 
-Status: backend og AI-lag er bygget i trin 3 (3.1-3.3: `dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering) og sagsflowets sider (3.4). Rettelserne efter review og security (3.6a-c: strammere guardrails, atomisk reservation af chat-ture, billedbeskrivelser kun efter patientens godkendelse m.m.) er bygget (`b2f2aff8`, `df541715`, `88995a2b`, `4649015d`); afslutningen 3.6d er i gang. AI-laget ligger i `services/ai/` (regler, prompts, skemaer, guard, `aiChatService.ts`, `aiSummaryService.ts`, `modelClient.ts`) samt `services/aiImageService.ts`.
+Status: backend og AI-lag er bygget i trin 3 (3.1-3.3: `dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering) og sagsflowets sider (3.4). Rettelserne efter review og security (3.6a-c: strammere guardrails, atomisk reservation af chat-ture, billedbeskrivelser kun efter patientens godkendelse m.m.) er bygget (`b2f2aff8`, `df541715`, `88995a2b`, `4649015d`). Rettelsesrunde 3.7 er i gang: resterende filterhuller (især falsk beroligelse om hastegrad), service role-kontrakt for `reserve_chat_turn`/`consume_summary_generation`, døgnloft der overlever sletning af sagen m.m. AI-laget ligger i `services/ai/` (regler, prompts, skemaer, guard, `aiChatService.ts`, `aiSummaryService.ts`, `modelClient.ts`) samt `services/aiImageService.ts`.
 
 **Testklient:** med `AI_FAKE_CLIENT=1` bruger serveren `FakeAiClient` (`services/ai/fakeAiClient.ts`) i stedet for OpenAI, men kun når `NODE_ENV !== 'production'`. `tests/api/run.sh` og `tests/e2e/run.sh` sætter begge variablen, så testene ikke kalder OpenAI. Testene i `tests/ai/` kalder heller ikke modellen: de tester guard, filtre, PII-maskering og akutdetektion direkte og bruger den falske klient til flowet. En valgfri live-kørsel mod den rigtige model (`AI_LIVE=1`) køres før demo, men aldrig i de normale tests (3.6a).
 
@@ -1275,11 +1275,11 @@ Patienter med konto starter med `POST /api/cases` + `POST /api/consents (ai_proc
 | Katalog | Aktive behandlinger grupperet efter kategori: kategoriens navn og for hver behandling `slug`, navn, type og kort beskrivelse (`catalogContext.ts`, bygget fra databasen ved hvert kald, så ændringer i kataloget slår igennem uden kodeændring). **Ingen priser, ingen klinikker**. AI'en foreslår kun behandlings-slugs, ikke kategorier | Samme |
 | Kontekst | Seneste 20 beskeder; sagens billeder (low detail) | Hele chatten (max 30 brugerbeskeder), bekræftede ydelser, billeder |
 | Billeder | Re-encodet server-side (EXIF fjernet), max 1024 px, base64. Aldrig signerede URL'er | Samme |
-| Output | `AiChatTurn` (7.4) | `AiSummary` (7.4) |
+| Output | Chat-skemaet i `services/ai/schemas.ts` (7.4) | `AiSummary` (7.4) |
 
 **Aldrig** til OpenAI: navn, e-mail, telefon, postnummer, adresse, `patient_id`, klinikdata eller priser. Patienttekst PII-maskeres før afsendelse og gemmes maskeret. Patienttekst sendes som data adskilt fra instruktioner (`<patient_input>…</patient_input>`). AI'en har ingen værktøjer eller handlinger.
 
-**Skrivevej:** `ChatController` maskerer patientens besked med `maskPii()` og **reserverer turen før modelkaldet** med `reserve_chat_turn()` (5.3), som tjekker og tæller alle lofter og gemmer brugerbeskeden i én transaktion. Derefter kalder den `AiChatService.sendTurn()` og skriver det validerede svar via `append_assistant_message(p_user_id, …)` (service role). Fejler modelkaldet, gemmes den faste tekst `CHAT_UNAVAILABLE_TEXT` som svar, og routen svarer 503; frontend henter samtalen igen. Summary-routen kalder `consume_summary_generation()` før OpenAI og skriver via `store_ai_summary(p_user_id, …)` (service role). IP-grænser: chat 120 pr. time (`CHAT_IP_LIMIT_PER_HOUR`) og opsummering 20 pr. time; `enforceIpRateLimit()` har en `limit`-parameter.
+**Skrivevej:** routen tjekker IP-grænsen; `ChatController` maskerer patientens besked med `maskPii()` og **reserverer turen før modelkaldet** med `reserve_chat_turn(p_user_id, …)` (5.3) via service role med bruger-id'et fra den verificerede session; funktionen tjekker og tæller alle lofter og gemmer brugerbeskeden i én transaktion. Derefter kalder den `AiChatService.sendTurn()` og skriver det validerede svar via `append_assistant_message(p_user_id, …)` (service role). Fejler noget efter reservationen (modelkald eller skrivning af svaret), gemmes den faste tekst `CHAT_UNAVAILABLE_TEXT` som svar, og routen svarer 503 med en fast fejlkode (vælges i 3.7b, fx `AI_UNAVAILABLE`); frontend henter samtalen igen (10.6). Summary-routen tjekker IP-grænsen og kalder `consume_summary_generation(p_user_id, …)` (service role) før OpenAI og skriver via `store_ai_summary(p_user_id, …)` (service role). [3.7b: i dag kaldes `reserve_chat_turn` og `consume_summary_generation` med patientens JWT; de flyttes til service role og revokes fra `authenticated` (security M2).] IP-grænser: chat 120 pr. time (`CHAT_IP_LIMIT_PER_HOUR`) og opsummering 20 pr. time; `enforceIpRateLimit()` har en `limit`-parameter.
 
 **PII-maskering** (`pii.ts`): e-mail, telefonnumre, CPR-mønstre, navneudsagn ("jeg hedder …"), vejnavn + husnummer og postnummer + by. Den maskerede tekst bliver aldrig længere end originalen, så 1000-tegnsgrænsen holder.
 
@@ -1308,17 +1308,18 @@ Spørger patienten om pris eller hvilken klinik der er bedst, svarer AI'en ikke 
 `additionalProperties: false` overalt, alle strenge har max-længde. Ingen prisfelter, ingen klinikfelter.
 
 ```ts
-// lib/types/ai.ts
-export type OutOfScopeTopic = "price" | "clinic_recommendation";
+// lib/types/ai.ts (værdierne står i lib/constants/ai.ts: OUT_OF_SCOPE_TOPICS, IMAGE_VIEWS, IMAGE_QUALITIES, CONVERSATION_STATUSES)
+export type OutOfScopeTopic = (typeof OUT_OF_SCOPE_TOPICS)[number];  // "price" | "clinic_recommendation"
+export type ImageView = (typeof IMAGE_VIEWS)[number];
+export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 
-export type AiChatTurn = {
-  reply: string;                        // max 700. Spørgsmål, forklaring, procesvejledning
-  preliminaryAssessment: string | null; // max 400. Altid foreløbig; null hvis rules.ts slår vurdering fra
-  suggestedServices: string[];          // max 5 slugs fra kataloget; en ukendt slug afviser svaret (ét nyt forsøg, derefter fast tekst, 7.5)
-  emergency: boolean;                   // akutte tegn
-  outOfScopeTopics: OutOfScopeTopic[];
-  readyForSummary: boolean;             // aktiverer kun en knap
-};
+// Chat-svarets felter (skemaet ligger i services/ai/schemas.ts; der er ingen eksporteret AiChatTurn-type):
+//   reply                  max 700. Spørgsmål, forklaring, procesvejledning
+//   preliminaryAssessment  max 400 eller null. Altid foreløbig; null hvis rules.ts slår vurdering fra
+//   suggestedServices      max MAX_CONFIRMED_SERVICES_PER_CASE slugs; en ukendt slug afviser svaret (7.5)
+//   emergency              akutte tegn
+//   outOfScopeTopics       OutOfScopeTopic[]
+//   readyForSummary        aktiverer kun en knap
 
 export type AiSummary = {
   summaryText: string;                  // max 800. Til klinikken: patientens ønske og oplysninger, neutralt
@@ -1331,11 +1332,12 @@ export type AiSummary = {
 
 export type AiImageObservation = {
   imageRef: string;                     // "img_1" …, mappes til case_images.id på serveren
-  view: "front" | "upper" | "lower" | "side_left" | "side_right" | "unclear";
+  view: ImageView;
   visibleArea: string;                  // max 80
   observations: string[];               // max 4, hver max 120; kun synlige forhold uden fortolkning
-  quality: "ok" | "too_dark" | "blurry" | "wrong_angle" | "not_teeth";
+  quality: ImageQuality;
 };
+// Den samlede beskrivelse, der gemmes i case_images.ai_description, afkortes til 500 tegn (4.3).
 ```
 
 ### 7.5 Guardrails, lag for lag
@@ -1345,7 +1347,7 @@ export type AiImageObservation = {
 | 1 | UI | Fast tekst over chatten: "AI-assistenten giver ikke endelige vurderinger og kender ikke priserne. Klinikken vurderer." Fast mærkat ved foreløbig vurdering. Fast akut-blok ved `emergency` | Mærkat "Beskrivelse, ikke vurdering" ved billedbeskrivelser |
 | 2 | System-prompt | Reglerne fra `rules.ts` (7.3), kataloget | Samme |
 | 3 | Input | Data-afgrænsning, PII-maskering, max 1000 tegn | Samme |
-| 4 | Output-skema | `AiChatTurn` strict | `AiSummary` strict |
+| 4 | Output-skema | chat-skemaet strict | `AiSummary` strict |
 | 5 | Server-validering (`guard.ts`) | zod + filter på `reply` og `preliminaryAssessment`: beløb/valuta, prisord, klinikanbefaling. Slugs valideres mod aktivt katalog | Samme på alle strenge; billedfelterne også mod fortolkningsord |
 | 6 | Ved fejl i 5 | Ét nyt forsøg med skærpet påmindelse; derefter fast tekst, `blocked = true`. Det afviste svar gemmes ikke | Ét nyt forsøg; derefter `summary = null`, `fallback = "write_yourself"` |
 | 7 | Menneske i loopet | Patienten bekræfter ydelser; chatten deles ikke | Patienten retter og godkender |
@@ -1360,7 +1362,7 @@ export type AiImageObservation = {
 |---|---|---|
 | Patientbeskeder pr. samtale | 30 | 429 `CHAT_LIMIT`, samtalen `closed` |
 | Tegn pr. patientbesked | 1000 | 400 |
-| Chatbeskeder pr. patient pr. døgn | 100 | 429 |
+| Chatbeskeder pr. patient pr. døgn | 100 (`ai_limits.chat_messages_per_patient_day`; tælles i `ai_patient_usage_daily.chat_messages`, så sletning af en sag ikke nulstiller tælleren [3.7b]) | 429 |
 | Opsummeringer pr. sag / pr. patient pr. døgn | 5 / 20 | 429 `SUMMARY_LIMIT` |
 | Billeder pr. sag | 5, max 4 MB hver | 400/413 |
 | Bekræftede ydelser pr. sag | 5 | 400 |
@@ -1668,7 +1670,7 @@ export type SummaryResponse = {
 
 ### 10.6 AI-chat (patient)
 
-Bygget i trin 3 (3.3): `controllers/chatController.ts`, `models/chatRepository.ts`, `lib/schemas/chat.ts`, `services/ai/{aiChatService,aiSummaryService,modelClient,fakeAiClient}.ts` og `services/aiImageService.ts` (billeder til AI'en). Svaret på patientens 30. besked gemmes, selvom samtalen dermed er lukket (5.3). Turen reserveres før modelkaldet med `reserve_chat_turn()`; ved modelfejl gemmes `CHAT_UNAVAILABLE_TEXT`, og routen svarer 503. IP-grænse 120 pr. time. En anonym session, der har været inaktiv i over 48 timer, afvises med 401 og forlænges ikke.
+Bygget i trin 3 (3.3): `controllers/chatController.ts`, `models/chatRepository.ts`, `lib/schemas/chat.ts`, `services/ai/{aiChatService,aiSummaryService,modelClient,fakeAiClient}.ts` og `services/aiImageService.ts` (billeder til AI'en). Svaret på patientens 30. besked gemmes, selvom samtalen dermed er lukket (5.3). Turen reserveres før modelkaldet med `reserve_chat_turn()`; fejler noget efter reservationen, gemmes `CHAT_UNAVAILABLE_TEXT`, og routen svarer 503 med en fast fejlkode (fx `AI_UNAVAILABLE`, vælges i 3.7b), så frontend ved, at turen er gemt, og henter samtalen igen i stedet for at sende beskeden igen. IP-grænse 120 pr. time. En anonym session, der har været inaktiv i over 48 timer, afvises med 401 og forlænges ikke.
 
 ```ts
 // lib/types/ai.ts (fortsat)
@@ -1897,7 +1899,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 0 Database og oprydning | Nyt samlet migrationssæt (nedenfor), `supabase/config.toml`, `seed.sql`, nyt seed-script, RLS- og API-tests, fjernelse af den gamle domænekode, kernen som klasser (12.5) | Bygget (0.1-0.11 committet på `feat/omlaegning-trin-0`). 0.8 (nulstilling af det fælles projekt) udføres manuelt af brugeren |
 | 1 | Ydelseskatalog, klinikprofil med prisliste, åbningstider og tandlæger (inkl. klinik-signup, rollen `clinic`, `/klinik`) | Bygget og afsluttet på `feat/omlaegning-trin-1` (sidste commit `623314f4`). Ingen åbne kritiske fund. Tests: RLS 36, API 82, unit 6, e2e 6; klinikrejsen 40 af 40 gentagelser uden logud-fejl. Mangler: HSTS tjekket i en produktionsbuild, og migration `20261016000200` køres i det fælles projekt |
 | 2 | Forside, klinikoversigt med kort, filtre og klinikprofil | Bygget og afsluttet på `feat/omlaegning-trin-2` (sidste commit `98c6a022`; 2.1-2.6 i `4ec5b70e`, `6286c8ed`, `a3f8d47b`, `ea70980b`; 2.8 rettelser efter review). Tests: RLS 36, API 112, unit 54, e2e 16 (begge viewports), gentagelser 40/40 uden ustabilitet, ingen CSP-fejl. `tests/e2e/run.sh` kører `npm run seed:demo` før Playwright (spring over med `E2E_SKIP_SEED=1`). Mangler: migrationerne `20261016000200` og `20261017000100` køres i det fælles projekt. Forsidens `ClinicPreview` er stadig illustrationer, ikke rigtige klinikker |
-| 3 | AI-chat med billeder, forslag til ydelser og opsummering | I gang på `feat/omlaegning-trin-3`: 3.1-3.4 bygget (`dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering, sagsflowets sider); 3.5 review og security gennemført; rettelserne 3.6a-c bygget (`b2f2aff8`, `df541715`, `88995a2b`, `4649015d`); 3.6d (reviewer, security, tester) er i gang |
+| 3 | AI-chat med billeder, forslag til ydelser og opsummering | I gang på `feat/omlaegning-trin-3`: 3.1-3.4 bygget (`dbdd3881` AI-regler, `ba7115b2` sager og billeder, `adf9c53c` chat og opsummering, sagsflowets sider); 3.5 review og security gennemført; 3.6 bygget (`b2f2aff8`, `df541715`, `88995a2b`, `4649015d`) og fulgt op af reviewer og security; rettelsesrunde 3.7 (3.7a-d) er i gang |
 | 4 | Sammenligning og leads til op til 3 klinikker | [IKKE BYGGET] |
 | 5 | Klinikkens indbakke: accepter eller afvis | [IKKE BYGGET] |
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | [IKKE BYGGET] |
