@@ -19,7 +19,7 @@ import { SortSelect } from "@/views/components/clinic-directory/sort-select";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseFlowHref, caseHref } from "@/views/utils/case-links";
 import { isUuid } from "@/views/utils/ids";
-import { useCaseChoices, type useCaseSelection } from "@/views/utils/use-case-selection";
+import { noSlotsText, useCaseChoices, type useCaseSelection } from "@/views/utils/use-case-selection";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import {
   buildClinicsQuery,
@@ -63,10 +63,7 @@ function CaseSelectionNotice({ caseId, state }: { caseId: string; state: ReturnT
   if (sag.slots === 0) {
     return (
       <Alert tone="info" title="Du kan ikke kontakte flere klinikker lige nu">
-        <p>
-          Din sag har {sag.activeCount} aktive henvendelser og har nået loftet for, hvor mange klinikker den kan sendes til. Trækker du en
-          tilbage, kan der blive plads til en ny klinik.
-        </p>
+        <p>{noSlotsText(sag.totalLimitReached)}</p>
         <Link href={caseHref(caseId)} className="mt-2 inline-block font-semibold text-brand-700">
           Gå til din sag
         </Link>

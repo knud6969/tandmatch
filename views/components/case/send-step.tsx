@@ -21,7 +21,7 @@ import { caseDirectoryHref, caseFlowHref, caseHref, clinicsHref } from "@/views/
 import { isUuid } from "@/views/utils/ids";
 import { writeSelection } from "@/views/utils/compare-selection";
 import { formatPriceRange } from "@/views/utils/format";
-import { loadCaseSelection, type CaseSelectionContext } from "@/views/utils/use-case-selection";
+import { loadCaseSelection, noSlotsText, type CaseSelectionContext } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
@@ -124,7 +124,7 @@ export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsPara
   } else if (ids.length === 0) {
     blocked = { title: "Du har ikke valgt nogen klinikker", text: "Vælg de klinikker, du vil kontakte, i oversigten.", link: { href: backHref, label: "Vælg klinikker" } };
   } else if (ctx.slots === 0) {
-    blocked = { title: "Du kan ikke kontakte flere klinikker lige nu", text: "Sagen har nået loftet for, hvor mange klinikker den kan sendes til lige nu. Trækker du en henvendelse tilbage, kan der blive plads.", link: { href: caseHref(caseId), label: "Gå til din sag" } };
+    blocked = { title: "Du kan ikke kontakte flere klinikker lige nu", text: noSlotsText(ctx.totalLimitReached), link: { href: caseHref(caseId), label: "Gå til din sag" } };
   } else if (!caseDto.canSend) {
     blocked = { title: "Din sag er ikke klar til at blive sendt", text: "Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.", link: { href: caseFlowHref(caseId), label: "Tilbage til din sag" } };
   } else if (ids.length > ctx.slots) {

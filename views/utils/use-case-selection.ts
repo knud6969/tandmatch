@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { MAX_TOTAL_LEADS_PER_CASE } from "@/lib/constants/limits";
 import { remainingLeadSlots } from "@/lib/domain/leads";
 import type { CaseDto } from "@/lib/types/cases";
 import type { PatientLeadDto } from "@/lib/types/leads";
@@ -17,7 +18,16 @@ export type CaseSelectionContext = {
   activeCount: number;
   // Hvor mange klinikker der højst kan vælges nu (lib/domain/leads.ts: aktive og i alt tages med).
   slots: number;
+  // Er loftet for leads i alt nået? Så hjælper det ikke at trække en henvendelse tilbage.
+  totalLimitReached: boolean;
 };
+
+// Teksten, når der ikke er flere pladser. Ved loftet i alt skal patienten starte en ny sag, ellers kan en tilbagetrækning give plads.
+export function noSlotsText(totalLimitReached: boolean): string {
+  return totalLimitReached
+    ? `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`
+    : "Sagen har nået loftet for, hvor mange klinikker den kan sendes til lige nu. Trækker du en henvendelse tilbage, kan der blive plads.";
+}
 
 // Sagen og dens leads. Tallene kommer fra serveren (leadCount, totalLeadCount, canSend).
 export async function loadCaseSelection(caseId: string): Promise<CaseSelectionContext> {
@@ -31,6 +41,7 @@ export async function loadCaseSelection(caseId: string): Promise<CaseSelectionCo
     contactedIds: leads.map((lead) => lead.clinic.id),
     activeCount: caseDto.leadCount,
     slots: remainingLeadSlots(caseDto.leadCount, caseDto.totalLeadCount),
+    totalLimitReached: caseDto.totalLeadCount >= MAX_TOTAL_LEADS_PER_CASE,
   };
 }
 
