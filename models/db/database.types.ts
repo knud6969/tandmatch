@@ -872,6 +872,11 @@ isOneToOne: false
 "participant_messages_last_day":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"patient_lead_clinics":
+{ Args: { "p_case_id"?: string }; Returns: {
+              "city": string,"clinic_id": string,"lead_id": string,"logo_path": string,"logo_updated_at": string,"name": string,"removed": boolean
+            }[]
+                           },
 "public_busy_intervals":
 { Args: { "p_clinic_ids": (string)[],"p_from": string,"p_to": string }; Returns: {
               "clinic_id": string,"ends_at": string,"starts_at": string

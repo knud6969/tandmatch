@@ -1,7 +1,8 @@
 import "server-only";
-import { CASE_ACTIVE_LEAD_STATUSES } from "@/lib/constants/cases";
+import { isActiveLead } from "@/lib/domain/leads";
 import { parseAiSummary } from "@/lib/schemas/aiSummary";
-import type { CaseConversationInfo, CaseExportDto, CaseLeadStatus, CaseRecordDto } from "@/lib/types/cases";
+import type { CaseConversationInfo, CaseExportDto, CaseRecordDto } from "@/lib/types/cases";
+import type { LeadStatus } from "@/lib/types/leads";
 import { notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
@@ -31,10 +32,10 @@ const CASE_COLUMNS =
   "id, status, is_emergency, postal_code, preferred_timeframe, ai_summary, summary_text, summary_ai_assisted, " +
   "summary_approved_at, submitted_at, closed_at, created_at";
 
-// Rækken i sagslisten: sagen, ydelsernes navne og leadsene (uden klinikkens navn, som kommer i trin 4).
+// Rækken i sagslisten: sagen, ydelsernes navne og leadsene (klinikkens navn slås op af controlleren).
 type CaseListRow = CaseRow & {
   case_services: { services: { name: string } | null }[] | null;
-  leads: { id: string; status: CaseLeadStatus }[] | null;
+  leads: { id: string; status: LeadStatus }[] | null;
 };
 
 // Sager (architecture 4.3). Brugerens JWT, så RLS afgør, at kun ejeren ser sagen. Kun `deleteDraft` kræver service
@@ -168,11 +169,11 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
 
   // Antal aktive leads på sagen (sendt, accepteret eller booket). Patienten ser egne leads (RLS).
   async countActiveLeads(caseId: string): Promise<number> {
-    const rows = await this.runList<{ status: CaseLeadStatus }>(
+    const rows = await this.runList<{ status: LeadStatus }>(
       this.db.from("leads").select("status").eq("case_id", caseId),
       "leads: select fejlede",
     );
-    return rows.filter((row) => (CASE_ACTIVE_LEAD_STATUSES as readonly string[]).includes(row.status)).length;
+    return rows.filter((row) => isActiveLead(row.status)).length;
   }
 
   // Om sagen har en AI-samtale, og de ydelser, AI'en senest foreslog (kun id'er; kataloget slås op af controlleren).
@@ -196,12 +197,12 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
     return { hasConversation: true, suggestedServiceIds: latest?.suggested_service_ids ?? [] };
   }
 
-  // Oversigten over egne sager (nyeste først). Leadsene har endnu ikke klinikkens navn (kommer med trin 4).
+  // Oversigten over egne sager (nyeste først). Klinikkens navn på leadsene slås op af controlleren (patient_lead_clinics()).
   async listOwnForList(): Promise<
     {
       record: CaseRecordDto;
       serviceNames: string[];
-      leads: { id: string; status: CaseLeadStatus }[];
+      leads: { id: string; status: LeadStatus }[];
     }[]
   > {
     const rows = await this.runList<CaseListRow>(

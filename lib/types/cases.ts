@@ -1,6 +1,7 @@
-import type { CASE_LEAD_STATUSES, CASE_STATUSES, CASE_TIMEFRAMES } from "@/lib/constants/cases";
+import type { CASE_STATUSES, CASE_TIMEFRAMES } from "@/lib/constants/cases";
 import type { AiSummary } from "@/lib/types/ai";
 import type { ImageDto } from "@/lib/types/common";
+import type { LeadStatus } from "@/lib/types/leads";
 import type { ServiceDto } from "@/lib/types/services";
 
 // Sager (architecture 4.3 `cases`, 10.5). Udvides i trin 2 med CaseDto m.fl.
@@ -29,8 +30,6 @@ export type CaseExportDto = CaseRecordDto & {
   images: { id: string; view: string | null; quality: string | null; description: string | null; createdAt: string }[];
 };
 
-export type CaseLeadStatus = (typeof CASE_LEAD_STATUSES)[number];
-
 // Sagen, som patienten ser den (architecture 10.5). Billederne har friske, signerede URL'er.
 export type CaseDto = {
   id: string;
@@ -56,7 +55,7 @@ export type CaseListItemDto = {
   isEmergency: boolean;
   serviceNames: string[];
   submittedAt: string | null;
-  leads: { id: string; clinicName: string; status: CaseLeadStatus }[];
+  leads: { id: string; clinicName: string; status: LeadStatus }[];
   nextBooking: { startsAt: string; clinicName: string } | null;
 };
 

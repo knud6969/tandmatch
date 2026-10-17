@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { canSendCase } from "@/lib/domain/cases";
+import { canSendCase } from "@/lib/domain/leads";
 import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/schemas/cases";
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/types/cases";
 import { notDraft } from "@/middleware/http";
@@ -11,6 +11,7 @@ import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CaseServicesRepository } from "@/models/caseServicesRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { lazyAdminClient } from "@/models/db/admin";
+import { LeadsRepository } from "@/models/leadsRepository";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";
 
@@ -22,6 +23,7 @@ export type CasesDeps = {
   cases: CasesRepository;
   caseServices: CaseServicesRepository;
   images: CaseImagesRepository;
+  leads: LeadsRepository;
   services: ServicesRepository;
   imageUrls: CaseImageUrlService;
   admin: () => SupabaseClient;
@@ -34,6 +36,7 @@ export class CasesController {
   private readonly cases: CasesRepository;
   private readonly caseServices: CaseServicesRepository;
   private readonly images: CaseImagesRepository;
+  private readonly leads: LeadsRepository;
   private readonly services: ServicesRepository;
   private readonly imageUrls: CaseImageUrlService;
   // Service role-klienten (architecture 2.3, 2.1.1). Bruges kun til signering og sletning af billedfiler og sagen.
@@ -48,6 +51,7 @@ export class CasesController {
     this.cases = deps.cases ?? new CasesRepository(supabase);
     this.caseServices = deps.caseServices ?? new CaseServicesRepository(supabase);
     this.images = deps.images ?? new CaseImagesRepository(supabase);
+    this.leads = deps.leads ?? new LeadsRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.imageUrls = deps.imageUrls ?? new CaseImageUrlService(this.admin);
   }
@@ -93,16 +97,17 @@ export class CasesController {
     };
   }
 
-  // Oversigten over egne sager. Leads har endnu ikke klinikkens navn og ingen bookinger (trin 4 og 6).
+  // Oversigten over egne sager. Klinikkens navn kommer fra patient_lead_clinics() (også for fjernede klinikker);
+  // bookinger kommer med trin 6.
   async list(): Promise<CaseListItemDto[]> {
-    const rows = await this.cases.listOwnForList();
+    const [rows, clinicNames] = await Promise.all([this.cases.listOwnForList(), this.leads.clinicNamesByLead()]);
     return rows.map(({ record, serviceNames, leads }) => ({
       id: record.id,
       status: record.status,
       isEmergency: record.isEmergency,
       serviceNames,
       submittedAt: record.submittedAt,
-      leads: leads.map((lead) => ({ id: lead.id, clinicName: "", status: lead.status })),
+      leads: leads.map((lead) => ({ id: lead.id, clinicName: clinicNames.get(lead.id) ?? "", status: lead.status })),
       nextBooking: null,
     }));
   }
