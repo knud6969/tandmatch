@@ -10,3 +10,10 @@ export const CASE_TIMEFRAME_LABEL = {
   within_3_months: "Inden for 3 måneder",
   flexible: "Jeg er fleksibel",
 } as const satisfies Record<(typeof CASE_TIMEFRAMES)[number], string>;
+
+// Danske navne til sagens status i patientens oversigt.
+export const CASE_STATUS_LABEL = {
+  draft: "Kladde",
+  submitted: "Sendt",
+  closed: "Lukket",
+} as const satisfies Record<(typeof CASE_STATUSES)[number], string>;
