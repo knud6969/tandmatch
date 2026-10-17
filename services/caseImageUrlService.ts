@@ -20,6 +20,6 @@ export class CaseImageUrlService {
       images.map((image) => image.storagePath),
       this.ttlSeconds,
     );
-    return images.map((image, i) => ({ id: image.id, url: urls[i], view: image.view, quality: image.quality }));
+    return images.map((image, i) => ({ id: image.id, url: urls[i], view: image.view, quality: image.quality, description: image.description }));
   }
 }

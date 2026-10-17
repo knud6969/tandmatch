@@ -1,7 +1,8 @@
 import "server-only";
 import { CASE_ACTIVE_LEAD_STATUSES } from "@/lib/constants/cases";
+import { parseAiSummary } from "@/lib/schemas/aiSummary";
 import type { CaseConversationInfo, CaseExportDto, CaseLeadStatus, CaseRecordDto } from "@/lib/types/cases";
-import { notFound } from "@/middleware/http";
+import { notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
@@ -46,7 +47,8 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
       isEmergency: row.is_emergency,
       postalCode: row.postal_code,
       preferredTimeframe: row.preferred_timeframe,
-      aiSummary: row.ai_summary,
+      // jsonb: parses med zod; ugyldigt indhold bliver til null (architecture 2.1.1).
+      aiSummary: parseAiSummary(row.ai_summary),
       summaryText: row.summary_text,
       summaryAiAssisted: row.summary_ai_assisted,
       summaryApprovedAt: row.summary_approved_at,
@@ -122,6 +124,14 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
     return this.requireRow(await this.findOwn(caseId));
   }
 
+  // Egen sag, der stadig er en kladde: 404 for andres sager, 409 NOT_DRAFT for sendte og lukkede sager. Alle
+  // controllere, der ændrer en kladde, bruger denne (ét sted).
+  async requireOwnDraft(caseId: string): Promise<CaseRecordDto> {
+    const record = await this.requireOwn(caseId);
+    if (record.status !== "draft") throw notDraft();
+    return record;
+  }
+
   // Redigerer kladden (postnummer, tidsrum). Databasen afviser alt andet (kolonne-grants og cases_guard, 5.1).
   // En tom patch returnerer sagen uændret.
   async update(
@@ -146,9 +156,14 @@ export class CasesRepository extends BaseRepository<CaseRow, CaseRecordDto> {
     await this.rpc("close_case", { p_case_id: caseId }, { NOT_FOUND: notFound() });
   }
 
-  // Sletter en kladde. Kun med service role-klienten, og kun efter at kalderen har tjekket ejer og kladde.
-  async deleteDraft(caseId: string): Promise<void> {
-    await this.run(this.db.from("cases").delete().eq("id", caseId).eq("status", "draft"), "cases: delete fejlede");
+  // Sletter en kladde. Kun med service role-klienten, og kun efter at kalderen har tjekket ejer og kladde. Betingelsen
+  // `status = 'draft'` gælder også i selve sletningen: returnerer false, hvis sagen imellemtiden er sendt (L4).
+  async deleteDraft(caseId: string): Promise<boolean> {
+    const rows = await this.runList<{ id: string }>(
+      this.db.from("cases").delete().eq("id", caseId).eq("status", "draft").select("id"),
+      "cases: delete fejlede",
+    );
+    return rows.length > 0;
   }
 
   // Antal aktive leads på sagen (sendt, accepteret eller booket). Patienten ser egne leads (RLS).

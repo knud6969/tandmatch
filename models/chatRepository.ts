@@ -1,6 +1,6 @@
 import "server-only";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/types/ai";
-import { ApiError, notFound } from "@/middleware/http";
+import { ApiError, consentRequired, notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
@@ -38,11 +38,22 @@ export type NewAssistantMessage = {
   readyForSummary: boolean;
 };
 
+type ReservedTurnRow = {
+  message_id: string;
+  message_content: string;
+  message_created_at: string;
+  user_message_count: number;
+};
+
+// Den reserverede tur: patientens (maskerede) besked er indsat, og lofterne er talt (reserve_chat_turn).
+export type ReservedTurn = { message: AiMessageRecord; userMessageCount: number };
+
 const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukket eller har nået grænsen for antal beskeder.");
 
 // AI-samtaler og -beskeder (architecture 4.3). Læsning og patientens egne beskeder sker med brugerens JWT (RLS: kun
-// ejeren, samtykke og lofter håndhæves i databasen). `appendAssistantMessage` og `tryConsumeAnonymousAiCall` kan kun
-// udføres af service role (2.3 a, b): kalderen gives admin-klienten og har tjekket ejer, kladde og samtykke først.
+// ejeren). `reserveTurn` kaldes også med brugerens JWT: den tjekker og tæller alle lofter, og indsætter patientens besked
+// i én transaktion. `appendAssistantMessage` kan kun udføres af service role (2.3 a): kalderen gives admin-klienten og har
+// tjekket ejer, kladde og samtykke først.
 export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> {
   protected toDto(row: MessageRow): AiMessageRecord {
     return {
@@ -100,6 +111,8 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
         .select(CONVERSATION_COLUMNS)
         .single(),
       "ai_conversations: insert fejlede",
+      // Samtidige første ture opretter samme samtale (unik pr. sag): kalderen læser den eksisterende.
+      { "duplicate key": new ApiError(409, "CONVERSATION_EXISTS", "Samtalen findes allerede.") },
     );
     return this.toConversation(this.requireRow(row));
   }
@@ -132,28 +145,47 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
     );
   }
 
-  // Patientens besked (maskeret). RLS afviser, hvis samtalen er lukket, loftet er nået eller samtykket er trukket tilbage.
-  async insertUserMessage(input: { conversationId: string; patientId: string; content: string }): Promise<AiMessageRecord> {
-    const row = await this.run<MessageRow>(
-      this.db
-        .from("ai_messages")
-        .insert({
-          conversation_id: input.conversationId,
-          patient_id: input.patientId,
-          role: "user",
-          content: input.content,
-        })
-        .select(MESSAGE_COLUMNS)
-        .single(),
-      "ai_messages: insert fejlede",
-      { "row-level security": chatLimit() },
+  // Reserverer en chat-tur FØR modelkaldet (architecture 7.6, H1): databasen låser patienten og samtalen, tjekker og
+  // tæller lofterne (30 pr. samtale, døgnloft pr. patient, anonymt døgnloft pr. bruger og globalt) og indsætter patientens
+  // maskerede besked i én transaktion. Samtidige kald kan derfor ikke tilsammen overskride et loft.
+  async reserveTurn(conversationId: string, maskedContent: string): Promise<ReservedTurn> {
+    const data = await this.rpc<ReservedTurnRow[]>(
+      "reserve_chat_turn",
+      { p_conversation_id: conversationId, p_content: maskedContent },
+      {
+        NOT_FOUND: notFound(),
+        NOT_DRAFT: notDraft(),
+        CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte."),
+        CHAT_LIMIT: new ApiError(429, "CHAT_LIMIT", "Du har nået grænsen for antal beskeder i samtalen."),
+        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", "Du har sendt mange beskeder i dag. Prøv igen i morgen."),
+        ANON_USER_LIMIT: new ApiError(
+          429,
+          "RATE_LIMITED",
+          "Du har sendt mange beskeder i dag. Opret en konto for at fortsætte, eller prøv igen i morgen.",
+        ),
+        ANON_CAP_REACHED: new ApiError(
+          429,
+          "ANON_CAP_REACHED",
+          "AI-assistenten er optaget lige nu. Opret en konto eller prøv igen senere.",
+        ),
+      },
     );
-    return this.toDto(this.requireRow(row));
-  }
-
-  // Patientens beskeder det seneste døgn (loft 100, architecture 7.6).
-  async countUserMessagesLastDay(): Promise<number> {
-    return (await this.rpc<number>("patient_user_messages_last_day", {})) ?? 0;
+    const row = this.requireRow(data?.[0]);
+    return {
+      message: {
+        id: row.message_id,
+        role: "user",
+        content: row.message_content,
+        preliminaryAssessment: null,
+        suggestedServiceIds: [],
+        emergency: false,
+        outOfScopeTopics: [],
+        blocked: false,
+        readyForSummary: false,
+        createdAt: row.message_created_at,
+      },
+      userMessageCount: row.user_message_count,
+    };
   }
 
   // Kun service role (2.3 a). Funktionen tjekker ejer, aktiv samtale og at ydelserne er aktive.
@@ -174,16 +206,12 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
       {
         NOT_FOUND: notFound(),
         CONVERSATION_CLOSED: chatLimit(),
+        CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte."),
         INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget."),
       },
     );
     const row = Array.isArray(data) ? data[0] : data;
     return this.toDto(this.requireRow(row));
-  }
-
-  // Kun service role (2.3 b). true, hvis den anonyme bruger er under døgnloftet (300 pr. døgn for alle anonyme).
-  async tryConsumeAnonymousAiCall(userId: string): Promise<boolean> {
-    return (await this.rpc<boolean>("try_consume_anonymous_ai_call", { p_user_id: userId })) === true;
   }
 
   // Egne samtaler med beskeder til dataeksporten (RLS: kun egne).

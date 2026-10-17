@@ -1,4 +1,5 @@
 import "server-only";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import type { ConsentDto } from "@/lib/types/consents";
 import type { ConsentType } from "@/lib/types/common";
 import { ApiError, notFound, unauthenticated } from "@/middleware/http";
@@ -117,6 +118,13 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
       "consents: select fejlede",
     );
     return row && row.withdrawn_at === null ? this.toDto(row) : null;
+  }
+
+  // Som findActive, men kun hvis samtykket har den nuværende tekstversion (L2). Bruges før upload, chat og opsummering:
+  // et samtykke til en ældre tekst (fx uden AI-oplysning) giver ikke ret til at bruge den nye funktion.
+  async findCurrentActive(type: ConsentType): Promise<ConsentDto | null> {
+    const consent = await this.findActive(type);
+    return consent && consent.textVersion === CONSENT_TEXT_VERSIONS[type] ? consent : null;
   }
 
   // Bekræfter at oprydningen efter tilbagetrækning er udført (filerne er fjernet fra storage).

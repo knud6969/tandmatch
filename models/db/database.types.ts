@@ -23,7 +23,26 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "ai_conversations": {
+            "ai_anon_user_usage_daily": {
+                  Row: {
+                    "calls": number,"day": string,"user_id": string
+                  }
+                  Insert: {
+                    "calls"?: number,"day": string,"user_id": string
+                  }
+                  Update: {
+                    "calls"?: number,"day"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ai_anon_user_usage_daily_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "patients"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"ai_conversations": {
                   Row: {
                     "ai_consent_id": string,"case_id": string,"created_at": string,"id": string,"model": string | null,"patient_id": string,"prompt_version": string | null,"status": Database["public"]['Enums']["conversation_status"],"user_message_count": number
                   }
@@ -163,13 +182,13 @@ isOneToOne: false
                   ]
                 },"case_images": {
                   Row: {
-                    "ai_description": string | null,"ai_quality": Database["public"]['Enums']["image_quality"] | null,"ai_view": Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at": string,"height": number,"id": string,"patient_id": string,"storage_path": string,"width": number
+                    "ai_described_at": string | null,"ai_description": string | null,"ai_quality": Database["public"]['Enums']["image_quality"] | null,"ai_view": Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at": string,"height": number,"id": string,"patient_id": string,"storage_path": string,"width": number
                   }
                   Insert: {
-                    "ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at"?: string,"height": number,"id"?: string,"patient_id": string,"storage_path": string,"width": number
+                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at"?: string,"height": number,"id"?: string,"patient_id": string,"storage_path": string,"width": number
                   }
                   Update: {
-                    "ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes"?: number,"case_id"?: string,"consent_id"?: string,"created_at"?: string,"height"?: number,"id"?: string,"patient_id"?: string,"storage_path"?: string,"width"?: number
+                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes"?: number,"case_id"?: string,"consent_id"?: string,"created_at"?: string,"height"?: number,"id"?: string,"patient_id"?: string,"storage_path"?: string,"width"?: number
                   }
                   Relationships: [
                     {
@@ -723,7 +742,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "approve_summary":
-{ Args: { "p_case_id": string,"p_summary_text": string }; Returns: string
+{ Args: { "p_ai_assisted"?: boolean,"p_case_id": string,"p_summary_text": string }; Returns: string
                            },
 "assert_slot_bookable":
 { Args: { "p_clinic_id": string,"p_ends_at": string,"p_service_id": string,"p_starts_at": string }; Returns: undefined
@@ -792,6 +811,9 @@ isOneToOne: false
                            },
 "confirm_consent_cleanup":
 { Args: { "p_consent_id": string }; Returns: undefined
+                           },
+"consume_anonymous_ai_call":
+{ Args: { "p_user_id": string }; Returns: string
                            },
 "consume_rate_limit":
 { Args: { "p_key": string,"p_limit": number }; Returns: boolean
@@ -889,6 +911,11 @@ isOneToOne: false
                            },
 "require_clinic_editor":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"reserve_chat_turn":
+{ Args: { "p_content": string,"p_conversation_id": string }; Returns: {
+              "message_content": string,"message_created_at": string,"message_id": string,"user_message_count": number
+            }[]
                            },
 "review_is_approved":
 { Args: { "p_review_id": string }; Returns: boolean

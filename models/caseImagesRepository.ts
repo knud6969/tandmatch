@@ -3,7 +3,7 @@ import { ApiError, consentRequired } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
-type ImageRow = Pick<Tables<"case_images">, "id" | "case_id" | "storage_path" | "ai_view" | "ai_quality" | "bytes">;
+type ImageRow = Pick<Tables<"case_images">, "id" | "case_id" | "storage_path" | "ai_view" | "ai_quality" | "ai_description" | "bytes">;
 
 // Billedet, som serveren bruger det. `storagePath` forlader aldrig serveren (ImageDto har kun en signeret URL).
 export type CaseImageRecord = {
@@ -12,6 +12,7 @@ export type CaseImageRecord = {
   storagePath: string;
   view: string | null;
   quality: string | null;
+  description: string | null;
   bytes: number;
 };
 
@@ -26,7 +27,7 @@ export type NewCaseImage = {
   bytes: number;
 };
 
-const IMAGE_COLUMNS = "id, case_id, storage_path, ai_view, ai_quality, bytes";
+const IMAGE_COLUMNS = "id, case_id, storage_path, ai_view, ai_quality, ai_description, bytes";
 
 // Billedrækker (architecture 4.3 `case_images`, 9). Læsning sker med brugerens JWT (RLS: egne billeder). Der er ingen
 // skrive-policies; `create` og `delete` kræver service role-klienten (2.3 c), og kalderen har tjekket ejer, kladde og
@@ -39,6 +40,7 @@ export class CaseImagesRepository extends BaseRepository<ImageRow, CaseImageReco
       storagePath: row.storage_path,
       view: row.ai_view,
       quality: row.ai_quality,
+      description: row.ai_description,
       bytes: row.bytes,
     };
   }

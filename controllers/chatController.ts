@@ -1,20 +1,21 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_DAILY_PER_PATIENT, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "@/lib/constants/limits";
+import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "@/lib/constants/limits";
 import type { chatMessageSchema } from "@/lib/schemas/chat";
 import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
-import { ApiError, aiUnavailable, consentRequired, notDraft } from "@/middleware/http";
+import { ApiError, aiUnavailable, consentRequired } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
-import { ChatRepository } from "@/models/chatRepository";
+import { ChatRepository, type ReservedTurn } from "@/models/chatRepository";
 import { ConsentsRepository } from "@/models/consentsRepository";
 import { lazyAdminClient } from "@/models/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { isAiUpstreamError } from "@/services/ai/errors";
 import { AiChatService } from "@/services/ai/aiChatService";
+import { maskPii } from "@/services/ai/pii";
 import { createAiClient } from "@/services/ai/openai";
 import { AI_RULES } from "@/services/ai/rules";
 import { AiImageService } from "@/services/aiImageService";
@@ -33,13 +34,16 @@ export type ChatDeps = {
   admin: () => SupabaseClient;
 };
 
+// Fast svar, når modelkaldet fejlede efter at turen var reserveret (H1). Skrevet i koden, ikke af modellen.
+const CHAT_MODEL_FAILED_TEXT = "Jeg kunne ikke svare lige nu. Prøv at sende din besked igen om lidt, eller skriv din beskrivelse selv.";
+
 function flatten(groups: ServiceGroupDto[]): ServiceDto[] {
   return groups.flatMap((group) => group.services);
 }
 
 // AI-chatten på en sag (architecture 7, 10.6). Controlleren kender hverken prompts eller OpenAI: det gør AiChatService.
-// Læsning og patientens egne beskeder sker med brugerens JWT (RLS). Service role bruges kun til assistentens svar og
-// det anonyme døgnloft (2.3 a, b), efter ejer-, kladde-, samtykke- og lofttjek.
+// Læsning og reservationen af turen (patientens besked og lofterne) sker med brugerens JWT. Service role bruges kun til
+// assistentens svar (2.3 a), efter ejer-, kladde-, samtykke- og lofttjek.
 export class ChatController {
   private readonly cases: CasesRepository;
   private readonly consents: ConsentsRepository;
@@ -108,57 +112,59 @@ export class ChatController {
   }
 
   // Én tur: patientens besked ind, assistentens validerede svar ud (architecture 10.6).
+  //
+  // Turen RESERVERES før modelkaldet (H1): reserve_chat_turn() låser patienten og samtalen, tjekker og tæller lofterne og
+  // indsætter patientens maskerede besked i én transaktion. Kun reserverede ture når modellen, så samtidige kald ikke
+  // kan give flere modelkald end lofterne tillader. Fejler modellen (eller gemningen af svaret), gemmes en fast tekst
+  // som svar, så turen ikke står ubesvaret i samtalen, og fejlen returneres.
   async sendMessage(caseId: string, input: ChatMessageInput): Promise<ChatTurnResponse> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
+    await this.cases.requireOwnDraft(caseId);
 
-    // AI-samtykket er en forudsætning (vilkårs-accept giver det ikke, architecture 7.1).
-    const consent = await this.consents.findActive("ai_processing");
+    // AI-samtykket (nuværende tekstversion) er en forudsætning (vilkårs-accept giver det ikke, architecture 7.1).
+    const consent = await this.consents.findCurrentActive("ai_processing");
     if (!consent) throw consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte.");
 
-    const conversation =
-      (await this.chat.findConversation(caseId)) ??
-      (await this.chat.createConversation({
-        caseId,
-        patientId: this.session.userId,
-        consentId: consent.id,
-        promptVersion: `${this.ai.promptVersion}+${this.ai.rulesVersion}`,
-        model: this.ai.model,
-      }));
-
-    // Lofter (7.6) tjekkes før modelkaldet. Databasen håndhæver dem igen ved indsættelsen.
-    if (conversation.status !== "active" || conversation.userMessageCount >= CHAT_MAX_USER_MESSAGES_PER_CONVERSATION) {
-      throw new ApiError(429, "CHAT_LIMIT", "Du har nået grænsen for antal beskeder i samtalen.");
-    }
-    if ((await this.chat.countUserMessagesLastDay()) >= CHAT_MAX_DAILY_PER_PATIENT) {
-      throw new ApiError(429, "RATE_LIMITED", "Du har sendt mange beskeder i dag. Prøv igen i morgen.");
-    }
-    // 2.3 (b): det fælles døgnloft for anonyme forbruges kun med service role. Funktionen tager bruger-id'et som argument.
-    if (this.session.isAnonymous && !(await new ChatRepository(this.admin()).tryConsumeAnonymousAiCall(this.session.userId))) {
-      throw new ApiError(429, "ANON_CAP_REACHED", "AI-assistenten er optaget lige nu. Opret en konto eller prøv igen senere.");
+    let conversation = await this.chat.findConversation(caseId);
+    if (!conversation) {
+      try {
+        conversation = await this.chat.createConversation({
+          caseId,
+          patientId: this.session.userId,
+          consentId: consent.id,
+          promptVersion: `${this.ai.promptVersion}+${this.ai.rulesVersion}`,
+          model: this.ai.model,
+        });
+      } catch (err) {
+        // Et samtidigt kald oprettede samtalen først (unik pr. sag): brug den.
+        if (!(err instanceof ApiError && err.code === "CONVERSATION_EXISTS")) throw err;
+        conversation = await this.chat.findConversation(caseId);
+        if (!conversation) throw err;
+      }
     }
 
-    const catalog = await this.services.listGroups();
-    const history = (await this.chat.listRecentMessages(conversation.id, CHAT_CONTEXT_MESSAGES - 1)).map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-    const images = await this.loadImages(caseId);
-
-    let result;
+    // Patientens tekst maskeres, før den gemmes (maskering er idempotent, så AI-laget kan maskere igen).
+    const reserved = await this.chat.reserveTurn(conversation.id, maskPii(input.message));
     try {
-      result = await this.ai.sendTurn({ history, userMessage: input.message, catalog, images });
+      return await this.answerTurn(caseId, conversation.id, reserved);
     } catch (err) {
+      await this.storeFixedAnswer(conversation.id);
       if (isAiUpstreamError(err)) throw aiUnavailable();
       throw err;
     }
+  }
 
-    // Rækkefølgen: først patientens (maskerede) besked, så svaret. Svaret er allerede valideret og filtreret af guard.
-    const userMessage = await this.chat.insertUserMessage({
-      conversationId: conversation.id,
-      patientId: this.session.userId,
-      content: result.maskedUserMessage,
-    });
+  // Modelkaldet og gemningen af svaret for en reserveret tur.
+  private async answerTurn(caseId: string, conversationId: string, reserved: ReservedTurn): Promise<ChatTurnResponse> {
+    const catalog = await this.services.listGroups();
+    // Historikken er de seneste beskeder uden den netop reserverede (AI-laget lægger den til selv).
+    const history = (await this.chat.listRecentMessages(conversationId, CHAT_CONTEXT_MESSAGES))
+      .filter((m) => m.id !== reserved.message.id)
+      .slice(-(CHAT_CONTEXT_MESSAGES - 1))
+      .map((m) => ({ role: m.role, content: m.content }));
+    const images = await this.loadImages(caseId);
+
+    const result = await this.ai.sendTurn({ history, userMessage: reserved.message.content, catalog, images });
+
     const slugToId = new Map(flatten(catalog).map((s) => [s.slug, s.id]));
     const suggestedIds = result.suggestedServices.flatMap((slug) => {
       const id = slugToId.get(slug);
@@ -166,7 +172,7 @@ export class ChatController {
     });
     // 2.3 (a): assistentens svar skrives kun med service role.
     const assistant = await new ChatRepository(this.admin()).appendAssistantMessage(this.session.userId, {
-      conversationId: conversation.id,
+      conversationId,
       content: result.reply,
       preliminaryAssessment: result.preliminaryAssessment,
       suggestedServiceIds: suggestedIds,
@@ -178,13 +184,31 @@ export class ChatController {
 
     const byId = new Map(flatten(catalog).map((s) => [s.id, s]));
     return {
-      userMessage: this.toMessageDto(userMessage, byId),
+      userMessage: this.toMessageDto(reserved.message, byId),
       assistantMessage: this.toMessageDto(assistant, byId),
       outOfScopeNotice: result.outOfScopeTopics.length > 0,
       emergency: result.emergency,
       readyForSummary: result.readyForSummary,
-      messagesLeft: this.messagesLeft(conversation, 1),
+      messagesLeft: Math.max(0, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION - reserved.userMessageCount),
     };
+  }
+
+  // Gemmer den faste tekst som svar på en reserveret tur, hvor modellen fejlede. Forsøget kan selv fejle (fx lukket
+  // samtale); den oprindelige fejl er den, der returneres.
+  private async storeFixedAnswer(conversationId: string): Promise<void> {
+    // 2.3 (a): svaret skrives med service role.
+    await new ChatRepository(this.admin())
+      .appendAssistantMessage(this.session.userId, {
+        conversationId,
+        content: CHAT_MODEL_FAILED_TEXT,
+        preliminaryAssessment: null,
+        suggestedServiceIds: [],
+        emergency: false,
+        outOfScopeTopics: [],
+        blocked: false,
+        readyForSummary: false,
+      })
+      .catch(() => {});
   }
 
   // Billeder sendes kun til AI'en med aktivt image_upload-samtykke (9.4), re-encodet og som base64.

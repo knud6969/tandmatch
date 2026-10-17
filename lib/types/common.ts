@@ -20,4 +20,5 @@ export type ImageDto = {
   url: string; // signeret, 5 min
   view: string | null;
   quality: string | null;
+  description: string | null; // AI'ens beskrivelse (ikke vurdering); patientens egne billeder, godkendes med opsummeringen
 };

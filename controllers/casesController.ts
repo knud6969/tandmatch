@@ -53,13 +53,6 @@ export class CasesController {
     this.imageUrls = deps.imageUrls ?? new CaseImageUrlService(this.admin);
   }
 
-  // Sagen skal være en kladde for at kunne ændres (409 NOT_DRAFT). Ejerskab er tjekket af requireOwn (404).
-  private async requireOwnDraft(caseId: string): Promise<CaseRecordDto> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
-    return record;
-  }
-
   // Samler sagen til DTO'en: bekræftede ydelser, AI-forslag, billeder med friske signerede URL'er og antal leads.
   private async toCaseDto(record: CaseRecordDto): Promise<CaseDto> {
     const [confirmed, imageRecords, conversation, leadCount] = await Promise.all([
@@ -92,7 +85,7 @@ export class CasesController {
       suggestedServices,
       images: await this.imageUrls.toDtos(imageRecords),
       hasConversation: conversation.hasConversation,
-      aiSummary: record.aiSummary as AiSummary | null,
+      aiSummary: record.aiSummary as AiSummary | null, // allerede zod-parset i CasesRepository
       summaryText: record.summaryText,
       summaryApprovedAt: record.summaryApprovedAt,
       submittedAt: record.submittedAt,
@@ -124,13 +117,13 @@ export class CasesController {
   }
 
   async patch(caseId: string, input: PatchCaseInput): Promise<CaseDto> {
-    await this.requireOwnDraft(caseId);
+    await this.cases.requireOwnDraft(caseId);
     return this.toCaseDto(await this.cases.update(caseId, input));
   }
 
   // Bekræfter ydelserne (1-5). Hver skal være aktiv i kataloget (400 UNKNOWN_SERVICE).
   async putServices(caseId: string, input: PutServicesInput): Promise<CaseDto> {
-    const record = await this.requireOwnDraft(caseId);
+    const record = await this.cases.requireOwnDraft(caseId);
     await this.services.requireActive(input.services.map((s) => s.serviceId));
     await this.caseServices.replace(caseId, input.services);
     return this.toCaseDto(record);
@@ -144,11 +137,13 @@ export class CasesController {
   }
 
   // Sletter kladden og billedfilerne. Patienten har ingen DELETE-policy på cases (5.4), så sagen slettes med service
-  // role efter ejer- og kladdetjekket ovenfor. Filerne først, som ved kontosletning; en fejl kan prøves igen.
+  // role efter ejer- og kladdetjekket ovenfor. Rækken slettes først, med betingelsen `status = 'draft'` (L4): en sag, der
+  // imellemtiden er sendt, kan så hverken miste rækken eller billedfilerne. Filerne slettes bagefter; en fejl dér efterlader
+  // kun forældreløse filer, som oprydningen tager.
   async delete(caseId: string): Promise<void> {
-    await this.requireOwnDraft(caseId);
-    // 2.3 (c): billedfilerne og sagen slettes med service role, efter ejer- og kladdetjek.
+    await this.cases.requireOwnDraft(caseId);
+    // 2.3 (c): sagen og billedfilerne slettes med service role, efter ejer- og kladdetjek.
+    if (!(await new CasesRepository(this.admin()).deleteDraft(caseId))) throw notDraft();
     await new CaseImageStorage(this.admin()).removeCase(caseId);
-    await new CasesRepository(this.admin()).deleteDraft(caseId);
   }
 }

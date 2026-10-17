@@ -83,10 +83,14 @@ export function readQuery<T>(req: Request, schema: ZodType<T>, keys: readonly st
   return parsed.data;
 }
 
-// Afviser et for stort billede ud fra Content-Length, før noget læses.
+// Afviser et for stort billede ud fra Content-Length, før noget læses. En request uden gyldig Content-Length (fx chunked
+// transfer) afvises også med 411, fordi størrelsen så ikke kan tjekkes, før bodyen er læst ind i hukommelsen (M2).
 export function rejectLargeImage(req: Request, maxBytes: number): void {
-  const declared = Number(req.headers.get("content-length") ?? 0);
-  if (declared > maxBytes + 64 * 1024) {
+  const header = req.headers.get("content-length");
+  if (header === null || !/^\d+$/.test(header.trim())) {
+    throw new ApiError(411, "LENGTH_REQUIRED", "Billedets størrelse mangler. Prøv at uploade igen.");
+  }
+  if (Number(header) > maxBytes + 64 * 1024) {
     throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
   }
 }

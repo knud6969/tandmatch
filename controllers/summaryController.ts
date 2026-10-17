@@ -2,8 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { approveSummarySchema } from "@/lib/schemas/chat";
-import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
-import { ApiError, aiUnavailable, consentRequired, notDraft } from "@/middleware/http";
+import type { AiSummary, ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
+import { ApiError, aiUnavailable, consentRequired } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CaseServicesRepository } from "@/models/caseServicesRepository";
@@ -20,6 +20,20 @@ import { AiImageService } from "@/services/aiImageService";
 import { SummaryRepository } from "@/models/summaryRepository";
 
 type ApproveInput = z.infer<typeof approveSummarySchema>;
+
+// Reglen for `summary_ai_assisted` (10.5): teksten regnes som erstattet helt, når under halvdelen af patientens ord (3+ tegn)
+// findes i AI-udkastet. Så vises "skrevet med AI-hjælp" ikke for en tekst, patienten har skrevet selv. Uden et AI-udkast på
+// sagen er svaret altid false (databasen gentager det).
+const AI_DRAFT_MIN_SHARED_WORDS = 0.5;
+const WORD = /[\p{L}\p{N}]{3,}/gu;
+
+function buildsOnAiDraft(text: string, draft: AiSummary | null): boolean {
+  if (!draft) return false;
+  const draftWords = new Set(draft.summaryText.toLowerCase().match(WORD) ?? []);
+  const words = text.toLowerCase().match(WORD) ?? [];
+  if (words.length === 0) return false;
+  return words.filter((word) => draftWords.has(word)).length / words.length >= AI_DRAFT_MIN_SHARED_WORDS;
+}
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type SummaryDeps = {
@@ -73,9 +87,8 @@ export class SummaryController {
   // Billeder med dårlig kvalitet (`retakeImages`): udkastet GEMMES, og listen returneres, så UI kan bede om nye billeder.
   // Kvaliteten gemmes på billedet (ai_quality). Serveren blokerer ikke godkendelsen; patienten informeres kun.
   async generate(caseId: string): Promise<SummaryResponse> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
-    if (!(await this.consents.hasActive("ai_processing"))) {
+    await this.cases.requireOwnDraft(caseId);
+    if (!(await this.consents.findCurrentActive("ai_processing"))) {
       throw consentRequired("Du skal give samtykke til AI-behandling, før du kan få en opsummering.");
     }
 
@@ -136,9 +149,9 @@ export class SummaryController {
 
   // Patientens rettede opsummering godkendes med approve_summary() (eneste vej til summary_text).
   async approve(caseId: string, input: ApproveInput): Promise<ApproveSummaryResponse> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
-    const summaryApprovedAt = await this.summary.approve(caseId, input.summaryText);
+    const record = await this.cases.requireOwnDraft(caseId);
+    const aiAssisted = buildsOnAiDraft(input.summaryText, record.aiSummary as AiSummary | null);
+    const summaryApprovedAt = await this.summary.approve(caseId, input.summaryText, aiAssisted);
     return { summaryText: input.summaryText, summaryApprovedAt };
   }
 }

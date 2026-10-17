@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { ANONYMOUS_SESSION_HOURS } from "@/lib/constants/sessions";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { AuthRepository } from "@/models/authRepository";
 import { ProfilesRepository } from "@/models/profilesRepository";
@@ -27,7 +28,8 @@ export async function createAuthContext(): Promise<AuthContext> {
 }
 
 // Læser den aktuelle session ud fra konteksten (eller en ny, hvis kalderen ikke har en, fx layouts).
-// Opdaterer last_active_at for anonyme sessioner (architecture 10.2).
+// Opdaterer last_active_at for anonyme sessioner (architecture 10.2). En anonym session, hvis seneste aktivitet er
+// ældre end 48 timer, er udløbet og afvises (som ingen session), også selvom oprydningsjobbet endnu ikke har slettet den (L5).
 export async function getSession(ctx?: AuthContext): Promise<Session | null> {
   const { supabase, userId } = ctx ?? (await createAuthContext());
   if (!userId) return null;
@@ -37,6 +39,7 @@ export async function getSession(ctx?: AuthContext): Promise<Session | null> {
   if (!profile) return null;
 
   if (profile.isAnonymous) {
+    if (Date.now() - new Date(profile.lastActiveAt).getTime() > ANONYMOUS_SESSION_HOURS * 60 * 60 * 1000) return null;
     await profiles.touchLastActive();
   }
 

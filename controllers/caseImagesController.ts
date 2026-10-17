@@ -1,10 +1,9 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/constants/limits";
 import type { ImageDto } from "@/lib/types/common";
-import { ApiError, consentRequired, notDraft } from "@/middleware/http";
+import { ApiError, consentRequired } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
@@ -50,12 +49,11 @@ export class CaseImagesController {
 
   // `readFile` læser multipart-bodyen og kaldes først, når alle tjek er bestået (architecture 9.3).
   async upload(caseId: string, readFile: () => Promise<File>): Promise<ImageDto> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
+    await this.cases.requireOwnDraft(caseId);
 
     // Samtykket skal være aktivt og den nuværende tekstversion. Vilkårs-accept giver ingen ret til upload (9.4).
-    const consent = await this.consents.findActive("image_upload");
-    if (!consent || consent.textVersion !== CONSENT_TEXT_VERSIONS.image_upload) {
+    const consent = await this.consents.findCurrentActive("image_upload");
+    if (!consent) {
       throw consentRequired("Du skal give samtykke til billeder (nyeste version), før du uploader.");
     }
 
@@ -91,14 +89,13 @@ export class CaseImagesController {
       throw err;
     }
 
-    const [dto] = await this.imageUrls.toDtos([{ id, caseId, storagePath: path, view: null, quality: null, bytes: data.length }]);
+    const [dto] = await this.imageUrls.toDtos([{ id, caseId, storagePath: path, view: null, quality: null, description: null, bytes: data.length }]);
     return dto;
   }
 
   // Sletter rækken og filen. Rækken først, så en fejl ved filen ikke efterlader et billede, der ikke kan vises.
   async delete(caseId: string, imageId: string): Promise<void> {
-    const record = await this.cases.requireOwn(caseId);
-    if (record.status !== "draft") throw notDraft();
+    await this.cases.requireOwnDraft(caseId);
     const image = await this.images.requireInCase(caseId, imageId);
     // 2.3 (c): rækken og filen slettes med service role efter ejer- og kladdetjek.
     await new CaseImagesRepository(this.admin()).delete(image.id);

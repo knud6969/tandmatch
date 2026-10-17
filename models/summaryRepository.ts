@@ -1,4 +1,5 @@
 import "server-only";
+import { SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
 import type { AiSummary } from "@/lib/types/ai";
 import { ApiError, notDraft, notFound } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
@@ -41,15 +42,16 @@ export class SummaryRepository extends BaseRepository {
     );
   }
 
-  // Eneste vej til summary_text (max 1500). Returnerer godkendelsestidspunktet.
-  async approve(caseId: string, summaryText: string): Promise<string> {
+  // Eneste vej til summary_text (max SUMMARY_MAX_CHARS). `aiAssisted` angiver, om teksten stadig bygger på AI-udkastet;
+  // databasen gemmer altid false, hvis sagen ikke har et AI-udkast. Returnerer godkendelsestidspunktet.
+  async approve(caseId: string, summaryText: string, aiAssisted: boolean): Promise<string> {
     const at = await this.rpc<string>(
       "approve_summary",
-      { p_case_id: caseId, p_summary_text: summaryText },
+      { p_case_id: caseId, p_summary_text: summaryText, p_ai_assisted: aiAssisted },
       {
         NOT_FOUND: notFound(),
         NOT_DRAFT: notDraft(),
-        INVALID_SUMMARY: new ApiError(400, "VALIDATION_ERROR", "Opsummeringen skal være mellem 1 og 1500 tegn."),
+        INVALID_SUMMARY: new ApiError(400, "VALIDATION_ERROR", `Opsummeringen skal være mellem 1 og ${SUMMARY_MAX_CHARS} tegn.`),
       },
     );
     if (!at) throw new Error("approve_summary: uventet svar");
