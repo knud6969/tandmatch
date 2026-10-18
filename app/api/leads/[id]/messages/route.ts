@@ -1,0 +1,24 @@
+import { MessagesController } from "@/controllers/messagesController";
+import { sendMessageSchema } from "@/lib/schemas/messages";
+import { jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
+import { requireSession } from "@/middleware/session";
+import { requireTerms } from "@/middleware/termsGate";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+// Beskedtråden pr. lead (architecture 10.12). Patienten og den verificerede klinik bag leadet er deltagere; rollen afgør
+// læsevejen i controlleren (patient: tabellen med RLS, klinik: clinic_lead_messages()). Andre får 404.
+export const GET = withApi<Ctx>(async (_req, { params }) => {
+  const gate = await requireTerms();
+  const session = await requireSession(gate);
+  const leadId = parseId((await params).id);
+  return jsonResponse({ messages: await new MessagesController(gate.supabase, session).list(leadId) });
+});
+
+export const POST = withApi<Ctx>(async (req, { params }) => {
+  const gate = await requireTerms();
+  const session = await requireSession(gate);
+  const leadId = parseId((await params).id);
+  const input = await readJson(req, sendMessageSchema);
+  return jsonResponse(await new MessagesController(gate.supabase, session).send(leadId, input), 201);
+});

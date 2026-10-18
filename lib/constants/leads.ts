@@ -3,6 +3,11 @@ export const LEAD_STATUSES = ["sent", "accepted", "declined", "booked", "withdra
 // Leads, der tæller med i de højst 3 aktive pr. sag. Samme regel som is_lead_active_status() i databasen.
 export const LEAD_ACTIVE_STATUSES = ["sent", "accepted", "booked"] as const;
 export const LEAD_DECLINE_REASONS = ["no_capacity", "not_offered", "needs_referral", "other", "clinic_left"] as const;
+// Årsager, klinikken selv må vælge. `clinic_left` sættes kun af systemet, når klinikkontoen slettes (clinic_decide_lead()).
+export const LEAD_CLINIC_DECLINE_REASONS = ["no_capacity", "not_offered", "needs_referral", "other"] as const;
+// (SQL) leads.clinic_comment og leads.decline_note.
+export const LEAD_COMMENT_MAX_CHARS = 500;
+export const LEAD_DECLINE_NOTE_MAX_CHARS = 200;
 
 // Danske navne til patientens visning af et lead (architecture 10.9).
 export const LEAD_STATUS_LABEL = {

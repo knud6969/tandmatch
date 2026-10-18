@@ -477,13 +477,13 @@ isOneToOne: false
                   ]
                 },"messages": {
                   Row: {
-                    "body": string,"created_at": string,"id": string,"lead_id": string,"read_at": string | null,"sender_id": string
+                    "body": string,"created_at": string,"id": string,"lead_id": string,"read_at": string | null,"sender_id": string | null,"sender_role": Database["public"]['Enums']["message_sender_role"]
                   }
                   Insert: {
-                    "body": string,"created_at"?: string,"id"?: string,"lead_id": string,"read_at"?: string | null,"sender_id": string
+                    "body": string,"created_at"?: string,"id"?: string,"lead_id": string,"read_at"?: string | null,"sender_id"?: string | null,"sender_role": Database["public"]['Enums']["message_sender_role"]
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"id"?: string,"lead_id"?: string,"read_at"?: string | null,"sender_id"?: string
+                    "body"?: string,"created_at"?: string,"id"?: string,"lead_id"?: string,"read_at"?: string | null,"sender_id"?: string | null,"sender_role"?: Database["public"]['Enums']["message_sender_role"]
                   }
                   Relationships: [
                     {
@@ -956,7 +956,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "ai_message_role": "user"|"assistant","booking_actor": "patient"|"clinic","booking_status": "held"|"booked"|"completed"|"no_show"|"cancelled","case_status": "draft"|"submitted"|"closed","case_timeframe": "asap"|"within_2_weeks"|"within_3_months"|"flexible","clinic_status": "imported"|"registered"|"verified"|"removed","consent_type": "health_data_sharing"|"image_upload"|"ai_processing","conversation_status": "active"|"closed","image_quality": "ok"|"too_dark"|"blurry"|"wrong_angle"|"not_teeth","image_view": "front"|"upper"|"lower"|"side_left"|"side_right"|"unclear","lead_decline_reason": "no_capacity"|"not_offered"|"needs_referral"|"other"|"clinic_left","lead_status": "sent"|"accepted"|"declined"|"booked"|"withdrawn","moderation_status": "pending"|"approved"|"rejected","out_of_scope_topic": "price"|"clinic_recommendation","price_accuracy": "as_quoted"|"slightly_higher"|"much_higher","service_category": "cosmetic"|"general"|"emergency","user_role": "patient"|"clinic"|"admin"
+            "ai_message_role": "user"|"assistant","booking_actor": "patient"|"clinic","booking_status": "held"|"booked"|"completed"|"no_show"|"cancelled","case_status": "draft"|"submitted"|"closed","case_timeframe": "asap"|"within_2_weeks"|"within_3_months"|"flexible","clinic_status": "imported"|"registered"|"verified"|"removed","consent_type": "health_data_sharing"|"image_upload"|"ai_processing","conversation_status": "active"|"closed","image_quality": "ok"|"too_dark"|"blurry"|"wrong_angle"|"not_teeth","image_view": "front"|"upper"|"lower"|"side_left"|"side_right"|"unclear","lead_decline_reason": "no_capacity"|"not_offered"|"needs_referral"|"other"|"clinic_left","lead_status": "sent"|"accepted"|"declined"|"booked"|"withdrawn","message_sender_role": "patient"|"clinic","moderation_status": "pending"|"approved"|"rejected","out_of_scope_topic": "price"|"clinic_recommendation","price_accuracy": "as_quoted"|"slightly_higher"|"much_higher","service_category": "cosmetic"|"general"|"emergency","user_role": "patient"|"clinic"|"admin"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1076,7 +1076,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "ai_message_role": ["user", "assistant"],"booking_actor": ["patient", "clinic"],"booking_status": ["held", "booked", "completed", "no_show", "cancelled"],"case_status": ["draft", "submitted", "closed"],"case_timeframe": ["asap", "within_2_weeks", "within_3_months", "flexible"],"clinic_status": ["imported", "registered", "verified", "removed"],"consent_type": ["health_data_sharing", "image_upload", "ai_processing"],"conversation_status": ["active", "closed"],"image_quality": ["ok", "too_dark", "blurry", "wrong_angle", "not_teeth"],"image_view": ["front", "upper", "lower", "side_left", "side_right", "unclear"],"lead_decline_reason": ["no_capacity", "not_offered", "needs_referral", "other", "clinic_left"],"lead_status": ["sent", "accepted", "declined", "booked", "withdrawn"],"moderation_status": ["pending", "approved", "rejected"],"out_of_scope_topic": ["price", "clinic_recommendation"],"price_accuracy": ["as_quoted", "slightly_higher", "much_higher"],"service_category": ["cosmetic", "general", "emergency"],"user_role": ["patient", "clinic", "admin"]
+            "ai_message_role": ["user", "assistant"],"booking_actor": ["patient", "clinic"],"booking_status": ["held", "booked", "completed", "no_show", "cancelled"],"case_status": ["draft", "submitted", "closed"],"case_timeframe": ["asap", "within_2_weeks", "within_3_months", "flexible"],"clinic_status": ["imported", "registered", "verified", "removed"],"consent_type": ["health_data_sharing", "image_upload", "ai_processing"],"conversation_status": ["active", "closed"],"image_quality": ["ok", "too_dark", "blurry", "wrong_angle", "not_teeth"],"image_view": ["front", "upper", "lower", "side_left", "side_right", "unclear"],"lead_decline_reason": ["no_capacity", "not_offered", "needs_referral", "other", "clinic_left"],"lead_status": ["sent", "accepted", "declined", "booked", "withdrawn"],"message_sender_role": ["patient", "clinic"],"moderation_status": ["pending", "approved", "rejected"],"out_of_scope_topic": ["price", "clinic_recommendation"],"price_accuracy": ["as_quoted", "slightly_higher", "much_higher"],"service_category": ["cosmetic", "general", "emergency"],"user_role": ["patient", "clinic", "admin"]
           }
         }
 } as const

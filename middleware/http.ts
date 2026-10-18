@@ -181,6 +181,18 @@ export const ACCOUNT_REQUIRED_MESSAGES = {
 
 export const accountRequired = (message: string) => new ApiError(403, "ACCOUNT_REQUIRED", message);
 
+// Klinikken er ikke verificeret og kan hverken modtage eller besvare leads (architecture 3, 5.7, 10.9).
+export const clinicNotVerified = () =>
+  new ApiError(403, "CLINIC_NOT_VERIFIED", "Din klinik er ikke verificeret endnu, så du kan ikke modtage henvendelser.");
+
+// Beskedtråden er lukket (lead afvist eller trukket tilbage, architecture 10.12).
+export const threadClosed = () =>
+  new ApiError(409, "THREAD_CLOSED", "Samtalen er lukket, så der kan ikke skrives flere beskeder.");
+
+// Daglige loft for beskeder er nået (architecture 7.6).
+export const messageLimit = () =>
+  new ApiError(429, "MESSAGE_LIMIT", "Du har sendt for mange beskeder i dag. Prøv igen i morgen.");
+
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
 
 // AI-samtykket mangler til chatten. Teksten står kun her.

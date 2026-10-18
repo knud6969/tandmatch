@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Migrationerne `20261021000100` og `20261022000100` mangler at blive kørt i det fælles projekt. Resten af API'et (10.9-10.14 undtagen den offentlige del af 10.13), de øvrige sider (6) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Trin 5 er i gang på `feat/omlaegning-trin-5`: klinikkens leads og beskedtråden er bygget (5.1-5.2; 10.9, 10.12). Migrationerne `20261021000100`, `20261022000100` og `20261023000100` mangler at blive kørt i det fælles projekt. Resten af API'et (10.9-10.14 undtagen den offentlige del af 10.13), de øvrige sider (6) og skrivning af anmeldelser (8) er [IKKE BYGGET]. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -1051,7 +1051,7 @@ Fjernet fra den gamle model og må ikke genskabes: `send_request`, `decide_respo
 | ai_messages | `patient_id = uid` | **ingen** for `authenticated`: brugerbeskeder indsættes kun af `reserve_chat_turn()` og assistentsvar af `append_assistant_message()` (begge service role). Policyen `ai_messages_insert_own_user` er droppet (migration `20261020000100`) | ingen | cascade |
 | case_images | `patient_id = uid`. Klinikker via `clinic_lead_images()` | ingen for `authenticated` (service role) | ingen | ingen for `authenticated` (service role) |
 | leads | `is_case_owner(case_id)` eller (`is_clinic_owner(clinic_id)` og klinikken er `verified` og `sent_at >= owner_since`) | **ingen** (kun `send_leads`) | **ingen** (kun funktionerne i 5.3) | ingen |
-| messages | Kun patienten direkte: `sender_id = uid` eller sagens ejer via `is_case_owner`. **Klinikker har ingen SELECT**; de læser via `clinic_lead_messages()` (5.7) | `sender_id = uid` og `is_permanent_user()` og `is_lead_participant(lead_id)` og `is_lead_thread_open(lead_id)` (`created_at`/`read_at` sættes af trigger, 5.1 regel 15) | patienten må sætte `read_at` på modtagne beskeder (kolonne-grant); klinikken via `clinic_mark_messages_read()` | ingen |
+| messages | Kun patienten direkte: `sender_id = uid` eller sagens ejer via `is_case_owner`. **Klinikker har ingen SELECT**; de læser via `clinic_lead_messages()` (5.7) | `sender_id = uid` og `is_permanent_user()` og `is_lead_participant(lead_id)` og `is_lead_thread_open(lead_id)` (`created_at`/`read_at` sættes af trigger, 5.1 regel 15) | patienten må sætte `read_at` på modtagne beskeder (`sender_role = 'clinic'`, også når afsenderen er slettet; kolonne-grant); klinikken via `clinic_mark_messages_read()`. `messages_before_insert()` er security definer og udleder `sender_role` (en afvigende værdi giver `SENDER_ROLE_MISMATCH`); `messages_before_update()` tillader kun, at `sender_id` bliver null (migration `20261023000100`) | ingen |
 | bookings | `patient_id = uid`. Klinikker **ingen** direkte; kun via `clinic_bookings()`/`clinic_lead_detail()` | ingen (kun `book_slot`) | ingen (kun `cancel_booking`, `complete_booking`) | ingen |
 | reviews | `patient_id = uid` eller `is_admin()`. Offentligt via `public_reviews()`, klinikken via `clinic_reviews()` | se 8.1 | ingen | ingen ([IKKE BYGGET]) |
 | review_replies | `clinic_id = auth_clinic_id()` eller `is_admin()`. Offentligt via `public_reviews()` | `review_is_for_my_clinic(review_id)` og `review_is_approved(review_id)` og `clinic_id = auth_clinic_id()` | ingen | ingen |
@@ -1113,6 +1113,9 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 40. (Fil `40_image_description_shared_after_approval.sql`.) `clinic_lead_images()` returnerer kun `approved_description`, når patienten har godkendt opsummeringen efter beskrivelsen blev skrevet (`summary_approved_at >= ai_described_at`); beskrivelser uden tidsstempel er skjulte.
 42. (Fil `39_reserve_chat_turn.sql`.) `reserve_chat_turn()` tæller alle lofter i én transaktion og indsætter kun patientens egen besked; samtidige kald kan ikke overskride lofterne.
 41. (Fil `41_ai_calls_service_role_only.sql`.) `authenticated` kan ikke kalde `reserve_chat_turn()` eller `consume_summary_generation()` og kan ikke indsætte i `ai_messages`; med service role afvises et forkert `p_user_id`, en sag, der ikke er kladde, og manglende `ai_processing`; sletning af en sag nulstiller ikke `ai_patient_usage_daily.chat_messages`; en anonym bruger rammer sit eget døgnloft (429) før det globale.
+43. (Fil `42_patient_lead_clinics.sql`.) `patient_lead_clinics()` returnerer kun klinikker på patientens egne leads (også `removed`, uden logo); anden patient, klinik og anonym får intet.
+44. (Fil `43_leads_daily_limit.sql`.) Det 16. lead pr. patient på 24 timer afvises på tværs af sager, også via `send_leads()`; ældre leads tæller ikke.
+45. (Fil `44_message_sender_role.sql`.) `sender_role` sættes af databasen og kan ikke forfalskes eller ændres; klinik Y ser intet af X's tråd (tabel og alle `clinic_*`-funktioner); tråden er lukket ved `declined`/`withdrawn`; sletning af klinikkonto bevarer beskederne (`sender_id` null, `sender_role = 'clinic'`), og patienten kan markere dem som læst.
 
 API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cookie afvises, ny version kræver ny accept) og "vilkårs-accept giver ikke samtykke" (403 `CONSENT_REQUIRED` ved upload/chat).
 
@@ -1549,7 +1552,7 @@ Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id
 
 Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
 
-**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, bortset fra `GET /api/clinics/me/reviews` (6.2). 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. 10.5 og 10.6 er bygget i trin 3, leads i 10.5 i trin 4. 10.9 (klinikkens leads) til 10.12 og resten af 10.13-10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
+**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, bortset fra `GET /api/clinics/me/reviews` (6.2). 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. 10.5 og 10.6 er bygget i trin 3, leads i 10.5 i trin 4. 10.9 og 10.12 er bygget i trin 5. 10.10, 10.11 og resten af 10.13-10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 
 ### 10.1 Delte typer
 
@@ -1802,13 +1805,14 @@ export type ClinicLeadListItemDto = {
   preferredTimeframe: CaseTimeframe | null;
   requestedStartsAt: string | null;
   imageCount: number;
-  sentAt: string; seenAt: string | null;
+  sentAt: string; seenAt: string | null; withdrawnAt: string | null;
   unreadMessages: number;
 };
 
 export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
-  services: ServiceDto[];
+  services: Pick<ServiceDto, "id" | "slug" | "name" | "description" | "category">[];  // det clinic_lead_detail() returnerer
   summaryText: string; summaryAiAssisted: boolean;
+  // view og quality er null (AI'ens billedvurdering deles ikke med klinikken); description = approvedDescription, som kan være null
   images: (ImageDto & { approvedDescription: string | null })[];
   listPrice: PriceRange | null;
   decision: { comment: string | null; quotedPrice: PriceRange | null; declineReason: LeadDeclineReason | null; declineNote: string | null; respondedAt: string } | null;
@@ -1822,7 +1826,9 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
 | GET `/api/leads/{id}` | klinik (ejer) | | `ClinicLeadDetailDto`. Sætter `seen_at` via `clinic_mark_lead_seen()` (pragmatisk sideeffekt) |
 | POST `/api/leads/{id}/decision` | klinik (ejer, verificeret) | `{ decision: "accept", comment?, quotedPriceMin?, quotedPriceMax? }` eller `{ decision: "decline", reason (alle undtagen "clinic_left"), note? }` | `ClinicLeadDetailDto`; 409 hvis ikke `sent` (fx trukket tilbage). Accept af akut-lead inden for reservationen gør tiden til en booking; efter udløb bliver leadet `accepted` uden booking, og patienten booker selv |
 
-For et lead med status `withdrawn` returnerer `GET /api/leads` og `GET /api/leads/{id}` kun `id`, `status`, `sentAt` og `withdrawnAt`; øvrige felter er tomme (5.7).
+For et lead med status `withdrawn` returnerer `GET /api/leads` og `GET /api/leads/{id}` kun `id`, `status`, `sentAt` og `withdrawnAt`; øvrige felter er tomme værdier (`false`, `[]`, `null`, `0`, `""`) (5.7).
+
+Bygget i 5.1: `LeadsController` (`listForClinic`, `getForClinic`, `decide`) og `LeadsRepository`. En ikke-verificeret klinik får 403 `CLINIC_NOT_VERIFIED` på alle tre routes; ukendt eller fremmed lead giver 404, beslutning på et lead, der ikke er `sent`, 409 `LEAD_NOT_PENDING`. `GET /api/leads/{id}` sætter `seen_at` før detaljen læses. `unreadMessages` i detaljen tælles via `clinic_lead_messages()`. `ClinicBookingDto` og `BookingStatus` ligger i `lib/types/bookings.ts`, som 6.1 udvider.
 
 Patienten læser sine leads via `GET /api/cases/{id}/leads` (10.5).
 
@@ -1865,14 +1871,13 @@ Der findes ingen route til at markere et besøg gennemført; det sker automatisk
 
 ### 10.12 Beskeder
 
-Bygget for svar; tilpasses til leads.
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | GET `/api/leads/{id}/messages` | deltager | | `{ messages: MessageDto[] }` (markerer modtagne som læst). Patient: direkte læsning og `read_at`-opdatering med RLS. Klinik: `clinic_lead_messages()` og `clinic_mark_messages_read()` |
 | POST `/api/leads/{id}/messages` | deltager, lead `sent`/`accepted`/`booked` | `{ body }` (1-2000) | 201 `MessageDto`; 409 `THREAD_CLOSED` ved `declined`/`withdrawn` |
 
-`MessageDto = { id, fromMe, body, createdAt, readAt }`. Polling hvert 15. sekund på åben tråd.
+`MessageDto = { id, fromMe, senderRole, body, createdAt, readAt }` (`senderRole` viser "Klinikken", også når afsenderen er slettet). GET læser først og markerer derefter modtagne som læst, så svaret viser, hvad der var nyt; klinikken får en tom liste ved `withdrawn`. POST: 429 `MESSAGE_LIMIT` ved døgnloftet (200). Anonyme og admin får 403. Bygget i 5.2 (`MessagesController`, `MessagesRepository`, `lib/{types,schemas,constants}/messages.ts`). Polling hvert 15. sekund på åben tråd.
 
 ### 10.13 Anmeldelser
 
@@ -1917,7 +1922,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 7 | Akutvej, demodata og finpudsning | [IKKE BYGGET] |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
-**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 29 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4). De første 27 er kørt i det fælles projekt (senest `20261020000100` den 2026-10-17); `20261021000100` og `20261022000100` er endnu ikke kørt der (brugeren kører dem). Nye ændringer kommer som nye filer (2.6). Sættet:
+**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 30 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4) og `20261023000100` (trin 5). De første 27 er kørt i det fælles projekt (senest `20261020000100` den 2026-10-17); `20261021000100`, `20261022000100` og `20261023000100` er endnu ikke kørt der (brugeren kører dem). Nye ændringer kommer som nye filer (2.6). Sættet:
 
 | Fil | Indhold |
 |---|---|
@@ -1950,6 +1955,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | `20261020000100_ai_calls_service_role_only.sql` | `reserve_chat_turn(p_user_id, p_conversation_id, p_content)` og `consume_summary_generation(p_user_id, p_case_id)` kun for service role (tjekker selv ejer, kladde og samtykke; opsummering forbruger anonymes eget døgnloft); `ai_patient_usage_daily.chat_messages` (UTC-dag) erstatter det rullende døgn; `patient_user_messages_last_day()` og policyen `ai_messages_insert_own_user` droppet; nye `ai_limits`-nøgler `chat_messages_per_conversation` og `chat_message_max_chars` (5.3, 5.4, 7.6). |
 | `20261021000100_patient_lead_clinics.sql` | `patient_lead_clinics(p_case_id default null)`: navn, by, logo og `removed` for klinikker på patientens egne leads (security definer, kun `authenticated`; 10.9). **Ikke kørt i det fælles projekt endnu** |
 | `20261022000100_leads_daily_limit.sql` | Trigger `leads_daily_limit()`: højst 15 leads pr. patient på 24 timer (7.6, security trin 4). **Ikke kørt i det fælles projekt endnu** |
+| `20261023000100_messages_sender_role.sql` | `messages.sender_id` nullable med `on delete set null`, enum `message_sender_role` og kolonne `sender_role` (udledt af trigger), opdateret update-policy, `clinic_leads()`, `clinic_lead_messages()` og `clinic_mark_messages_read()` bruger `sender_role` (12.3 punkt 30). **Ikke kørt i det fælles projekt endnu** |
 
 **Nedskæring** hvis tiden ikke slår til, i denne rækkefølge: portefølje → klinikkens svar på anmeldelser → beskedtråd → kort (listen er nok) → akutvindue (akutvejen bruger almindelige tider). Skæres **aldrig**: isolation af leads og skjulte kontaktoplysninger (RLS), samtykke før chat/upload/deling, AI-reglerne (ingen priser, ingen klinikanbefaling, akut-henvisning), maks. 3 leads, ingen dobbeltbooking, "Slet min samtale" og oprydning af anonyme data.
 

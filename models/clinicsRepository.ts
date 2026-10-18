@@ -1,7 +1,7 @@
 import "server-only";
 import type { z } from "zod";
 import type { NewClinicPrice, patchClinicSchema } from "@/lib/schemas/clinics";
-import type { ClinicPriceDto, ClinicRecordDto } from "@/lib/types/clinics";
+import type { ClinicPriceDto, ClinicRecordDto, ClinicStatus } from "@/lib/types/clinics";
 import { ApiError } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
@@ -66,6 +66,15 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
       "clinics: select fejlede",
     );
     return this.requireRow(row).id;
+  }
+
+  // Status på brugerens egen klinik (null, hvis brugeren ingen har). Til controllere, der kræver `verified` (architecture 5.7).
+  async findOwnStatus(ownerId: string): Promise<ClinicStatus | null> {
+    const row = await this.run<Pick<Tables<"clinics">, "status">>(
+      this.db.from("clinics").select("status").eq("owner_id", ownerId).maybeSingle(),
+      "clinics: select fejlede",
+    );
+    return row?.status ?? null;
   }
 
   // Forhåndstjek ved klinik-signup (architecture 4.3, 5.3): true, hvis en klinik med CVR'et allerede har en ejer.

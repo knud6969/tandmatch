@@ -14,7 +14,10 @@ export class CaseImageUrlService {
     private readonly ttlSeconds: number = SIGNED_URL_TTL_SECONDS,
   ) {}
 
-  async toDtos(images: readonly CaseImageRecord[]): Promise<ImageDto[]> {
+  // Tager både patientens billedrækker og klinikkens (clinic_lead_images(), som hverken har sags-id eller størrelse).
+  async toDtos<T extends Pick<CaseImageRecord, "id" | "storagePath" | "view" | "quality" | "description">>(
+    images: readonly T[],
+  ): Promise<ImageDto[]> {
     if (images.length === 0) return [];
     const urls = await new CaseImageStorage(this.admin()).signedUrls(
       images.map((image) => image.storagePath),

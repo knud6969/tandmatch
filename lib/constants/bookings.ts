@@ -2,6 +2,9 @@
 // steder: assert_slot_bookable(), effective_booking_status(), send_leads() og mark_booking_no_show() i
 // supabase/migrations/20261012000800_bookings.sql. Ændres altid begge steder i samme commit.
 
+// Bookingens status (SQL: enum booking_status, architecture 4.2). Altid den effektive status, når den vises.
+export const BOOKING_STATUSES = ["held", "booked", "completed", "no_show", "cancelled"] as const;
+
 // Tidszonen for åbningstider og starttider (SQL: 'Europe/Copenhagen').
 export const CLINIC_TIME_ZONE = "Europe/Copenhagen";
 
