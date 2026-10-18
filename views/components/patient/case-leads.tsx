@@ -6,6 +6,7 @@ import { CASE_STATUS_LABEL, CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL, QUOTED_PRICE_LABEL, REMOVED_CLINIC_LABEL } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { PatientLeadDto } from "@/lib/types/leads";
+import { MessageThread } from "@/views/components/messages/message-thread";
 import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge, type BadgeTone } from "@/views/components/ui/badge";
@@ -31,6 +32,8 @@ const STATUS_TONE: Record<PatientLeadDto["status"], BadgeTone> = {
 
 function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: () => void }) {
   const [confirming, setConfirming] = useState(false);
+  const [threadOpen, setThreadOpen] = useState(false);
+  const [unread, setUnread] = useState(lead.unreadMessages);
   const withdraw = useAction();
   const { clinic } = lead;
 
@@ -97,6 +100,34 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
           <p className="text-sm text-ink-muted">Klinikken har ikke svaret endnu. Klinikken laver den endelige vurdering.</p>
         )}
 
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="secondary"
+            aria-expanded={threadOpen}
+            aria-controls={`beskeder-${lead.id}`}
+            onClick={() => setThreadOpen((open) => !open)}
+            className="w-full justify-between sm:w-fit"
+          >
+            <span>{threadOpen ? "Skjul beskeder" : "Beskeder"}</span>
+            {!threadOpen && unread > 0 && (
+              <span className="rounded-pill bg-brand-600 px-2 py-0.5 text-sm text-on-brand" data-testid="ulaeste">
+                {unread} ulæst{unread === 1 ? "" : "e"}
+              </span>
+            )}
+          </Button>
+          {threadOpen && (
+            <div id={`beskeder-${lead.id}`}>
+              <MessageThread
+                leadId={lead.id}
+                viewer="patient"
+                closed={lead.status === "declined" || lead.status === "withdrawn"}
+                onRead={() => setUnread(0)}
+                hint="Klinikken kan læse dine beskeder. Skriv ikke andet end det, der hjælper klinikken med at vurdere din sag."
+              />
+            </div>
+          )}
+        </div>
+
         <StatusMessage message={withdraw.message} />
 
         {lead.status === "sent" &&
@@ -121,7 +152,7 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
   );
 }
 
-// Sagen med dens leads (architecture 6.2, 10.9). Booking, beskeder og "Luk sag" kommer med trin 5-6.
+// Sagen med dens leads (architecture 6.2, 10.9). Booking og "Luk sag" kommer med trin 6.
 export function CaseLeads({ caseId }: { caseId: string }) {
   const loader = useCallback(() => loadCaseSelection(caseId), [caseId]);
   const { data, loading, error, errorCode, reload } = useLoad(loader);

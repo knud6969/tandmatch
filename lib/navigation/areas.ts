@@ -13,7 +13,7 @@ export const AREA_HOME: Record<Role, string> = {
 export const AREA_NAV: Record<Role, NavItem[]> = {
   patient: [{ href: "/patient", label: "Mine sager" }],
   clinic: [
-    { href: "/klinik", label: "Oversigt" },
+    { href: "/klinik", label: "Henvendelser" },
     { href: "/klinik/profil", label: "Profil" },
     { href: "/klinik/prisliste", label: "Prisliste" },
     { href: "/klinik/aabningstider", label: "Åbningstider" },

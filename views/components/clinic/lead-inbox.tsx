@@ -1,0 +1,106 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { CLINIC_LEAD_STATUS_LABEL, CLINIC_LEAD_STATUS_ORDER, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
+import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/types/leads";
+import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/views/components/clinic/lead-facts";
+import { Alert } from "@/views/components/ui/alert";
+import { FilterChips } from "@/views/components/ui/filter-chips";
+import { LoadState } from "@/views/components/ui/load-state";
+import { apiRequest } from "@/views/utils/api-client";
+import { formatDateTime } from "@/views/utils/format";
+import { useLoad } from "@/views/utils/use-load";
+
+type Filter = LeadStatus | "all";
+
+const loadLeads = async () => (await apiRequest<{ leads: ClinicLeadListItemDto[] }>("/api/leads")).leads;
+
+// Nye først: status i fast rækkefølge (venter på svar øverst), derefter nyeste først.
+function sortLeads(leads: ClinicLeadListItemDto[]): ClinicLeadListItemDto[] {
+  return [...leads].sort((a, b) => {
+    const byStatus = CLINIC_LEAD_STATUS_ORDER.indexOf(a.status) - CLINIC_LEAD_STATUS_ORDER.indexOf(b.status);
+    return byStatus !== 0 ? byStatus : b.sentAt.localeCompare(a.sentAt);
+  });
+}
+
+function LeadRow({ lead }: { lead: ClinicLeadListItemDto }) {
+  const withdrawn = lead.status === "withdrawn";
+  const title = withdrawn ? "Henvendelse" : lead.serviceNames.join(", ") || "Henvendelse";
+  const facts = withdrawn
+    ? []
+    : [leadAreaText(lead), leadDistanceText(lead), leadTimeText(lead), leadImagesText(lead.imageCount)].filter(
+        (value): value is string => Boolean(value),
+      );
+
+  return (
+    <li>
+      <Link
+        href={`/klinik/lead/${lead.id}`}
+        data-testid="lead-raekke"
+        className="flex min-h-12 flex-col gap-2 rounded-card border border-line bg-surface p-4 no-underline shadow-card transition-colors hover:border-brand-400 sm:p-5"
+      >
+        <LeadBadges lead={lead} />
+        <span className="text-lg font-semibold leading-snug text-ink">{title}</span>
+        {withdrawn ? (
+          <span className="text-base text-ink-muted">{WITHDRAWN_LEAD_TEXT}</span>
+        ) : (
+          facts.length > 0 && <span className="text-base text-ink-muted">{facts.join(" · ")}</span>
+        )}
+        <span className="text-sm text-ink-muted">Modtaget {formatDateTime(lead.sentAt)}</span>
+      </Link>
+    </li>
+  );
+}
+
+// Klinikkens indbakke (architecture 6.3): henvendelser, nye først, med filter på status. En klinik, der ikke er verificeret,
+// får en forklaring i stedet for en fejl.
+export function LeadInbox() {
+  const { data, error, errorCode, loading, reload } = useLoad(loadLeads);
+  const [filter, setFilter] = useState<Filter | null>(null);
+
+  if (errorCode === "CLINIC_NOT_VERIFIED") {
+    return (
+      <Alert tone="warning" title="Indbakken åbner, når klinikken er verificeret">
+        <p>
+          Patienter kan først sende henvendelser til jer, når TandMatch har verificeret klinikken. Sæt gerne profil, prisliste,
+          åbningstider og tandlæger op imens.
+        </p>
+      </Alert>
+    );
+  }
+  if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
+
+  const sorted = sortLeads(data);
+  const count = (status: LeadStatus) => sorted.filter((lead) => lead.status === status).length;
+  // Står der noget og venter, vises det først; ellers alle.
+  const active: Filter = filter ?? (count("sent") > 0 ? "sent" : "all");
+  const shown = active === "all" ? sorted : sorted.filter((lead) => lead.status === active);
+  const options = [
+    { value: "sent", label: `Nye (${count("sent")})` },
+    { value: "accepted", label: `${CLINIC_LEAD_STATUS_LABEL.accepted} (${count("accepted")})` },
+    { value: "booked", label: `${CLINIC_LEAD_STATUS_LABEL.booked} (${count("booked")})` },
+    { value: "declined", label: `${CLINIC_LEAD_STATUS_LABEL.declined} (${count("declined")})` },
+    { value: "withdrawn", label: `${CLINIC_LEAD_STATUS_LABEL.withdrawn} (${count("withdrawn")})` },
+    { value: "all", label: `Alle (${sorted.length})` },
+  ] as const;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <FilterChips label="Vis henvendelser" options={options} value={active} onChange={setFilter} />
+      {shown.length === 0 ? (
+        <p className="text-base text-ink-muted" data-testid="ingen-henvendelser">
+          {sorted.length === 0
+            ? "Der er ingen henvendelser endnu. Når en patient kontakter jer, dukker den op her."
+            : "Ingen henvendelser med den status."}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3" aria-label="Henvendelser">
+          {shown.map((lead) => (
+            <LeadRow key={lead.id} lead={lead} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

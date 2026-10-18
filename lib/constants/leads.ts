@@ -30,3 +30,17 @@ export const LEAD_DECLINE_REASON_LABEL = {
 export const REMOVED_CLINIC_LABEL = "Klinikken er ikke længere på TandMatch";
 // Teksten under prisen på leadkortet, når klinikken har præciseret prisen efter at have set sagen.
 export const QUOTED_PRICE_LABEL = "Klinikkens pris efter at have set din sag";
+
+// Klinikkens indbakke (architecture 6.3): statusnavne set fra klinikken og filtrene, nye først.
+export const CLINIC_LEAD_STATUS_LABEL = {
+  sent: "Venter på dit svar",
+  accepted: "Accepteret",
+  declined: "Afvist",
+  booked: "Tid booket",
+  withdrawn: "Trukket tilbage",
+} as const satisfies Record<(typeof LEAD_STATUSES)[number], string>;
+
+// Rækkefølgen i indbakken: leads, der venter på svar, øverst.
+export const CLINIC_LEAD_STATUS_ORDER = ["sent", "accepted", "booked", "declined", "withdrawn"] as const satisfies readonly (typeof LEAD_STATUSES)[number][];
+
+export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";

@@ -48,7 +48,7 @@ function stepsFor(clinic: OwnClinicDto): Step[] {
   ];
 }
 
-// Midlertidig forside for klinikken (leads-indbakken bygges i trin 5): status og hvad der mangler.
+// Klinikkens status og hvad der mangler i opsætningen (indbakken står over den på /klinik).
 export function ClinicOverview() {
   const { data, error, loading, reload } = useLoad(loadClinic);
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
