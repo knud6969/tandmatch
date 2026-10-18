@@ -1174,7 +1174,7 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 | `/patient/sag/[caseId]` | Sagen: hvert lead med klinik, status, klinikkens kommentar, præciseret pris og listepris, "Træk tilbage" ved ubesvaret lead, "Book tid" ved accepteret lead, beskedtråd pr. lead (åben fra afsendelse), "Kontakt flere klinikker" (når `canSendCase` tillader det) og "Luk sag". Bygget i 4.3: leads, "Træk tilbage" og "Kontakt flere klinikker"; i 5.3: beskedtråd pr. lead; i 5.5: klinikkens afvisningsnote under årsagen. "Book tid" (trin 6) og "Luk sag" er [IKKE BYGGET] |
 | `/patient/sag/[caseId]/book/[leadId]` | Vælg ydelse (blandt sagens bekræftede), vælg ledig tid, indtast fulde navn og telefon (forudfyldt), book. Tider vises pr. dag (6 ad gangen på mobil, "Vis flere tider"), bladring 14 dage ad gangen inden for bookinghorisonten; ved `SLOT_TAKEN`/`SLOT_UNAVAILABLE` hentes tiderne igen. Link "Book tid" fra det accepterede lead på sagen. Bygget i 6.3 |
 | `/patient/bookinger` | Kommende og tidligere bookinger; aflys før starttid (med bekræftelse). Punktet "Bookinger" i patientens navigation. Bygget i 6.3 |
-| `/patient/anmeldelser`, `/patient/anmeld/[bookingId]` | Gennemførte bookinger, der kan anmeldes, mine anmeldelser; anmeldelsesformular |
+| `/patient/anmeldelser`, `/patient/anmeld/[bookingId]` | Gennemførte bookinger, der kan anmeldes, mine anmeldelser; anmeldelsesformular. Bygget i 6.5: `/patient/anmeldelser` viser besøg med "Skriv anmeldelse" og egne anmeldelser med status ("Afventer godkendelse", "Offentliggjort", "Afvist" med begrundelse) og klinikkens godkendte svar; formularen (stjerner som radioknapper på 48 px, tegntæller, prisnøjagtighed, valgfri faktisk pris, gennemsigtighed) viser prisoverslaget og en moderationsnote, og et ukendt eller ikke-anmeldbart `bookingId` giver en venlig besked. "Skriv anmeldelse" står også på bookingen (bookingoversigten og sagens lead). Punktet "Anmeldelser" i navigationen |
 | `/patient/samtykker` | Samtykker, tilbagetrækning, dataeksport |
 | `/patient/konto` | Profil (navn, postnummer, telefon), slet konto |
 
@@ -1191,7 +1191,7 @@ En `registered` klinik ser et banner "Afventer verificering" og kan sætte alt o
 | `/klinik/prisliste` | To trin på samme side: (1) klinikken krydser de kategorier af, den arbejder med (fravalg af en kategori med priser kræver bekræftelse, fordi priserne slettes); (2) under hver valgt kategori vises dens behandlinger med beskrivelse; klinikken krydser dem af, den tilbyder, og skriver prisinterval (fra-til), varighed (forudfyldt med standardvarighed) og evt. note. Hjælpetekst: tom "Pris til" betyder en fast pris. Ingen prisforslag (12.4) |
 | `/klinik/aabningstider` | Ugeskema og akutvinduer |
 | `/klinik/tandlaeger` | Tandlæger og deres portefølje (upload med bekræftelse af patientens samtykke) |
-| `/klinik/anmeldelser` | Godkendte anmeldelser + offentligt svar |
+| `/klinik/anmeldelser` | Godkendte anmeldelser + offentligt svar. Bygget i 6.5: anmeldelser med stjerner, tekst, prisnøjagtighed og måned; svarformular, når `replyStatus` er `null`; eget svar med status; punktet "Anmeldelser" i navigationen |
 
 ### 6.4 Admin (`/admin`, rolle `admin`)
 

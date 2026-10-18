@@ -4,9 +4,10 @@ import { useState } from "react";
 import { BOOKING_STATUS_LABEL } from "@/lib/constants/bookings";
 import type { PatientBookingDto } from "@/lib/types/bookings";
 import { Badge } from "@/views/components/ui/badge";
-import { Button } from "@/views/components/ui/button";
+import { Button, LinkButton } from "@/views/components/ui/button";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
+import { reviewHref } from "@/views/utils/case-links";
 import { BOOKING_STATUS_TONE } from "@/views/utils/booking-status";
 import { formatDateTime, formatShortDateTime } from "@/views/utils/format";
 import { useAction } from "@/views/utils/use-action";
@@ -51,6 +52,14 @@ export function BookingSummary({
         </p>
       )}
       <StatusMessage message={cancel.message} />
+      {booking.canReview && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm text-ink-muted">Besøget er gennemført. Fortæl andre patienter, hvordan det gik.</p>
+          <LinkButton href={reviewHref(booking.id)} className="w-full sm:w-fit">
+            Skriv anmeldelse<span className="sr-only"> af {booking.clinic.name}</span>
+          </LinkButton>
+        </div>
+      )}
       {booking.canCancel &&
         (confirming ? (
           <div className="flex flex-col gap-2 sm:flex-row" role="group" aria-label="Bekræft aflysning">

@@ -74,6 +74,9 @@ const MESSAGES: Record<string, string> = {
   LEAD_NOT_ACCEPTED: "Klinikken har ikke accepteret din henvendelse, så du kan ikke booke endnu. Genindlæs siden for at se status.",
   BOOKING_NOT_CANCELLABLE: "Bookingen kan ikke aflyses længere. Genindlæs siden for at se den nyeste status.",
   NO_SHOW_WINDOW_CLOSED: "Udeblivelse kan kun registreres fra starttidspunktet og op til 24 timer efter, at tiden er slut.",
+  REVIEW_NOT_ALLOWED: "Du kan ikke anmelde dette besøg. Du kan først anmelde, når der er gået 24 timer efter tiden, og kun hvis besøget er gennemført.",
+  ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",
+  ALREADY_REPLIED: "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 

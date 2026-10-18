@@ -17,3 +17,6 @@ export const caseDirectoryHref = (caseId: string) => `/klinikker?sag=${caseId}`;
 // Patientens booking af et accepteret lead og oversigten over alle bookinger (architecture 6.2).
 export const bookHref = (caseId: string, leadId: string) => `/patient/sag/${caseId}/book/${leadId}`;
 export const BOOKINGS_HREF = "/patient/bookinger";
+// Patientens anmeldelser og formularen til et besøg (architecture 6.2).
+export const REVIEWS_HREF = "/patient/anmeldelser";
+export const reviewHref = (bookingId: string) => `/patient/anmeld/${bookingId}`;

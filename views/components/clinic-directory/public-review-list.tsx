@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { MIN_REVIEWS_FOR_PRICE_ACCURACY, PRICE_ACCURACY_LABEL } from "@/lib/constants/reviews";
 import type { PublicReviewDto, PublicReviewsDto } from "@/lib/types/reviews";
 import { Badge } from "@/views/components/ui/badge";
@@ -10,31 +10,46 @@ import { apiRequest } from "@/views/utils/api-client";
 import { formatKr, formatMonth, formatPercent } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
-function ReviewItem({ review }: { review: PublicReviewDto }) {
+// Indholdet i en anmeldelse (stjerner, tekst, prisnøjagtighed og gennemsigtighed). Genbruges af patientens og klinikkens visning.
+export function ReviewDetails({ review, badge }: { review: PublicReviewDto; badge?: ReactNode }) {
   return (
-    <li className="flex flex-col gap-2 rounded-card border border-line p-4">
+    <>
       <div className="flex flex-wrap items-center gap-2">
         <Stars stars={review.stars} />
         <Badge tone="brand">Verificeret besøg</Badge>
+        {badge}
         <span className="text-sm text-ink-muted">{formatMonth(review.createdMonth)}</span>
       </div>
-      <p className="whitespace-pre-line text-base leading-relaxed text-ink">{review.text}</p>
+      <p className="whitespace-pre-line break-words text-base leading-relaxed text-ink">{review.text}</p>
       <p className="text-sm text-ink-muted">
         <span className="font-semibold text-ink">Svarede prisen til prisoverslaget?</span> {PRICE_ACCURACY_LABEL[review.priceAccuracy]}
         {review.actualPrice !== null && <> · Faktisk pris: {formatKr(review.actualPrice)}</>}
       </p>
       {review.lackedTransparency && (
-        <p className="text-sm text-ink-muted">
+        <p className="break-words text-sm text-ink-muted">
           <span className="font-semibold text-ink">Manglede gennemsigtighed om prisen.</span>
           {review.transparencyComment && ` ${review.transparencyComment}`}
         </p>
       )}
-      {review.reply && (
-        <div className="rounded-control bg-surface-muted p-3">
-          <p className="text-sm font-semibold text-ink">Svar fra klinikken</p>
-          <p className="whitespace-pre-line text-base text-ink">{review.reply.text}</p>
-        </div>
-      )}
+    </>
+  );
+}
+
+// Klinikkens offentlige svar under en anmeldelse.
+export function ReviewReply({ text }: { text: string }) {
+  return (
+    <div className="rounded-control bg-surface-muted p-3" data-testid="klinik-svar">
+      <p className="text-sm font-semibold text-ink">Svar fra klinikken</p>
+      <p className="whitespace-pre-line break-words text-base text-ink">{text}</p>
+    </div>
+  );
+}
+
+function ReviewItem({ review }: { review: PublicReviewDto }) {
+  return (
+    <li className="flex flex-col gap-2 rounded-card border border-line p-4" data-testid="offentlig-anmeldelse">
+      <ReviewDetails review={review} />
+      {review.reply && <ReviewReply text={review.reply.text} />}
     </li>
   );
 }
