@@ -174,6 +174,8 @@ Ikke med i 5.5: kort opsummering i indbakkerækken (review, forslag), listepris 
 
 ## Trin 6: Booking i klinikkens kalender og anmeldelser efter besøget
 
+Status: i gang på `feat/omlaegning-trin-6` (fra trin 5, 2026-10-18).
+
 | # | Agent | Opgave | Filer | Udgangspunkt i git | Færdig når |
 |---|---|---|---|---|---|
 | 6.1 | backend | **Booking** | **Opret** `lib/types/bookings.ts`, `lib/schemas/bookings.ts`, `lib/domain/bookings.ts` (`canCancel`, `canMarkNoShow`), `models/bookingsRepository.ts`, `controllers/bookingsController.ts`, `app/api/leads/[id]/{availability,booking}/route.ts`, `app/api/bookings/{route,[id]/cancel/route,[id]/no-show/route}.ts`, `app/api/cron/complete-bookings/route.ts`. **Ændr** `controllers/cronController.ts`, `controllers/patientsController.ts`, `models/patientsRepository.ts`, `lib/types/patients.ts`, `lib/schemas/patients.ts` (telefon) (10.10) | `app/api/cron/cleanup-anonymous/route.ts` (cron-mønster) | Booking kun på accepteret lead; `SLOT_TAKEN` ved overlap; klinikken ser navn, telefon og e-mail kun ved `booked`/`completed`; `no_show` kun fra starttid til 24 timer efter sluttid; derefter er bookingen gennemført uden handling fra klinikken; cron-route kører `complete_due_bookings()`; `GET/PATCH /api/patients/me` har `phone`; dataeksporten indeholder `bookings`; API-test af en ikke-udløbet `held`-booking gennem API'et (architecture 12.3 punkt 32) |
