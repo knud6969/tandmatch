@@ -5,10 +5,10 @@ import { isActiveLead } from "@/lib/domain/leads";
 import { MESSAGE_MAX_PER_DAY } from "@/lib/constants/limits";
 import type { sendMessageSchema } from "@/lib/schemas/messages";
 import type { MessageDto, MessageSenderRole } from "@/lib/types/messages";
-import { messageLimit, threadClosed } from "@/middleware/http";
+import { forbidden, messageLimit, threadClosed } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { LeadsRepository } from "@/models/leadsRepository";
-import { MessagesRepository } from "@/models/messagesRepository";
+import { MessageRejectedError, MessagesRepository } from "@/models/messagesRepository";
 
 type SendMessageInput = z.infer<typeof sendMessageSchema>;
 
@@ -30,9 +30,11 @@ export class MessagesController {
     this.leads = deps.leads ?? new LeadsRepository(supabase);
   }
 
-  // Deltagerens rolle i tråden. Routen har afvist anonyme og andre roller end patient og klinik (requireRole).
+  // Deltagerens rolle i tråden: kun patient og klinik; alle andre får 403 (routen afviser dem også via requireRole).
   private get role(): MessageSenderRole {
-    return this.session.role as MessageSenderRole;
+    const { role } = this.session;
+    if (role !== "patient" && role !== "clinic") throw forbidden();
+    return role;
   }
 
   // Trådens beskeder. Beskeder fra den anden part markeres som læst efter læsningen, så svaret viser, hvad der var nyt.
@@ -50,6 +52,12 @@ export class MessagesController {
     const status = await this.leads.requireStatus(leadId, role);
     if (!isActiveLead(status)) throw threadClosed();
     if ((await this.messages.sentLastDay()) >= MESSAGE_MAX_PER_DAY) throw messageLimit();
-    return this.messages.create(role, leadId, this.session.userId, input.body);
+    try {
+      return await this.messages.create(role, leadId, this.session.userId, input.body);
+    } catch (error) {
+      if (!(error instanceof MessageRejectedError)) throw error;
+      // RLS afviste indsættelsen efter tjekkene ovenfor: tråden blev lukket, eller døgnloftet blev nået i mellemtiden.
+      throw isActiveLead(await this.leads.requireStatus(leadId, role)) ? messageLimit() : threadClosed();
+    }
   }
 }

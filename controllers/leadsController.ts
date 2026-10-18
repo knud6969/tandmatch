@@ -9,7 +9,6 @@ import { CasesRepository } from "@/models/casesRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 import { lazyAdminClient } from "@/models/db/admin";
 import { LeadsRepository } from "@/models/leadsRepository";
-import { MessagesRepository } from "@/models/messagesRepository";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";
 
 type SendLeadsInput = z.infer<typeof sendLeadsSchema>;
@@ -20,7 +19,6 @@ export type LeadsDeps = {
   leads: LeadsRepository;
   cases: CasesRepository;
   clinics: ClinicsRepository;
-  messages: MessagesRepository;
   imageUrls: CaseImageUrlService;
   admin: () => SupabaseClient;
 };
@@ -34,7 +32,6 @@ export class LeadsController {
   private readonly leads: LeadsRepository;
   private readonly cases: CasesRepository;
   private readonly clinics: ClinicsRepository;
-  private readonly messages: MessagesRepository;
   private readonly imageUrls: CaseImageUrlService;
 
   constructor(
@@ -45,7 +42,6 @@ export class LeadsController {
     this.leads = deps.leads ?? new LeadsRepository(supabase);
     this.cases = deps.cases ?? new CasesRepository(supabase);
     this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
-    this.messages = deps.messages ?? new MessagesRepository(supabase);
     // 2.3 (e): signering af billed-URL'er efter en RLS-beskyttet læsning (clinic_lead_images()). Klienten oprettes først ved brug.
     this.imageUrls = deps.imageUrls ?? new CaseImageUrlService(deps.admin ?? lazyAdminClient());
   }
@@ -98,7 +94,7 @@ export class LeadsController {
     if ((await this.clinics.findOwnStatus(this.session.userId)) !== "verified") throw clinicNotVerified();
   }
 
-  // Detaljen med signerede billeder og ulæste beskeder. Et tilbagetrukket lead har hverken billeder eller beskeder (5.7).
+  // Detaljen med signerede billeder. Et tilbagetrukket lead har hverken billeder eller beskeder (5.7).
   private async clinicDetail(leadId: string): Promise<ClinicLeadDetailDto> {
     const detail = await this.leads.requireClinicDetail(leadId);
     if (detail.status === "withdrawn") return { ...detail, images: [] };
@@ -107,7 +103,6 @@ export class LeadsController {
     return {
       ...detail,
       images: signed.map((image, i) => ({ ...image, approvedDescription: records[i].description })),
-      unreadMessages: await this.messages.countUnreadForClinic(leadId, detail.status),
     };
   }
 }

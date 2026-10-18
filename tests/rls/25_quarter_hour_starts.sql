@@ -27,7 +27,7 @@ select tt.denied(format('select public.send_leads(%L, array[%L]::uuid[], %L, %L,
                  'send_leads afviser akuttid 18:15:30', 'SLOT_UNAVAILABLE');
 select tt.as_postgres();
 select tt.eq((select count(*) from public.leads where case_id in (tt.id('Q_e1'), tt.id('Q_e2')))::int, 0, 'afviste send_leads efterlod ingen leads');
-select tt.eq((select count(*) from public.bookings)::int, 0, 'ingen bookinger oprettet');
+select tt.eq((select count(*) from public.bookings where clinic_id in (select tt.cid(n.name) from tt.clinic_names n))::int, 0, 'ingen bookinger oprettet');
 
 -- Hele kvarterer lykkes (kontrol)
 select tt.as_user(tt.id('pA'));

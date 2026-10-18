@@ -7,8 +7,8 @@ import {
   MESSAGE_POLL_INTERVAL_MS,
   OWN_SENDER_LABEL,
   PATIENT_SENDER_LABEL,
-  THREAD_CLOSED_TEXT,
 } from "@/lib/constants/messages";
+import { THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
 import type { MessageDto } from "@/lib/types/messages";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";

@@ -5,7 +5,7 @@ import { ANONYMOUS_SESSION_HOURS } from "@/lib/constants/sessions";
 import { createSupabaseServerClient } from "@/models/db/supabase";
 import { AuthRepository } from "@/models/authRepository";
 import { ProfilesRepository } from "@/models/profilesRepository";
-import { ApiError, anonymousNotAllowed, unauthenticated } from "@/middleware/http";
+import { ApiError, anonymousNotAllowed, forbidden, unauthenticated } from "@/middleware/http";
 import type { Role } from "@/lib/types/common";
 
 export type Session = {
@@ -84,7 +84,7 @@ export async function requireRole(
 ): Promise<Session> {
   const session = await requireSession(options.ctx);
   if (!(Array.isArray(role) ? role : [role]).includes(session.role)) {
-    throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
+    throw forbidden();
   }
   if (session.isAnonymous && !options.allowAnonymous) {
     throw anonymousNotAllowed();

@@ -9,4 +9,3 @@ export const CLINIC_SENDER_LABEL = "Klinikken";
 export const MESSAGE_POLL_INTERVAL_MS = 15_000;
 export const PATIENT_SENDER_LABEL = "Patienten";
 export const OWN_SENDER_LABEL = "Dig";
-export { THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";

@@ -111,9 +111,9 @@ select public.admin_set_clinic_status(tt.cid(n.name), 'verified')
 
 -- Åbningstider: alle ugens dage 08-17 (almindelig) og 17-20 (akutvindue)
 insert into public.clinic_opening_hours (clinic_id, weekday, opens_at, closes_at, is_emergency)
-select c.id, d, '08:00'::time, '17:00'::time, false from public.clinics c, generate_series(1, 7) d
+select c.id, d, '08:00'::time, '17:00'::time, false from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__'
 union all
-select c.id, d, '17:00'::time, '20:00'::time, true from public.clinics c, generate_series(1, 7) d;
+select c.id, d, '17:00'::time, '20:00'::time, true from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__';
 
 -- Klinikkernes importstatus: fixtureklinikkerne er (overtagne) importerede (import_source sat), så sletning af
 -- ejeren bevarer grunddata. Tests af selvoprettede klinikker nulstiller import_source selv.
@@ -121,13 +121,13 @@ update public.clinics set import_source = 'seed' where cvr like '100000__';
 
 -- Valgte kategorier (kræves af prisreglen): forebyggelse og akut
 insert into public.clinic_service_groups (clinic_id, group_id)
-select c.id, g.id from public.clinics c, public.service_groups g where g.slug in ('forebyggelse', 'akut');
+select c.id, g.id from public.clinics c, public.service_groups g where g.slug in ('forebyggelse', 'akut') and c.cvr like '100000__';
 
 -- Prislister
 insert into public.clinic_prices (clinic_id, service_id, price_min, price_max, duration_min)
-select c.id, tt.svc('undersoegelse'), 500, 800, 30 from public.clinics c
+select c.id, tt.svc('undersoegelse'), 500, 800, 30 from public.clinics c where c.cvr like '100000__'
 union all
-select c.id, tt.svc('akut_konsultation'), 900, 1200, 30 from public.clinics c;
+select c.id, tt.svc('akut_konsultation'), 900, 1200, 30 from public.clinics c where c.cvr like '100000__';
 
 -- Tandlæger og portefølje (kun X, R og I; pladsholdere)
 insert into public.clinic_dentists (id, clinic_id, full_name, title)

@@ -168,6 +168,9 @@ export const notFound = () => new ApiError(404, "NOT_FOUND", "Fandt ikke det øn
 
 export const unauthenticated = () => new ApiError(401, "UNAUTHENTICATED", "Du skal være logget ind.");
 
+// Rollen eller handlingen er ikke tilladt for den indloggede.
+export const forbidden = () => new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
+
 export const anonymousNotAllowed = () =>
   new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");
 

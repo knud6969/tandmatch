@@ -70,7 +70,7 @@ type ClinicLeadListRow = {
   withdrawn_at: string | null;
   unread_messages: number | null;
 };
-type ClinicLeadDetailRow = Omit<ClinicLeadListRow, "service_names" | "unread_messages"> & {
+type ClinicLeadDetailRow = Omit<ClinicLeadListRow, "service_names"> & {
   services: ClinicLeadServiceDto[] | null;
   summary_text: string | null;
   summary_ai_assisted: boolean | null;
@@ -106,7 +106,7 @@ type ClinicLeadImageRecord = {
   description: string | null;
 };
 
-// Detaljen uden billeder; de signeres af controlleren. `unreadMessages` er 0 og sættes af controlleren (MessagesRepository).
+// Detaljen uden billeder; de signeres af controlleren. `unreadMessages` kommer fra clinic_lead_detail().
 type ClinicLeadDetailRecord = Omit<ClinicLeadDetailDto, "images">;
 
 // Klinikken bag et lead, som patient_lead_clinics() returnerer den (kun navn, by, logo og removed).
@@ -355,14 +355,13 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
   }
 
   // Leadet, som klinikken ser det (clinic_lead_detail). Fremmed lead giver tom liste, altså 404. Kontaktfelter og
-  // booking følger databasens regel (5.5). Billeder og ulæste beskeder lægges på af controlleren.
+  // booking følger databasens regel (5.5). Billeder lægges på af controlleren.
   async requireClinicDetail(leadId: string): Promise<ClinicLeadDetailRecord> {
     const rows = await this.rpc<ClinicLeadDetailRow[]>("clinic_lead_detail", { p_lead_id: leadId });
     const row = this.requireRow(rows?.[0]);
     const services = row.services ?? [];
     return {
-      // unreadMessages er 0 her; controlleren sætter det rigtige tal (MessagesRepository).
-      ...this.toClinicListItem({ ...row, service_names: services.map((service) => service.name), unread_messages: 0 }),
+      ...this.toClinicListItem({ ...row, service_names: services.map((service) => service.name) }),
       services,
       summaryText: row.summary_text ?? "",
       summaryAiAssisted: row.summary_ai_assisted ?? false,

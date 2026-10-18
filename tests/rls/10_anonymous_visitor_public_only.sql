@@ -49,7 +49,9 @@ select tt.ok(tt.vis('select 1 from public.postal_codes') > 0, 'anon kan læse po
 select tt.ok(tt.vis('select 1 from public.consent_text_versions') > 0, 'anon kan læse samtykketekster');
 
 -- public_clinics(): kun verificerede (fulde felter) og importerede uden ejer; registered er usynlig (H1)
-create temp table pc as select * from public.public_clinics(array[tt.svc('undersoegelse')]);
+-- Kun fixturklinikkerne: køres testen oven på seed:demo, findes der også demoklinikker.
+create temp table pc as select p.* from public.public_clinics(array[tt.svc('undersoegelse')]) p
+ where p.id in (select tt.cid(n.name) from tt.clinic_names n);
 select tt.eq((select count(*) from pc)::int, 11, 'public_clinics() viser 10 verificerede og 1 importeret (R og A6 er registered)');
 select tt.eq((select count(*) from pc where status = 'verified')::int, 10, 'public_clinics(): 10 verificerede (A6 er nu registered)');
 select tt.eq((select count(*) from pc where status = 'imported')::int, 1, 'public_clinics(): kun I er importeret; ingen registered maskeres');
