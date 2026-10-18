@@ -15,6 +15,7 @@ export const AREA_NAV: Record<Role, NavItem[]> = {
     { href: "/patient", label: "Mine sager" },
     { href: "/patient/bookinger", label: "Bookinger" },
     { href: "/patient/anmeldelser", label: "Anmeldelser" },
+    { href: "/patient/konto", label: "Konto" },
   ],
   clinic: [
     { href: "/klinik", label: "Henvendelser" },
@@ -26,4 +27,9 @@ export const AREA_NAV: Record<Role, NavItem[]> = {
     { href: "/klinik/tandlaeger", label: "Tandlæger" },
   ],
   admin: [],
+};
+
+// Sider, der hører under et andet navigationspunkt (samtykkesiden nås fra kontosiden, architecture 6.2).
+export const AREA_NAV_PARENT: Record<string, string> = {
+  "/patient/samtykker": "/patient/konto",
 };

@@ -6,9 +6,9 @@ import { useState } from "react";
 import { useSession } from "@/views/components/session/session-provider";
 import { Button, LinkButton } from "@/views/components/ui/button";
 import { apiRequest } from "@/views/utils/api-client";
-import { AREA_NAV } from "@/lib/navigation/areas";
+import { AreaTabs } from "@/views/components/layout/area-tabs";
+import { AREA_NAV, AREA_NAV_PARENT } from "@/lib/navigation/areas";
 import { CHAT_HREF, DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
-import { cx } from "@/views/components/ui/cx";
 
 // Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
 export function SiteHeader() {
@@ -21,9 +21,10 @@ export function SiteHeader() {
   // Anonyme patienter har ingen områdenavigation: områderne kræver konto (architecture 6.5).
   const areaNav = me && !me.isAnonymous ? AREA_NAV[me.role] : [];
   // Den længste matchende sti er aktiv, så fx /patient/sag/... markerer "Mine sager".
+  const navPath = AREA_NAV_PARENT[pathname] ?? pathname;
   const activeHref = areaNav
     .map((item) => item.href)
-    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .filter((href) => navPath === href || navPath.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
 
   async function logout() {
@@ -120,36 +121,7 @@ export function SiteHeader() {
         </div>
       )}
 
-      {areaNav.length > 0 && (
-        <nav aria-label="Områdenavigation" className="relative border-t border-line">
-          <ul className="mx-auto flex max-w-wide gap-1 overflow-x-auto px-2 sm:px-4">
-            {areaNav.map((item) => {
-              const active = item.href === activeHref;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cx(
-                      "flex min-h-12 items-center whitespace-nowrap border-b-[3px] px-3 text-base font-semibold no-underline",
-                      active
-                        ? "border-brand-600 text-brand-800"
-                        : "border-transparent text-ink-muted hover:text-ink",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {/* Fade i højre kant på skærme under xl; skjules fra xl, hvor alle faner har plads. */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface to-transparent xl:hidden"
-          />
-        </nav>
-      )}
+      {areaNav.length > 0 && <AreaTabs items={areaNav} activeHref={activeHref} />}
     </header>
   );
 }
