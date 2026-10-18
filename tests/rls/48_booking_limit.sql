@@ -45,6 +45,32 @@ select tt.as_user(tt.id('pB'));
 select tt.allowed(format('select public.book_slot(%L, %L, %L, %L, %L)', tt.lead('SB', 'X'), tt.svc('undersoegelse'), tt.slot(3, 15), 'Bo Test', '+45 87654321'),
                   'en anden patients lead er upåvirket');
 
+-- Bookinger aflyst af klinikken tæller ikke (migration 20261028000100): 5 klinik-aflysninger, og patienten kan stadig booke
+select tt.as_postgres();
+select tt.mk_case('pB', 'L_c');
+select tt.mk_lead('L_c', 'X', 'accepted');
+select tt.mk_booking(tt.lead('L_c', 'X'), 'undersoegelse', now() - interval '20 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_c', 'X'), 'undersoegelse', now() - interval '19 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_c', 'X'), 'undersoegelse', now() - interval '18 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_c', 'X'), 'undersoegelse', now() - interval '17 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_c', 'X'), 'undersoegelse', now() - interval '16 days', 'cancelled');
+update public.bookings set cancelled_by = 'clinic' where lead_id = tt.lead('L_c', 'X');
+select tt.as_user(tt.id('pB'));
+select tt.allowed(format('select public.book_slot(%L, %L, %L, %L, %L)', tt.lead('L_c', 'X'), tt.svc('undersoegelse'), tt.slot(5, 10), 'Bo Test', '+45 87654321'),
+                  'efter fem klinik-aflysninger kan patienten booke igen');
+-- ... men fem patient-aflysninger giver BOOKING_LIMIT
+select tt.as_postgres();
+select tt.mk_case('pB', 'L_d');
+select tt.mk_lead('L_d', 'X', 'accepted');
+select tt.mk_booking(tt.lead('L_d', 'X'), 'undersoegelse', now() - interval '20 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_d', 'X'), 'undersoegelse', now() - interval '19 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_d', 'X'), 'undersoegelse', now() - interval '18 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_d', 'X'), 'undersoegelse', now() - interval '17 days', 'cancelled');
+select tt.mk_booking(tt.lead('L_d', 'X'), 'undersoegelse', now() - interval '16 days', 'cancelled');
+select tt.as_user(tt.id('pB'));
+select tt.denied(format('select public.book_slot(%L, %L, %L, %L, %L)', tt.lead('L_d', 'X'), tt.svc('undersoegelse'), tt.slot(5, 12), 'Bo Test', '+45 87654321'),
+                 'efter fem patient-aflysninger afvises', 'BOOKING_LIMIT');
+
 -- Tilladelserne er uændrede
 select tt.as_anon();
 select tt.denied(format('select public.book_slot(%L, %L, %L, %L, %L)', tt.lead('L_a', 'X'), tt.svc('undersoegelse'), tt.slot(3, 12), 'Alma Test', '+45 12345678'),

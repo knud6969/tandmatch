@@ -871,6 +871,9 @@ isOneToOne: false
 "is_permanent_user":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"is_valid_phone":
+{ Args: { "p_phone": string }; Returns: boolean
+                           },
 "is_verified_clinic_owner":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },

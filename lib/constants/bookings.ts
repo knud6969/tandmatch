@@ -14,7 +14,7 @@ export const MIN_EMERGENCY_NOTICE_MIN = 0; // (SQL) mindste varsel, akutydelse
 export const BOOKING_HORIZON_DAYS = 60; // (SQL) længst frem at booke
 export const NO_SHOW_GRACE_HOURS = 24; // (SQL) frist for udeblivelse efter sluttid
 export const EMERGENCY_HOLD_MINUTES = 30; // (SQL) reservation af akuttid uden svar (eller til starttid)
-export const MAX_BOOKINGS_PER_LEAD = 5; // (SQL) højst så mange bookinger i alt pr. lead, også aflyste (book_slot(), BOOKING_LIMIT)
+export const MAX_BOOKINGS_PER_LEAD = 5; // (SQL) højst så mange bookinger i alt pr. lead, også aflyste, men ikke dem klinikken har aflyst (cancelled_by = 'clinic'; book_slot(), BOOKING_LIMIT)
 
 // Hvem der kan aflyse en booking (SQL: bookings.cancelled_by, architecture 4.3).
 export const BOOKING_ACTORS = ["patient", "clinic"] as const;
