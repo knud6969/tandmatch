@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Trin 5 er i gang på `feat/omlaegning-trin-5`: klinikkens leads og beskedtråden (5.1-5.2; 10.9, 10.12), klinikkens indbakke og lead-kort (5.3; `/klinik`, `/klinik/lead/[leadId]`) og beskedtråden på patientens sag er bygget, inkl. rettelserne efter review og security (5.5); trin 5 er færdigt. Trin 6 er bygget på `feat/omlaegning-trin-6`: booking, aflysning, udeblivelse og cron (6.1; 10.10), anmeldelser og klinikkens svar (6.2; 10.13), patientens booking og bookinger, klinikkens kalender og anmeldelsessiderne (6.3-6.5) samt rettelserne efter review og security (6.7a-d); trin 6 er færdigt. Trin 7 er planlagt på `feat/omlaegning-trin-7` (fra trin 6, commit `7a81a257`; demo ca. 2026-11-02): telefon med mindst 8 cifre og bookingloftet uden klinikkens aflysninger i databasen (5.3, 7.6), delingssamtykke v1 (4.3), akutvejen (10.11, `/akut`), "Luk sag", `/patient/konto` og `/patient/samtykker` (6.2), fanerne på mobil (6.3) og demodata (11). Alt dette er [IKKE BYGGET], hvor det er markeret. Admin (10.14) er ikke planlagt i demoen. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Trin 5 er i gang på `feat/omlaegning-trin-5`: klinikkens leads og beskedtråden (5.1-5.2; 10.9, 10.12), klinikkens indbakke og lead-kort (5.3; `/klinik`, `/klinik/lead/[leadId]`) og beskedtråden på patientens sag er bygget, inkl. rettelserne efter review og security (5.5); trin 5 er færdigt. Trin 6 er bygget på `feat/omlaegning-trin-6`: booking, aflysning, udeblivelse og cron (6.1; 10.10), anmeldelser og klinikkens svar (6.2; 10.13), patientens booking og bookinger, klinikkens kalender og anmeldelsessiderne (6.3-6.5) samt rettelserne efter review og security (6.7a-d); trin 6 er færdigt. Trin 7 er planlagt på `feat/omlaegning-trin-7` (fra trin 6, commit `7a81a257`; demo ca. 2026-11-02): telefon med mindst 8 cifre og bookingloftet uden klinikkens aflysninger i databasen (5.3, 7.6), delingssamtykke v1 (4.3), akutvejen (10.11, `/akut`), "Luk sag", `/patient/konto` og `/patient/samtykker` (6.2), fanerne på mobil (6.3), alle danske postnumre (4.3, migration `20261028000400`), standardafstanden 50 km (6.6) og demodata (11). Demoen kører lokalt med `npm run build && npm start` mod det fælles Supabase-projekt (2.3). Alt dette er [IKKE BYGGET], hvor det er markeret. Admin (10.14) er ikke planlagt i demoen. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -29,7 +29,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 | Ingen e-mailbekræftelse ved kontooprettelse | Enkelt demoflow | Slå e-mailbekræftelse til i Supabase |
 | Ingen CAPTCHA på anonyme sessioner; kun rate limits og lofter | Enkelt demoflow | Cloudflare Turnstile |
 | En patient med eksisterende konto kan ikke overtage en anonym samtale ved login (kun ny konto) | Undgår flytning af data mellem brugere | Sikker overtagelse via service role (7.7) |
-| Oprydning af anonyme sessioner køres af planlagt job eller manuelt | Hosting ikke valgt | Fast planlagt job |
+| Oprydning af anonyme sessioner og `complete_due_bookings()` køres af planlagt job eller manuelt; i demoen kører ingen cron (appen kører lokalt, 2.3) | Ingen hosting i demoen | Hosting med fast planlagt job |
 | Polling i stedet for realtime | Enkelhed | Supabase Realtime |
 | CSP tillader `'unsafe-inline'` for scripts/styles | Next.js' inline-scripts uden nonce-opsætning | Nonce-baseret CSP via `proxy.ts` (2.4) |
 | Signerede billed-URL'er til klinikken indeholder `case_id` i stien (security trin 5, M1) | Ingen patientidentitet; enkel lagring | Sti uden sags-id med opslag i `case_images` (4.4, 9.2) |
@@ -303,7 +303,10 @@ lib/
 supabase/
   config.toml                lokal Supabase (anonyme logins til, e-mailbekræftelse fra)
   migrations/                det samlede sæt (11)
-  seed.sql                   kun referencedata, som ikke kræver auth-brugere (postnumre)
+  data/                      postal-codes.csv: alle danske postnumre med by og koordinater fra DAWA, kilden til
+                             migrationen 20261028000400 (4.3; [IKKE BYGGET], trin 7)
+  seed.sql                   kun referencedata, som ikke kræver auth-brugere. Postnumrene flyttes til migrationen
+                             20261028000400 (trin 7); derefter har filen kun en kommentar, indtil der kommer anden referencedata
 tests/
   ai/                        provokationstests for chat og opsummering
   rls/                       RLS-tests (5.6), køres mod lokal Supabase
@@ -311,7 +314,9 @@ tests/
   api/                       API-tests med Node test runner mod lokal Supabase (`npm run test:api`):
                              vilkårs-gate, samtykker, sessioner m.m. (5.6, API-tests)
   e2e/                       Playwright, 390 px og 1280 px
-scripts/                     seed-demo.ts, unseed-demo.ts
+scripts/                     seed-demo.ts, unseed-demo.ts, generate-postal-codes.ts (kun til udvikling, køres manuelt:
+                             henter DAWA én gang og skriver supabase/data/postal-codes.csv og migrationen; aldrig fra
+                             appen, seed eller tests; [IKKE BYGGET], trin 7)
 proxy.ts                     session-refresh og grov rolle-redirect (Next 16)
 ```
 
@@ -331,7 +336,7 @@ Kun `.env.example` committes. Tests bruger `.env.test.local` med den lokale Supa
 
 **Hvorfor service role til AI-skrivninger:** patienten må ikke kunne skrive AI-svar eller opsummeringer selv. AI-skrivningerne sker via `security definer`-funktioner, som kun `service_role` må udføre. Serveren kalder dem efter validering.
 
-Hosting: Supabase-projektet ligger i **EU-region**. Hosting af Next.js-appen: **[ÅBEN]** (fx Vercel med EU-region for functions).
+Hosting: Supabase-projektet ligger i **EU-region**. **Demoen (besluttet, 12.3 punkt 14) [PROTOTYPE]:** Next.js-appen hostes ikke. Den kører lokalt på en bærbar som produktionsbuild (`npm run build && npm start`) mod det fælles Supabase-projekt med nøglerne i `.env.local` (sættes kun af brugeren). Derfor kører cron-jobbene (`/api/cron/*`) ikke; det er uden betydning for korrektheden, fordi bookingers status beregnes effektivt (4.2), og anonyme sessioner kan ryddes manuelt efter demoen. HSTS-headeren (2.4, `next.config.ts`) sendes kun i produktionsbuild og tjekkes med `curl -sI http://localhost:3000/`; browsere ignorerer HSTS over http, så den har ingen virkning lokalt. Hosting efter demoen (fx Vercel med EU-region for functions) er [UDSKUDT].
 
 ### 2.3.1 Supabase-opsætning
 
@@ -615,7 +620,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 
 #### `consent_text_versions`, `postal_codes` og tællere
 - `consent_text_versions` (`type`, `text_version`, `ai_disclosure`): kendte samtykketekster. Offentligt læsbar.
-- `postal_codes` (`postal_code text PK, city, lat, lng`): offentligt opslag. Seedes af `supabase/seed.sql`.
+- `postal_codes` (`postal_code text PK, city, lat, lng`): offentligt opslag. Seedes i dag af `supabase/seed.sql` (21 postnumre). **[IKKE BYGGET, trin 7]:** alle danske postnumre (uden stormodtagere) indsættes af migrationen `20261028000400_postal_codes_dk.sql` fra `supabase/data/postal-codes.csv`, så de også når det fælles projekt med `supabase db push`. Kilde: DAWA (`https://api.dataforsyningen.dk/postnumre`, Dataforsyningen; vilkår og den krævede kildeangivelse tjekkes ved hentningen og skrives i migrationens hoved sammen med hentedatoen), hentet én gang med `scripts/generate-postal-codes.ts`; `lat`/`lng` er postnummerets visuelle center (`visueltcenter` er `[lng, lat]`), afrundet til 4 decimaler. Ingen netværkskald ved runtime. Indsættelsen er idempotent (`on conflict (postal_code) do update set city, lat, lng`), så DAWA-værdierne også erstatter de 21 omtrentlige rækker i det fælles projekt; `seed.sql` indsætter derefter ikke postnumre. Klinikkernes egne `lat`/`lng` ændres ikke af migrationen (12.3 punkt 13).
 - `ai_limits`, `ai_usage_daily`, `ai_patient_usage_daily`, `ai_anon_user_usage_daily`, `rate_limits`: ingen brugeradgang; kun funktioner og service role (7.6). Indhold: lofter som nøgle/værdi (bl.a. `anon_daily_ai_calls`, `anon_user_daily_ai_calls`, `chat_messages_per_patient_day`), daglig tæller for alle anonyme AI-kald (ingen persondata), AI-kald pr. anonym bruger pr. døgn, udkast pr. patient pr. døgn, forsøg pr. bucket og IP-hash.
 
 #### Behandlingskataloget: to niveauer
@@ -1246,7 +1251,7 @@ Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, 
 - **Filtre** (regler som bygget):
   - **Behandlinger:** slugs i `?services=`, højst `MAX_SELECTED_SERVICES` (5). En ukendt eller inaktiv slug giver 400 `UNKNOWN_SERVICE`.
   - **Position:** `postalCode` eller `lat`+`lng` (aldrig gemt). Ukendt postnummer giver 400 `UNKNOWN_POSTAL_CODE`; `lat` uden `lng` (eller omvendt) giver 400.
-  - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` = 25) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
+  - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` i `lib/constants/clinics.ts` = 25 i dag; **50 km [IKKE BYGGET, trin 7]**, besluttet 12.3 punkt 33; samme standard i API'et, oversigten, URL-filtrene og `/akut`) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
   - **Maks. pris:** `maxPrice` kræver mindst én valgt behandling (ellers 400) og sammenlignes med summen af `price_min` for de valgte behandlinger; klinikker uden pris for alle valgte falder fra.
   - **Min. stjerner**, **kun med akuttid** inden for `EMERGENCY_FILTER_HOURS` (48 timer) og **kun klinikker, der kan kontaktes** (`verified`).
   - Ukendte query-parametre ignoreres (`readQuery`).
@@ -1422,7 +1427,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | Chatbeskeder pr. IP pr. time | `CHAT_IP_LIMIT_PER_HOUR` (120) | 429 |
 | Opsummeringer pr. IP pr. time | 20 | 429 |
 | Beskeder i tråden | 2000 tegn, 200 pr. afsender pr. døgn | 400 / 429 `MESSAGE_LIMIT` |
-| Bookinger | 1 aktiv pr. lead; højst 5 bookinger i alt pr. lead (også aflyste), så book og aflys ikke kan gentages i det uendelige (security trin 6, M1; migration `20261027000100`). Bookinger aflyst af klinikken tæller ikke [IKKE BYGGET, migration `20261028000100`] | 409 / 409 `BOOKING_LIMIT` |
+| Bookinger | 1 aktiv pr. lead; højst 5 bookinger i alt pr. lead (også aflyste), så book og aflys ikke kan gentages i det uendelige (security trin 6, M1; migration `20261027000100`). Bookinger aflyst af klinikken tæller ikke (besluttet 2026-10-18, security kompromis 20) [IKKE BYGGET, migration `20261028000100`] | 409 / 409 `BOOKING_LIMIT` |
 | Akut-henvendelser pr. IP pr. time (`POST /api/emergency-leads`) | Samme scope og grænse som afsendelse af leads (`leads-send`, 30) [IKKE BYGGET] | 429 `RATE_LIMITED` |
 | Bookinger pr. IP pr. time (`POST /api/leads/{id}/booking`, scope `booking`) | 30 | 429 `RATE_LIMITED` |
 
@@ -1908,8 +1913,6 @@ Bygget i 6.1. Filer: `controllers/bookingsController.ts` (`BookingsController`: 
 
 ### 10.11 Akutvej
 
-| Metode og route | Rolle | Input | Output |
-|---|---|---|---|
 [IKKE BYGGET, trin 7.] Siden står i 6.1 (`/akut`).
 
 ```ts
@@ -2006,10 +2009,10 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 4 | Sammenligning og leads til op til 3 klinikker | Bygget og afsluttet på `feat/omlaegning-trin-4` (sidste commit `7c6c0d0e`). Tests: RLS 41, API 188, unit 384, e2e 28 |
 | 5 | Klinikkens indbakke: accepter eller afvis | Bygget og afsluttet på `feat/omlaegning-trin-5` (sidste commit `95427c61`). Tests: RLS 44, API 207, unit 397, e2e 62 |
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | Færdigt på `feat/omlaegning-trin-6` (6.1-6.5, kontrol 6.6, rettelser 6.7a-d; sidste commit `af065eb5`). Tests: RLS 46, API 249, unit 436, e2e 108 |
-| 7 | Akutvej, demodata og finpudsning | Planlagt på `feat/omlaegning-trin-7` (fra `7a81a257`), [IKKE BYGGET]. Opgaverne 7.1-7.14 står i `docs/arbejdsplan.md`. Allerede bygget før trin 7 og genbruges: `send_leads()` med akut-reservation, `clinic_decide_lead()` (held → booked), oversigtens akutfilter og første akuttid, `POST /api/cases/{id}/close`, `GET/PATCH/DELETE /api/patients/me`, `GET /api/patients/me/export`, samtykke-API'et og et demo-akut-lead med reservation i `scripts/seed-demo.ts` |
+| 7 | Akutvej, demodata og finpudsning | Planlagt på `feat/omlaegning-trin-7` (fra `7a81a257`), [IKKE BYGGET]. Opgaverne 7.1-7.16 står i `docs/arbejdsplan.md`. Allerede bygget før trin 7 og genbruges: `send_leads()` med akut-reservation, `clinic_decide_lead()` (held → booked), oversigtens akutfilter og første akuttid, `POST /api/cases/{id}/close`, `GET/PATCH/DELETE /api/patients/me`, `GET /api/patients/me/export`, samtykke-API'et og et demo-akut-lead med reservation i `scripts/seed-demo.ts` |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
-**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 34 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4) og `20261023000100`, `20261024000100` og `20261025000100` (trin 5) `20261026000100` og `20261027000100` (trin 6). De første 33 er kørt i det fælles projekt (senest `20261026000100` den 2026-10-18; brugeren kører dem). **`20261027000100` er ikke kørt i det fælles projekt endnu.** Nye ændringer kommer som nye filer (2.6). Alle filer til og med `20261027000100` er låst og ændres ikke; trin 7 tilføjer tre nye filer (`20261028000100`-`000300`, markeret [IKKE BYGGET] nedenfor). Sættet:
+**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 34 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4) og `20261023000100`, `20261024000100` og `20261025000100` (trin 5) `20261026000100` og `20261027000100` (trin 6). De første 33 er kørt i det fælles projekt (senest `20261026000100` den 2026-10-18; brugeren kører dem). **`20261027000100` er ikke kørt i det fælles projekt endnu.** Nye ændringer kommer som nye filer (2.6). Alle filer til og med `20261027000100` er låst og ændres ikke; trin 7 tilføjer fire nye filer (`20261028000100`-`000400`, markeret [IKKE BYGGET] nedenfor), som brugeren kører i det fælles projekt med `supabase db push` før demoen. Sættet:
 
 | Fil | Indhold |
 |---|---|
@@ -2050,6 +2053,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | `20261028000100_phone_digits_booking_limit.sql` | [IKKE BYGGET, trin 7] `is_valid_phone()` (5.3); `patients.phone`, der ikke overholder reglen, sættes til `null` (feltet er kun et forslag), hvorefter check constraints på `patients.phone`, `clinics.phone` og `bookings.contact_phone` erstattes af `is_valid_phone()`. For `clinics` og `bookings` tilføjes de nye constraints `not valid` og valideres i en `do`-blok; fejler valideringen (gamle rækker), bliver de stående som `not valid` (gælder for nye og ændrede rækker), og migrationen skriver en `notice`. `create or replace` af `book_slot()` fra `20261027000100`: telefon via `is_valid_phone()`, og `BOOKING_LIMIT` tæller ikke bookinger med `cancelled_by = 'clinic'`. Ellers uændret (signatur, security definer, `search_path = ''`, grants). Security kompromis 20 og 23 |
 | `20261028000200_sharing_consent_v1.sql` | [IKKE BYGGET, trin 7] Ny række i `consent_text_versions`: `('health_data_sharing', 'health_data_sharing@v1-klinikker', false)` (4.3) |
 | `20261028000300_send_emergency_lead.sql` | [IKKE BYGGET, trin 7] `send_emergency_lead()` (5.3, 10.11): security definer, `search_path = ''`, kun `authenticated` |
+| `20261028000400_postal_codes_dk.sql` | [IKKE BYGGET, trin 7] Kun data: alle danske postnumre fra `supabase/data/postal-codes.csv` (DAWA, kilde og hentedato i filens hoved) i `postal_codes`, `on conflict (postal_code) do update set city, lat, lng` (idempotent). Ingen skema-, RLS- eller grant-ændringer (4.3) |
 
 **Nedskæring** hvis tiden ikke slår til, i denne rækkefølge: portefølje → klinikkens svar på anmeldelser → beskedtråd → kort (listen er nok) → akutvindue (akutvejen bruger almindelige tider). Skæres **aldrig**: isolation af leads og skjulte kontaktoplysninger (RLS), samtykke før chat/upload/deling, AI-reglerne (ingen priser, ingen klinikanbefaling, akut-henvisning), maks. 3 leads, ingen dobbeltbooking, "Slet min samtale" og oprydning af anonyme data.
 
@@ -2142,7 +2146,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 11. **Porteføljebilleder:** krav til samtykket (skriftligt, opbevares af klinikken), og må billeder vise ansigt?
 12. **Standardsortering:** afstand med position, ellers første ledige tid. Ønsker gruppen en anden standard?
 13. **Præcis geokodning** af klinikadresser (i dag postnummerets centrum, hvis importen ikke har koordinater).
-14. **Præcis fremvisningsdato** og hosting af Next.js-appen. Demoen er omkring 2026-11-02. Afklares: køres demoen lokalt (`npm run dev`/`npm start` mod det fælles Supabase-projekt) eller hostet (fx Vercel, EU)? Uden hosting kører cron-jobbene ikke, men det er uden betydning for korrektheden (effektiv status, 4.2); HSTS kan kun tjekkes i en produktionsbuild.
+14. *Afklaret (2026-10-18):* demoen kører **lokalt** på en bærbar som produktionsbuild (`npm run build && npm start`) mod det fælles Supabase-projekt; cron kører ikke, og det er uden betydning (effektiv status, 4.2). HSTS tjekkes i den lokale produktionsbuild med `curl -sI` (2.3). **Stadig åbent:** den præcise fremvisningsdato (omkring 2026-11-02) og hosting efter demoen.
 15. **Ønsket tidsrum:** er de fire faste valg (hurtigst muligt, inden for 2 uger, inden for 3 måneder, fleksibel) nok, eller ønskes konkrete datoer?
 16. *Afklaret:* klinikken har 24 timer efter sluttid til at markere `no_show`; først derefter er bookingen effektivt `completed`, og først derefter kan der anmeldes (4.2, 5.3, 8.1).
 17. *Afklaret:* højst 10 leads i alt pr. sag uanset status, ud over loftet på 3 aktive. Patienten kan altid starte en ny sag (4.3, 5.3).
@@ -2161,9 +2165,9 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). **Besluttet (2026-10-18):** `on delete set null` og en `sender_role`-kolonne (`patient`/`clinic`), så tråden viser "Klinikken" for beskeder uden afsender. Bygges med beskedtråden (5.2) i en ny migration; eksisterende rækker får `sender_role` ud fra afsenderens rolle.
 31. **Forretningsmodel:** prototypen og siden "Sådan tjener vi penge" siger, at klinikker betaler for leads, og at patienter ikke betaler. Pris pr. lead, abonnement, betaling ved booking eller andet er ikke besluttet, og der er ingen betaling i koden.
 32. **API-test til trin 6:** *Bookingdelen er løst (6.1):* `tests/api/bookings.test.ts` tester en ikke-udløbet og en udløbet `held`-booking gennem API'et. *Anmeldelsesdelen er løst (6.2):* `tests/api/reviews.test.ts` godkender en anmeldelse med service role lokalt og tester, at den vises i `GET /api/clinics/{id}/reviews` og påvirker prisnøjagtigheden.
-33. **Demodata og standardafstand:** fra postnummer 2100 viser oversigten med `DEFAULT_MAX_DISTANCE_KM = 25` kun én verificeret demoklinik (Nørrebro); de tre andre ligger i Aarhus, Odense og Aalborg. *Forslag (architect):* standardafstanden forbliver 25 km (rimelig for rigtige patienter), og seed-scriptet får fire verificerede demoklinikker mere i Storkøbenhavn (2100, 1500, 2300, 2900; postnumrene findes i `seed.sql`), så demoen fra 2100 viser fem verificerede og tre importerede klinikker. Afventer brugerens beslutning; trin 7 bygger forslaget, medmindre andet besluttes.
-34. **Postnumre i demoen:** `supabase/seed.sql` har kun 21 postnumre. Skriver en tilskuer sit eget postnummer (fx 2730), giver oversigten og akutvejen 400 `UNKNOWN_POSTAL_CODE`. Skal listen udvides til alle danske postnumre (fx fra DAWA, med kilde i filen) før demo, eller er "brug min position" og de 21 nok? Hvordan kommer postnumrene i det fælles projekt (seed køres kun lokalt)?
-35. **Sletning af patientkonto:** `DELETE /api/patients/me` sletter alt via cascade fra `patients`, også patientens leads, beskeder, kommende bookinger og anmeldelser. Klinikken ser dermed en booket tid forsvinde fra kalenderen uden besked, og en godkendt anmeldelse forsvinder fra profilen. I demoen accepteret [PROTOTYPE] med en tydelig advarsel på `/patient/konto`. Før drift: skal kommende bookinger aflyses (synligt for klinikken), og skal anmeldelser anonymiseres i stedet for at slettes?
+33. *Afklaret (2026-10-18):* **begge dele.** Seed-scriptet får fire verificerede demoklinikker mere i Storkøbenhavn (2100, 1500, 2300, 2900), og `DEFAULT_MAX_DISTANCE_KM` hæves fra 25 til **50 km** (6.6), så demoen fra 2100 viser alle fem verificerede klinikker i Storkøbenhavn og de importerede inden for 50 km. Patienten kan stadig vælge 5, 10, 25 eller 100 km i filteret.
+34. *Afklaret (2026-10-18):* **alle danske postnumre** før demoen, fra DAWA, som datafil i repoet (`supabase/data/postal-codes.csv`) og en idempotent migration (`20261028000400`), som brugeren kører i det fælles projekt med `supabase db push` (4.3, 11). Ingen netværkskald ved runtime.
+35. **Sletning af patientkonto:** `DELETE /api/patients/me` sletter alt via cascade fra `patients`, også patientens leads, beskeder, kommende bookinger og anmeldelser. Klinikken ser dermed en booket tid forsvinde fra kalenderen uden besked, og en godkendt anmeldelse forsvinder fra profilen. I demoen accepteret [PROTOTYPE] med en tydelig advarsel på `/patient/konto` (architects forslag; ikke besluttet af brugeren, så trin 7 bygger forslaget). Før drift: skal kommende bookinger aflyses (synligt for klinikken), og skal anmeldelser anonymiseres i stedet for at slettes?
 
 ### 12.4 Udskudt [UDSKUDT]
 
@@ -2181,6 +2185,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 12. Juridisk gennemgang af klinikkens porteføljeerklæring (`PORTFOLIO_CONSENT_TEXT_VERSION`, pladsholdertekst, 9.5).
 13. Prisforslag til klinikken i prislisten (fx typisk prisniveau pr. behandling). I prototypen skriver klinikken selv prisen.
 14. Adminside til vedligeholdelse af behandlingskataloget.
+15. Hosting af Next.js-appen (fx Vercel med EU-region) med planlagte jobs (cron). Demoen kører lokalt (2.3, 12.3 punkt 14).
 
 ### 12.5 Overgang fra den gamle model
 
