@@ -93,5 +93,6 @@ update public.consents set withdrawn_at = now() where id = tt.consent('pA', 'ima
 select tt.as_user(tt.id('uX'));
 select tt.eq((select count(*) from public.clinic_lead_images(tt.lead('S', 'X')))::int, 0, 'ingen billeder uden samtykke (funktionen)');
 select tt.eq((select image_count from public.clinic_leads() where lead_id = tt.lead('S', 'X')), 0, 'image_count tæller ikke billeder uden samtykke');
+select tt.eq((select image_count from public.clinic_lead_detail(tt.lead('S', 'X'))), 0, 'clinic_lead_detail().image_count tæller heller ikke billeder uden samtykke');
 
 rollback;

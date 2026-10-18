@@ -1,6 +1,7 @@
 -- Trin 5.5d (review 2 og security L2; architecture 5.7, 10.9).
 --   * clinic_lead_detail() returnerer unread_messages (patientens ulæste beskeder; 0 for et tilbagetrukket lead).
 --     Returtypen ændres, så funktionen droppes og oprettes igen med samme tjek og grants.
+--     image_count tæller kun billeder med aktivt image_upload-samtykke og ikke i kladder, som clinic_leads() (security 5.5d L1).
 --   * clinic_leads() sorterer kun på is_emergency for leads, der ikke er trukket tilbage (ellers afslører sorteringen
 --     akut-flaget for et tilbagetrukket lead, hvis felter ellers er skjult).
 
@@ -66,7 +67,15 @@ as $$
     case when l.status <> 'withdrawn' then l.requested_service_id end,
     case when l.status <> 'withdrawn' then l.requested_starts_at end,
     case when l.status <> 'withdrawn' then
-      (select count(*)::integer from public.case_images i where i.case_id = c.id) end,
+      (select count(*)::integer from public.case_images i
+        where i.case_id = c.id
+          and c.status <> 'draft'
+          and coalesce((
+                select k2.withdrawn_at is null
+                  from public.consents k2
+                 where k2.patient_id = c.patient_id and k2.type = 'image_upload'
+                 order by k2.created_at desc limit 1
+              ), false)) end,
     case when l.status <> 'withdrawn' then l.list_price_min end,
     case when l.status <> 'withdrawn' then l.list_price_max end,
     l.sent_at,

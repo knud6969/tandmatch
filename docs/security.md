@@ -89,3 +89,4 @@ Vedligeholdes af security-agenten. Kort oversigt over hvilke data platformen beh
 16. **Signerede billed-URL'er til klinikken indeholder `case_id`** (`{case_id}/{image_id}.jpg`), så to klinikker med samme sag i teorien kan se det ved at sammenligne URL'er. Ingen patientidentitet. Før rigtige data: sti uden sags-id (architecture 0.1, 4.4; trin 5 M1).
 17. **Patienten kan sætte `read_at` på klinikkens beskeder til en vilkårlig værdi** (kolonne-UPDATE). Påvirker kun visningen (architecture 0.1; trin 5 L2).
 18. **Ingen IP-grænse på klinikkens GET-routes for leads og beskeder** (polling hvert 15. sekund). Ingen datalæk (architecture 0.1; trin 5 L3).
+19. ~~`clinic_lead_detail().image_count` tæller alle sagens billeder uden samtykkefilteret~~ **Løst i migration `20261025000100`** (samme samtykke- og kladdefilter som `clinic_leads()`; RLS-test 45; security-kontrol 5.5d L1).
