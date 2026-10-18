@@ -32,6 +32,7 @@ function factItems(lead: ClinicLeadDetailDto): DefinitionItem[] {
     { label: "Afstand", value: leadDistanceText(lead) ?? "Ikke oplyst" },
     { label: lead.requestedStartsAt ? "Ønsket tid" : "Ønsket tidsrum", value: leadTimeText(lead) ?? "Ikke oplyst" },
     {
+      wide: true,
       label: "Listepris for behandlingerne",
       value: lead.listPrice ? (
         <PriceWithSource price={lead.listPrice} />
@@ -39,7 +40,6 @@ function factItems(lead: ClinicLeadDetailDto): DefinitionItem[] {
         "Ikke angivet i din prisliste"
       ),
     },
-    { label: "Modtaget", value: formatDateTime(lead.sentAt) },
   ];
   return items;
 }
@@ -103,33 +103,30 @@ function LeadBody({ lead, onDecided, onStale }: { lead: ClinicLeadDetailDto; onD
   const title = lead.services.map((s) => s.name).join(", ") || "Henvendelse";
   const pending = lead.status === "sent";
 
-  // Rækkefølge på mobil: fakta, beslutning, opsummering og billeder, kontakt og beskeder. På desktop står fakta, opsummering og
-  // billeder til venstre, og beslutning, kontakt og beskeder samles i en højre kolonne, der følger med ved scroll.
+  // DOM-rækkefølgen er mobilrækkefølgen og dermed også fokusrækkefølgen: fakta, beslutning, opsummering og billeder, kontakt og
+  // beskeder. På desktop placeres de fire blokke i et grid med to kolonner (fakta og beslutning i første række, opsummering og
+  // billeder under fakta, kontakt og beskeder under beslutningen). Første række strækkes, så der ikke opstår et hul under det kortere kort.
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
-      <Card className="order-1 flex min-w-0 flex-col gap-5 p-4 sm:p-6 lg:col-start-1 lg:row-start-1" aria-labelledby="behov">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <Card className="flex min-w-0 flex-col gap-4 p-4 sm:p-6 lg:col-start-1 lg:row-start-1" aria-labelledby="behov" data-testid="fakta">
         <div className="flex flex-col gap-2">
           <LeadBadges lead={lead} />
-          <h1 id="behov" className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-            {title}
-          </h1>
+          <div className="flex flex-col gap-1">
+            <h1 id="behov" className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+              {title}
+            </h1>
+            <p className="text-sm text-ink-muted">Modtaget {formatDateTime(lead.sentAt)}</p>
+          </div>
         </div>
 
-        <DefinitionList items={factItems(lead)} />
-
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-ink">Behandlinger patienten har valgt</h2>
-          <ul className="flex flex-wrap gap-2" aria-label="Behandlinger">
-            {lead.services.map((service) => (
-              <li key={service.id}>
-                <Badge tone="brand">{service.name}</Badge>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <DefinitionList items={factItems(lead)} compact />
       </Card>
 
-      <div className="order-3 flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-2">
+      <div className="min-w-0 lg:col-start-2 lg:row-start-1">
+        {pending ? <LeadDecision leadId={lead.id} onDecided={onDecided} onStale={onStale} hasRequestedTime={lead.requestedStartsAt !== null} /> : <DecisionSummary lead={lead} />}
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-2">
         <Card className="flex flex-col gap-2 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-ink">Patientens opsummering</h2>
           {lead.summaryAiAssisted && (
@@ -167,25 +164,19 @@ function LeadBody({ lead, onDecided, onStale }: { lead: ClinicLeadDetailDto; onD
         )}
       </div>
 
-      {/* Mobil: wrapperen forsvinder (contents), så beslutningen står efter faktaboksen og tråden til sidst. */}
-      <div className="contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:max-h-[calc(100vh-2rem)] lg:min-w-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-y-auto lg:sticky lg:top-4">
-        <div className="order-2 min-w-0 lg:order-none">
-          {pending ? <LeadDecision leadId={lead.id} onDecided={onDecided} onStale={onStale} hasRequestedTime={lead.requestedStartsAt !== null} /> : <DecisionSummary lead={lead} />}
-        </div>
-        <div className="order-4 flex min-w-0 flex-col gap-6 lg:order-none">
-          <BookingContact lead={lead} />
-          <section aria-labelledby="beskeder" className="flex flex-col gap-3">
-            <h2 id="beskeder" className="text-xl font-semibold text-ink">
-              Beskeder
-            </h2>
-            <MessageThread
-              leadId={lead.id}
-              viewer="clinic"
-              closed={lead.status === "declined"}
-              hint="Patienten kan se dine beskeder, din kommentar og afvisningsnoten. Skriv kun det, der hjælper dig med at vurdere henvendelsen."
-            />
-          </section>
-        </div>
+      <div className="flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-start-2">
+        <BookingContact lead={lead} />
+        <section aria-labelledby="beskeder" className="flex flex-col gap-3">
+          <h2 id="beskeder" className="text-xl font-semibold text-ink">
+            Beskeder
+          </h2>
+          <MessageThread
+            leadId={lead.id}
+            viewer="clinic"
+            closed={lead.status === "declined"}
+            hint="Patienten kan se dine beskeder, din kommentar og afvisningsnoten. Skriv kun det, der hjælper dig med at vurdere henvendelsen."
+          />
+        </section>
       </div>
     </div>
   );

@@ -1,20 +1,14 @@
 import { Alert } from "@/views/components/ui/alert";
 import type { ClinicStatus } from "@/lib/types/clinics";
 
-// Viser klinikkens verificeringsstatus (architecture 6.3). En ny klinik kan sætte alt op, men modtager først leads,
-// når TandMatch har verificeret den.
+// Forklarer, at en ny klinik først modtager henvendelser, når TandMatch har verificeret den (architecture 6.3). Vises kun ved
+// status "registered": for en verificeret klinik viser statusbadgen i oversigten allerede, hvordan det står til.
 export function VerificationBanner({ status }: { status: ClinicStatus }) {
-  if (status === "verified") {
-    return (
-      <Alert tone="success" title="Din klinik er verificeret">
-        Patienterne ser din fulde profil, og du kan modtage forespørgsler.
-      </Alert>
-    );
-  }
+  if (status !== "registered") return null;
   return (
     <Alert tone="warning" title="Afventer verificering">
       Du kan sætte profil, prisliste, åbningstider og tandlæger op nu. Indbakke og kalender er tomme, og patienter
-      kan ikke sende dig forespørgsler, før TandMatch har verificeret klinikken.
+      kan ikke sende dig henvendelser, før TandMatch har verificeret klinikken.
     </Alert>
   );
 }

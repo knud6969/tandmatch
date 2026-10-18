@@ -1,12 +1,6 @@
-"use client";
-
 import { Badge } from "@/views/components/ui/badge";
 import { Card } from "@/views/components/ui/card";
 import { LinkButton } from "@/views/components/ui/button";
-import { LoadState } from "@/views/components/ui/load-state";
-import { useLoad } from "@/views/utils/use-load";
-import { VerificationBanner } from "@/views/components/clinic/verification-banner";
-import { loadClinic } from "@/views/utils/clinic-loaders";
 import { CLINIC_STATUS_LABEL } from "@/lib/constants/clinics";
 import type { OwnClinicDto } from "@/lib/types/clinics";
 
@@ -49,17 +43,12 @@ function stepsFor(clinic: OwnClinicDto): Step[] {
 }
 
 // Klinikkens status og hvad der mangler i opsætningen (indbakken står over den på /klinik).
-export function ClinicOverview() {
-  const { data, error, loading, reload } = useLoad(loadClinic);
-  if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
-
+export function ClinicOverview({ clinic: data }: { clinic: OwnClinicDto }) {
   const steps = stepsFor(data);
   const doneCount = steps.filter((s) => s.done).length;
 
   return (
     <div className="flex flex-col gap-6">
-      <VerificationBanner status={data.status} />
-
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold text-ink">{data.name}</h2>

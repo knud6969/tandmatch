@@ -312,7 +312,13 @@ test.describe("klinikkens indbakke og lead-kort", () => {
     try {
       await x.page.goto("/klinik");
       await expect(x.page.getByText("Afventer verificering", { exact: true })).toHaveCount(1);
-      await expect(x.page.getByTestId("ingen-henvendelser")).toContainText("før klinikken er verificeret");
+      await expect(x.page.getByTestId("henvendelser-ikke-verificeret")).toContainText("før klinikken er verificeret");
+      await expect(x.page.getByTestId("ingen-henvendelser")).toHaveCount(0);
+      // Banneret står øverst, lige under sideintroen og før indbakken.
+      const banner = (await x.page.getByText("Afventer verificering", { exact: true }).boundingBox())!;
+      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true }).boundingBox())!;
+      expect(banner.y).toBeLessThan(inbox.y);
+      await expect(x.page.getByText("forespørgsler")).toHaveCount(0);
       await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toHaveCount(0);
       await expect(x.page.getByRole("status").filter({ hasText: /verific/i })).toHaveCount(1);
       await expectNoHorizontalScroll(x.page);

@@ -58,7 +58,7 @@ export function LeadInbox() {
   // Forklaringen om verificering står i VerificationBanner på samme side; her kun en kort tekst, ikke endnu en advarsel.
   if (errorCode === "CLINIC_NOT_VERIFIED") {
     return (
-      <p className="text-base text-ink-muted" data-testid="ingen-henvendelser">
+      <p className="text-base text-ink-muted" data-testid="henvendelser-ikke-verificeret">
         Der er ingen henvendelser, før klinikken er verificeret.
       </p>
     );
@@ -66,18 +66,17 @@ export function LeadInbox() {
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
 
   // API'ets rækkefølge bruges: venter på svar først, derefter akut, derefter nyeste.
-  const sorted = data;
-  const count = (status: LeadStatus) => sorted.filter((lead) => lead.status === status).length;
+  const count = (status: LeadStatus) => data.filter((lead) => lead.status === status).length;
   // Står der noget og venter, vises det først; ellers alle.
   const active: Filter = filter ?? (count("sent") > 0 ? "sent" : "all");
-  const shown = active === "all" ? sorted : sorted.filter((lead) => lead.status === active);
+  const shown = active === "all" ? data : data.filter((lead) => lead.status === active);
   const options = [
     { value: "sent", label: `Nye (${count("sent")})` },
     { value: "accepted", label: `${CLINIC_LEAD_STATUS_LABEL.accepted} (${count("accepted")})` },
     { value: "booked", label: `${CLINIC_LEAD_STATUS_LABEL.booked} (${count("booked")})` },
     { value: "declined", label: `${CLINIC_LEAD_STATUS_LABEL.declined} (${count("declined")})` },
     { value: "withdrawn", label: `${CLINIC_LEAD_STATUS_LABEL.withdrawn} (${count("withdrawn")})` },
-    { value: "all", label: `Alle (${sorted.length})` },
+    { value: "all", label: `Alle (${data.length})` },
   ] as const;
 
   return (
@@ -85,7 +84,7 @@ export function LeadInbox() {
       <FilterChips label="Vis henvendelser" options={options} value={active} onChange={setFilter} />
       {shown.length === 0 ? (
         <p className="text-base text-ink-muted" data-testid="ingen-henvendelser">
-          {sorted.length === 0
+          {data.length === 0
             ? "Der er ingen henvendelser endnu. Når en patient kontakter jer, dukker den op her."
             : "Ingen henvendelser med den status."}
         </p>

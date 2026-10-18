@@ -78,7 +78,7 @@ export function ClinicSignupForm() {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       <p className="text-base leading-relaxed text-ink-muted">
         Du kan sætte profil, prisliste, åbningstider og tandlæger op med det samme. TandMatch verificerer klinikken,
-        før patienter kan sende forespørgsler.
+        før patienter kan sende henvendelser.
       </p>
       {errors.general && (
         <Alert tone="danger" role="alert">
