@@ -1,86 +1,76 @@
 import "server-only";
 import type { z } from "zod";
-import { canCancel, canMarkNoShow, canReview, pickLeadBooking } from "@/lib/domain/bookings";
+import type { BOOKING_ACTORS } from "@/lib/constants/bookings";
+import { canCancel, canReview, pickLeadBooking } from "@/lib/domain/bookings";
 import type { bookSlotSchema } from "@/lib/schemas/bookings";
-import type { BookingExportDto, BookingStatus, ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
-import { ACCOUNT_REQUIRED_MESSAGES, accountRequired, ApiError, notFound } from "@/middleware/http";
+import type { BookingExportDto, ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
+import {
+  ACCOUNT_REQUIRED_MESSAGES,
+  accountRequired,
+  bookingLimit,
+  bookingNotCancellable,
+  clinicNotAvailable,
+  leadNotAccepted,
+  noShowWindowClosed,
+  notFound,
+  serviceNotOnCase,
+  slotTaken,
+  slotUnavailable,
+  ApiError,
+} from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database } from "@/models/db/database.types";
+import type { Database, Tables } from "@/models/db/database.types";
+import { iso, isoOrNull, toClinicBookingDto, type WithNulls } from "@/models/db/mappers";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type Functions = Database["public"]["Functions"];
 
 // Rækker fra patient_bookings() og clinic_bookings()/clinic_booking() (architecture 5.3, 5.7). De genererede typer markerer
 // ikke nullable kolonner; formen angives her.
-type PatientBookingRow = Functions["patient_bookings"]["Returns"][number] & { hold_expires_at: string | null };
-type ClinicBookingRow = Omit<
+type PatientBookingRow = WithNulls<Functions["patient_bookings"]["Returns"][number], "hold_expires_at">;
+type ClinicBookingRow = WithNulls<
   Functions["clinic_booking"]["Returns"][number],
   "hold_expires_at" | "contact_name" | "contact_phone" | "contact_email"
-> & {
-  hold_expires_at: string | null;
-  contact_name: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-};
-
-// Felterne bag ClinicBookingDto, uanset om de kommer fra clinic_bookings(), clinic_booking() eller clinic_lead_detail().
-export type ClinicBookingFields = {
-  id: string;
-  leadId: string;
-  serviceId: string;
-  serviceName: string;
-  startsAt: string;
-  endsAt: string;
-  status: BookingStatus;
-  holdExpiresAt: string | null;
-  contactName: string | null;
-  contactPhone: string | null;
-  contactEmail: string | null;
-};
+>;
 
 // Tabelrække til dataeksporten (RLS: patientens egne bookinger).
-type BookingExportRow = {
-  id: string;
-  lead_id: string;
-  starts_at: string;
-  ends_at: string;
-  contact_name: string;
-  contact_phone: string;
-  contact_email: string;
-  cancelled_by: "patient" | "clinic" | null;
-  cancelled_at: string | null;
-  no_show_at: string | null;
-  completed_at: string | null;
-};
+type BookingExportRow = Pick<
+  Tables<"bookings">,
+  | "id"
+  | "lead_id"
+  | "starts_at"
+  | "ends_at"
+  | "contact_name"
+  | "contact_phone"
+  | "contact_email"
+  | "cancelled_at"
+  | "no_show_at"
+  | "completed_at"
+> & { cancelled_by: (typeof BOOKING_ACTORS)[number] | null };
 
-// Tidspunkter fra databasen ("…+00:00") normaliseres til ISO med Z, som SlotDto (så startsAt kan sammenlignes direkte).
-const iso = (value: string) => new Date(value).toISOString();
-const isoOrNull = (value: string | null) => (value === null ? null : iso(value));
-
-const booking = (code: string, message: string) => new ApiError(409, code, message);
-
-// Fejl fra book_slot() (architecture 5.3, 10.10). Teksterne står kun her.
+// Fejl fra book_slot() (architecture 5.3, 10.10). Teksterne står i middleware/http.ts.
 const BOOK_ERRORS = (): Record<string, ApiError> => ({
   ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.bookSlot),
   NOT_FOUND: notFound(),
-  LEAD_NOT_ACCEPTED: booking("LEAD_NOT_ACCEPTED", "Klinikken har ikke accepteret din henvendelse, eller der er allerede en tid."),
+  LEAD_NOT_ACCEPTED: leadNotAccepted(),
   // Samtidige bookinger på samme lead rammer det delvise unikke indeks.
-  bookings_one_active_per_lead: booking("LEAD_NOT_ACCEPTED", "Klinikken har ikke accepteret din henvendelse, eller der er allerede en tid."),
-  CLINIC_NOT_AVAILABLE: booking("CLINIC_NOT_AVAILABLE", "Klinikken kan ikke modtage bookinger lige nu."),
-  SLOT_TAKEN: booking("SLOT_TAKEN", "Tiden er desværre taget. Vælg en anden tid."),
-  SLOT_UNAVAILABLE: booking("SLOT_UNAVAILABLE", "Tiden kan ikke bookes. Vælg en anden tid."),
-  INVALID_SERVICE: new ApiError(400, "VALIDATION_ERROR", "Vælg en af behandlingerne på din sag."),
+  bookings_one_active_per_lead: leadNotAccepted(),
+  CLINIC_NOT_AVAILABLE: clinicNotAvailable(),
+  BOOKING_LIMIT: bookingLimit(),
+  SLOT_TAKEN: slotTaken(),
+  SLOT_UNAVAILABLE: slotUnavailable(),
+  INVALID_SERVICE: serviceNotOnCase(),
   INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", "Tjek navn og telefonnummer."),
 });
 
 const CANCEL_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
-  BOOKING_NOT_CANCELLABLE: booking("BOOKING_NOT_CANCELLABLE", "Tiden kan ikke aflyses her, fordi den er begyndt eller ikke længere er booket."),
+  BOOKING_NOT_CANCELLABLE: bookingNotCancellable(),
 });
 
 const NO_SHOW_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
-  NO_SHOW_WINDOW_CLOSED: booking("NO_SHOW_WINDOW_CLOSED", "Udeblivelse kan kun registreres fra starttid til 24 timer efter sluttid."),
+  NO_SHOW_WINDOW_CLOSED: noShowWindowClosed(),
 });
 
 const EXPORT_COLUMNS =
@@ -109,27 +99,8 @@ export class BookingsRepository extends BaseRepository {
     };
   }
 
-  // Klinikkens booking. Kontaktfelterne mappes, som databasen giver dem (kun booked/completed, 5.5); her tilføjes ingen regel.
-  static toClinicDto(fields: ClinicBookingFields, now: Date = new Date()): ClinicBookingDto {
-    return {
-      id: fields.id,
-      leadId: fields.leadId,
-      service: { id: fields.serviceId, name: fields.serviceName },
-      startsAt: iso(fields.startsAt),
-      endsAt: iso(fields.endsAt),
-      status: fields.status,
-      contact:
-        fields.contactName !== null && fields.contactPhone !== null && fields.contactEmail !== null
-          ? { name: fields.contactName, phone: fields.contactPhone, email: fields.contactEmail }
-          : null,
-      canMarkNoShow: canMarkNoShow(fields.status, fields.startsAt, fields.endsAt, now),
-      canCancel: canCancel(fields.status, fields.startsAt, now),
-      holdExpiresAt: isoOrNull(fields.holdExpiresAt),
-    };
-  }
-
   private clinicRowToDto(row: ClinicBookingRow): ClinicBookingDto {
-    return BookingsRepository.toClinicDto({
+    return toClinicBookingDto({
       id: row.booking_id,
       leadId: row.lead_id,
       serviceId: row.service_id,
@@ -217,9 +188,9 @@ export class BookingsRepository extends BaseRepository {
           contactPhone: row.contact_phone,
           contactEmail: row.contact_email,
           cancelledBy: row.cancelled_by,
-          cancelledAt: row.cancelled_at,
-          noShowAt: row.no_show_at,
-          completedAt: row.completed_at,
+          cancelledAt: isoOrNull(row.cancelled_at),
+          noShowAt: isoOrNull(row.no_show_at),
+          completedAt: isoOrNull(row.completed_at),
         },
       ];
     });

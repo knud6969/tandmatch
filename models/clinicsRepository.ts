@@ -2,7 +2,7 @@ import "server-only";
 import type { z } from "zod";
 import type { NewClinicPrice, patchClinicSchema } from "@/lib/schemas/clinics";
 import type { ClinicPriceDto, ClinicRecordDto, ClinicStatus } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
+import { ApiError, clinicNotVerified } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 import { trustpilotFromColumns } from "@/models/db/mappers";
@@ -75,6 +75,12 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
       "clinics: select fejlede",
     );
     return row?.status ?? null;
+  }
+
+  // Kræver, at brugerens egen klinik er `verified` (403 CLINIC_NOT_VERIFIED). Bruges af controllere, der kun er til
+  // verificerede klinikker (leads, bookinger, anmeldelser, architecture 5.7).
+  async requireOwnVerified(ownerId: string): Promise<void> {
+    if ((await this.findOwnStatus(ownerId)) !== "verified") throw clinicNotVerified();
   }
 
   // Forhåndstjek ved klinik-signup (architecture 4.3, 5.3): true, hvis en klinik med CVR'et allerede har en ejer.

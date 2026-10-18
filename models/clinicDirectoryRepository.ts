@@ -8,7 +8,7 @@ import {
 import type { ClinicListItemDto, ClinicPriceDto, ClinicProfileDto, OpeningHoursDto } from "@/lib/types/clinics";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Database } from "@/models/db/database.types";
-import { trustpilotFromColumns } from "@/models/db/mappers";
+import { trustpilotFromColumns, type WithNulls } from "@/models/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 // En klinik som public_clinics()/public_clinic_profile() viser den, før controlleren har lagt afstand, anmeldelsesstatistik,
@@ -38,7 +38,6 @@ type NullableColumns =
   | "logo_path"
   | "logo_updated_at"
   | "has_emergency_hours";
-type WithNulls<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] | null };
 type PublicClinicRow = WithNulls<Generated, NullableColumns>;
 type PublicProfileRow = WithNulls<GeneratedProfile, NullableColumns | "description" | "email">;
 

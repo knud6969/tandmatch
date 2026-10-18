@@ -1,5 +1,15 @@
 import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
-import { CLINIC_NOT_VERIFIED_TEXT, MESSAGE_LIMIT_TEXT, THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
+import {
+  BOOKING_LIMIT_TEXT,
+  BOOKING_NOT_CANCELLABLE_TEXT,
+  CLINIC_NOT_VERIFIED_TEXT,
+  MESSAGE_LIMIT_TEXT,
+  NO_SHOW_WINDOW_CLOSED_TEXT,
+  REVIEW_NOT_ALLOWED_TEXT,
+  SLOT_TAKEN_TEXT,
+  SLOT_UNAVAILABLE_TEXT,
+  THREAD_CLOSED_TEXT,
+} from "@/lib/constants/error-texts";
 import {
   CHAT_MAX_USER_MESSAGES_PER_CONVERSATION,
   MAX_ACTIVE_LEADS_PER_CASE,
@@ -69,12 +79,13 @@ const MESSAGES: Record<string, string> = {
   PAYLOAD_TOO_LARGE: "Indholdet er for stort. Gør det mindre og prøv igen.",
   INVALID_JSON: "Oplysningerne kunne ikke læses. Genindlæs siden og prøv igen.",
   INTERNAL: "Der opstod en fejl hos os. Prøv igen om lidt.",
-  SLOT_TAKEN: "Den tid blev lige optaget. Vælg en anden tid blandt de ledige tider herunder.",
-  SLOT_UNAVAILABLE: "Klinikken kan ikke tage imod den tid. Vælg en anden tid.",
+  SLOT_TAKEN: SLOT_TAKEN_TEXT,
+  SLOT_UNAVAILABLE: SLOT_UNAVAILABLE_TEXT,
   LEAD_NOT_ACCEPTED: "Klinikken har ikke accepteret din henvendelse, så du kan ikke booke endnu. Genindlæs siden for at se status.",
-  BOOKING_NOT_CANCELLABLE: "Bookingen kan ikke aflyses længere. Genindlæs siden for at se den nyeste status.",
-  NO_SHOW_WINDOW_CLOSED: "Udeblivelse kan kun registreres fra starttidspunktet og op til 24 timer efter, at tiden er slut.",
-  REVIEW_NOT_ALLOWED: "Du kan ikke anmelde dette besøg. Du kan først anmelde, når der er gået 24 timer efter tiden, og kun hvis besøget er gennemført.",
+  BOOKING_NOT_CANCELLABLE: BOOKING_NOT_CANCELLABLE_TEXT,
+  NO_SHOW_WINDOW_CLOSED: NO_SHOW_WINDOW_CLOSED_TEXT,
+  REVIEW_NOT_ALLOWED: REVIEW_NOT_ALLOWED_TEXT,
+  BOOKING_LIMIT: BOOKING_LIMIT_TEXT,
   ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",
   ALREADY_REPLIED: "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",

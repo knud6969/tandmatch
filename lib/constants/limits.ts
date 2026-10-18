@@ -35,6 +35,9 @@ export const MAX_LEADS_PER_PATIENT_DAY = 15;
 // Rate limit pr. IP pr. time på afsendelse af leads (architecture 7.6).
 export const LEADS_SEND_IP_LIMIT_PER_HOUR = 30;
 
+// Rate limit pr. IP pr. time på POST /api/leads/{id}/booking (architecture 7.6, security trin 6 M1).
+export const BOOKING_IP_LIMIT_PER_HOUR = 30;
+
 // Oprydning af anonyme sessioner (architecture 7.7).
 export const CLEANUP_BATCH_SIZE = 200;
 

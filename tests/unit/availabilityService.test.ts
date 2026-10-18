@@ -232,6 +232,18 @@ describe("AvailabilityService.resolveRange og durationFor", () => {
     expect(exact.ok).toBe(true);
   });
 
+  it("standardstart, standardlængde og maks antal dage kan angives (klinikkens kalender)", () => {
+    const defaultFrom = new Date(NOW.getTime() - 7 * 24 * 3_600_000);
+    const range = service().resolveRange(undefined, undefined, { defaultFrom, defaultDays: 67, maxDays: 92 });
+    if (!range.ok) throw new Error("forventede et tidsrum");
+    expect(range.from.toISOString()).toBe(defaultFrom.toISOString());
+    expect(range.to.getTime() - range.from.getTime()).toBe(67 * 24 * 3_600_000);
+    expect(service().resolveRange("2026-10-01T00:00:00Z", "2026-12-31T00:00:00Z", { maxDays: 92 }).ok).toBe(true); // 91 dage
+    const tooLong = service().resolveRange("2026-10-01T00:00:00Z", "2027-01-05T00:00:00Z", { maxDays: 92 });
+    expect(tooLong.ok).toBe(false);
+    if (!tooLong.ok) expect(tooLong.message).toContain("92");
+  });
+
   it("varigheden er klinikkens egen, ellers katalogets, lagt sammen", () => {
     const prices = [{ serviceId: "a", durationMin: 45 }];
     expect(service().durationFor(prices, [{ id: "a", defaultDurationMin: 30 }, { id: "b", defaultDurationMin: 20 }])).toBe(65);

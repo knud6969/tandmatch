@@ -358,6 +358,48 @@ describe("kontaktoplysninger følger bookingen", () => {
   });
 });
 
+describe("loft og grænser på booking (6.7a)", () => {
+  it("den 6. booking på samme lead afvises med 409 BOOKING_LIMIT, også efter aflysninger", async () => {
+    const k = await clinic();
+    const { p, leadId } = await acceptedLead(k);
+    const slots = (await p.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).body.slots as { startsAt: string }[];
+    assert.ok(slots.length >= 6);
+    for (let i = 0; i < 5; i++) {
+      const booked = await p.c.post(`/api/leads/${leadId}/booking`, bookBody(p, slots[i * 2].startsAt));
+      assert.equal(booked.status, 201, JSON.stringify(booked.body));
+      const cancelled = await p.c.post(`/api/bookings/${booked.body.id}/cancel`);
+      assert.equal(cancelled.status, 200, JSON.stringify(cancelled.body));
+    }
+    assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.status, "accepted");
+    const sixth = await p.c.post(`/api/leads/${leadId}/booking`, bookBody(p, slots[10].startsAt));
+    assert.equal(sixth.status, 409);
+    assert.equal(code(sixth), "BOOKING_LIMIT");
+    assert.equal((await p.c.get("/api/bookings")).body.bookings.filter((b: { status: string }) => b.status === "booked").length, 0);
+  });
+
+  it("telefonnummeret kræver mindst 8 cifre", async () => {
+    const k = await clinic();
+    const { p, leadId } = await acceptedLead(k);
+    const slot = await firstSlot(p, leadId);
+    for (const phone of ["((((((", "+ - ( ) +", "1234567", "+45 1234"]) {
+      const r = await p.c.post(`/api/leads/${leadId}/booking`, { ...bookBody(p, slot.startsAt), contactPhone: phone });
+      assert.equal(r.status, 400, phone);
+      assert.equal(code(r), "VALIDATION_ERROR");
+    }
+    assert.equal((await p.c.patch("/api/patients/me", { phone: "((((((" })).status, 400);
+    const ok = await p.c.post(`/api/leads/${leadId}/booking`, { ...bookBody(p, slot.startsAt), contactPhone: "12 34 56 78" });
+    assert.equal(ok.status, 201, JSON.stringify(ok.body));
+  });
+
+  it("bookingforsøg er begrænset pr. IP (30 pr. time) med 429 RATE_LIMITED", async () => {
+    const p = await patient();
+    const body = bookBody(p, new Date(Date.now() + 2 * HOUR).toISOString());
+    let last = 0;
+    for (let i = 0; i < 31; i++) last = (await p.c.post(`/api/leads/${crypto.randomUUID()}/booking`, body)).status;
+    assert.equal(last, 429);
+  });
+});
+
 describe("aflysning", () => {
   it("patienten kan aflyse før starttid, og leadet bliver accepteret igen", async () => {
     const k = await clinic();

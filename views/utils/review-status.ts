@@ -1,12 +1,8 @@
 import type { BadgeTone } from "@/views/components/ui/badge";
 import type { ModerationStatus } from "@/lib/types/reviews";
 
-// Moderationsstatus for anmeldelser og svar på dansk (architecture 8.5).
-export const MODERATION_LABEL: Record<ModerationStatus, string> = {
-  pending: "Afventer godkendelse",
-  approved: "Offentliggjort",
-  rejected: "Afvist",
-};
+// Teksterne står i lib/constants/reviews.ts; de eksporteres videre, så eksisterende importer virker.
+export { MODERATION_LABEL } from "@/lib/constants/reviews";
 
 export const MODERATION_TONE: Record<ModerationStatus, BadgeTone> = {
   pending: "warning",

@@ -12,13 +12,14 @@ import type {
   ReviewExportDto,
   ReviewStats,
 } from "@/lib/types/reviews";
-import { ApiError, notFound } from "@/middleware/http";
+import type { ApiError } from "@/middleware/http";
+import { alreadyReplied, alreadyReviewed, notFound, reviewNotAllowed } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Database } from "@/models/db/database.types";
+import { iso, type WithNulls } from "@/models/db/mappers";
 
 type CreateReviewInput = z.infer<typeof createReviewSchema>;
 type Functions = Database["public"]["Functions"];
-type WithNulls<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] | null };
 
 // De genererede typer for `returns table` markerer ikke nullable kolonner; de er angivet her.
 type StatsRow = WithNulls<
@@ -64,19 +65,15 @@ const OWN_COLUMNS =
 const CREATE_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
   // Booking uden for patientens ret: ikke egen, ikke gennemført (24 t efter sluttid), udeblevet, aflyst eller klinikken er ikke verificeret.
-  "row-level security": new ApiError(
-    403,
-    "REVIEW_NOT_ALLOWED",
-    "Du kan kun anmelde et gennemført besøg hos en verificeret klinik. Et besøg tæller som gennemført 24 timer efter, at tiden sluttede.",
-  ),
-  reviews_booking_id_key: new ApiError(409, "ALREADY_REVIEWED", "Du har allerede anmeldt dette besøg."),
+  "row-level security": reviewNotAllowed(),
+  reviews_booking_id_key: alreadyReviewed(),
 });
 
 // Fejl fra insert i review_replies (policyen kræver egen, godkendt anmeldelse; unik pr. anmeldelse).
 const REPLY_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
   "row-level security": notFound(),
-  review_replies_review_id_key: new ApiError(409, "ALREADY_REPLIED", "Du har allerede svaret på denne anmeldelse."),
+  review_replies_review_id_key: alreadyReplied(),
 });
 
 // Anmeldelser og svar (architecture 4.3, 8, 10.7, 10.13). Brugerens JWT, så RLS afgør adgangen: patienten skriver og læser
@@ -172,20 +169,27 @@ export class ReviewsRepository extends BaseRepository {
     const rows = await this.ownRows();
     const clinicIds = [...new Set(rows.filter((row) => row.moderation_status === "approved").map((row) => row.clinic_id))];
     const replies = new Map<string, { text: string; createdAt: string }>();
-    for (const clinicId of clinicIds) {
-      for (const row of await this.publicRows(clinicId)) {
-        if (row.reply_text && row.reply_created_at) replies.set(row.review_id, { text: row.reply_text, createdAt: row.reply_created_at });
-      }
+    const publicRows = await Promise.all(clinicIds.map((clinicId) => this.publicRows(clinicId)));
+    for (const row of publicRows.flat()) {
+      if (row.reply_text && row.reply_created_at) replies.set(row.review_id, { text: row.reply_text, createdAt: row.reply_created_at });
     }
-    return rows.map((row) => ({
-      id: row.id,
-      ...this.base(row),
-      reply: row.moderation_status === "approved" ? (replies.get(row.id) ?? null) : null,
-      bookingId: row.booking_id,
-      clinic: clinics.get(row.booking_id) ?? { id: row.clinic_id, name: "" },
-      moderationStatus: row.moderation_status,
-      rejectionReason: row.rejection_reason,
-    }));
+    // En anmeldelse hører altid til en af patientens bookinger; ses den ikke i `clinics`, springes den over i stedet for
+    // at vise et tomt klinikfelt.
+    return rows.flatMap((row) => {
+      const clinic = clinics.get(row.booking_id);
+      if (!clinic) return [];
+      return [
+        {
+          id: row.id,
+          ...this.base(row),
+          reply: row.moderation_status === "approved" ? (replies.get(row.id) ?? null) : null,
+          bookingId: row.booking_id,
+          clinic,
+          moderationStatus: row.moderation_status,
+          rejectionReason: row.rejection_reason,
+        },
+      ];
+    });
   }
 
   // Alle patientens anmeldelser til dataeksporten.
@@ -202,7 +206,7 @@ export class ReviewsRepository extends BaseRepository {
       transparencyComment: row.transparency_comment,
       moderationStatus: row.moderation_status,
       rejectionReason: row.rejection_reason,
-      createdAt: row.created_at,
+      createdAt: iso(row.created_at),
     }));
   }
 

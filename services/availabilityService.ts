@@ -61,15 +61,21 @@ export class AvailabilityService {
     return { from, to: new Date(from.getTime() + days * DAY_MS) };
   }
 
-  // Tidsrummet en forespørgsel om ledige tider dækker: uden `from` nu, uden `to` MAX_AVAILABILITY_RANGE_DAYS frem.
-  // Slutningen skal ligge efter starten, og tidsrummet er højst MAX_AVAILABILITY_RANGE_DAYS langt. Ren kode uden
-  // ApiError (servicen er uden I/O og middleware); controlleren gør en afvisning til 400.
-  resolveRange(from?: string, to?: string): { ok: true; from: Date; to: Date } | { ok: false; message: string } {
-    const start = from ? new Date(from) : this.searchRange().from;
-    const end = to ? new Date(to) : new Date(start.getTime() + MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
+  // Tidsrummet en forespørgsel dækker. Uden `from` bruges `defaultFrom` (standard: nu), uden `to` `defaultDays` frem fra
+  // starten (standard: MAX_AVAILABILITY_RANGE_DAYS). Slutningen skal ligge efter starten, og tidsrummet er højst
+  // `maxDays` langt (standard: MAX_AVAILABILITY_RANGE_DAYS). Ledige tider bruger standarderne; klinikkens kalender angiver sine
+  // egne. Ren kode uden ApiError (servicen er uden I/O og middleware); controlleren gør en afvisning til 400.
+  resolveRange(
+    from?: string,
+    to?: string,
+    options: { defaultFrom?: Date; defaultDays?: number; maxDays?: number } = {},
+  ): { ok: true; from: Date; to: Date } | { ok: false; message: string } {
+    const { defaultFrom, defaultDays = MAX_AVAILABILITY_RANGE_DAYS, maxDays = MAX_AVAILABILITY_RANGE_DAYS } = options;
+    const start = from ? new Date(from) : (defaultFrom ?? this.searchRange().from);
+    const end = to ? new Date(to) : new Date(start.getTime() + defaultDays * DAY_MS);
     if (end.getTime() <= start.getTime()) return { ok: false, message: "Slutningen skal ligge efter starten." };
-    if (end.getTime() - start.getTime() > MAX_AVAILABILITY_RANGE_DAYS * DAY_MS) {
-      return { ok: false, message: `Du kan højst hente ${MAX_AVAILABILITY_RANGE_DAYS} dage ad gangen.` };
+    if (end.getTime() - start.getTime() > maxDays * DAY_MS) {
+      return { ok: false, message: `Du kan højst hente ${maxDays} dage ad gangen.` };
     }
     return { ok: true, from: start, to: end };
   }

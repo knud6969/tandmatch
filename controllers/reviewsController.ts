@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { toClinicDate } from "@/lib/domain/time";
 import type { createReviewSchema, replyReviewSchema } from "@/lib/schemas/reviews";
 import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleItemDto } from "@/lib/types/reviews";
-import { ApiError, clinicNotVerified, notFound } from "@/middleware/http";
+import { alreadyReplied, notFound } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
@@ -79,21 +79,18 @@ export class ReviewsController {
 
   // Klinikkens godkendte anmeldelser med eget svar og dets status. Kun for verificerede klinikker (403 CLINIC_NOT_VERIFIED).
   async listForClinic(): Promise<{ reviews: ClinicReviewDto[] }> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     return { reviews: await this.reviews.listForClinic() };
   }
 
   // Svarer på en godkendt anmeldelse af egen klinik. 404 for en anmeldelse, klinikken ikke kan se (fremmed, ikke godkendt
   // eller ukendt), 409 ALREADY_REPLIED.
   async reply(reviewId: string, input: ReplyInput): Promise<ReviewCreatedDto> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     const review = (await this.reviews.listForClinic()).find((candidate) => candidate.id === reviewId);
     if (!review) throw notFound();
-    if (review.reply) throw new ApiError(409, "ALREADY_REPLIED", "Du har allerede svaret på denne anmeldelse.");
+    if (review.reply) throw alreadyReplied();
     return this.reviews.createReply(reviewId, input.text);
   }
 
-  private async requireVerifiedClinic(): Promise<void> {
-    if ((await this.clinics.findOwnStatus(this.session.userId)) !== "verified") throw clinicNotVerified();
-  }
 }

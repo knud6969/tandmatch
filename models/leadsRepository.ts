@@ -28,8 +28,8 @@ import {
   notFound,
 } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
-import { BookingsRepository } from "@/models/bookingsRepository";
 import type { Tables } from "@/models/db/database.types";
+import { toClinicBookingDto } from "@/models/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
@@ -370,7 +370,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
   private toClinicBooking(row: ClinicLeadDetailRow): ClinicBookingDto | null {
     if (!row.booking_id || !row.booking_status || !row.booking_starts_at || !row.booking_ends_at) return null;
     // Databasen returnerer kontaktfelterne kun for booked/completed (5.5); de mappes, som de er.
-    return BookingsRepository.toClinicDto({
+    return toClinicBookingDto({
       id: row.booking_id,
       leadId: row.lead_id,
       serviceId: row.booking_service_id ?? "",

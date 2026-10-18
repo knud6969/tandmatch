@@ -1,6 +1,16 @@
 import "server-only";
 import type { ZodType } from "zod";
-import { CLINIC_NOT_VERIFIED_TEXT, MESSAGE_LIMIT_TEXT, THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
+import {
+  BOOKING_LIMIT_TEXT,
+  BOOKING_NOT_CANCELLABLE_TEXT,
+  CLINIC_NOT_VERIFIED_TEXT,
+  MESSAGE_LIMIT_TEXT,
+  NO_SHOW_WINDOW_CLOSED_TEXT,
+  REVIEW_NOT_ALLOWED_TEXT,
+  SLOT_TAKEN_TEXT,
+  SLOT_UNAVAILABLE_TEXT,
+  THREAD_CLOSED_TEXT,
+} from "@/lib/constants/error-texts";
 
 // Fælles fejlformat (architecture 2.4). Meddelelser er på dansk og uden interne detaljer.
 export class ApiError extends Error {
@@ -174,8 +184,11 @@ export const forbidden = () => new ApiError(403, "FORBIDDEN", "Du har ikke adgan
 export const anonymousNotAllowed = () =>
   new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");
 
+// Konflikt med tilstanden (409). Alle 409-fejl bygges her, så formen er den samme overalt.
+export const conflict = (code: string, message: string) => new ApiError(409, code, message);
+
 // Sagen er ikke længere en kladde (architecture 10.5): kun kladder kan ændres.
-export const notDraft = () => new ApiError(409, "NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");
+export const notDraft = () => conflict("NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");
 
 // Handlingen kræver en konto. Teksten afhænger af handlingen og står kun her (routes, controllere og repositories bruger den).
 export const ACCOUNT_REQUIRED_MESSAGES = {
@@ -209,3 +222,30 @@ export const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukk
 // AI-tjenesten svarer ikke eller gav et ugyldigt svar (architecture 7.6: timeout og nedbrud giver 503).
 export const aiUnavailable = () =>
   new ApiError(503, "AI_UNAVAILABLE", "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.");
+
+// Booking (architecture 10.10). Fabrikkerne bruges af både controllere og repositories.
+export const leadNotAccepted = () =>
+  conflict("LEAD_NOT_ACCEPTED", "Klinikken har ikke accepteret din henvendelse, eller der er allerede en tid.");
+
+export const clinicNotAvailable = () => conflict("CLINIC_NOT_AVAILABLE", "Klinikken kan ikke modtage bookinger lige nu.");
+
+// Ydelsen er ikke en af sagens bekræftede ydelser.
+export const serviceNotOnCase = () => new ApiError(400, "VALIDATION_ERROR", "Vælg en af behandlingerne på din sag.");
+
+export const slotTaken = () => conflict("SLOT_TAKEN", SLOT_TAKEN_TEXT);
+
+export const slotUnavailable = () => conflict("SLOT_UNAVAILABLE", SLOT_UNAVAILABLE_TEXT);
+
+// Leadet har nået loftet på bookinger (architecture 7.6).
+export const bookingLimit = () => conflict("BOOKING_LIMIT", BOOKING_LIMIT_TEXT);
+
+export const bookingNotCancellable = () => conflict("BOOKING_NOT_CANCELLABLE", BOOKING_NOT_CANCELLABLE_TEXT);
+
+export const noShowWindowClosed = () => conflict("NO_SHOW_WINDOW_CLOSED", NO_SHOW_WINDOW_CLOSED_TEXT);
+
+// Anmeldelse (architecture 10.13).
+export const reviewNotAllowed = () => new ApiError(403, "REVIEW_NOT_ALLOWED", REVIEW_NOT_ALLOWED_TEXT);
+
+export const alreadyReviewed = () => conflict("ALREADY_REVIEWED", "Du har allerede anmeldt dette besøg.");
+
+export const alreadyReplied = () => conflict("ALREADY_REPLIED", "Du har allerede svaret på denne anmeldelse.");

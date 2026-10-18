@@ -10,7 +10,7 @@ import { DAY_MS } from "@/lib/domain/time";
 import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
 import type { SlotDto } from "@/lib/types/clinics";
-import { ApiError, clinicNotVerified, forbidden } from "@/middleware/http";
+import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { AvailabilityRepository } from "@/models/availabilityRepository";
 import { BookingsRepository } from "@/models/bookingsRepository";
@@ -34,8 +34,6 @@ export type BookingsDeps = {
   services: ServicesRepository;
   slots: AvailabilityService;
 };
-
-const conflict = (code: string, message: string) => new ApiError(409, code, message);
 
 // Bookinger (architecture 10.10). Én controller for ressourcen, to roller.
 // Patienten: ledige tider og booking på et accepteret lead, egne bookinger og aflysning. Klinikken: kalender, aflysning og
@@ -72,15 +70,15 @@ export class BookingsController {
   async availabilityForLead(leadId: string, query: LeadAvailabilityQuery): Promise<{ slots: SlotDto[] }> {
     const lead = await this.leads.requireBookingContext(leadId);
     if (lead.status !== "accepted") {
-      throw conflict("LEAD_NOT_ACCEPTED", "Klinikken har ikke accepteret din henvendelse, eller der er allerede en tid.");
+      throw leadNotAccepted();
     }
     if (!lead.serviceIds.includes(query.serviceId)) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Vælg en af behandlingerne på din sag.");
+      throw serviceNotOnCase();
     }
     const [service] = await this.services.requireActive([query.serviceId]);
     const clinic = await this.directory.findClinic(lead.clinicId, [service.id]);
     if (!clinic || clinic.tier !== "full") {
-      throw conflict("CLINIC_NOT_AVAILABLE", "Klinikken kan ikke modtage bookinger lige nu.");
+      throw clinicNotAvailable();
     }
     const range = this.slots.resolveRange(query.from, query.to);
     if (!range.ok) throw new ApiError(400, "VALIDATION_ERROR", range.message);
@@ -98,7 +96,7 @@ export class BookingsController {
     };
   }
 
-  // Booker en tid på et accepteret lead (409 SLOT_TAKEN, LEAD_NOT_ACCEPTED, SLOT_UNAVAILABLE). Telefonen gemmes på patienten.
+  // Booker en tid på et accepteret lead (409 SLOT_TAKEN, LEAD_NOT_ACCEPTED, SLOT_UNAVAILABLE, BOOKING_LIMIT). Telefonen gemmes på patienten.
   async book(leadId: string, input: BookSlotInput): Promise<PatientBookingDto> {
     return this.bookings.requireForPatient(await this.bookings.bookSlot(leadId, input));
   }
@@ -108,23 +106,21 @@ export class BookingsController {
   // Patientens egne bookinger, eller klinikkens kalender i [from, to) (uden grænser: 7 dage tilbage og 60 dage frem).
   async list(query: BookingsQuery): Promise<PatientBookingDto[] | ClinicBookingDto[]> {
     if (this.role === "patient") return this.bookings.listForPatient();
-    await this.requireVerifiedClinic();
-    const now = Date.now();
-    const from = query.from ? new Date(query.from) : new Date(now - CLINIC_BOOKINGS_DEFAULT_PAST_DAYS * DAY_MS);
-    const to = query.to ? new Date(query.to) : new Date(from.getTime() + (CLINIC_BOOKINGS_DEFAULT_PAST_DAYS + BOOKING_HORIZON_DAYS) * DAY_MS);
-    if (to.getTime() <= from.getTime()) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Slutningen skal ligge efter starten.");
-    }
-    if (to.getTime() - from.getTime() > MAX_BOOKINGS_RANGE_DAYS * DAY_MS) {
-      throw new ApiError(400, "VALIDATION_ERROR", `Du kan højst hente ${MAX_BOOKINGS_RANGE_DAYS} dage ad gangen.`);
-    }
+    await this.clinics.requireOwnVerified(this.session.userId);
+    const range = this.slots.resolveRange(query.from, query.to, {
+      defaultFrom: new Date(Date.now() - CLINIC_BOOKINGS_DEFAULT_PAST_DAYS * DAY_MS),
+      defaultDays: CLINIC_BOOKINGS_DEFAULT_PAST_DAYS + BOOKING_HORIZON_DAYS,
+      maxDays: MAX_BOOKINGS_RANGE_DAYS,
+    });
+    if (!range.ok) throw new ApiError(400, "VALIDATION_ERROR", range.message);
+    const { from, to } = range;
     return this.bookings.listForClinic(from, to);
   }
 
   // Aflyser egen booking før starttid (409 BOOKING_NOT_CANCELLABLE). Svaret er den opdaterede booking set fra rollen.
   async cancel(bookingId: string): Promise<PatientBookingDto | ClinicBookingDto> {
     const role = this.role;
-    if (role === "clinic") await this.requireVerifiedClinic();
+    if (role === "clinic") await this.clinics.requireOwnVerified(this.session.userId);
     await this.bookings.cancel(bookingId); // fremmed booking giver NOT_FOUND (404)
     return role === "patient" ? this.bookings.requireForPatient(bookingId) : this.bookings.requireForClinic(bookingId);
   }
@@ -133,7 +129,7 @@ export class BookingsController {
 
   // Registrerer udeblivelse fra starttid til 24 timer efter sluttid (409 NO_SHOW_WINDOW_CLOSED).
   async markNoShow(bookingId: string): Promise<ClinicBookingDto> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     await this.bookings.markNoShow(bookingId);
     return this.bookings.requireForClinic(bookingId);
   }
@@ -145,7 +141,4 @@ export class BookingsController {
     return role;
   }
 
-  private async requireVerifiedClinic(): Promise<void> {
-    if ((await this.clinics.findOwnStatus(this.session.userId)) !== "verified") throw clinicNotVerified();
-  }
 }

@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { leadDecisionSchema, sendLeadsSchema } from "@/lib/schemas/leads";
 import type { ClinicLeadDetailDto, ClinicLeadListItemDto, LeadStatus, PatientLeadDto } from "@/lib/types/leads";
-import { clinicNotVerified } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
@@ -82,13 +81,13 @@ export class LeadsController {
 
   // Klinikkens leads, evt. filtreret på status. Kun verificerede klinikker modtager leads (403 CLINIC_NOT_VERIFIED).
   async listForClinic(status?: LeadStatus): Promise<ClinicLeadListItemDto[]> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     return this.leads.listForClinic(status);
   }
 
   // Leadet i detaljer. Åbningen markerer det som set (pragmatisk sideeffekt, architecture 10.9). Fremmed lead giver 404.
   async getForClinic(leadId: string): Promise<ClinicLeadDetailDto> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     await this.leads.markSeen(leadId);
     return this.clinicDetail(leadId);
   }
@@ -96,14 +95,11 @@ export class LeadsController {
   // Accept (evt. med kommentar og præciseret pris) eller afvisning. 409 LEAD_NOT_PENDING, hvis leadet ikke er `sent`.
   // Accept af et akut-lead inden for reservationen gør tiden til en booking; det afgør databasen (clinic_decide_lead()).
   async decide(leadId: string, input: LeadDecisionInput): Promise<ClinicLeadDetailDto> {
-    await this.requireVerifiedClinic();
+    await this.clinics.requireOwnVerified(this.session.userId);
     await this.leads.decideLead(leadId, input);
     return this.clinicDetail(leadId);
   }
 
-  private async requireVerifiedClinic(): Promise<void> {
-    if ((await this.clinics.findOwnStatus(this.session.userId)) !== "verified") throw clinicNotVerified();
-  }
 
   // Detaljen med signerede billeder. Et tilbagetrukket lead har hverken billeder eller beskeder (5.7).
   private async clinicDetail(leadId: string): Promise<ClinicLeadDetailDto> {

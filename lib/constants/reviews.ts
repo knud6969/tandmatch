@@ -10,6 +10,13 @@ export const PRICE_ACCURACY_LABEL = {
 
 export const MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 
+// Moderationsstatus for anmeldelser og svar på dansk (architecture 8.5). Tonerne ligger i views/utils/review-status.ts.
+export const MODERATION_LABEL = {
+  pending: "Afventer godkendelse",
+  approved: "Offentliggjort",
+  rejected: "Afvist",
+} as const satisfies Record<(typeof MODERATION_STATUSES)[number], string>;
+
 // Prisnøjagtighed vises først fra så mange godkendte anmeldelser (SQL: public_clinic_review_stats_many, 8.3).
 export const MIN_REVIEWS_FOR_PRICE_ACCURACY = 3;
 
