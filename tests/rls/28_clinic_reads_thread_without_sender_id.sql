@@ -42,7 +42,7 @@ select tt.eq((select unread_messages from public.clinic_leads() where lead_id = 
 -- Patienten ser stadig sin egen tråd (inkl. sender_id) og kan markere klinikkens besked
 select tt.as_user(tt.id('pA'));
 select tt.rows('select 1 from public.messages', 3, 'patienten ser sin tråd');
-select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_id = %L', tt.lead('S', 'X'), tt.id('uX')), 1, 'patienten markerer klinikkens besked');
+select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_role = ''clinic''', tt.lead('S', 'X')), 1, 'patienten markerer klinikkens besked');
 
 -- Tilbagetrukket lead: ingen tråd
 select public.withdraw_lead(tt.lead('S', 'Y'));

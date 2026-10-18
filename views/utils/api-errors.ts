@@ -1,4 +1,5 @@
 import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
+import { CLINIC_NOT_VERIFIED_TEXT, MESSAGE_LIMIT_TEXT, THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
 import {
   CHAT_MAX_USER_MESSAGES_PER_CONVERSATION,
   MAX_ACTIVE_LEADS_PER_CASE,
@@ -48,9 +49,9 @@ const MESSAGES: Record<string, string> = {
   CLINIC_NOT_AVAILABLE: "En af klinikkerne kan ikke kontaktes via TandMatch lige nu. Vælg en anden klinik.",
   CASE_NOT_READY: "Din sag er ikke klar til at blive sendt. Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.",
   LEAD_NOT_PENDING: "Henvendelsen er allerede besvaret eller trukket tilbage, så den kan ikke ændres. Genindlæs siden for at se den nyeste status.",
-  CLINIC_NOT_VERIFIED: "Din klinik er ikke verificeret endnu, så du kan ikke modtage henvendelser.",
-  THREAD_CLOSED: "Samtalen er lukket, så der kan ikke skrives flere beskeder.",
-  MESSAGE_LIMIT: "Du har sendt for mange beskeder i dag. Prøv igen i morgen.",
+  CLINIC_NOT_VERIFIED: CLINIC_NOT_VERIFIED_TEXT,
+  THREAD_CLOSED: THREAD_CLOSED_TEXT,
+  MESSAGE_LIMIT: MESSAGE_LIMIT_TEXT,
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
   EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",

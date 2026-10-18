@@ -47,7 +47,7 @@ select tt.denied(format('select public.clinic_decide_lead(%L, %L)', tt.lead('S',
 
 -- Normal accept og dobbeltbeslutning
 select public.clinic_decide_lead(tt.lead('S', 'X'), 'accept', 'Velkommen', 600, 900);
-select tt.eq((select l.status::text from public.leads l where l.id = tt.lead('S', 'X')), 'accepted', 'normalt lead accepteret (set af klinikken)');
+select tt.eq(public.clinic_lead_status(tt.lead('S', 'X'))::text, 'accepted', 'normalt lead accepteret (set af klinikken)');
 select tt.denied(format('select public.clinic_decide_lead(%L, %L)', tt.lead('S', 'X'), 'accept'), 'et accepteret lead kan ikke besluttes igen', 'LEAD_NOT_PENDING');
 
 -- Akut: accept inden for 30 min gør held til booked

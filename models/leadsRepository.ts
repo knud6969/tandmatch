@@ -46,6 +46,7 @@ type LeadRow = Pick<
   | "quoted_price_max"
   | "clinic_comment"
   | "decline_reason"
+  | "decline_note"
 >;
 
 // Patientens læsning af egne leads: leadet og trådens beskeder (kun til at tælle ulæste: klinikkens, endnu ikke læst).
@@ -97,7 +98,7 @@ type ClinicLeadImageRow = { image_id: string; storage_path: string; approved_des
 
 // Billede på et lead, som serveren bruger det: stien forlader aldrig serveren. Klinikken får ingen AI-vurdering af
 // vinkel og kvalitet, kun den godkendte beskrivelse (kan være null, architecture 4.3).
-export type ClinicLeadImageRecord = {
+type ClinicLeadImageRecord = {
   id: string;
   storagePath: string;
   view: null;
@@ -106,7 +107,7 @@ export type ClinicLeadImageRecord = {
 };
 
 // Detaljen uden billeder; de signeres af controlleren. `unreadMessages` er 0 og sættes af controlleren (MessagesRepository).
-export type ClinicLeadDetailRecord = Omit<ClinicLeadDetailDto, "images">;
+type ClinicLeadDetailRecord = Omit<ClinicLeadDetailDto, "images">;
 
 // Klinikken bag et lead, som patient_lead_clinics() returnerer den (kun navn, by, logo og removed).
 type LeadClinicRow = {
@@ -121,7 +122,7 @@ type LeadClinicRow = {
 
 const LEAD_COLUMNS =
   "id, case_id, clinic_id, status, sent_at, responded_at, withdrawn_at, list_price_min, list_price_max, " +
-  "quoted_price_min, quoted_price_max, clinic_comment, decline_reason";
+  "quoted_price_min, quoted_price_max, clinic_comment, decline_reason, decline_note";
 
 const lead = (code: string, message: string) => new ApiError(409, code, message);
 
@@ -200,6 +201,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
       quotedPrice: priceRange(row.quoted_price_min, row.quoted_price_max),
       clinicComment: row.clinic_comment,
       declineReason: row.decline_reason,
+      declineNote: row.decline_note,
       booking: null,
       unreadMessages: (row.messages ?? []).filter((m) => m.sender_role === "clinic" && m.read_at === null).length,
     };
@@ -279,9 +281,13 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     return this.toPatientDto(found, clinics.get(found.id));
   }
 
-  // Leadets status for den, der har adgang (RLS: patienten på sagen, eller den verificerede klinik bag leadet). Også en
-  // tilbagetrukket status kan læses af klinikken, men intet indhold. Andre får 404. Bruges af beskedtråden.
-  async requireStatus(leadId: string): Promise<LeadStatus> {
+  // Leadets status for den, der har adgang. Patienten læser sit eget lead (RLS: sagens ejer). Klinikken har ingen SELECT på
+  // leads og bruger clinic_lead_status() (verificeret ejer, sent_at >= owner_since), som også giver en tilbagetrukket
+  // status, men intet indhold. Andre får 404. Bruges af beskedtråden.
+  async requireStatus(leadId: string, role: "patient" | "clinic"): Promise<LeadStatus> {
+    if (role === "clinic") {
+      return this.requireRow(await this.rpc<LeadStatus>("clinic_lead_status", { p_lead_id: leadId }));
+    }
     const row = await this.run<{ status: LeadStatus }>(
       this.db.from("leads").select("status").eq("id", leadId).maybeSingle(),
       "leads: select fejlede",

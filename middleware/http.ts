@@ -1,5 +1,6 @@
 import "server-only";
 import type { ZodType } from "zod";
+import { CLINIC_NOT_VERIFIED_TEXT, MESSAGE_LIMIT_TEXT, THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
 
 // Fælles fejlformat (architecture 2.4). Meddelelser er på dansk og uden interne detaljer.
 export class ApiError extends Error {
@@ -183,15 +184,15 @@ export const accountRequired = (message: string) => new ApiError(403, "ACCOUNT_R
 
 // Klinikken er ikke verificeret og kan hverken modtage eller besvare leads (architecture 3, 5.7, 10.9).
 export const clinicNotVerified = () =>
-  new ApiError(403, "CLINIC_NOT_VERIFIED", "Din klinik er ikke verificeret endnu, så du kan ikke modtage henvendelser.");
+  new ApiError(403, "CLINIC_NOT_VERIFIED", CLINIC_NOT_VERIFIED_TEXT);
 
 // Beskedtråden er lukket (lead afvist eller trukket tilbage, architecture 10.12).
 export const threadClosed = () =>
-  new ApiError(409, "THREAD_CLOSED", "Samtalen er lukket, så der kan ikke skrives flere beskeder.");
+  new ApiError(409, "THREAD_CLOSED", THREAD_CLOSED_TEXT);
 
 // Daglige loft for beskeder er nået (architecture 7.6).
 export const messageLimit = () =>
-  new ApiError(429, "MESSAGE_LIMIT", "Du har sendt for mange beskeder i dag. Prøv igen i morgen.");
+  new ApiError(429, "MESSAGE_LIMIT", MESSAGE_LIMIT_TEXT);
 
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
 

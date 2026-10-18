@@ -54,8 +54,8 @@ select tt.allowed(format('insert into public.messages (lead_id, sender_id, body)
 
 -- Markering som læst: kun modtageren, kun read_at
 select tt.as_user(tt.id('pA'));
-select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_id = %L', tt.lead('S', 'X'), tt.id('uX')), 2, 'modtageren kan markere som læst');
-select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_id = %L', tt.lead('S', 'X'), tt.id('pA')), 0, 'afsenderen kan ikke markere egne som læst');
+select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_role = ''clinic''', tt.lead('S', 'X')), 2, 'modtageren kan markere som læst');
+select tt.affects(format('update public.messages set read_at = now() where lead_id = %L and sender_role = ''patient''', tt.lead('S', 'X')), 0, 'afsenderen kan ikke markere egne som læst');
 select tt.denied(format('update public.messages set body = %L where lead_id = %L', 'redigeret', tt.lead('S', 'X')), 'beskeder kan ikke redigeres', '42501');
 select tt.denied(format('delete from public.messages where lead_id = %L', tt.lead('S', 'X')), 'beskeder kan ikke slettes', '42501');
 

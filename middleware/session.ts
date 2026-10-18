@@ -77,12 +77,13 @@ export function requireAccount(session: Session, message: string): Session {
 }
 
 // Rolle-tjek for API-routes. Anonyme patienter afvises, medmindre allowAnonymous er sat (kun sagsflowet).
+// `role` kan være flere roller (fx beskedtråden, hvor både patient og klinik er deltagere).
 export async function requireRole(
-  role: Role,
+  role: Role | readonly Role[],
   options: { allowAnonymous?: boolean; ctx?: AuthContext } = {},
 ): Promise<Session> {
   const session = await requireSession(options.ctx);
-  if (session.role !== role) {
+  if (!(Array.isArray(role) ? role : [role]).includes(session.role)) {
     throw new ApiError(403, "FORBIDDEN", "Du har ikke adgang til denne handling.");
   }
   if (session.isAnonymous && !options.allowAnonymous) {

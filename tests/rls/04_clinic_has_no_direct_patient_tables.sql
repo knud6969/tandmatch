@@ -12,7 +12,8 @@ select public.book_slot(tt.lead('S', 'X'), tt.svc('undersoegelse'), tt.slot(3, 1
 
 -- Kontrol: X har lead og booking og ser dem kun via funktionerne
 select tt.as_user(tt.id('uX'));
-select tt.rows('select 1 from public.leads', 1, 'X ser sit lead');
+select tt.rows('select 1 from public.leads', 0, 'X har ingen direkte læsning af leads (security H1)');
+select tt.eq((select count(*) from public.clinic_leads())::int, 1, 'X ser sit lead via clinic_leads()');
 
 select tt.rows('select 1 from public.ai_conversations', 0, 'ai_conversations er skjult for klinikker');
 select tt.rows('select 1 from public.ai_messages', 0, 'ai_messages er skjult for klinikker');

@@ -16,14 +16,16 @@ select public.book_slot(tt.lead('S', 'Y'), tt.svc('undersoegelse'), tt.slot(3, 1
 
 -- Y kan selv se sit materiale (kontrol af at opsætningen virker)
 select tt.as_user(tt.id('uY'));
-select tt.rows('select 1 from public.leads', 1, 'Y ser sit eget lead');
+select tt.rows('select 1 from public.leads', 0, 'Y har ingen direkte læsning af leads (security H1)');
+select tt.eq((select count(*) from public.clinic_leads())::int, 1, 'Y ser sit eget lead via clinic_leads()');
 select tt.rows('select 1 from public.messages', 0, 'klinikken har ingen direkte læsning af messages');
 select tt.eq((select count(*) from public.clinic_lead_messages(tt.lead('S', 'Y')))::int, 2, 'Y ser sin egen tråd via clinic_lead_messages');
 select tt.rows($$select 1 from public.clinic_bookings(now() - interval '1 day', now() + interval '30 days')$$, 1, 'Y ser sin egen booking');
 
 -- X
 select tt.as_user(tt.id('uX'));
-select tt.rows('select 1 from public.leads', 1, 'X ser kun ét lead');
+select tt.rows('select 1 from public.leads', 0, 'X har ingen direkte læsning af leads (security H1)');
+select tt.eq((select count(*) from public.clinic_leads())::int, 1, 'X ser kun ét lead');
 select tt.rows(format('select 1 from public.leads where clinic_id = %L', tt.cid('Y')), 0, 'X kan ikke læse Y''s lead (tabel)');
 select tt.rows(format('select 1 from public.leads where clinic_comment is not null or quoted_price_min is not null'), 0, 'X kan ikke læse Y''s beslutning');
 select tt.rows('select 1 from public.messages', 0, 'X kan ikke læse Y''s beskeder (tabel)');

@@ -284,6 +284,7 @@ describe("klinikkens beslutning", () => {
     const mine = await p.c.get(`/api/cases/${p.caseId}/leads`);
     assert.equal(mine.body.leads[0].status, "declined");
     assert.equal(mine.body.leads[0].declineReason, "no_capacity");
+    assert.equal(mine.body.leads[0].declineNote, "Fuldt booket.", "patienten ser klinikkens note (review 1)");
     // Et besvaret lead kan ikke besvares igen
     const twice = await k.c.post(`/api/leads/${leadId}/decision`, { decision: "accept" });
     assert.equal(twice.status, 409);
@@ -421,6 +422,43 @@ describe("beskedtråd pr. lead", () => {
     // Eksisterende beskeder kan stadig læses af begge
     assert.equal((await p2.c.get(path2)).body.messages.length, 1);
     assert.equal((await k.c.get(path2)).body.messages.length, 1);
+  });
+
+  it("døgnloftet giver MESSAGE_LIMIT (429), ikke THREAD_CLOSED, mens tråden er åben", async () => {
+    const p = await patient();
+    const k = await clinic();
+    const [leadId] = await send(p, [k]);
+    const path = `/api/leads/${leadId}/messages`;
+    const rows = Array.from({ length: 200 }, (_, i) => ({ lead_id: leadId, sender_id: p.userId, body: `Fyld ${i}` }));
+    assert.ifError((await admin.from("messages").insert(rows)).error);
+    const limited = await p.c.post(path, { body: "Nummer 201" });
+    assert.equal(limited.status, 429);
+    assert.equal(code(limited), "MESSAGE_LIMIT");
+    // Klinikkens loft er sit eget: dens besked går igennem på samme tråd
+    assert.equal((await k.c.post(path, { body: "Klinikken svarer" })).status, 201);
+    // Lukkes tråden, er svaret THREAD_CLOSED, også selvom loftet er nået
+    assert.equal((await k.c.post(`/api/leads/${leadId}/decision`, { decision: "decline", reason: "other" })).status, 200);
+    const closed = await p.c.post(path, { body: "Efter afvisning" });
+    assert.equal(closed.status, 409);
+    assert.equal(code(closed), "THREAD_CLOSED");
+  });
+
+  it("klinikken har ingen direkte læsning af leads, men tråden og statusopslaget virker", async () => {
+    const p = await patient();
+    const k = await clinic();
+    const [leadId] = await send(p, [k]);
+    const path = `/api/leads/${leadId}/messages`;
+    assert.equal((await p.c.post(path, { body: "Spørgsmål" })).status, 201);
+    const sent = await k.c.post(path, { body: "Svar" });
+    assert.equal(sent.status, 201, JSON.stringify(sent.body));
+    assert.deepEqual(Object.keys(sent.body).sort(), ["body", "createdAt", "fromMe", "id", "readAt", "senderRole"]);
+    const thread = await k.c.get(path);
+    assert.equal(thread.body.messages.length, 2);
+    assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.unreadMessages, 0, "læst ved GET");
+    // Patientens svar fra insert har samme form og ingen sender_id
+    const fromPatient = await p.c.post(path, { body: "Tak" });
+    assert.deepEqual(Object.keys(fromPatient.body).sort(), ["body", "createdAt", "fromMe", "id", "readAt", "senderRole"]);
+    assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.unreadMessages, 1);
   });
 
   it("tråden er lukket ved tilbagetrækning, og klinikken mister adgangen til beskederne", async () => {

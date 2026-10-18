@@ -25,6 +25,7 @@ export type PatientLeadDto = {
   quotedPrice: PriceRange | null;
   clinicComment: string | null;
   declineReason: LeadDeclineReason | null;
+  declineNote: string | null; // klinikkens egen tekst til afvisningen (højst 200 tegn)
   booking: null; // PatientBookingDto kommer med trin 6.1
   unreadMessages: number;
 };

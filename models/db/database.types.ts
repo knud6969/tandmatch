@@ -785,6 +785,9 @@ isOneToOne: false
               "body": string,"created_at": string,"from_me": boolean,"id": string,"read_at": string
             }[]
                            },
+"clinic_lead_status":
+{ Args: { "p_lead_id": string }; Returns: Database["public"]['Enums']["lead_status"]
+                           },
 "clinic_leads":
 { Args: { "p_status"?: Database["public"]['Enums']["lead_status"] }; Returns: {
               "city": string,"distance_km": number,"image_count": number,"is_emergency": boolean,"lead_id": string,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"requested_starts_at": string,"seen_at": string,"sent_at": string,"service_names": (string)[],"status": Database["public"]['Enums']["lead_status"],"unread_messages": number,"withdrawn_at": string

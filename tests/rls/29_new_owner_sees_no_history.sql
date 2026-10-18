@@ -50,8 +50,8 @@ select tt.mk_lead('H_new', 'A1', 'sent');
 
 select tt.as_user(tt.id('uNew'));
 select tt.eq((select count(*) from public.clinic_leads())::int, 1, 'den nye ejer ser kun det nye lead');
-select tt.rows('select 1 from public.leads', 1, 'den nye ejer ser kun det nye lead (tabel)');
-select tt.rows(format('select 1 from public.leads where id = %L', tt.lead('H_old', 'A1')), 0, 'den nye ejer ser ikke det gamle lead');
+select tt.rows('select 1 from public.leads', 0, 'den nye ejer har ingen direkte læsning af leads');
+select tt.ok(public.clinic_lead_status(tt.lead('H_old', 'A1')) is null, 'den nye ejer ser ikke det gamle lead');
 select tt.rows(format('select 1 from public.clinic_lead_detail(%L)', tt.lead('H_old', 'A1')), 0, 'clinic_lead_detail: intet for gammelt lead');
 select tt.rows(format('select 1 from public.clinic_lead_images(%L)', tt.lead('H_old', 'A1')), 0, 'clinic_lead_images: intet for gammelt lead');
 select tt.rows(format('select 1 from public.clinic_lead_messages(%L)', tt.lead('H_old', 'A1')), 0, 'clinic_lead_messages: intet for gammelt lead');

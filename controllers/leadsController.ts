@@ -107,7 +107,7 @@ export class LeadsController {
     return {
       ...detail,
       images: signed.map((image, i) => ({ ...image, approvedDescription: records[i].description })),
-      unreadMessages: await this.messages.countUnreadForClinic(leadId),
+      unreadMessages: await this.messages.countUnreadForClinic(leadId, detail.status),
     };
   }
 }
