@@ -147,6 +147,8 @@ Samme regel som 3.6: hver agent ændrer kun sine egne filer, én commit pr. agen
 
 ## Trin 5: Klinikkens indbakke: accepter eller afvis
 
+Status: i gang på `feat/omlaegning-trin-5`. Security L6 er besluttet (architecture 4.3 `messages`, 12.3 punkt 30): `sender_id` `on delete set null` og ny `sender_role`.
+
 | # | Agent | Opgave | Filer | Udgangspunkt i git | Færdig når |
 |---|---|---|---|---|---|
 | 5.1 | backend | **Klinikkens leads** | **Ændr** `models/leadsRepository.ts`, `controllers/leadsController.ts`. **Opret** `app/api/leads/{route,[id]/route,[id]/decision/route}.ts` (10.9) | `controllers/inboxController.ts`, `models/inboxModel.ts` | Klinik X ser kun egne leads; beslutningen sætter status; `seen_at` sættes; billeder signeres efter `clinic_lead_images()`; tilbagetrukne leads viser intet indhold |

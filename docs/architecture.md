@@ -838,7 +838,8 @@ Rækker oprettes **kun** af `send_leads()` og ændres kun af `clinic_decide_lead
 |---|---|---|
 | id | uuid PK | |
 | lead_id | uuid FK leads on delete cascade | Tråden er én patient og én klinik |
-| sender_id | uuid FK profiles | I dag `on delete cascade`: når en klinikkonto slettes, forsvinder klinikkens beskeder fra patientens tråd. Skal ændres (fx `on delete set null` med `sender_role`, så tråden bevares) [ÅBEN, 12.3 punkt 30], senest når beskedtråden bygges i trin 5 |
+| sender_id | uuid null FK profiles `on delete set null` | Afsenderen. Slettes klinikkontoen, bevares beskeden i patientens tråd uden afsender (besluttet, 12.3 punkt 30; migration i 5.2) |
+| sender_role | `message_sender_role` (`patient` \| `clinic`) not null | Sættes af serveren/funktionen ved indsættelse og afgør `fromMe` og visningen ("Klinikken"), også når `sender_id` er null |
 | body | text not null | max 2000 tegn |
 | read_at | timestamptz null | |
 
@@ -2057,7 +2058,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 27. *Afklaret:* klinikcontrollerne deler logik ved komposition, ikke en fælles basisklasse (2.1.1).
 28. *Afklaret:* en selvoprettet klinik, der mister sin ejer, slettes ikke, men får status `removed`. Den er skjult overalt og kan ikke vælges eller overtages; CVR nulstilles, så virksomheden kan oprette sig igen. Klinikindtastet indhold ryddes, og navnet bevares. Patienternes leads, beskeder, bookinger og anmeldelser bevares, og patienten ser "Klinikken er ikke længere på TandMatch". Anmeldelserne forsvinder fra offentligheden, men patienten kan se sin egen (4.2, 5.3).
 29. *Afklaret:* offentligt vises kun `verified` og `imported` uden ejer; `registered` er usynlig, også efter CVR-overtagelse (5.1 regel 11).
-30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). Forslag: `on delete set null` og en `sender_role`-kolonne, så tråden viser "Klinikken" for beskeder uden afsender. Afgøres og bygges med beskedtråden (trin 5.2).
+30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). **Besluttet (2026-10-18):** `on delete set null` og en `sender_role`-kolonne (`patient`/`clinic`), så tråden viser "Klinikken" for beskeder uden afsender. Bygges med beskedtråden (5.2) i en ny migration; eksisterende rækker får `sender_role` ud fra afsenderens rolle.
 31. **Forretningsmodel:** prototypen og siden "Sådan tjener vi penge" siger, at klinikker betaler for leads, og at patienter ikke betaler. Pris pr. lead, abonnement, betaling ved booking eller andet er ikke besluttet, og der er ingen betaling i koden.
 32. **API-test til trin 6:** der er endnu ingen API-test af en godkendt anmeldelse eller af en ikke-udløbet `held`-booking gennem API'et (kun i RLS-testene). Tilføjes, når anmeldelser og booking bygges (6.1-6.2).
 
