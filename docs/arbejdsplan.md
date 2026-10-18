@@ -147,7 +147,7 @@ Samme regel som 3.6: hver agent ændrer kun sine egne filer, én commit pr. agen
 
 ## Trin 5: Klinikkens indbakke: accepter eller afvis
 
-Status: færdigt på `feat/omlaegning-trin-5` (2026-10-18). Slutkontrol af 5.5d-e: ingen kritiske fund; reviewerens to dokumentrettelser og securitys L1 (`image_count` i detaljen) er rettet. Tests: RLS 44 (også med demodata), API 207, unit 397, e2e 62. Migrationerne `20261021000100` til `20261025000100` skal køres i det fælles projekt. Security L6 er besluttet (architecture 4.3 `messages`, 12.3 punkt 30): `sender_id` `on delete set null` og ny `sender_role`.
+Status: færdigt på `feat/omlaegning-trin-5` (2026-10-18). Slutkontrol af 5.5d-e: ingen kritiske fund; reviewerens to dokumentrettelser og securitys L1 (`image_count` i detaljen) er rettet. Tests: RLS 44 (også med demodata), API 207, unit 397, e2e 62. Migrationerne `20261021000100` til `20261025000100` er kørt i det fælles projekt (2026-10-18). Security L6 er besluttet (architecture 4.3 `messages`, 12.3 punkt 30): `sender_id` `on delete set null` og ny `sender_role`.
 
 | # | Agent | Opgave | Filer | Udgangspunkt i git | Færdig når |
 |---|---|---|---|---|---|
