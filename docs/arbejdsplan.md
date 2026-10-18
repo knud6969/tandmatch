@@ -174,7 +174,7 @@ Ikke med i 5.5: kort opsummering i indbakkerækken (review, forslag), listepris 
 
 ## Trin 6: Booking i klinikkens kalender og anmeldelser efter besøget
 
-Status: i gang på `feat/omlaegning-trin-6` (fra trin 5, 2026-10-18).
+Status: færdigt på `feat/omlaegning-trin-6` (fra trin 5, 2026-10-18; sidste commit `af065eb5`). Migration `20261027000100` skal køres i det fælles projekt.
 
 | # | Agent | Opgave | Filer | Udgangspunkt i git | Færdig når |
 |---|---|---|---|---|---|
