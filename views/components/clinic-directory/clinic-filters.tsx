@@ -10,7 +10,7 @@ import { SelectField } from "@/views/components/ui/select-field";
 import { TextField } from "@/views/components/ui/text-field";
 import { hasOrigin, isPostalCode, type DirectoryFilters } from "@/views/utils/clinic-query";
 import { parseWholeKr } from "@/views/utils/format";
-import { roundPosition } from "@/views/utils/map";
+import { usePosition } from "@/views/utils/use-position";
 
 const DISTANCES = [5, 10, 25, 50, 100] as const;
 const STAR_OPTIONS = [
@@ -34,8 +34,10 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
   const [open, setOpen] = useState(false);
   const [postalDraft, setPostalDraft] = useState(filters.postalCode);
   const [priceDraft, setPriceDraft] = useState(filters.maxPrice === null ? "" : String(filters.maxPrice));
-  const [locating, setLocating] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const geo = usePosition((position) => {
+    setPostalDraft("");
+    onChange({ position, postalCode: "" });
+  });
 
   const hasServices = filters.serviceSlugs.length > 0;
   const priceInvalid = priceDraft.trim() !== "" && parseWholeKr(priceDraft) === null;
@@ -61,30 +63,6 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
     if (priceDraft.trim() === "") return onChange({ maxPrice: null });
     const value = parseWholeKr(priceDraft);
     if (value !== null) onChange({ maxPrice: value });
-  }
-
-  function requestPosition() {
-    setLocationError(null);
-    if (!("geolocation" in navigator)) {
-      setLocationError("Din browser kan ikke finde din position. Skriv dit postnummer i stedet.");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (result) => {
-        setLocating(false);
-        setPostalDraft("");
-        onChange({
-          position: { lat: roundPosition(result.coords.latitude), lng: roundPosition(result.coords.longitude) },
-          postalCode: "",
-        });
-      },
-      () => {
-        setLocating(false);
-        setLocationError("Vi kunne ikke få din position. Tjek browserens tilladelser, eller skriv dit postnummer i stedet.");
-      },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
-    );
   }
 
   function submit(event: FormEvent) {
@@ -178,8 +156,8 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
               onChange={(event) => changePostal(event.target.value)}
               error={postalInvalid ? "Postnummeret skal være fire cifre." : undefined}
             />
-            <Button variant="secondary" onClick={requestPosition} disabled={locating}>
-              {locating ? "Finder position …" : "Brug min position"}
+            <Button variant="secondary" onClick={geo.request} disabled={geo.locating}>
+              {geo.locating ? "Finder position …" : "Brug min position"}
             </Button>
             {filters.position && (
               <p className="text-sm text-ink-muted">
@@ -189,9 +167,9 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
                 </button>
               </p>
             )}
-            {locationError && (
+            {geo.error && (
               <p role="alert" className="text-sm font-medium text-danger-ink">
-                {locationError}
+                {geo.error}
               </p>
             )}
           </div>
@@ -262,7 +240,7 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
               onClick={() => {
                 setPostalDraft("");
                 setPriceDraft("");
-                setLocationError(null);
+                geo.clearError();
                 onReset();
               }}
             >

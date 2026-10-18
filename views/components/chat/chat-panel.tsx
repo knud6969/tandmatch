@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AI_BOUNDARY_TEXT,
   CHAT_PII_WARNING_TEXT,
   CHAT_WELCOME_TEXT,
-  LIFE_THREATENING_REFERRAL_TEXT,
   OUT_OF_SCOPE_NOTICES,
   PRELIMINARY_ASSESSMENT_LABEL,
 } from "@/lib/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/constants/limits";
 import type { AiChatMessageDto, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
 import { ConsentGate } from "@/views/components/case/consent-gate";
+import { EmergencyNotice } from "@/views/components/emergency/emergency-notice";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge } from "@/views/components/ui/badge";
 import { Button } from "@/views/components/ui/button";
@@ -22,28 +21,6 @@ import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest, ApiRequestError } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
-
-// Fast akut-blok over inputfeltet, så den ikke ruller væk, når samtalen fortsætter (architecture 6.1). Kort, så inputfeltet
-// stadig er synligt på en mobilskærm. Den fulde akut-henvisning står i selve svaret i samtalen.
-function EmergencyBlock() {
-  return (
-    <div role="alert" data-testid="akut-blok" className="rounded-control border border-danger-line bg-danger-bg p-3 text-danger-ink">
-      <p className="text-sm font-semibold">Det kan være akut</p>
-      <p className="mt-1 text-sm leading-snug">{LIFE_THREATENING_REFERRAL_TEXT}</p>
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <Link href="/klinikker?akut=1" className="inline-flex min-h-11 basis-full items-center font-semibold underline sm:basis-auto">
-          Se klinikker med ledig akuttid
-        </Link>
-        <a href="tel:112" className="inline-flex min-h-11 items-center font-semibold underline">
-          Ring 112
-        </a>
-        <a href="tel:1813" className="inline-flex min-h-11 items-center font-semibold underline">
-          Ring 1813
-        </a>
-      </p>
-    </div>
-  );
-}
 
 function AssistantExtras({ message }: { message: AiChatMessageDto }) {
   return (
@@ -219,7 +196,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
         </ul>
 
         <div className="sticky bottom-0 flex flex-col gap-3 border-t border-line bg-surface p-3 sm:p-4">
-          {hasEmergency && <EmergencyBlock />}
+          {hasEmergency && <EmergencyNotice linkToEmergency />}
           {blockedByConsent ? (
             <ConsentGate
               type="ai_processing"

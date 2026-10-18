@@ -16,7 +16,13 @@ import type { AuthUserDto } from "@/lib/types/auth";
 
 type LoginField = "email" | "password";
 
-export function LoginForm({ naeste }: { naeste: string | null }) {
+type LoginFormProps = {
+  naeste: string | null;
+  // Med onDone bliver brugeren på siden (fx /akut) i stedet for at blive sendt til sin forside.
+  onDone?: () => void | Promise<void>;
+};
+
+export function LoginForm({ naeste, onDone }: LoginFormProps) {
   const router = useRouter();
   const { refresh } = useSession();
   const [values, setValues] = useState({ email: "", password: "" });
@@ -35,6 +41,10 @@ export function LoginForm({ naeste }: { naeste: string | null }) {
     try {
       const user = await apiRequest<AuthUserDto>("/api/auth/login", { method: "POST", body: parsed.data });
       await refresh();
+      if (onDone) {
+        await onDone();
+        return;
+      }
       router.replace(safeInternalPath(naeste ?? undefined) ?? AREA_HOME[user.role]);
       router.refresh();
     } catch (error) {
@@ -74,12 +84,14 @@ export function LoginForm({ naeste }: { naeste: string | null }) {
       <Button type="submit" fullWidth disabled={pending}>
         {pending ? "Logger ind …" : "Log ind"}
       </Button>
-      <p className="text-center text-base text-ink-muted">
-        Har du ikke en konto endnu?{" "}
-        <LinkButton href="/opret" variant="ghost" className="min-h-11 px-2">
-          Opret konto
-        </LinkButton>
-      </p>
+      {!onDone && (
+        <p className="text-center text-base text-ink-muted">
+          Har du ikke en konto endnu?{" "}
+          <LinkButton href="/opret" variant="ghost" className="min-h-11 px-2">
+            Opret konto
+          </LinkButton>
+        </p>
+      )}
     </form>
   );
 }

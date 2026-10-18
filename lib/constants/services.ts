@@ -11,3 +11,5 @@ export const SERVICE_CATEGORY_LABEL = {
 // Slugs, som koden afhænger af (kataloget oprettes i migrationen 20261012000200_services_catalog.sql).
 // Bruges, når patienten er usikker på, hvilken ydelse der er tale om (architecture 7.3).
 export const EXAMINATION_SERVICE_SLUG = "undersoegelse";
+// Forvalgt akutydelse på /akut (architecture 6.1).
+export const EMERGENCY_DEFAULT_SERVICE_SLUG = "akut_konsultation";

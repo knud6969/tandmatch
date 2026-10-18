@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import type { CaseDto } from "@/lib/types/cases";
-import type { ConsentDto } from "@/lib/types/consents";
 import { ChatPanel } from "@/views/components/chat/chat-panel";
-import { hasActiveConsent } from "@/views/components/case/consent-gate";
 import { DeleteConversation } from "@/views/components/case/delete-conversation";
 import { ImagesStep, type RetakeImage } from "@/views/components/case/images-step";
 import { ServicesStep } from "@/views/components/case/services-step";
@@ -18,6 +16,7 @@ import { cx } from "@/views/components/ui/cx";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseHref } from "@/views/utils/case-links";
+import { hasCurrentConsent, loadConsents } from "@/views/utils/consents";
 import { useLoad } from "@/views/utils/use-load";
 
 const STEPS = [
@@ -67,8 +66,6 @@ function Stepper({ current, onSelect }: { current: StepId; onSelect: (id: StepId
   );
 }
 
-const loadConsents = async (): Promise<ConsentDto[]> => (await apiRequest<{ consents: ConsentDto[] }>("/api/consents")).consents;
-
 // Sagsflowet (architecture 6.1): chat, billeder, behandlinger, tid og sted og en opsummering, som patienten godkender.
 // Næste skridt (klinikker, konto og afsendelse) er trin 4.
 export function CaseFlow({ caseId }: { caseId: string }) {
@@ -80,8 +77,8 @@ export function CaseFlow({ caseId }: { caseId: string }) {
   const [grantedNow, setGrantedNow] = useState<{ ai: boolean; image: boolean }>({ ai: false, image: false });
 
   const caseDto = caseState.data;
-  const aiConsent = grantedNow.ai || (consents.data !== null && hasActiveConsent(consents.data, "ai_processing"));
-  const imageConsent = grantedNow.image || (consents.data !== null && hasActiveConsent(consents.data, "image_upload"));
+  const aiConsent = grantedNow.ai || (consents.data !== null && hasCurrentConsent(consents.data, "ai_processing"));
+  const imageConsent = grantedNow.image || (consents.data !== null && hasCurrentConsent(consents.data, "image_upload"));
   const go = (id: StepId) => {
     setStep(id);
     window.scrollTo?.({ top: 0 });

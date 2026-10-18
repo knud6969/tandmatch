@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
 import { clinicProfileHref } from "@/views/utils/clinic-query";
 import { cx } from "@/views/components/ui/cx";
@@ -17,11 +18,13 @@ type ClinicCardProps = {
   compare?: { selected: boolean; selectable: boolean; disabled: boolean; contacted: boolean; onToggle: () => void } | null;
   // Med ?sag= fører kortet til profilen med sagen med, så valget bevares.
   profileHref?: string;
+  // Egen handling nederst på kortet (fx "Vælg tid" på /akut).
+  action?: ReactNode;
 };
 
 // Klinikkort i Airbnb-stil. Verificerede klinikker har billede/logo, blå kant og mærket "Verificeret"; basisklinikker er
 // dæmpede, uden billede, og siger tydeligt, at de ikke er på TandMatch endnu. Hele kortet er et link til profilen.
-export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, compare, profileHref }: ClinicCardProps) {
+export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, compare, profileHref, action }: ClinicCardProps) {
   const full = clinic.tier === "full";
   return (
     <li
@@ -62,6 +65,8 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
         <ClinicWhere clinic={clinic} />
         <ClinicFacts clinic={clinic} hasServices={hasServices} emergency={emergency} />
       </div>
+
+      {action && <div className="relative z-10 border-t border-line p-4">{action}</div>}
 
       {compare && clinic.canReceiveLeads && compare.contacted && (
         <p className="relative z-10 flex min-h-12 items-center border-t border-line bg-surface-muted px-4 text-base font-semibold text-ink-muted">

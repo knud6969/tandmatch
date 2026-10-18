@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { ClinicListDto, ClinicListItemDto } from "@/lib/types/clinics";
-import type { ConsentDto } from "@/lib/types/consents";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { PatientSignupForm } from "@/views/components/auth/patient-signup-form";
-import { ConsentGate, hasActiveConsent } from "@/views/components/case/consent-gate";
+import { ConsentGate } from "@/views/components/case/consent-gate";
 import { PriceWithSource } from "@/views/components/ui/price-with-source";
 import { useSession } from "@/views/components/session/session-provider";
 import { AnonymousPatientBanner } from "@/views/components/session/anonymous-patient-banner";
@@ -20,13 +19,12 @@ import { apiRequest } from "@/views/utils/api-client";
 import { caseDirectoryHref, caseFlowHref, caseHref, clinicsHref } from "@/views/utils/case-links";
 import { isUuid } from "@/views/utils/ids";
 import { writeSelection } from "@/views/utils/compare-selection";
+import { hasCurrentConsent, loadConsents } from "@/views/utils/consents";
 import { loadCaseSelection, noSlotsText, type CaseSelectionContext } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
 type Loaded = { ctx: CaseSelectionContext; clinics: ClinicListItemDto[] };
-
-const loadConsents = async (): Promise<ConsentDto[]> => (await apiRequest<{ consents: ConsentDto[] }>("/api/consents")).consents;
 
 // Klinik-id'erne fra ?klinikker= (kommasepareret). Ugyldige og dobbelte id'er fjernes.
 function clinicIdsKey(value: string | null): string {
@@ -142,7 +140,7 @@ export function SendStep({ caseId, clinicsParam }: { caseId: string; clinicsPara
   }
 
   const anonymous = me?.isAnonymous === true;
-  const consentGiven = grantedNow || (consents.data !== null && hasActiveConsent(consents.data, "health_data_sharing"));
+  const consentGiven = grantedNow || (consents.data !== null && hasCurrentConsent(consents.data, "health_data_sharing"));
 
   async function sendCase() {
     await send.run(async () => {

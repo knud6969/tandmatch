@@ -30,7 +30,7 @@ export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
   clinic_recommendation: CLINIC_RECOMMENDATION_NOTICE_TEXT,
 };
 
-// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til /klinikker?akut=1.
+// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til EMERGENCY_HREF (/akut, lib/navigation/entries.ts).
 export const EMERGENCY_REFERRAL_TEXT =
   "Det, du beskriver, kan kræve hurtig hjælp. Søg en akut tid eller kontakt tandlægevagten så hurtigt som muligt. Du kan se klinikker med akutte tider i oversigten.";
 

@@ -117,7 +117,7 @@ test.describe("sagsflowet", () => {
     await page.getByRole("button", { name: "Send", exact: true }).click();
     const akut = page.getByTestId("akut-blok");
     await expect(akut).toBeVisible();
-    await expect(akut.getByRole("link", { name: "Se klinikker med ledig akuttid" })).toHaveAttribute("href", "/klinikker?akut=1");
+    await expect(akut.getByRole("link", { name: "Se klinikker med ledig akuttid" })).toHaveAttribute("href", "/akut");
     await expect(akut).toContainText("112");
     await expect(akut).toContainText("1813");
     await expect(akut).toBeInViewport();

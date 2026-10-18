@@ -1,6 +1,6 @@
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { Metadata } from "next";
-import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
+import { DIRECTORY_HREF, DIRECTORY_READY, EMERGENCY_HREF } from "@/lib/navigation/entries";
 import { ChatEntry } from "@/views/components/home/chat-entry";
 import { ClinicPreview } from "@/views/components/home/clinic-preview";
 import { EntryButton } from "@/views/components/home/entry-button";
@@ -39,12 +39,12 @@ export default function HomePage() {
             <EntryButton href={DIRECTORY_HREF} ready={DIRECTORY_READY}>
               Find en klinik
             </EntryButton>
-            <EntryButton href={`${DIRECTORY_HREF}?akut=1`} ready={DIRECTORY_READY} variant="secondary">
+            <EntryButton href={EMERGENCY_HREF} ready={DIRECTORY_READY} variant="secondary">
               Jeg har ondt
             </EntryButton>
           </div>
           <p className="text-sm text-ink-muted">
-            “Jeg har ondt” viser klinikker med akuttid. Ved livstruende symptomer ring 112.
+            “Jeg har ondt” viser klinikker med akuttid og lader dig reservere en tid. Ved livstruende symptomer ring 112.
           </p>
         </div>
       </section>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CONSENT_TEXT_VERSIONS, CONSENT_TEXTS, CONSENT_TYPE_LABEL } from "@/lib/constants/consents";
-import type { ConsentDto } from "@/lib/types/consents";
 import type { ConsentType } from "@/lib/types/common";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
@@ -12,11 +11,6 @@ import { apiRequest } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 
 type GateType = Extract<ConsentType, "ai_processing" | "image_upload" | "health_data_sharing">;
-
-// Har patienten et aktivt samtykke i den aktuelle tekstversion?
-export function hasActiveConsent(consents: ConsentDto[], type: ConsentType): boolean {
-  return consents.some((c) => c.type === type && c.withdrawnAt === null && c.textVersion === CONSENT_TEXT_VERSIONS[type]);
-}
 
 // Særskilt samtykke lige før handlingen (architecture 9.4). Aldrig forudafkrydset og aldrig samlet med andre samtykker.
 export function ConsentGate({ type, onGranted, actionLabel = "Giv samtykke og fortsæt" }: { type: GateType; onGranted: () => void; actionLabel?: string }) {
