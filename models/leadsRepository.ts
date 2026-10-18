@@ -7,7 +7,7 @@ import {
   MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/constants/limits";
-import type { leadDecisionSchema } from "@/lib/schemas/leads";
+import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/schemas/leads";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/types/cases";
 import type { PriceRange } from "@/lib/types/common";
@@ -26,6 +26,8 @@ import {
   ApiError,
   clinicNotVerified,
   notFound,
+  slotTaken,
+  slotUnavailable,
 } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
@@ -33,6 +35,7 @@ import { toClinicBookingDto } from "@/models/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
+type EmergencyLeadInput = z.infer<typeof emergencyLeadSchema>;
 
 type LeadRow = Pick<
   Tables<"leads">,
@@ -164,6 +167,17 @@ const SEND_ERRORS = (): Record<string, ApiError> => ({
   ),
 });
 
+// Fejl fra send_emergency_lead() (architecture 5.3, 10.11): send_leads()' fejl plus akutvejens egne.
+const EMERGENCY_ERRORS = (): Record<string, ApiError> => ({
+  ...SEND_ERRORS(),
+  ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.emergencyLead),
+  INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "Vælg en akutbehandling."),
+  INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", "Tjek navn og telefonnummer."),
+  UNKNOWN_POSTAL_CODE: new ApiError(400, "UNKNOWN_POSTAL_CODE", "Vi kender ikke postnummeret."),
+  SLOT_TAKEN: slotTaken(),
+  SLOT_UNAVAILABLE: slotUnavailable(),
+});
+
 // Fejl fra clinic_decide_lead() (architecture 5.3, 10.9). En fremmed klinik får NOT_FOUND, altså 404 (2.4).
 const DECIDE_ERRORS = (): Record<string, ApiError> => {
   const invalid = (message: string) => new ApiError(400, "VALIDATION_ERROR", message);
@@ -261,6 +275,25 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
   async sendLeads(caseId: string, clinicIds: string[]): Promise<number> {
     const created = await this.rpc<number>("send_leads", { p_case_id: caseId, p_clinic_ids: clinicIds }, SEND_ERRORS());
     return created ?? 0;
+  }
+
+  // send_emergency_lead(): sag, ydelse, lead og reservation i ét kald (én transaktion, intet efterlades ved fejl).
+  async sendEmergency(input: EmergencyLeadInput): Promise<{ caseId: string; leadId: string }> {
+    const rows = await this.rpc<{ case_id: string; lead_id: string }[]>(
+      "send_emergency_lead",
+      {
+        p_clinic_id: input.clinicId,
+        p_service_id: input.serviceId,
+        p_starts_at: input.startsAt,
+        p_description: input.description,
+        p_contact_name: input.contactName,
+        p_contact_phone: input.contactPhone,
+        ...(input.postalCode ? { p_postal_code: input.postalCode } : {}),
+      },
+      EMERGENCY_ERRORS(),
+    );
+    const row = this.requireRow(rows?.[0] ?? null);
+    return { caseId: row.case_id, leadId: row.lead_id };
   }
 
   // withdraw_lead(): kun fra `sent`. Ejerskab tjekkes i funktionen (fremmed lead giver NOT_FOUND, altså 404).

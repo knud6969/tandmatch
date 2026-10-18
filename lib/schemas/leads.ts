@@ -1,12 +1,17 @@
 import { z } from "zod";
 import { MAX_PRICE_DKK } from "@/lib/constants/clinics";
 import {
+  EMERGENCY_DESCRIPTION_MAX,
+  EMERGENCY_DESCRIPTION_MIN,
   LEAD_CLINIC_DECLINE_REASONS,
   LEAD_COMMENT_MAX_CHARS,
   LEAD_DECLINE_NOTE_MAX_CHARS,
   LEAD_STATUSES,
 } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { contactNameSchema } from "@/lib/schemas/bookings";
+import { postalCodeSchema } from "@/lib/schemas/clinics";
+import { phoneSchema } from "@/lib/schemas/phone";
 
 // Afsendelse af en sag til 1-3 klinikker (architecture 10.5). Loftet på aktive og samlede leads tjekkes i databasen.
 export const sendLeadsSchema = z
@@ -54,3 +59,21 @@ export const leadDecisionSchema = z.discriminatedUnion("decision", [
     })
     .strict(),
 ]);
+
+// Akutvejen (architecture 10.11): sag, ydelse og reservation i ét kald. Ydelsen skal være en aktiv akutydelse; det tjekker
+// databasen. Tiden er en af tiderne fra GET /api/clinics/{id}/availability.
+export const emergencyLeadSchema = z
+  .object({
+    clinicId: z.uuid("Ugyldig klinik."),
+    serviceId: z.uuid("Ugyldig behandling."),
+    startsAt: z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." }),
+    description: z
+      .string()
+      .trim()
+      .min(EMERGENCY_DESCRIPTION_MIN, `Beskriv problemet med mindst ${EMERGENCY_DESCRIPTION_MIN} tegn.`)
+      .max(EMERGENCY_DESCRIPTION_MAX, `Beskrivelsen må højst være ${EMERGENCY_DESCRIPTION_MAX} tegn.`),
+    contactName: contactNameSchema,
+    contactPhone: phoneSchema,
+    postalCode: postalCodeSchema.optional(),
+  })
+  .strict();

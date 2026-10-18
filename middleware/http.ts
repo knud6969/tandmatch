@@ -198,6 +198,7 @@ export const ACCOUNT_REQUIRED_MESSAGES = {
   sendLeads: "Opret en konto for at kontakte klinikker.",
   withdrawLead: "Opret en konto for at trække en henvendelse tilbage.",
   bookSlot: "Opret en konto for at booke en tid.",
+  emergencyLead: "Opret en konto for at bestille en akuttid.",
 } as const;
 
 export const accountRequired = (message: string) => new ApiError(403, "ACCOUNT_REQUIRED", message);

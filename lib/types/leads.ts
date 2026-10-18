@@ -82,3 +82,6 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
   } | null;
   booking: ClinicBookingDto | null;
 };
+
+// POST /api/emergency-leads (architecture 10.11). lead.booking.status er altid "held".
+export type EmergencyLeadCreatedDto = { caseId: string; lead: PatientLeadDto };

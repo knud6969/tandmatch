@@ -1,8 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type { leadDecisionSchema, sendLeadsSchema } from "@/lib/schemas/leads";
-import type { ClinicLeadDetailDto, ClinicLeadListItemDto, LeadStatus, PatientLeadDto } from "@/lib/types/leads";
+import type { emergencyLeadSchema, leadDecisionSchema, sendLeadsSchema } from "@/lib/schemas/leads";
+import type {
+  ClinicLeadDetailDto,
+  ClinicLeadListItemDto,
+  EmergencyLeadCreatedDto,
+  LeadStatus,
+  PatientLeadDto,
+} from "@/lib/types/leads";
 import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
@@ -15,6 +21,7 @@ import { CaseImageUrlService } from "@/services/caseImageUrlService";
 
 type SendLeadsInput = z.infer<typeof sendLeadsSchema>;
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
+type EmergencyLeadInput = z.infer<typeof emergencyLeadSchema>;
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type LeadsDeps = {
@@ -63,6 +70,16 @@ export class LeadsController {
     await this.leads.sendLeads(caseId, input.clinicIds);
     const created = new Set(input.clinicIds);
     return this.withBookings((await this.leads.listForCase(caseId)).filter((lead) => created.has(lead.clinic.id)));
+  }
+
+  // Akutvejen (architecture 10.11): sag, ydelse, lead og reservation i én transaktion i databasen. Samme samtykketjek som
+  // send(); resten (konto, verificeret klinik, tid, lofter) håndhæver send_emergency_lead() og send_leads().
+  async sendEmergency(input: EmergencyLeadInput): Promise<EmergencyLeadCreatedDto> {
+    await this.requireCurrentSharingConsent();
+    const { caseId, leadId } = await this.leads.sendEmergency(input);
+    const created = (await this.leads.listForCase(caseId)).filter((lead) => lead.id === leadId);
+    const [lead] = await this.withBookings(created);
+    return { caseId, lead };
   }
 
   // Kræver et aktivt delingssamtykke med den gældende tekstversion (architecture 4.3, 10.5). Et samtykke til en

@@ -40,4 +40,8 @@ export const CLINIC_LEAD_STATUS_LABEL = {
   withdrawn: "Trukket tilbage",
 } as const satisfies Record<(typeof LEAD_STATUSES)[number], string>;
 
+// Akutvejen (architecture 10.11): længden på patientens beskrivelse. Samme grænser i send_emergency_lead().
+export const EMERGENCY_DESCRIPTION_MIN = 10;
+export const EMERGENCY_DESCRIPTION_MAX = 1000;
+
 export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";

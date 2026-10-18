@@ -941,6 +941,11 @@ isOneToOne: false
 "review_is_for_my_clinic":
 { Args: { "p_review_id": string }; Returns: boolean
                            },
+"send_emergency_lead":
+{ Args: { "p_clinic_id": string,"p_contact_name": string,"p_contact_phone": string,"p_description": string,"p_postal_code"?: string,"p_service_id": string,"p_starts_at": string }; Returns: {
+              "case_id": string,"lead_id": string
+            }[]
+                           },
 "send_leads":
 { Args: { "p_case_id": string,"p_clinic_ids": (string)[],"p_contact_name"?: string,"p_contact_phone"?: string,"p_requested_service_id"?: string,"p_requested_starts_at"?: string }; Returns: number
                            },
