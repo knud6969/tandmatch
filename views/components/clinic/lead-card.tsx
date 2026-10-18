@@ -66,7 +66,7 @@ function DecisionSummary({ lead }: { lead: ClinicLeadDetailDto }) {
           <PriceWithSource price={decision.quotedPrice} source="præciseret pris" />
         </p>
       )}
-      {lead.status === "accepted" && !lead.booking && (
+      {lead.status === "accepted" && (!lead.booking || lead.booking.status === "cancelled") && (
         <p className="text-sm text-ink-muted">Patienten kan nu booke en tid i din kalender.</p>
       )}
     </section>

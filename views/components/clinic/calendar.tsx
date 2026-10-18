@@ -1,0 +1,173 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { BOOKING_STATUS_LABEL, CLINIC_BOOKINGS_DEFAULT_PAST_DAYS, BOOKING_HORIZON_DAYS, NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
+import type { ClinicBookingDto } from "@/lib/types/bookings";
+import { Badge } from "@/views/components/ui/badge";
+import { Button } from "@/views/components/ui/button";
+import { Card } from "@/views/components/ui/card";
+import { cx } from "@/views/components/ui/cx";
+import { LoadState } from "@/views/components/ui/load-state";
+import { StatusMessage } from "@/views/components/ui/status-message";
+import { apiRequest } from "@/views/utils/api-client";
+import { BOOKING_STATUS_TONE } from "@/views/utils/booking-status";
+import { dayKey, formatDay, formatShortDateTime, formatTime } from "@/views/utils/format";
+import { phoneHref } from "@/views/utils/links";
+import { useAction } from "@/views/utils/use-action";
+import { useLoad } from "@/views/utils/use-load";
+
+const loadBookings = async (): Promise<ClinicBookingDto[]> =>
+  (await apiRequest<{ bookings: ClinicBookingDto[] }>("/api/bookings")).bookings;
+
+type Pending = "cancel" | "no-show" | null;
+
+function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChanged: () => void }) {
+  const [pending, setPending] = useState<Pending>(null);
+  const action = useAction();
+  const inactive = booking.status === "cancelled" || booking.status === "completed" || booking.status === "no_show";
+
+  async function run(kind: "cancel" | "no-show") {
+    const ok = await action.run(async () => {
+      await apiRequest(`/api/bookings/${booking.id}/${kind}`, { method: "POST", body: {} });
+    });
+    setPending(null);
+    if (ok) onChanged();
+  }
+
+  return (
+    <li
+      className={cx("flex flex-col gap-2 rounded-control border border-line p-3 sm:p-4", inactive ? "bg-surface-muted" : "bg-surface")}
+      data-testid="kalender-booking"
+      data-status={booking.status}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-lg font-semibold text-ink">
+          {formatTime(booking.startsAt)}–{formatTime(booking.endsAt)}
+        </span>
+        <Badge tone={BOOKING_STATUS_TONE[booking.status]}>{BOOKING_STATUS_LABEL[booking.status]}</Badge>
+      </div>
+      <p className="text-base text-ink">{booking.service.name}</p>
+
+      {booking.status === "held" && (
+        <p className="text-sm text-ink-muted" data-testid="reservation">
+          Akuttid reserveret til patienten
+          {booking.holdExpiresAt ? `, udløber ${formatShortDateTime(booking.holdExpiresAt)}` : ""}. Svar på henvendelsen for at bekræfte eller frigive
+          tiden. Patientens kontaktoplysninger vises, når tiden er booket.
+        </p>
+      )}
+      {booking.contact && (
+        <dl className="grid gap-x-4 gap-y-1 text-base sm:grid-cols-[auto_1fr]" data-testid="kalender-kontakt">
+          <dt className="text-ink-muted">Patient</dt>
+          <dd className="font-semibold text-ink">{booking.contact.name}</dd>
+          <dt className="text-ink-muted">Telefon</dt>
+          <dd>
+            <a href={phoneHref(booking.contact.phone)} className="inline-flex min-h-11 items-center font-semibold text-brand-700 sm:min-h-0">
+              {booking.contact.phone}
+            </a>
+          </dd>
+          <dt className="text-ink-muted">E-mail</dt>
+          <dd className="break-all text-ink">{booking.contact.email}</dd>
+        </dl>
+      )}
+
+      <StatusMessage message={action.message} />
+
+      {pending ? (
+        <div className="flex flex-col gap-2" role="group" aria-label={pending === "cancel" ? "Bekræft aflysning" : "Bekræft udeblivelse"}>
+          <p className="text-sm text-ink-muted">
+            {pending === "cancel"
+              ? "Patienten får tiden aflyst, og tiden bliver ledig igen."
+              : "Patienten markeres som udeblevet. Det kan ikke fortrydes."}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="danger" onClick={() => run(pending)} disabled={action.busy}>
+              {action.busy ? "Gemmer …" : pending === "cancel" ? "Ja, aflys tiden" : "Ja, marker udeblevet"}
+            </Button>
+            <Button variant="ghost" onClick={() => setPending(null)} disabled={action.busy}>
+              Fortryd
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Link href={`/klinik/lead/${booking.leadId}`} className="inline-flex min-h-11 items-center font-semibold text-brand-700">
+            Se henvendelsen
+          </Link>
+          {booking.canMarkNoShow && booking.status === "booked" && (
+            <Button variant="secondary" onClick={() => setPending("no-show")}>
+              Marker udeblevet
+            </Button>
+          )}
+          {booking.canCancel && (
+            <Button variant="danger-outline" onClick={() => setPending("cancel")}>
+              Aflys
+            </Button>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+// Klinikkens kalender (architecture 6.3, 10.10): bookinger og reserverede akuttider pr. dag. Gennemført sættes automatisk
+// efter sluttid, så der er ingen knap til det.
+export function ClinicCalendar() {
+  const { data, loading, error, reload } = useLoad(loadBookings);
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [today] = useState(() => dayKey(new Date().toISOString()));
+
+  const { days, cancelledCount } = useMemo(() => {
+    const all = data ?? [];
+    const visible = all.filter((b) => showCancelled || b.status !== "cancelled");
+    const map = new Map<string, ClinicBookingDto[]>();
+    for (const booking of [...visible].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
+      const key = dayKey(booking.startsAt);
+      map.set(key, [...(map.get(key) ?? []), booking]);
+    }
+    return { days: [...map.entries()], cancelledCount: all.filter((b) => b.status === "cancelled").length };
+  }, [data, showCancelled]);
+
+  if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-sm text-ink-muted">
+        Viser de seneste {CLINIC_BOOKINGS_DEFAULT_PAST_DAYS} dage og de næste {BOOKING_HORIZON_DAYS} dage. Udeblivelse kan registreres fra starttidspunktet
+        og op til {NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut. Besøg bliver automatisk gennemført efter den frist.
+      </p>
+      {cancelledCount > 0 && (
+        <div>
+          <Button variant="ghost" onClick={() => setShowCancelled((v) => !v)} aria-pressed={showCancelled}>
+            {showCancelled ? "Skjul aflyste tider" : `Vis aflyste tider (${cancelledCount})`}
+          </Button>
+        </div>
+      )}
+      {days.length === 0 ? (
+        <Card className="p-4 sm:p-6">
+          <p className="text-base text-ink-muted" data-testid="ingen-bookinger">
+            Der er ingen bookinger i perioden. Når en patient booker en tid efter en accepteret henvendelse, dukker den op her.
+          </p>
+        </Card>
+      ) : (
+        <ul className="grid gap-4 lg:grid-cols-2" aria-label="Bookinger pr. dag">
+          {days.map(([key, bookings]) => (
+            <li key={key} className="min-w-0">
+              <Card className="flex flex-col gap-3 p-4 sm:p-5" data-testid="kalender-dag">
+                <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold first-letter:uppercase text-ink">
+                  {formatDay(bookings[0].startsAt)}
+                  {key === today && <Badge tone="brand">I dag</Badge>}
+                </h2>
+                <ul className="flex flex-col gap-3">
+                  {bookings.map((booking) => (
+                    <BookingRow key={booking.id} booking={booking} onChanged={reload} />
+                  ))}
+                </ul>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

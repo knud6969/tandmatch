@@ -6,6 +6,7 @@ import { CASE_STATUS_LABEL, CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL, QUOTED_PRICE_LABEL, REMOVED_CLINIC_LABEL } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { PatientLeadDto } from "@/lib/types/leads";
+import { BookingSummary } from "@/views/components/patient/booking-summary";
 import { MessageThread } from "@/views/components/messages/message-thread";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge } from "@/views/components/ui/badge";
@@ -17,14 +18,14 @@ import { LoadState } from "@/views/components/ui/load-state";
 import { PriceWithSource } from "@/views/components/ui/price-with-source";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
-import { caseFlowHref, clinicsHref } from "@/views/utils/case-links";
+import { bookHref, caseFlowHref, clinicsHref } from "@/views/utils/case-links";
 import { formatCount, formatDate } from "@/views/utils/format";
 import { LEAD_STATUS_TONE } from "@/views/utils/lead-status";
 import { loadCaseSelection } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
-function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: () => void }) {
+function LeadCard({ caseId, lead, onWithdrawn }: { caseId: string; lead: PatientLeadDto; onWithdrawn: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [threadOpen, setThreadOpen] = useState(false);
   const [unread, setUnread] = useState(lead.unreadMessages);
@@ -88,6 +89,15 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
             {lead.declineNote && <p className="text-base text-ink">Note fra klinikken: {lead.declineNote}</p>}
           </div>
         )}
+        {lead.booking && <BookingSummary booking={lead.booking} onChanged={onWithdrawn} />}
+        {lead.status === "accepted" && !clinic.removed && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-ink-muted">Klinikken har accepteret. Vælg en tid, der passer dig.</p>
+            <LinkButton href={bookHref(caseId, lead.id)} className="w-full sm:w-fit">
+              Book tid<span className="sr-only"> hos {clinic.name}</span>
+            </LinkButton>
+          </div>
+        )}
         {lead.status === "sent" && (
           <p className="text-sm text-ink-muted">Klinikken har ikke svaret endnu. Klinikken laver den endelige vurdering.</p>
         )}
@@ -144,7 +154,7 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
   );
 }
 
-// Sagen med dens leads (architecture 6.2, 10.9). Booking og "Luk sag" kommer med trin 6.
+// Sagen med dens leads (architecture 6.2, 10.9). Booking vises på det accepterede lead; "Luk sag" kommer senere.
 export function CaseLeads({ caseId }: { caseId: string }) {
   const loader = useCallback(() => loadCaseSelection(caseId), [caseId]);
   const { data, loading, error, errorCode, reload } = useLoad(loader);
@@ -212,7 +222,7 @@ export function CaseLeads({ caseId }: { caseId: string }) {
         ) : (
           <ul className="flex flex-col gap-4">
             {leads.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} onWithdrawn={reload} />
+              <LeadCard key={lead.id} caseId={caseId} lead={lead} onWithdrawn={reload} />
             ))}
           </ul>
         )}

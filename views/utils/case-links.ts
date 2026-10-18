@@ -14,3 +14,6 @@ export const caseHref = (caseId: string) => `/patient/sag/${caseId}`;
 export const caseFlowHref = (caseId: string) => `/start/${caseId}`;
 // Klinikoversigten for en sag uden andre filtre (fx når sagen ikke kan hentes).
 export const caseDirectoryHref = (caseId: string) => `/klinikker?sag=${caseId}`;
+// Patientens booking af et accepteret lead og oversigten over alle bookinger (architecture 6.2).
+export const bookHref = (caseId: string, leadId: string) => `/patient/sag/${caseId}/book/${leadId}`;
+export const BOOKINGS_HREF = "/patient/bookinger";

@@ -46,7 +46,7 @@ const MESSAGES: Record<string, string> = {
   LEAD_DAILY_LIMIT: `Du har sendt henvendelser til mange klinikker i dag. Der kan højst sendes ${MAX_LEADS_PER_PATIENT_DAY} henvendelser pr. døgn. Prøv igen senere.`,
   LEAD_TOTAL_LIMIT: `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`,
   CLINIC_ALREADY_CONTACTED: "Du har allerede kontaktet en af klinikkerne med denne sag. Vælg en anden klinik.",
-  CLINIC_NOT_AVAILABLE: "En af klinikkerne kan ikke kontaktes via TandMatch lige nu. Vælg en anden klinik.",
+  CLINIC_NOT_AVAILABLE: "Klinikken kan ikke kontaktes via TandMatch lige nu. Prøv igen senere, eller vælg en anden klinik.",
   CASE_NOT_READY: "Din sag er ikke klar til at blive sendt. Godkend opsummeringen, og angiv behandlinger, tidsrum og postnummer.",
   LEAD_NOT_PENDING: "Henvendelsen er allerede besvaret eller trukket tilbage, så den kan ikke ændres. Genindlæs siden for at se den nyeste status.",
   CLINIC_NOT_VERIFIED: CLINIC_NOT_VERIFIED_TEXT,
@@ -69,6 +69,11 @@ const MESSAGES: Record<string, string> = {
   PAYLOAD_TOO_LARGE: "Indholdet er for stort. Gør det mindre og prøv igen.",
   INVALID_JSON: "Oplysningerne kunne ikke læses. Genindlæs siden og prøv igen.",
   INTERNAL: "Der opstod en fejl hos os. Prøv igen om lidt.",
+  SLOT_TAKEN: "Den tid blev lige optaget. Vælg en anden tid blandt de ledige tider herunder.",
+  SLOT_UNAVAILABLE: "Klinikken kan ikke tage imod den tid. Vælg en anden tid.",
+  LEAD_NOT_ACCEPTED: "Klinikken har ikke accepteret din henvendelse, så du kan ikke booke endnu. Genindlæs siden for at se status.",
+  BOOKING_NOT_CANCELLABLE: "Bookingen kan ikke aflyses længere. Genindlæs siden for at se den nyeste status.",
+  NO_SHOW_WINDOW_CLOSED: "Udeblivelse kan kun registreres fra starttidspunktet og op til 24 timer efter, at tiden er slut.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 

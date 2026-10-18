@@ -11,9 +11,13 @@ export const AREA_HOME: Record<Role, string> = {
 
 // Navigation pr. rolle (områdenavigation i headeren). Admin er tom, til siderne findes.
 export const AREA_NAV: Record<Role, NavItem[]> = {
-  patient: [{ href: "/patient", label: "Mine sager" }],
+  patient: [
+    { href: "/patient", label: "Mine sager" },
+    { href: "/patient/bookinger", label: "Bookinger" },
+  ],
   clinic: [
     { href: "/klinik", label: "Henvendelser" },
+    { href: "/klinik/kalender", label: "Kalender" },
     { href: "/klinik/profil", label: "Profil" },
     { href: "/klinik/prisliste", label: "Prisliste" },
     { href: "/klinik/aabningstider", label: "Åbningstider" },
