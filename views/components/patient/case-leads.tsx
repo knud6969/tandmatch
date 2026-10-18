@@ -6,6 +6,7 @@ import { CASE_STATUS_LABEL, CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL, QUOTED_PRICE_LABEL, REMOVED_CLINIC_LABEL } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { PatientLeadDto } from "@/lib/types/leads";
+import { CloseCase } from "@/views/components/patient/close-case";
 import { BookingSummary } from "@/views/components/patient/booking-summary";
 import { MessageThread } from "@/views/components/messages/message-thread";
 import { Alert } from "@/views/components/ui/alert";
@@ -154,7 +155,7 @@ function LeadCard({ caseId, lead, onChanged }: { caseId: string; lead: PatientLe
   );
 }
 
-// Sagen med dens leads (architecture 6.2, 10.9). Booking vises på det accepterede lead; "Luk sag" kommer senere.
+// Sagen med dens leads (architecture 6.2, 10.9). Booking vises på det accepterede lead; "Luk sag" ligger nederst på en sendt sag.
 export function CaseLeads({ caseId }: { caseId: string }) {
   const loader = useCallback(() => loadCaseSelection(caseId), [caseId]);
   const { data, loading, error, errorCode, reload } = useLoad(loader);
@@ -240,6 +241,8 @@ export function CaseLeads({ caseId }: { caseId: string }) {
           </LinkButton>
         </Card>
       )}
+
+      {caseDto.status === "submitted" && <CloseCase caseId={caseId} onClosed={reload} />}
     </div>
   );
 }
