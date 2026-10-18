@@ -40,7 +40,4 @@ export const CLINIC_LEAD_STATUS_LABEL = {
   withdrawn: "Trukket tilbage",
 } as const satisfies Record<(typeof LEAD_STATUSES)[number], string>;
 
-// Rækkefølgen i indbakken: leads, der venter på svar, øverst.
-export const CLINIC_LEAD_STATUS_ORDER = ["sent", "accepted", "booked", "declined", "withdrawn"] as const satisfies readonly (typeof LEAD_STATUSES)[number][];
-
 export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";

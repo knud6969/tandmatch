@@ -79,8 +79,11 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
 
   const count = messages?.length ?? 0;
   useEffect(() => {
+    // Kun listen scroller (ikke siden): den nyeste besked vises fra toppen, så afsenderlinjen ikke skjules ved én lang besked.
+    // Er der ikke mere at scrolle, stopper listen ved bunden.
     const list = listRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
+    const last = list?.lastElementChild;
+    if (list && last) list.scrollTop += last.getBoundingClientRect().top - list.getBoundingClientRect().top;
   }, [count]);
 
   async function submit(event: FormEvent) {

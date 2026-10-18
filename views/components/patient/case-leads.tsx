@@ -7,28 +7,22 @@ import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL, QUOTED_PRICE_LABEL, REMOV
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { MessageThread } from "@/views/components/messages/message-thread";
-import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
 import { Alert } from "@/views/components/ui/alert";
-import { Badge, type BadgeTone } from "@/views/components/ui/badge";
+import { Badge } from "@/views/components/ui/badge";
 import { Button, LinkButton } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
+import { CommentQuote } from "@/views/components/ui/comment-quote";
 import { ICONS } from "@/views/components/ui/icons";
 import { LoadState } from "@/views/components/ui/load-state";
+import { PriceWithSource } from "@/views/components/ui/price-with-source";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseFlowHref, clinicsHref } from "@/views/utils/case-links";
-import { formatDate, formatPriceRange } from "@/views/utils/format";
+import { formatCount, formatDate } from "@/views/utils/format";
+import { LEAD_STATUS_TONE } from "@/views/utils/lead-status";
 import { loadCaseSelection } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
-
-const STATUS_TONE: Record<PatientLeadDto["status"], BadgeTone> = {
-  sent: "warning",
-  accepted: "brand",
-  booked: "brand",
-  declined: "neutral",
-  withdrawn: "neutral",
-};
 
 function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: () => void }) {
   const [confirming, setConfirming] = useState(false);
@@ -63,7 +57,7 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
             </h2>
             {!clinic.removed && <p className="text-sm text-ink-muted">{clinic.city}</p>}
             <div>
-              <Badge tone={STATUS_TONE[lead.status]}>{LEAD_STATUS_LABEL[lead.status]}</Badge>
+              <Badge tone={LEAD_STATUS_TONE[lead.status]}>{LEAD_STATUS_LABEL[lead.status]}</Badge>
             </div>
           </div>
         </div>
@@ -74,27 +68,25 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
           <div className="flex flex-col gap-1">
             {lead.listPrice && (
               <p className="text-base text-ink">
-                <span className="font-semibold">{formatPriceRange(lead.listPrice.min, lead.listPrice.max)}</span>{" "}
-                <span className="text-ink-muted">{PRICE_SOURCE}</span>
+                <PriceWithSource price={lead.listPrice} />
               </p>
             )}
             {lead.quotedPrice && (
               <p className="text-base text-ink">
-                <span className="font-semibold">{formatPriceRange(lead.quotedPrice.min, lead.quotedPrice.max)}</span>{" "}
-                <span className="text-ink-muted">{QUOTED_PRICE_LABEL}</span>
+                <PriceWithSource price={lead.quotedPrice} source={QUOTED_PRICE_LABEL} />
               </p>
             )}
           </div>
         )}
 
         {lead.clinicComment && (
-          <blockquote className="rounded-control bg-surface-muted p-3 text-base text-ink">
-            <p className="mb-1 text-sm font-semibold text-ink-muted">Klinikkens kommentar</p>
-            {lead.clinicComment}
-          </blockquote>
+          <CommentQuote title="Klinikkens kommentar">{lead.clinicComment}</CommentQuote>
         )}
         {lead.status === "declined" && lead.declineReason && (
-          <p className="text-base text-ink-muted">{LEAD_DECLINE_REASON_LABEL[lead.declineReason]}</p>
+          <div className="flex flex-col gap-1" data-testid="afvisning">
+            <p className="text-base text-ink-muted">{LEAD_DECLINE_REASON_LABEL[lead.declineReason]}</p>
+            {lead.declineNote && <p className="text-base text-ink">Note fra klinikken: {lead.declineNote}</p>}
+          </div>
         )}
         {lead.status === "sent" && (
           <p className="text-sm text-ink-muted">Klinikken har ikke svaret endnu. Klinikken laver den endelige vurdering.</p>
@@ -111,7 +103,7 @@ function LeadCard({ lead, onWithdrawn }: { lead: PatientLeadDto; onWithdrawn: ()
             <span>{threadOpen ? "Skjul beskeder" : "Beskeder"}</span>
             {!threadOpen && unread > 0 && (
               <span className="rounded-pill bg-brand-600 px-2 py-0.5 text-sm text-on-brand" data-testid="ulaeste">
-                {unread} ulæst{unread === 1 ? "" : "e"}
+                {formatCount(unread, "ulæst", "ulæste")}
               </span>
             )}
           </Button>

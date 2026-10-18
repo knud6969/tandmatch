@@ -266,6 +266,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       const lead = patient.page.getByTestId("lead");
       await expect(lead).toContainText("Afvist");
       await expect(lead).toContainText("Behandlingen kræver henvisning");
+      await expect(lead.getByTestId("afvisning")).toContainText("Kontakt din læge for en henvisning.");
       await patient.page.getByRole("button", { name: /^Beskeder/ }).click();
       await expect(patient.page.getByTestId("traad-lukket")).toBeVisible();
       await expect(patient.page.getByLabel("Skriv en besked")).toHaveCount(0);
@@ -306,12 +307,14 @@ test.describe("klinikkens indbakke og lead-kort", () => {
     }
   });
 
-  test("en ikke-verificeret klinik ser en forklaring i stedet for en fejl", async ({ browser }, testInfo) => {
+  test("en ikke-verificeret klinik ser én forklaring (banneret) og en kort tekst i indbakken, ikke en fejl", async ({ browser }, testInfo) => {
     const x = await verifiedClinic(browser, testInfo, "u", false);
     try {
       await x.page.goto("/klinik");
-      await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toBeVisible();
-      await expect(x.page.getByText(/Din klinik er ikke verificeret endnu, så du kan ikke/)).toHaveCount(0);
+      await expect(x.page.getByText("Afventer verificering", { exact: true })).toHaveCount(1);
+      await expect(x.page.getByTestId("ingen-henvendelser")).toContainText("før klinikken er verificeret");
+      await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toHaveCount(0);
+      await expect(x.page.getByRole("status").filter({ hasText: /verific/i })).toHaveCount(1);
       await expectNoHorizontalScroll(x.page);
     } finally {
       await cleanup(null, [x]);

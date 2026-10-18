@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { deflateSync } from "node:zlib";
 import { expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { CONSENT_TEXT_VERSIONS } from "../../../lib/constants/consents";
 
@@ -106,3 +107,50 @@ export async function cleanup(patient: { page: Page } | null, clinics: ClinicHan
   }
 }
 
+
+function crc32(buf: Buffer): number {
+  let c = ~0;
+  for (const byte of buf) {
+    c ^= byte;
+    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+  }
+  return ~c >>> 0;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+}
+
+// Ensfarvet PNG (pladsholder, ikke et rigtigt foto).
+export function placeholderPng(size = 64, rgb: [number, number, number] = [120, 160, 220]): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: size }, () => rgb).flat())]);
+  const raw = Buffer.concat(Array.from({ length: size }, () => row));
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), pngChunk("IHDR", ihdr), pngChunk("IDAT", deflateSync(raw)), pngChunk("IEND", Buffer.alloc(0))]);
+}
+
+// Samtykke til billedupload og `count` pladsholderbilleder på en endnu ikke sendt sag.
+export async function addImages(patient: { page: Page; caseId: string }, count: number) {
+  const consent = await patient.page.request.post("/api/consents", {
+    data: { type: "image_upload", textVersion: CONSENT_TEXT_VERSIONS.image_upload },
+  });
+  expect(consent.status(), await consent.text()).toBe(201);
+  for (let i = 0; i < count; i++) {
+    const res = await patient.page.request.post(`/api/cases/${patient.caseId}/images`, {
+      multipart: { file: { name: `tand-${i}.png`, mimeType: "image/png", buffer: placeholderPng(64, [100 + i * 20, 160, 220]) } },
+    });
+    expect(res.status(), await res.text()).toBe(201);
+  }
+  // Nye billeder fjerner godkendelsen af opsummeringen, så den godkendes igen.
+  const approve = await patient.page.request.put(`/api/cases/${patient.caseId}/summary`, { data: { summaryText: "Jeg vil gerne have lysere tænder." } });
+  expect(approve.ok(), await approve.text()).toBeTruthy();
+}

@@ -4,17 +4,18 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { LEAD_DECLINE_REASON_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
 import type { ClinicLeadDetailDto } from "@/lib/types/leads";
-import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
-import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/views/components/clinic/lead-facts";
+import { LeadBadges, leadAreaText, leadDistanceText, leadTimeText } from "@/views/components/clinic/lead-facts";
 import { LeadDecision } from "@/views/components/clinic/lead-decision";
 import { MessageThread } from "@/views/components/messages/message-thread";
 import { Alert } from "@/views/components/ui/alert";
 import { Badge } from "@/views/components/ui/badge";
 import { Card } from "@/views/components/ui/card";
+import { CommentQuote } from "@/views/components/ui/comment-quote";
 import { DefinitionList, type DefinitionItem } from "@/views/components/ui/definition-list";
 import { LoadState } from "@/views/components/ui/load-state";
+import { PriceWithSource } from "@/views/components/ui/price-with-source";
 import { apiRequest } from "@/views/utils/api-client";
-import { formatDateTime, formatPriceRange, formatShortDateTime } from "@/views/utils/format";
+import { formatDateTime, formatShortDateTime } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
 function BackLink() {
@@ -26,25 +27,21 @@ function BackLink() {
 }
 
 function factItems(lead: ClinicLeadDetailDto): DefinitionItem[] {
-  const items: (DefinitionItem | null)[] = [
+  const items: DefinitionItem[] = [
     { label: "Område", value: leadAreaText(lead) ?? "Ikke oplyst" },
     { label: "Afstand", value: leadDistanceText(lead) ?? "Ikke oplyst" },
     { label: lead.requestedStartsAt ? "Ønsket tid" : "Ønsket tidsrum", value: leadTimeText(lead) ?? "Ikke oplyst" },
     {
       label: "Listepris for behandlingerne",
       value: lead.listPrice ? (
-        <>
-          <span className="font-semibold">{formatPriceRange(lead.listPrice.min, lead.listPrice.max)}</span>{" "}
-          <span className="text-ink-muted">{PRICE_SOURCE}</span>
-        </>
+        <PriceWithSource price={lead.listPrice} />
       ) : (
         "Ikke angivet i din prisliste"
       ),
     },
     { label: "Modtaget", value: formatDateTime(lead.sentAt) },
-    leadImagesText(lead.imageCount) ? { label: "Billeder", value: leadImagesText(lead.imageCount) } : null,
   ];
-  return items.filter((item): item is DefinitionItem => item !== null);
+  return items;
 }
 
 function DecisionSummary({ lead }: { lead: ClinicLeadDetailDto }) {
@@ -62,15 +59,11 @@ function DecisionSummary({ lead }: { lead: ClinicLeadDetailDto }) {
       {declined && decision.declineReason && <p className="text-base text-ink">{LEAD_DECLINE_REASON_LABEL[decision.declineReason]}</p>}
       {decision.declineNote && <p className="text-base text-ink-muted">Note: {decision.declineNote}</p>}
       {decision.comment && (
-        <blockquote className="rounded-control bg-surface-muted p-3 text-base text-ink">
-          <p className="mb-1 text-sm font-semibold text-ink-muted">Din kommentar</p>
-          {decision.comment}
-        </blockquote>
+        <CommentQuote title="Din kommentar">{decision.comment}</CommentQuote>
       )}
       {decision.quotedPrice && (
         <p className="text-base text-ink">
-          <span className="font-semibold">{formatPriceRange(decision.quotedPrice.min, decision.quotedPrice.max)}</span>{" "}
-          <span className="text-ink-muted">præciseret pris</span>
+          <PriceWithSource price={decision.quotedPrice} source="præciseret pris" />
         </p>
       )}
       {lead.status === "accepted" && !lead.booking && (
@@ -110,52 +103,54 @@ function LeadBody({ lead, onDecided, onStale }: { lead: ClinicLeadDetailDto; onD
   const title = lead.services.map((s) => s.name).join(", ") || "Henvendelse";
   const pending = lead.status === "sent";
 
+  // Rækkefølge på mobil: fakta, beslutning, opsummering og billeder, kontakt og beskeder. På desktop står fakta, opsummering og
+  // billeder til venstre, og beslutning, kontakt og beskeder samles i en højre kolonne, der følger med ved scroll.
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
-      <div className="flex min-w-0 flex-col gap-6">
-        <Card className="flex flex-col gap-5 p-4 sm:p-6" aria-labelledby="behov">
-          <div className="flex flex-col gap-2">
-            <LeadBadges lead={lead} />
-            <h1 id="behov" className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-              {title}
-            </h1>
-          </div>
+      <Card className="order-1 flex min-w-0 flex-col gap-5 p-4 sm:p-6 lg:col-start-1 lg:row-start-1" aria-labelledby="behov">
+        <div className="flex flex-col gap-2">
+          <LeadBadges lead={lead} />
+          <h1 id="behov" className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            {title}
+          </h1>
+        </div>
 
-          <DefinitionList items={factItems(lead)} />
+        <DefinitionList items={factItems(lead)} />
 
-          <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-ink">Behandlinger patienten har valgt</h2>
-            <ul className="flex flex-wrap gap-2" aria-label="Behandlinger">
-              {lead.services.map((service) => (
-                <li key={service.id}>
-                  <Badge tone="brand">{service.name}</Badge>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-ink">Behandlinger patienten har valgt</h2>
+          <ul className="flex flex-wrap gap-2" aria-label="Behandlinger">
+            {lead.services.map((service) => (
+              <li key={service.id}>
+                <Badge tone="brand">{service.name}</Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Card>
 
-          <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-ink">Patientens opsummering</h2>
-            {lead.summaryAiAssisted && (
-              <div>
-                <Badge tone="neutral">Lavet med hjælp fra AI</Badge>
-              </div>
-            )}
-            <p className="whitespace-pre-line text-base leading-relaxed text-ink" data-testid="opsummering">
-              {lead.summaryText}
-            </p>
-            <p className="text-sm text-ink-muted">
-              {lead.summaryAiAssisted
-                ? "Opsummeringen er udarbejdet med hjælp fra AI og godkendt af patienten. Den er foreløbig, og I laver den endelige vurdering."
-                : "Opsummeringen er skrevet og godkendt af patienten. Den er foreløbig, og I laver den endelige vurdering."}
-            </p>
-          </div>
+      <div className="order-3 flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-2">
+        <Card className="flex flex-col gap-2 p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-ink">Patientens opsummering</h2>
+          {lead.summaryAiAssisted && (
+            <div>
+              <Badge tone="neutral">Lavet med hjælp fra AI</Badge>
+            </div>
+          )}
+          <p className="whitespace-pre-line text-base leading-relaxed text-ink" data-testid="opsummering">
+            {lead.summaryText}
+          </p>
+          <p className="text-sm text-ink-muted">
+            {lead.summaryAiAssisted
+              ? "Opsummeringen er udarbejdet med hjælp fra AI og godkendt af patienten. Den er foreløbig, og I laver den endelige vurdering."
+              : "Opsummeringen er skrevet og godkendt af patienten. Den er foreløbig, og I laver den endelige vurdering."}
+          </p>
         </Card>
 
         {lead.images.length > 0 && (
           <section aria-labelledby="billeder" className="flex flex-col gap-3">
             <h2 id="billeder" className="text-xl font-semibold text-ink">
-              Billeder fra patienten
+              Billeder fra patienten ({lead.images.length})
             </h2>
             <ul className="grid gap-4 sm:grid-cols-2">
               {lead.images.map((image) => (
@@ -172,20 +167,25 @@ function LeadBody({ lead, onDecided, onStale }: { lead: ClinicLeadDetailDto; onD
         )}
       </div>
 
-      <div className="flex min-w-0 flex-col gap-6">
-        {pending ? <LeadDecision leadId={lead.id} onDecided={onDecided} onStale={onStale} /> : <DecisionSummary lead={lead} />}
-        <BookingContact lead={lead} />
-        <section aria-labelledby="beskeder" className="flex flex-col gap-3">
-          <h2 id="beskeder" className="text-xl font-semibold text-ink">
-            Beskeder
-          </h2>
-          <MessageThread
-            leadId={lead.id}
-            viewer="clinic"
-            closed={lead.status === "declined"}
-            hint="Patienten kan se dine beskeder, din kommentar og afvisningsnoten. Skriv kun det, der hjælper dig med at vurdere henvendelsen."
-          />
-        </section>
+      {/* Mobil: wrapperen forsvinder (contents), så beslutningen står efter faktaboksen og tråden til sidst. */}
+      <div className="contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:max-h-[calc(100vh-2rem)] lg:min-w-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-y-auto lg:sticky lg:top-4">
+        <div className="order-2 min-w-0 lg:order-none">
+          {pending ? <LeadDecision leadId={lead.id} onDecided={onDecided} onStale={onStale} hasRequestedTime={lead.requestedStartsAt !== null} /> : <DecisionSummary lead={lead} />}
+        </div>
+        <div className="order-4 flex min-w-0 flex-col gap-6 lg:order-none">
+          <BookingContact lead={lead} />
+          <section aria-labelledby="beskeder" className="flex flex-col gap-3">
+            <h2 id="beskeder" className="text-xl font-semibold text-ink">
+              Beskeder
+            </h2>
+            <MessageThread
+              leadId={lead.id}
+              viewer="clinic"
+              closed={lead.status === "declined"}
+              hint="Patienten kan se dine beskeder, din kommentar og afvisningsnoten. Skriv kun det, der hjælper dig med at vurdere henvendelsen."
+            />
+          </section>
+        </div>
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { cx } from "@/views/components/ui/cx";
 
-export type BadgeTone = "neutral" | "brand" | "warning";
+export type BadgeTone = "neutral" | "brand" | "warning" | "danger";
 
 const tones: Record<BadgeTone, string> = {
   neutral: "bg-surface-muted text-ink ring-line",
   brand: "bg-brand-50 text-brand-800 ring-brand-200",
   warning: "bg-warning-bg text-warning-ink ring-warning-line",
+  danger: "bg-danger-bg text-danger-ink ring-danger-line",
 };
 
 // Små etiketter, fx "Pladsholder", "Afventer verificering" eller "Kommer snart".

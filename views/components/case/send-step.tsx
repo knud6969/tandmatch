@@ -8,7 +8,7 @@ import type { ConsentDto } from "@/lib/types/consents";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { PatientSignupForm } from "@/views/components/auth/patient-signup-form";
 import { ConsentGate, hasActiveConsent } from "@/views/components/case/consent-gate";
-import { PRICE_SOURCE } from "@/views/components/clinic-directory/clinic-facts";
+import { PriceWithSource } from "@/views/components/ui/price-with-source";
 import { useSession } from "@/views/components/session/session-provider";
 import { AnonymousPatientBanner } from "@/views/components/session/anonymous-patient-banner";
 import { Alert } from "@/views/components/ui/alert";
@@ -20,7 +20,6 @@ import { apiRequest } from "@/views/utils/api-client";
 import { caseDirectoryHref, caseFlowHref, caseHref, clinicsHref } from "@/views/utils/case-links";
 import { isUuid } from "@/views/utils/ids";
 import { writeSelection } from "@/views/utils/compare-selection";
-import { formatPriceRange } from "@/views/utils/format";
 import { loadCaseSelection, noSlotsText, type CaseSelectionContext } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
@@ -55,10 +54,7 @@ function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
       </p>
       <p className="text-sm text-ink">
         {clinic.priceForSelection ? (
-          <>
-            <span className="font-semibold">{formatPriceRange(clinic.priceForSelection.min, clinic.priceForSelection.max)}</span>{" "}
-            <span className="text-ink-muted">for dit valg, {PRICE_SOURCE}</span>
-          </>
+          <PriceWithSource price={clinic.priceForSelection} prefix="for dit valg," />
         ) : (
           <span className="text-ink-muted">Prisen for dit valg er ikke angivet i klinikkens prisliste</span>
         )}

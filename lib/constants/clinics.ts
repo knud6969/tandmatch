@@ -68,3 +68,6 @@ export const CLINIC_SORT_LABEL = {
 export const DEFAULT_MAX_DISTANCE_KM = 25;
 export const EMERGENCY_FILTER_HOURS = 48; // "kun med akuttid inden for 48 timer"
 export const MAX_SELECTED_SERVICES = 5; // som antal bekræftede ydelser pr. sag (7.6)
+
+// Kilden, der står ved alle priser patienten ser (priser vises altid med kilde).
+export const PRICE_SOURCE = "ifølge klinikkens prisliste";

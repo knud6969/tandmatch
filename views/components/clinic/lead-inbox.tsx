@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CLINIC_LEAD_STATUS_LABEL, CLINIC_LEAD_STATUS_ORDER, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
+import { CLINIC_LEAD_STATUS_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
 import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/types/leads";
 import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/views/components/clinic/lead-facts";
-import { Alert } from "@/views/components/ui/alert";
 import { FilterChips } from "@/views/components/ui/filter-chips";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
@@ -16,20 +15,17 @@ type Filter = LeadStatus | "all";
 
 const loadLeads = async () => (await apiRequest<{ leads: ClinicLeadListItemDto[] }>("/api/leads")).leads;
 
-// Nye først: status i fast rækkefølge (venter på svar øverst), derefter nyeste først.
-function sortLeads(leads: ClinicLeadListItemDto[]): ClinicLeadListItemDto[] {
-  return [...leads].sort((a, b) => {
-    const byStatus = CLINIC_LEAD_STATUS_ORDER.indexOf(a.status) - CLINIC_LEAD_STATUS_ORDER.indexOf(b.status);
-    return byStatus !== 0 ? byStatus : b.sentAt.localeCompare(a.sentAt);
-  });
-}
-
 function LeadRow({ lead }: { lead: ClinicLeadListItemDto }) {
   const withdrawn = lead.status === "withdrawn";
   const title = withdrawn ? "Henvendelse" : lead.serviceNames.join(", ") || "Henvendelse";
   const facts = withdrawn
     ? []
-    : [leadAreaText(lead), leadDistanceText(lead), leadTimeText(lead), leadImagesText(lead.imageCount)].filter(
+    : [
+        leadAreaText(lead),
+        leadDistanceText(lead),
+        lead.requestedStartsAt ? `Ønsker tid ${leadTimeText(lead)}` : leadTimeText(lead),
+        leadImagesText(lead.imageCount),
+      ].filter(
         (value): value is string => Boolean(value),
       );
 
@@ -53,25 +49,24 @@ function LeadRow({ lead }: { lead: ClinicLeadListItemDto }) {
   );
 }
 
-// Klinikkens indbakke (architecture 6.3): henvendelser, nye først, med filter på status. En klinik, der ikke er verificeret,
-// får en forklaring i stedet for en fejl.
+// Klinikkens indbakke (architecture 6.3): henvendelser i API'ets rækkefølge (akut først), med filter på status. En klinik, der
+// ikke er verificeret, får en kort tekst i stedet for en fejl.
 export function LeadInbox() {
   const { data, error, errorCode, loading, reload } = useLoad(loadLeads);
   const [filter, setFilter] = useState<Filter | null>(null);
 
+  // Forklaringen om verificering står i VerificationBanner på samme side; her kun en kort tekst, ikke endnu en advarsel.
   if (errorCode === "CLINIC_NOT_VERIFIED") {
     return (
-      <Alert tone="warning" title="Indbakken åbner, når klinikken er verificeret">
-        <p>
-          Patienter kan først sende henvendelser til jer, når TandMatch har verificeret klinikken. Sæt gerne profil, prisliste,
-          åbningstider og tandlæger op imens.
-        </p>
-      </Alert>
+      <p className="text-base text-ink-muted" data-testid="ingen-henvendelser">
+        Der er ingen henvendelser, før klinikken er verificeret.
+      </p>
     );
   }
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
 
-  const sorted = sortLeads(data);
+  // API'ets rækkefølge bruges: venter på svar først, derefter akut, derefter nyeste.
+  const sorted = data;
   const count = (status: LeadStatus) => sorted.filter((lead) => lead.status === status).length;
   // Står der noget og venter, vises det først; ellers alle.
   const active: Filter = filter ?? (count("sent") > 0 ? "sent" : "all");

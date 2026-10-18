@@ -1,10 +1,10 @@
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
+import { PRICE_SOURCE } from "@/lib/constants/clinics";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
-import { formatKm, formatPercent, formatPriceRange, formatShortDateTime } from "@/views/utils/format";
+import { PriceWithSource } from "@/views/components/ui/price-with-source";
+import { formatKm, formatPercent, formatShortDateTime } from "@/views/utils/format";
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
 import { TrustpilotLine } from "@/views/components/clinic-directory/trustpilot-block";
-
-export const PRICE_SOURCE = "ifølge klinikkens prisliste";
 
 type FactsProps = {
   clinic: ClinicListItemDto;
@@ -42,10 +42,7 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
       {full && (
         <p className="text-sm text-ink">
           {clinic.priceForSelection ? (
-            <>
-              <span className="text-base font-semibold">{formatPriceRange(clinic.priceForSelection.min, clinic.priceForSelection.max)}</span>{" "}
-              <span className="text-ink-muted">for dit valg, {PRICE_SOURCE}</span>
-            </>
+            <PriceWithSource price={clinic.priceForSelection} prefix="for dit valg," priceClassName="text-base font-semibold" />
           ) : hasServices ? (
             <span className="text-ink-muted">Prisen for dit valg er ikke angivet i klinikkens prisliste</span>
           ) : (

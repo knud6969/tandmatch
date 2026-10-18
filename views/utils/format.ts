@@ -102,3 +102,8 @@ export function dayKey(iso: string): string {
 export function formatClock(value: string): string {
   return value.slice(0, 5);
 }
+
+// Tal med korrekt ental/flertal, fx formatCount(1, "billede", "billeder") -> "1 billede".
+export function formatCount(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}

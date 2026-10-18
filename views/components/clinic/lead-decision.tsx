@@ -27,11 +27,13 @@ type LeadDecisionProps = {
   onDecided: (lead: ClinicLeadDetailDto) => void;
   // Leadet er ikke længere afventende (fx trukket tilbage, mens kortet var åbent): hent det igen.
   onStale: () => void;
+  // Akut-lead med en konkret ønsket tid: tiden bliver booket ved accept.
+  hasRequestedTime: boolean;
 };
 
 // Klinikkens beslutning (architecture 6.3): højst to tryk efter åbning. Accepter er ét tryk; Accepter med kommentar og Afvis
 // åbner en kort formular med ét tryk til at sende. clinic_left kan ikke vælges (sættes kun af systemet).
-export function LeadDecision({ leadId, onDecided, onStale }: LeadDecisionProps) {
+export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: LeadDecisionProps) {
   const [mode, setMode] = useState<Mode>("idle");
   const [comment, setComment] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -132,7 +134,7 @@ export function LeadDecision({ leadId, onDecided, onStale }: LeadDecisionProps) 
             Afvis
           </Button>
           <p className="text-sm text-ink-muted">
-            Når du accepterer, kan patienten booke en tid i din kalender.
+            {hasRequestedTime ? "Tiden bliver booket, når du accepterer." : "Når du accepterer, kan patienten booke en tid i din kalender."}
           </p>
         </div>
       )}
