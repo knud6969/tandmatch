@@ -2,17 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { toClinicDate } from "@/lib/domain/time";
 import { BOOKING_STATUS_LABEL, CLINIC_BOOKINGS_DEFAULT_PAST_DAYS, BOOKING_HORIZON_DAYS, NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
 import type { ClinicBookingDto } from "@/lib/types/bookings";
 import { Badge } from "@/views/components/ui/badge";
 import { Button } from "@/views/components/ui/button";
+import { NotVerifiedNote } from "@/views/components/clinic/not-verified-note";
 import { Card } from "@/views/components/ui/card";
 import { cx } from "@/views/components/ui/cx";
 import { LoadState } from "@/views/components/ui/load-state";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { apiRequest } from "@/views/utils/api-client";
 import { BOOKING_STATUS_TONE } from "@/views/utils/booking-status";
-import { dayKey, formatDay, formatShortDateTime, formatTime } from "@/views/utils/format";
+import { clinicLeadHref } from "@/views/utils/clinic-links";
+import { formatDay, formatShortDateTime, formatTime } from "@/views/utils/format";
+import { groupByDay } from "@/views/utils/group-by-day";
 import { phoneHref } from "@/views/utils/links";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
@@ -91,10 +95,10 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
         </div>
       ) : (
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <Link href={`/klinik/lead/${booking.leadId}`} className="inline-flex min-h-11 items-center font-semibold text-brand-700">
+          <Link href={clinicLeadHref(booking.leadId)} className="inline-flex min-h-11 items-center font-semibold text-brand-700">
             Se henvendelsen
           </Link>
-          {booking.canMarkNoShow && booking.status === "booked" && (
+          {booking.canMarkNoShow && (
             <Button variant="secondary" onClick={() => setPending("no-show")}>
               Marker udeblevet
             </Button>
@@ -113,61 +117,76 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
 // Klinikkens kalender (architecture 6.3, 10.10): bookinger og reserverede akuttider pr. dag. Gennemført sættes automatisk
 // efter sluttid, så der er ingen knap til det.
 export function ClinicCalendar() {
-  const { data, loading, error, reload } = useLoad(loadBookings);
+  const { data, loading, error, errorCode, reload } = useLoad(loadBookings);
   const [showCancelled, setShowCancelled] = useState(false);
-  const [today] = useState(() => dayKey(new Date().toISOString()));
+  const [showPast, setShowPast] = useState(false);
+  const [today] = useState(() => toClinicDate(new Date()));
 
-  const { days, cancelledCount } = useMemo(() => {
+  const { upcoming, past, cancelledCount } = useMemo(() => {
     const all = data ?? [];
     const visible = all.filter((b) => showCancelled || b.status !== "cancelled");
-    const map = new Map<string, ClinicBookingDto[]>();
-    for (const booking of [...visible].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
-      const key = dayKey(booking.startsAt);
-      map.set(key, [...(map.get(key) ?? []), booking]);
-    }
-    return { days: [...map.entries()], cancelledCount: all.filter((b) => b.status === "cancelled").length };
-  }, [data, showCancelled]);
+    const sorted = [...visible].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    const grouped = groupByDay(sorted, (b) => b.startsAt);
+    const future = grouped.filter(([key]) => key >= today);
+    // Listen starter ved i dag; dagens kort vises også uden bookinger.
+    const upcoming: [string, ClinicBookingDto[]][] = future[0]?.[0] === today ? future : [[today, []], ...future];
+    return {
+      upcoming,
+      past: grouped.filter(([key]) => key < today),
+      cancelledCount: all.filter((b) => b.status === "cancelled").length,
+    };
+  }, [data, showCancelled, today]);
 
+  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote what="kalender" />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
+
+  const days = showPast ? [...past, ...upcoming] : upcoming;
+  const hasBookings = upcoming.some(([, list]) => list.length > 0) || past.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-ink-muted">
-        Viser de seneste {CLINIC_BOOKINGS_DEFAULT_PAST_DAYS} dage og de næste {BOOKING_HORIZON_DAYS} dage. Udeblivelse kan registreres fra starttidspunktet
-        og op til {NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut. Besøg bliver automatisk gennemført efter den frist.
+        Viser de næste {BOOKING_HORIZON_DAYS} dage og de seneste {CLINIC_BOOKINGS_DEFAULT_PAST_DAYS} dage. Udeblivelse kan registreres fra
+        starttidspunktet og op til {NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut. Besøg bliver automatisk gennemført efter den frist.
       </p>
-      {cancelledCount > 0 && (
-        <div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {past.length > 0 && (
+          <Button variant="secondary" onClick={() => setShowPast((v) => !v)} aria-pressed={showPast}>
+            {showPast ? "Skjul tidligere dage" : `Vis tidligere dage (${past.length})`}
+          </Button>
+        )}
+        {cancelledCount > 0 && (
           <Button variant="ghost" onClick={() => setShowCancelled((v) => !v)} aria-pressed={showCancelled}>
             {showCancelled ? "Skjul aflyste tider" : `Vis aflyste tider (${cancelledCount})`}
           </Button>
-        </div>
+        )}
+      </div>
+      {!hasBookings && (
+        <p className="text-base text-ink-muted" data-testid="ingen-bookinger">
+          Der er ingen bookinger i perioden. Når en patient booker en tid efter en accepteret henvendelse, dukker den op her.
+        </p>
       )}
-      {days.length === 0 ? (
-        <Card className="p-4 sm:p-6">
-          <p className="text-base text-ink-muted" data-testid="ingen-bookinger">
-            Der er ingen bookinger i perioden. Når en patient booker en tid efter en accepteret henvendelse, dukker den op her.
-          </p>
-        </Card>
-      ) : (
-        <ul className="grid gap-4 lg:grid-cols-2" aria-label="Bookinger pr. dag">
-          {days.map(([key, bookings]) => (
-            <li key={key} className="min-w-0">
-              <Card className="flex flex-col gap-3 p-4 sm:p-5" data-testid="kalender-dag">
-                <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold first-letter:uppercase text-ink">
-                  {formatDay(bookings[0].startsAt)}
-                  {key === today && <Badge tone="brand">I dag</Badge>}
-                </h2>
+      <ul className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3" aria-label="Bookinger pr. dag">
+        {days.map(([key, bookings]) => (
+          <li key={key} className="min-w-0">
+            <Card className="flex flex-col gap-3 p-4 sm:p-5" data-testid="kalender-dag">
+              <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-ink first-letter:uppercase">
+                {key === today && <Badge tone="brand">I dag</Badge>}
+                {formatDay(bookings[0]?.startsAt ?? `${key}T12:00:00Z`)}
+              </h2>
+              {bookings.length === 0 ? (
+                <p className="text-base text-ink-muted">Ingen bookinger i dag.</p>
+              ) : (
                 <ul className="flex flex-col gap-3">
                   {bookings.map((booking) => (
                     <BookingRow key={booking.id} booking={booking} onChanged={reload} />
                   ))}
                 </ul>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+              )}
+            </Card>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

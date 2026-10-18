@@ -1,11 +1,12 @@
 "use client";
 
+import { MODERATION_LABEL } from "@/lib/constants/reviews";
 import type { ModerationStatus, OwnReviewDto } from "@/lib/types/reviews";
-import { ReviewDetails, ReviewReply } from "@/views/components/clinic-directory/public-review-list";
+import { ReviewDetails, ReviewReply } from "@/views/components/reviews/review-details";
 import { Badge, type BadgeTone } from "@/views/components/ui/badge";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
-import { MODERATION_LABEL, MODERATION_TONE } from "@/views/utils/review-status";
+import { MODERATION_TONE } from "@/views/utils/review-status";
 import { useLoad } from "@/views/utils/use-load";
 
 const loadOwn = async (): Promise<OwnReviewDto[]> => (await apiRequest<{ reviews: OwnReviewDto[] }>("/api/reviews/mine")).reviews;

@@ -3,6 +3,7 @@ import {
   addListPrice,
   cleanup,
   expectNoHorizontalScroll,
+  showPastDays,
   patientWithCase,
   sendTo,
   sql,
@@ -355,6 +356,7 @@ test.describe("booking: supplerende dækning (6.6)", () => {
       expect(sql(`select count(*) from public.bookings where clinic_id = '${clinic.id}'`)).toBe("12");
 
       await clinic.page.goto("/klinik/kalender");
+      await showPastDays(clinic.page);
       await expect(clinic.page.getByTestId("kalender-booking")).toHaveCount(12);
       await expectNoHorizontalScroll(clinic.page);
       for (const link of await clinic.page.getByRole("link", { name: "Se henvendelsen" }).all()) {
@@ -375,7 +377,7 @@ test.describe("booking: supplerende dækning (6.6)", () => {
       await clinic.page.goto("/klinik/anmeldelser");
       await expect(clinic.page.getByTestId("klinik-anmeldelse")).toHaveCount(12);
       await expectNoHorizontalScroll(clinic.page);
-      for (const button of await clinic.page.getByRole("button", { name: "Send svar" }).all()) {
+      for (const button of await clinic.page.getByRole("button", { name: "Svar på anmeldelsen" }).all()) {
         expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       }
       await clinic.page.screenshot({ path: `test-results/klinik-anmeldelser-mange-${width(clinic.page)}.png`, fullPage: true });

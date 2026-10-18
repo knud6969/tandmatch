@@ -3,6 +3,7 @@ import {
   addListPrice,
   cleanup,
   expectNoHorizontalScroll,
+  showPastDays,
   patientWithCase,
   sendTo,
   sql,
@@ -222,12 +223,14 @@ test.describe("booking og kalender", () => {
 
       // Før starttid: ingen knap.
       await clinic.page.goto("/klinik/kalender");
+      await showPastDays(clinic.page);
       await expect(clinic.page.getByTestId("kalender-booking")).toHaveCount(1);
       await expect(clinic.page.getByRole("button", { name: "Marker udeblevet" })).toHaveCount(0);
 
       // En time efter starttid: i vinduet.
       move("date_trunc('hour', now()) - interval '1 hour'");
       await clinic.page.reload();
+      await showPastDays(clinic.page);
       const button = clinic.page.getByRole("button", { name: "Marker udeblevet" });
       await expect(button).toBeVisible();
       expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -238,12 +241,14 @@ test.describe("booking og kalender", () => {
       // Udenfor vinduet (mere end 24 timer efter sluttid): ingen knap, og besøget er gennemført.
       move("date_trunc('hour', now()) - interval '3 days'");
       await clinic.page.reload();
+      await showPastDays(clinic.page);
       await expect(clinic.page.getByTestId("kalender-booking")).toContainText("Gennemført");
       await expect(clinic.page.getByRole("button", { name: "Marker udeblevet" })).toHaveCount(0);
 
       // Tilbage i vinduet: markér med bekræftelse.
       move("date_trunc('hour', now()) - interval '1 hour'");
       await clinic.page.reload();
+      await showPastDays(clinic.page);
       await clinic.page.getByRole("button", { name: "Marker udeblevet" }).click();
       await expect(clinic.page.getByRole("group", { name: "Bekræft udeblivelse" })).toBeVisible();
       await clinic.page.getByRole("button", { name: "Ja, marker udeblevet" }).click();

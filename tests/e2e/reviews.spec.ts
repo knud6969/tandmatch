@@ -151,6 +151,7 @@ test.describe("anmeldelser", () => {
       await expect(clinicReview).toContainText("Nej, den endelige pris var lidt højere");
       await expectNoHorizontalScroll(clinic.page);
       await clinic.page.screenshot({ path: `test-results/klinik-anmeldelser-${width(clinic.page)}.png`, fullPage: true });
+      await clinic.page.getByRole("button", { name: "Svar på anmeldelsen" }).click(); // svarformularen ligger bag "Svar" (6.7b)
       await clinic.page.getByRole("button", { name: "Send svar" }).click();
       await expect(clinic.page.getByText("Skriv et svar.")).toBeVisible();
       await clinic.page.getByLabel("Dit offentlige svar").fill(REPLY_TEXT);

@@ -25,7 +25,7 @@ import { loadCaseSelection } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
-function LeadCard({ caseId, lead, onWithdrawn }: { caseId: string; lead: PatientLeadDto; onWithdrawn: () => void }) {
+function LeadCard({ caseId, lead, onChanged }: { caseId: string; lead: PatientLeadDto; onChanged: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [threadOpen, setThreadOpen] = useState(false);
   const [unread, setUnread] = useState(lead.unreadMessages);
@@ -36,7 +36,7 @@ function LeadCard({ caseId, lead, onWithdrawn }: { caseId: string; lead: Patient
     const ok = await withdraw.run(async () => {
       await apiRequest(`/api/leads/${lead.id}/withdraw`, { method: "POST", body: {} });
     });
-    if (ok) onWithdrawn();
+    if (ok) onChanged();
     else setConfirming(false);
   }
 
@@ -89,7 +89,7 @@ function LeadCard({ caseId, lead, onWithdrawn }: { caseId: string; lead: Patient
             {lead.declineNote && <p className="text-base text-ink">Note fra klinikken: {lead.declineNote}</p>}
           </div>
         )}
-        {lead.booking && <BookingSummary booking={lead.booking} onChanged={onWithdrawn} />}
+        {lead.booking && <BookingSummary booking={lead.booking} onChanged={onChanged} />}
         {lead.status === "accepted" && !clinic.removed && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-ink-muted">Klinikken har accepteret. Vælg en tid, der passer dig.</p>
@@ -222,7 +222,7 @@ export function CaseLeads({ caseId }: { caseId: string }) {
         ) : (
           <ul className="flex flex-col gap-4">
             {leads.map((lead) => (
-              <LeadCard key={lead.id} caseId={caseId} lead={lead} onWithdrawn={reload} />
+              <LeadCard key={lead.id} caseId={caseId} lead={lead} onChanged={reload} />
             ))}
           </ul>
         )}

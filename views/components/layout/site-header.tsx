@@ -121,7 +121,7 @@ export function SiteHeader() {
       )}
 
       {areaNav.length > 0 && (
-        <nav aria-label="Områdenavigation" className="border-t border-line">
+        <nav aria-label="Områdenavigation" className="relative border-t border-line">
           <ul className="mx-auto flex max-w-wide gap-1 overflow-x-auto px-2 sm:px-4">
             {areaNav.map((item) => {
               const active = item.href === activeHref;
@@ -143,6 +143,11 @@ export function SiteHeader() {
               );
             })}
           </ul>
+          {/* Fade i kanten viser, at fanerne kan rulles; kun når der er flere faner end plads. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface to-transparent xl:hidden"
+          />
         </nav>
       )}
     </header>

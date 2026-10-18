@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import {
   BOOKING_HORIZON_DAYS,
-  CONTACT_NAME_MAX_CHARS,
-  CONTACT_NAME_MIN_CHARS,
   MAX_AVAILABILITY_RANGE_DAYS,
 } from "@/lib/constants/bookings";
+import { DAY_MS } from "@/lib/domain/time";
+import { contactNameSchema } from "@/lib/schemas/bookings";
 import { phoneSchema } from "@/lib/schemas/phone";
 import type { PatientBookingDto } from "@/lib/types/bookings";
 import type { SlotDto } from "@/lib/types/clinics";
@@ -21,15 +21,20 @@ import { StatusMessage } from "@/views/components/ui/status-message";
 import { TextField } from "@/views/components/ui/text-field";
 import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
 import { BOOKINGS_HREF, caseHref } from "@/views/utils/case-links";
-import { dayKey, formatDay, formatDateTime, formatTime } from "@/views/utils/format";
-import { cx } from "@/views/components/ui/cx";
+import { formatDateTime, formatDayMonth } from "@/views/utils/format";
+import { SlotDays } from "@/views/components/ui/slot-days";
 import { loadCaseSelection } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const TIMES_PER_DAY = 6;
+const FORM_ID = "booking-form";
 const PAGES = Math.ceil(BOOKING_HORIZON_DAYS / MAX_AVAILABILITY_RANGE_DAYS);
+
+// Tidsrummet for en side: side 0 starter nu, de følgende MAX_AVAILABILITY_RANGE_DAYS dage ad gangen.
+function rangeOf(now: number, page: number): { from: Date; to: Date } {
+  const from = new Date(now + page * MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
+  return { from, to: new Date(from.getTime() + MAX_AVAILABILITY_RANGE_DAYS * DAY_MS) };
+}
 
 // Tidsvælger: ledige tider pr. dag, højst MAX_AVAILABILITY_RANGE_DAYS ad gangen, med mulighed for at bladre frem.
 function SlotPicker({
@@ -47,11 +52,8 @@ function SlotPicker({
 }) {
   const [now] = useState(() => Date.now());
   const [page, setPage] = useState(0);
-  const [expanded, setExpanded] = useState<string[]>([]);
-
   const loader = useCallback(async () => {
-    const from = new Date(page === 0 ? now : now + page * MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
-    const to = new Date(from.getTime() + MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
+    const { from, to } = rangeOf(now, page);
     const params = new URLSearchParams({ serviceId, from: from.toISOString(), to: to.toISOString() });
     // reloadKey ligger kun i afhængighederne, så tiderne hentes igen efter SLOT_TAKEN.
     void reloadKey;
@@ -59,83 +61,29 @@ function SlotPicker({
   }, [leadId, serviceId, page, now, reloadKey]);
   const { data, loading, error, reload } = useLoad(loader);
 
-  const days = useMemo(() => {
-    const map = new Map<string, SlotDto[]>();
-    for (const slot of data ?? []) {
-      const key = dayKey(slot.startsAt);
-      map.set(key, [...(map.get(key) ?? []), slot]);
-    }
-    return [...map.entries()];
-  }, [data]);
-
   function goTo(next: number) {
     setPage(next);
     onSelect(null);
   }
 
-  const firstDay = page * MAX_AVAILABILITY_RANGE_DAYS + 1;
-  const lastDay = (page + 1) * MAX_AVAILABILITY_RANGE_DAYS;
+  const { from, to } = rangeOf(now, page);
+  const lastDay = new Date(to.getTime() - 1);
 
   return (
     <div className="flex flex-col gap-4" data-testid="tidsvaelger">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-ink">Vælg en tid</h2>
-        <p className="text-sm text-ink-muted">
-          {page === 0 ? "De næste" : `Dag ${firstDay} til ${lastDay}`}
-          {page === 0 && ` ${MAX_AVAILABILITY_RANGE_DAYS} dage`}
+        <p className="text-sm text-ink-muted" data-testid="tidsrum">
+          {formatDayMonth(from)} til {formatDayMonth(lastDay)}
         </p>
       </div>
       <LoadState loading={loading && !data} error={error} onRetry={reload} />
-      {data && days.length === 0 && (
+      {data && data.length === 0 && (
         <p className="text-base text-ink-muted" data-testid="ingen-tider">
           Ingen ledige tider i dette tidsrum. Prøv at bladre frem.
         </p>
       )}
-      {days.length > 0 && (
-        <ul className="flex flex-col gap-4">
-          {days.map(([key, slots]) => {
-            const open = expanded.includes(key);
-            const shown = open ? slots : slots.slice(0, TIMES_PER_DAY);
-            return (
-              <li key={key} className="flex flex-col gap-2" data-testid="dag">
-                <h3 className="text-base font-semibold first-letter:uppercase text-ink">{formatDay(slots[0].startsAt)}</h3>
-                <ul className="flex flex-wrap gap-2">
-                  {shown.map((slot) => {
-                    const active = slot.startsAt === selected;
-                    return (
-                      <li key={slot.startsAt}>
-                        <button
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => onSelect(slot)}
-                          data-testid="tid"
-                          className={cx(
-                            "inline-flex min-h-11 min-w-20 items-center justify-center rounded-pill px-4 text-base font-semibold ring-1 ring-inset transition-colors",
-                            active
-                              ? "bg-brand-600 text-on-brand ring-brand-600"
-                              : "bg-brand-50 text-brand-800 ring-brand-200 hover:bg-brand-100",
-                          )}
-                        >
-                          {formatTime(slot.startsAt)}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {slots.length > TIMES_PER_DAY && (
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700"
-                    onClick={() => setExpanded((list) => (open ? list.filter((k) => k !== key) : [...list, key]))}
-                  >
-                    {open ? "Vis færre tider" : `Vis ${slots.length - TIMES_PER_DAY} flere tider`}
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {data && data.length > 0 && <SlotDays slots={data} selected={selected} onSelect={onSelect} />}
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
         <Button variant="secondary" onClick={() => goTo(page - 1)} disabled={page === 0}>
           ← Tidligere dage
@@ -167,6 +115,7 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
   const [phone, setPhone] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string }>({});
   const [reloadKey, setReloadKey] = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
   const [booked, setBooked] = useState<PatientBookingDto | null>(null);
   const action = useAction();
 
@@ -238,10 +187,9 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
     event.preventDefault();
     if (!slot) return;
     const errors: { name?: string; phone?: string } = {};
+    const parsedName = contactNameSchema.safeParse(currentName);
+    if (!parsedName.success) errors.name = parsedName.error.issues[0]?.message ?? "Skriv dit fulde navn.";
     const trimmed = currentName.trim();
-    if (trimmed.length < CONTACT_NAME_MIN_CHARS || trimmed.length > CONTACT_NAME_MAX_CHARS) {
-      errors.name = `Skriv dit fulde navn (${CONTACT_NAME_MIN_CHARS}-${CONTACT_NAME_MAX_CHARS} tegn).`;
-    }
     if (!phoneSchema.safeParse(currentPhone).success) errors.phone = "Angiv et gyldigt telefonnummer, fx 12 34 56 78.";
     setFieldErrors(errors);
     if (errors.name || errors.phone) return;
@@ -260,6 +208,7 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
           setSlot(null);
           setReloadKey((k) => k + 1);
         }
+        setLimitReached(e instanceof ApiRequestError && e.code === "BOOKING_LIMIT");
         throw e;
       }
     });
@@ -276,74 +225,91 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
         </p>
       </header>
 
-      <Card className="flex flex-col gap-6 p-4 sm:p-6">
-        <SelectField
-          label="Behandling"
-          value={currentService}
-          onChange={(event) => {
-            setServiceId(event.target.value);
-            setSlot(null);
-          }}
-        >
-          {services.map((service) => (
-            <option key={service.id} value={service.id}>
-              {service.name}
-            </option>
-          ))}
-        </SelectField>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-8">
+        <Card className="flex min-w-0 flex-col gap-6 p-4 sm:p-6">
+          <SelectField
+            label="Behandling"
+            value={currentService}
+            onChange={(event) => {
+              setServiceId(event.target.value);
+              setSlot(null);
+            }}
+          >
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.name}
+              </option>
+            ))}
+          </SelectField>
 
-        {currentService && (
-          <SlotPicker
-            leadId={leadId}
-            serviceId={currentService}
-            selected={slot?.startsAt ?? null}
-            onSelect={setSlot}
-            reloadKey={reloadKey}
-          />
-        )}
-      </Card>
-
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4" aria-label="Kontaktoplysninger og booking">
-        <Card className="flex flex-col gap-4 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-ink">Dine oplysninger</h2>
-          <p className="text-sm text-ink-muted">Klinikken ser dit navn og telefonnummer, når tiden er booket.</p>
-          <TextField
-            label="Fulde navn"
-            name="contactName"
-            autoComplete="name"
-            value={currentName}
-            onChange={(event) => setName(event.target.value)}
-            error={fieldErrors.name}
-            required
-          />
-          <TextField
-            label="Telefon"
-            name="contactPhone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={currentPhone}
-            onChange={(event) => setPhone(event.target.value)}
-            error={fieldErrors.phone}
-            required
-          />
+          {currentService && (
+            <SlotPicker
+              leadId={leadId}
+              serviceId={currentService}
+              selected={slot?.startsAt ?? null}
+              onSelect={setSlot}
+              reloadKey={reloadKey}
+            />
+          )}
         </Card>
 
-        <StatusMessage message={action.message} />
+        <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4">
+          <form id={FORM_ID} onSubmit={submit} noValidate className="flex flex-col gap-4" aria-label="Kontaktoplysninger og booking">
+            <Card className="flex flex-col gap-4 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-ink">Dine oplysninger</h2>
+              <p className="text-sm text-ink-muted">Klinikken ser dit navn og telefonnummer, når tiden er booket.</p>
+              <TextField
+                label="Fulde navn"
+                name="contactName"
+                autoComplete="name"
+                value={currentName}
+                onChange={(event) => setName(event.target.value)}
+                error={fieldErrors.name}
+                required
+              />
+              <TextField
+                label="Telefon"
+                name="contactPhone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={currentPhone}
+                onChange={(event) => setPhone(event.target.value)}
+                error={fieldErrors.phone}
+                required
+              />
+            </Card>
+            <StatusMessage message={action.message} />
+            {limitReached && (
+              <Link href={caseHref(caseId)} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
+                Gå til beskedtråden med klinikken
+              </Link>
+            )}
+          </form>
 
-        {slot ? (
-          <p className="text-base font-semibold text-ink" data-testid="valgt-tid">
-            Valgt tid: {formatDateTime(slot.startsAt)}
-          </p>
-        ) : (
-          <p className="text-base text-ink-muted">Vælg en tid ovenfor for at booke.</p>
-        )}
-        <div>
-          <Button type="submit" disabled={!slot || !currentService || action.busy} className="w-full sm:w-fit">
-            {action.busy ? "Booker …" : "Book tid"}
-          </Button>
+          {/* Bundlinjen følger med i bunden af skærmen på mobil, så "Book tid" altid er inden for rækkevidde efter valg af tid. */}
+          <div
+            className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3 shadow-raised sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:rounded-card lg:border lg:px-4 lg:shadow-card"
+            data-testid="bundlinje"
+          >
+            <div className="min-w-0">
+              {slot ? (
+                <>
+                  <p className="text-sm text-ink-muted">Valgt tid</p>
+                  <p className="text-base font-semibold text-ink" data-testid="valgt-tid">
+                    {formatDateTime(slot.startsAt)}
+                  </p>
+                </>
+              ) : (
+                <p className="text-base text-ink-muted">Vælg en tid for at booke.</p>
+              )}
+            </div>
+            <Button type="submit" form={FORM_ID} disabled={!slot || !currentService || action.busy} className="shrink-0">
+              {action.busy ? "Booker …" : "Book tid"}
+            </Button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

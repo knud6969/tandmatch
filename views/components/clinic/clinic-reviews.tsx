@@ -1,24 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { REVIEW_REPLY_MAX_CHARS } from "@/lib/constants/reviews";
+import { NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
+import { MODERATION_LABEL, REVIEW_REPLY_MAX_CHARS } from "@/lib/constants/reviews";
 import { replyReviewSchema } from "@/lib/schemas/reviews";
 import type { ClinicReviewDto } from "@/lib/types/reviews";
-import { ReviewDetails } from "@/views/components/clinic-directory/public-review-list";
+import { ReviewDetails } from "@/views/components/reviews/review-details";
 import { Badge } from "@/views/components/ui/badge";
 import { Button } from "@/views/components/ui/button";
 import { LoadState } from "@/views/components/ui/load-state";
+import { NotVerifiedNote } from "@/views/components/clinic/not-verified-note";
 import { StatusMessage } from "@/views/components/ui/status-message";
 import { TextArea } from "@/views/components/ui/text-area";
 import { apiRequest } from "@/views/utils/api-client";
-import { MODERATION_LABEL, MODERATION_TONE } from "@/views/utils/review-status";
+import { MODERATION_TONE } from "@/views/utils/review-status";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
 const loadReviews = async (): Promise<ClinicReviewDto[]> =>
   (await apiRequest<{ reviews: ClinicReviewDto[] }>("/api/clinics/me/reviews")).reviews;
 
-function ReplyForm({ reviewId, onSent }: { reviewId: string; onSent: () => void }) {
+function ReplyForm({ reviewId, onSent, onCancel }: { reviewId: string; onSent: () => void; onCancel: () => void }) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
   const send = useAction();
@@ -52,14 +54,20 @@ function ReplyForm({ reviewId, onSent }: { reviewId: string; onSent: () => void 
         {text.trim().length} af {REVIEW_REPLY_MAX_CHARS} tegn
       </p>
       <StatusMessage message={send.message} />
-      <Button type="submit" disabled={send.busy} className="w-full sm:w-fit">
-        {send.busy ? "Sender …" : "Send svar"}
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button type="submit" disabled={send.busy}>
+          {send.busy ? "Sender …" : "Send svar"}
+        </Button>
+        <Button variant="ghost" onClick={onCancel} disabled={send.busy}>
+          Fortryd
+        </Button>
+      </div>
     </form>
   );
 }
 
 function ClinicReview({ review, onChanged }: { review: ClinicReviewDto; onChanged: () => void }) {
+  const [replying, setReplying] = useState(false);
   return (
     <li className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 shadow-card sm:p-5" data-testid="klinik-anmeldelse">
       <div className="flex flex-col gap-2">
@@ -73,8 +81,14 @@ function ClinicReview({ review, onChanged }: { review: ClinicReviewDto; onChange
           </div>
           <p className="whitespace-pre-line break-words text-base text-ink">{review.reply.text}</p>
         </div>
+      ) : replying ? (
+        <ReplyForm reviewId={review.id} onSent={onChanged} onCancel={() => setReplying(false)} />
       ) : (
-        <ReplyForm reviewId={review.id} onSent={onChanged} />
+        <div>
+          <Button variant="secondary" onClick={() => setReplying(true)}>
+            Svar<span className="sr-only"> på anmeldelsen</span>
+          </Button>
+        </div>
       )}
     </li>
   );
@@ -82,12 +96,13 @@ function ClinicReview({ review, onChanged }: { review: ClinicReviewDto; onChange
 
 // Klinikkens godkendte anmeldelser med mulighed for ét offentligt svar pr. anmeldelse (architecture 6.3, 8.5).
 export function ClinicReviews() {
-  const { data, loading, error, reload } = useLoad(loadReviews);
+  const { data, loading, error, errorCode, reload } = useLoad(loadReviews);
+  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote what="anmeldelser" />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
   if (data.length === 0) {
     return (
       <p className="text-base text-ink-muted">
-        Der er endnu ingen godkendte anmeldelser. Patienter kan anmelde 24 timer efter et gennemført besøg, og anmeldelser vises her, når de er godkendt.
+        Der er endnu ingen godkendte anmeldelser. Patienter kan anmelde {NO_SHOW_GRACE_HOURS} timer efter et gennemført besøg, og anmeldelser vises her, når de er godkendt.
       </p>
     );
   }

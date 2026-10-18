@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Book tid" };
 export default async function PatientBookPage({ params }: { params: Promise<{ caseId: string; leadId: string }> }) {
   const { caseId, leadId } = await params;
   return (
-    <Container>
+    <Container size="wide">
       <BookingPicker caseId={caseId} leadId={leadId} />
     </Container>
   );

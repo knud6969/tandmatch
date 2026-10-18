@@ -9,6 +9,7 @@ import {
   REVIEW_TEXT_MIN_CHARS,
   REVIEW_TRANSPARENCY_COMMENT_MAX_CHARS,
 } from "@/lib/constants/reviews";
+import { NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
 import { createReviewSchema } from "@/lib/schemas/reviews";
 import type { PriceAccuracy, ReviewCreatedDto, ReviewEligibleItemDto } from "@/lib/types/reviews";
 import { Alert } from "@/views/components/ui/alert";
@@ -22,6 +23,7 @@ import { TextArea } from "@/views/components/ui/text-area";
 import { TextField } from "@/views/components/ui/text-field";
 import { apiRequest } from "@/views/utils/api-client";
 import { BOOKINGS_HREF, REVIEWS_HREF } from "@/views/utils/case-links";
+import { loadEligibleVisits } from "@/views/utils/eligible-visits";
 import { fieldErrorsFrom } from "@/views/utils/field-errors";
 import { formatDate, formatPriceRange, parseWholeKr } from "@/views/utils/format";
 import { useAction } from "@/views/utils/use-action";
@@ -33,9 +35,6 @@ const TRANSPARENCY_OPTIONS = [
   { value: "no", label: "Nej, prisen var tydelig" },
   { value: "yes", label: "Ja, der manglede gennemsigtighed" },
 ] as const;
-
-export const loadEligibleVisits = async (): Promise<ReviewEligibleItemDto[]> =>
-  (await apiRequest<{ items: ReviewEligibleItemDto[] }>("/api/reviews/eligible")).items;
 
 // Stjernevalg som radioknapper. Hver stjerne er mindst 48 x 48 px, og selve radioknappen ligger oven på stjernen.
 function StarInput({ value, onChange, error }: { value: number | null; onChange: (stars: number) => void; error?: string }) {
@@ -223,7 +222,7 @@ export function ReviewFormPage({ bookingId }: { bookingId: string }) {
   if (!item) {
     return (
       <Friendly title="Dette besøg kan ikke anmeldes">
-        Enten er der ikke gået 24 timer siden besøget, besøget blev ikke gennemført, eller du har allerede anmeldt det.
+        {`Enten er der ikke gået ${NO_SHOW_GRACE_HOURS} timer siden besøget, besøget blev ikke gennemført, eller du har allerede anmeldt det.`}
       </Friendly>
     );
   }

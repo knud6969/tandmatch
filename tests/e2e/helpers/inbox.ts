@@ -154,3 +154,10 @@ export async function addImages(patient: { page: Page; caseId: string }, count: 
   const approve = await patient.page.request.put(`/api/cases/${patient.caseId}/summary`, { data: { summaryText: "Jeg vil gerne have lysere tænder." } });
   expect(approve.ok(), await approve.text()).toBeTruthy();
 }
+
+// Kalenderen starter ved i dag; tidligere dage ligger bag en knap (6.7b). Åbner dem, hvis de findes.
+export async function showPastDays(page: Page) {
+  await expect(page.getByTestId("kalender-dag").first()).toBeVisible();
+  const button = page.getByRole("button", { name: /^Vis tidligere dage/ });
+  if (await button.count()) await button.click();
+}

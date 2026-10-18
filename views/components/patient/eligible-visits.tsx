@@ -1,10 +1,11 @@
 "use client";
 
+import { NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
 import type { ReviewEligibleItemDto } from "@/lib/types/reviews";
-import { loadEligibleVisits } from "@/views/components/patient/review-form";
 import { LinkButton } from "@/views/components/ui/button";
 import { LoadState } from "@/views/components/ui/load-state";
 import { reviewHref } from "@/views/utils/case-links";
+import { loadEligibleVisits } from "@/views/utils/eligible-visits";
 import { formatDate } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
@@ -27,7 +28,7 @@ export function EligibleVisits() {
   const { data, loading, error, reload } = useLoad(loadEligibleVisits);
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
   if (data.length === 0) {
-    return <p className="text-base text-ink-muted">Ingen besøg kan anmeldes lige nu. Du kan anmelde 24 timer efter et gennemført besøg.</p>;
+    return <p className="text-base text-ink-muted">Ingen besøg kan anmeldes lige nu. Du kan anmelde {NO_SHOW_GRACE_HOURS} timer efter et gennemført besøg.</p>;
   }
   return (
     <ul className="flex flex-col gap-3">

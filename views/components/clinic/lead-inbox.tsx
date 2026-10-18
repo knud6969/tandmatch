@@ -8,6 +8,7 @@ import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeTex
 import { FilterChips } from "@/views/components/ui/filter-chips";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
+import { clinicLeadHref } from "@/views/utils/clinic-links";
 import { formatDateTime } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
@@ -32,7 +33,7 @@ function LeadRow({ lead }: { lead: ClinicLeadListItemDto }) {
   return (
     <li>
       <Link
-        href={`/klinik/lead/${lead.id}`}
+        href={clinicLeadHref(lead.id)}
         data-testid="lead-raekke"
         className="flex min-h-12 flex-col gap-2 rounded-card border border-line bg-surface p-4 no-underline shadow-card transition-colors hover:border-brand-400 sm:p-5"
       >

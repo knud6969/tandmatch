@@ -10,7 +10,7 @@ import { Card } from "@/views/components/ui/card";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseFlowHref, caseHref } from "@/views/utils/case-links";
-import { formatDate } from "@/views/utils/format";
+import { formatDate, formatDateTime } from "@/views/utils/format";
 import { useLoad } from "@/views/utils/use-load";
 
 const loadCases = async (): Promise<CaseListItemDto[]> => (await apiRequest<{ cases: CaseListItemDto[] }>("/api/cases")).cases;
@@ -43,6 +43,11 @@ function CaseItem({ item }: { item: CaseListItemDto }) {
             {draft ? "Sagen er ikke sendt endnu." : "Sagen er ikke sendt til nogen klinik."}
           </p>
         )}
+        {item.nextBooking && (
+          <p className="rounded-control bg-brand-50 px-3 py-2 text-base text-brand-900" data-testid="naeste-booking">
+            <span className="font-semibold">Næste tid:</span> {formatDateTime(item.nextBooking.startsAt)} hos {item.nextBooking.clinicName}
+          </p>
+        )}
         <div>
           {draft ? (
             <LinkButton href={caseFlowHref(item.id)} variant="secondary">
@@ -59,7 +64,7 @@ function CaseItem({ item }: { item: CaseListItemDto }) {
   );
 }
 
-// Patientens sager (architecture 6.2): status og leads pr. sag. Bookinger kommer med trin 6.
+// Patientens sager (architecture 6.2): status, leads pr. sag og sagens næste booking.
 export function CaseList() {
   const { data, loading, error, reload } = useLoad(loadCases);
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
