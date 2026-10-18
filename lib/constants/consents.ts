@@ -10,7 +10,8 @@ export const CONSENT_TEXT_VERSIONS = {
   // v1: oplyser eksplicit om AI-tjenesten (OpenAI) og at det er en beskrivelse, ikke en vurdering.
   // Tidligere samtykker (v0) forbliver gyldige rækker, men nye uploads kræver denne version.
   image_upload: "image_upload@v1-ai-disclosure",
-  health_data_sharing: "health_data_sharing@v0-prototype",
+  // v1: deling med de klinikker, patienten selv vælger; navn og kontakt deles først ved booking.
+  health_data_sharing: "health_data_sharing@v1-klinikker",
 } as const;
 
 export const CONSENT_TEXTS = {
@@ -21,26 +22,26 @@ export const CONSENT_TEXTS = {
     "synligt indhold på billedet (fx vinkel og hvad der er synligt) - beskrivelsen er IKKE en vurdering eller diagnose, " +
     "det er altid tandlægens opgave. Fotos er helbredsoplysninger og slettes efter 48 timer, hvis jeg ikke opretter en konto.",
   health_data_sharing:
-    "Jeg accepterer, at min godkendte beskrivelse og eventuelle billeder deles med de tandlæger, min forespørgsel sendes til.",
+    "Jeg accepterer, at min godkendte beskrivelse, mine valgte behandlinger, mit ønskede tidsrum, mit postnummer og eventuelle billeder deles med de klinikker, jeg selv vælger at kontakte via TandMatch. Når jeg booker en tid, får klinikken også mit navn, mit telefonnummer og min e-mail.",
 } as const;
 
 // Korte danske navne til samtykketyperne (architecture 4.3). Selve teksten, brugeren har godkendt, står i CONSENT_TEXTS.
 export const CONSENT_TYPE_LABEL: Record<ConsentType, string> = {
   ai_processing: "AI-behandling af tekst og billeder",
   image_upload: "Billedupload",
-  health_data_sharing: "Deling af din beskrivelse med tandlæger",
+  health_data_sharing: "Deling af din sag med de klinikker, du vælger",
 };
 
 // Konsekvens af at trække samtykket tilbage, vist i bekræftelsen (architecture 5.3, 7.7).
 export const CONSENT_WITHDRAW_CONSEQUENCE: Record<ConsentType, string> = {
   ai_processing:
-    "Er du anonym, slettes hele din session, inklusive din kladde-forespørgsel og dine billeder, med det samme. " +
+    "Er du anonym, slettes hele din session, inklusive din kladde og dine billeder, med det samme. " +
     "Har du en konto, bliver din aktive AI-samtale i stedet lukket, og du kan stadig skrive din beskrivelse selv.",
   image_upload:
-    "Dine uploadede billeder bliver slettet, også i forespørgsler du allerede har sendt. De tandlæger, der har fået " +
-    "forespørgslen, mister dermed adgangen til billederne.",
+    "Dine uploadede billeder bliver slettet, også på sager, du allerede har sendt. Klinikkerne mister dermed adgangen til billederne.",
   health_data_sharing:
-    "Det påvirker ikke forespørgsler, du allerede har sendt, men din beskrivelse kan ikke deles med nye tandlæger, før du giver samtykke igen.",
+    "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og klinikkerne mister adgangen til din sag. " +
+    "Bookede tider består; du kan aflyse dem under Bookinger. Du skal give samtykke igen, før du kan kontakte nye klinikker.",
 };
 
 // Klinikkens bekræftelse ved upload af porteføljebillede (architecture 9.5). Gemmes på portfolio_items

@@ -8,7 +8,7 @@ export const TERMS_VERSION = "v0-prototype";
 export const PRIVACY_VERSION = "v0-prototype";
 export const AI_CONSENT_VERSION = "ai_processing@v0-prototype";
 export const IMAGE_CONSENT_VERSION = "image_upload@v1-ai-disclosure";
-export const SHARING_CONSENT_VERSION = "health_data_sharing@v0-prototype";
+export const SHARING_CONSENT_VERSION = "health_data_sharing@v1-klinikker";
 
 export type Json = Record<string, unknown>;
 // Svarets JSON læses frit i testene; skemaet tjekkes af assertions, ikke af typerne.

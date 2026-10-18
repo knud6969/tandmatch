@@ -521,7 +521,7 @@ async function seed(config: Config): Promise<void> {
     const consents = must(await admin.from('consents').insert([
       { patient_id: userId, type: 'ai_processing', text_version: 'ai_processing@v0-prototype' },
       { patient_id: userId, type: 'image_upload', text_version: 'image_upload@v1-ai-disclosure' },
-      { patient_id: userId, type: 'health_data_sharing', text_version: 'health_data_sharing@v0-prototype' },
+      { patient_id: userId, type: 'health_data_sharing', text_version: 'health_data_sharing@v1-klinikker' },
     ]).select('id, type'), 'samtykker') as { id: string; type: string }[];
     const imageConsent = consents.find((c) => c.type === 'image_upload');
     if (!imageConsent) throw new Error('image_upload-samtykke mangler');

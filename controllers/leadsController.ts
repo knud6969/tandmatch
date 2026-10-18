@@ -3,10 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { leadDecisionSchema, sendLeadsSchema } from "@/lib/schemas/leads";
 import type { ClinicLeadDetailDto, ClinicLeadListItemDto, LeadStatus, PatientLeadDto } from "@/lib/types/leads";
+import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
+import { ConsentsRepository } from "@/models/consentsRepository";
 import { lazyAdminClient } from "@/models/db/admin";
 import { LeadsRepository } from "@/models/leadsRepository";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";
@@ -20,6 +22,7 @@ export type LeadsDeps = {
   bookings: BookingsRepository;
   cases: CasesRepository;
   clinics: ClinicsRepository;
+  consents: ConsentsRepository;
   imageUrls: CaseImageUrlService;
   admin: () => SupabaseClient;
 };
@@ -34,6 +37,7 @@ export class LeadsController {
   private readonly bookings: BookingsRepository;
   private readonly cases: CasesRepository;
   private readonly clinics: ClinicsRepository;
+  private readonly consents: ConsentsRepository;
   private readonly imageUrls: CaseImageUrlService;
 
   constructor(
@@ -45,6 +49,7 @@ export class LeadsController {
     this.bookings = deps.bookings ?? new BookingsRepository(supabase);
     this.cases = deps.cases ?? new CasesRepository(supabase);
     this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
+    this.consents = deps.consents ?? new ConsentsRepository(supabase);
     // 2.3 (e): signering af billed-URL'er efter en RLS-beskyttet læsning (clinic_lead_images()). Klienten oprettes først ved brug.
     this.imageUrls = deps.imageUrls ?? new CaseImageUrlService(deps.admin ?? lazyAdminClient());
   }
@@ -54,9 +59,18 @@ export class LeadsController {
   // Sender sagen til de valgte klinikker og returnerer de nye leads.
   async send(caseId: string, input: SendLeadsInput): Promise<PatientLeadDto[]> {
     await this.cases.requireOwn(caseId);
+    await this.requireCurrentSharingConsent();
     await this.leads.sendLeads(caseId, input.clinicIds);
     const created = new Set(input.clinicIds);
     return this.withBookings((await this.leads.listForCase(caseId)).filter((lead) => created.has(lead.clinic.id)));
+  }
+
+  // Kræver et aktivt delingssamtykke med den gældende tekstversion (architecture 4.3, 10.5). Et samtykke til en
+  // ældre tekst giver ikke ret til nye leads. Databasen tjekker selv typen i send_leads() som sidste værn.
+  private async requireCurrentSharingConsent(): Promise<void> {
+    if (!(await this.consents.findCurrentActive("health_data_sharing"))) {
+      throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til deling med klinikker først.");
+    }
   }
 
   async listForCase(caseId: string): Promise<PatientLeadDto[]> {

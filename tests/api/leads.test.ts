@@ -148,10 +148,33 @@ describe("send leads", () => {
 
   it("afviser en sag uden godkendt opsummering (CASE_NOT_READY)", async () => {
     const p = await patient(false);
+    assert.equal((await p.c.post("/api/consents", { type: "health_data_sharing", textVersion: SHARING_CONSENT_VERSION })).status, 201);
     const [a] = await clinics(1);
     const r = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [a] });
     assert.equal(r.status, 409);
     assert.equal(errorOf(r), "CASE_NOT_READY");
+  });
+
+  it("kun et v0-delingssamtykke giver 403 CONSENT_REQUIRED; efter v1 kan der sendes", async () => {
+    const p = await patient();
+    const consents = await p.c.get("/api/consents");
+    const sharing = (consents.body.consents ?? consents.body).find((x: { type: string }) => x.type === "health_data_sharing");
+    assert.ok(sharing);
+    // Erstat v1 med en ældre v0-række (som en eksisterende patient i det fælles projekt har).
+    const del = await admin.from("consents").delete().eq("id", sharing.id);
+    assert.ifError(del.error);
+    const ins = await admin.from("consents").insert({ patient_id: p.userId, type: "health_data_sharing", text_version: "health_data_sharing@v0-prototype" });
+    assert.ifError(ins.error);
+    const [a] = await clinics(1);
+    const denied = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [a] });
+    assert.equal(denied.status, 403);
+    assert.equal(errorOf(denied), "CONSENT_REQUIRED");
+    const old = await p.c.post("/api/consents", { type: "health_data_sharing", textVersion: "health_data_sharing@v0-prototype" });
+    assert.equal(old.status, 400);
+    assert.equal(old.body.error.code, "CONSENT_VERSION_MISMATCH");
+    assert.equal((await p.c.post("/api/consents", { type: "health_data_sharing", textVersion: SHARING_CONSENT_VERSION })).status, 201);
+    const ok = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [a] });
+    assert.equal(ok.status, 201, JSON.stringify(ok.body));
   });
 
   it("kræver samtykke til deling (CONSENT_REQUIRED)", async () => {
