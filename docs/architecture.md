@@ -966,7 +966,7 @@ is_lead_thread_open(lead_id)          -> boolean     -- lead.status in ('sent','
 is_lead_active_status(status)         -> boolean     -- status in ('sent','accepted','booked'); bruges af loftet på 3 aktive
 review_is_for_my_clinic(review_id)    -> boolean
 can_review_booking(booking_id)        -> boolean     -- policy-hjælper: bookingen er egen, effektivt 'completed', klinikken
-                                                     -- er verificeret, og der findes ingen anmeldelse (8.1)
+                                                     -- er verificeret (8.1). Ikke-anmeldt sikres af unique(booking_id)
 review_is_approved(review_id)         -> boolean     -- policy-hjælper: bruges af review_replies INSERT
 is_allowed_consent_text(type, version) -> boolean
 participant_messages_last_day()       -> integer
@@ -1466,7 +1466,7 @@ Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste
 
 ## 8. Anmeldelser og prisnøjagtighed
 
-Status: tabeller, policies og statistikfunktion er bygget i databasen (trin 0). Den offentlige læsning (`GET /api/clinics/{id}/reviews`, statistik i oversigt og profil) er bygget i trin 2. Skrivning, svar og klinikkens visning er [IKKE BYGGET] (trin 6).
+Status: tabeller, policies og statistikfunktion er bygget i databasen (trin 0). Den offentlige læsning (`GET /api/clinics/{id}/reviews`, statistik i oversigt og profil) er bygget i trin 2. Skrivning, svar, patientens og klinikkens visning er bygget i 6.2 (10.13). Moderationen er manuel i databasen (8.5).
 
 ### 8.1 Verifikation: kun efter gennemført booking
 
@@ -1476,7 +1476,7 @@ RLS INSERT-policy på `reviews`:
 ```
 patient_id = uid and is_permanent_user() and public.can_review_booking(booking_id)
 ```
-`can_review_booking()` (5.2) samler betingelserne: bookingen er egen, effektivt `completed` (`effective_booking_status()`), klinikken er verificeret, og bookingen er ikke anmeldt.
+`can_review_booking()` (5.2) samler betingelserne: bookingen er egen, effektivt `completed` (`effective_booking_status()`) og klinikken er verificeret. At bookingen ikke allerede er anmeldt sikrer `unique(booking_id)` (409 `ALREADY_REVIEWED`), ikke funktionen.
 Trigger sætter `clinic_id` fra bookingen og tvinger `moderation_status = 'pending'`. Et besøg er gennemført automatisk 24 timer efter sluttid, medmindre klinikken inden da har markeret det som udeblevet (4.2). Klinikken skal altså ikke gøre noget, for at et besøg tæller, og patienten kan først anmelde, når fristen er udløbet.
 
 ### 8.2 Felter og prisoverslag
@@ -1564,7 +1564,7 @@ Stier: `clinics/{clinic_id}/logo.jpg`, `clinics/{clinic_id}/dentists/{dentist_id
 
 Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
 
-**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, bortset fra `GET /api/clinics/me/reviews` (6.2). 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. 10.5 og 10.6 er bygget i trin 3, leads i 10.5 i trin 4. 10.9 og 10.12 er bygget i trin 5. 10.10, 10.11 og resten af 10.13-10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
+**Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9, . 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. 10.5 og 10.6 er bygget i trin 3, leads i 10.5 i trin 4. 10.9 og 10.12 er bygget i trin 5. 10.10 (6.1) og 10.13 (6.2) er bygget; 10.11 og 10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 
 ### 10.1 Delte typer
 
@@ -1604,7 +1604,7 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 | GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget. `clinic` hentes via `ClinicsRepository.findOwn()` |
 | GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget (`phone` i 6.1). `phone` valideres med `phoneSchema` (`lib/schemas/phone.ts`, samme som klinikkens telefon og bookingens `contactPhone`); `null` rydder nummeret. Gemmes også af `book_slot()` |
 | DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 | Bygget |
-| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag. Billeder beskrives med metadata (`id`, `view`, `quality`, `description`, `createdAt`), uden sti eller URL | Delvis: `cases`, `chat` (3.3), `leads` (4.1, `LeadExportDto` uden beskeder og billeder), `bookings` (6.1, `BookingExportDto`: patientens egne bookinger med klinikkens navn, ydelse, effektiv status og de kontaktoplysninger patienten selv har angivet) og `consents` er bygget. `reviews` [IKKE BYGGET] (6.2) |
+| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag. Billeder beskrives med metadata (`id`, `view`, `quality`, `description`, `createdAt`), uden sti eller URL | Bygget: `cases`, `chat` (3.3), `leads` (4.1, `LeadExportDto` uden beskeder og billeder), `bookings` (6.1, `BookingExportDto`: patientens egne bookinger med klinikkens navn, ydelse, effektiv status og de kontaktoplysninger patienten selv har angivet) og `consents` er bygget. `reviews` (6.2, `ReviewExportDto`: patientens egne anmeldelser inkl. `moderationStatus` og `rejectionReason`; klinikkens navn står i `bookings` under samme `bookingId`) er bygget |
 | GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Sletter `{case_id}/`-mapper og auth-brugeren | Bygget |
 | GET/POST `/api/cron/complete-bookings` | intern (`CRON_SECRET`) | | 200 `{ completed, releasedHolds }` (10.10) | Bygget (6.1) |
 
@@ -1719,7 +1719,7 @@ export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage
 
 ### 10.7 Klinikoversigt og profil (offentligt)
 
-Bygget i trin 2 (2.3). `ClinicDirectoryController` (offentlig, `session: Session | null`) bruger `ClinicDirectoryRepository` (`public_*`-funktionerne), `AvailabilityRepository.listBusyIntervals()`, `RankingService` og `AvailabilityService`. Offentlige anmeldelser og statistik (`public_reviews()`, `public_clinic_review_stats_many()`) læses foreløbig også i `ClinicDirectoryRepository`, ikke i et `ReviewsRepository`; trin 6 kan flytte dem, når anmeldelserne bygges. Trustpilot-felterne mappes ét sted, `trustpilotFromColumns()` i `models/db/mappers.ts`. **Mellemformer (besluttet):** `PublicClinicRecord` og `PublicClinicProfileRecord` (rækkerne fra `public_*` før rangering og DTO-formning) er server-interne og ligger i `models/clinicDirectoryRepository.ts`, ikke i `lib/types/`. Tidsintervaller har én type, `BusyInterval` i `lib/types/clinics.ts`, som repository, service og controller bruger. `public_reviews()` returnerer `created_at` (migration `20261017000100`), og `createdMonth` i `PublicReviewDto` beregnes som `"YYYY-MM"` i dansk tid med `toClinicMonth()` i `lib/domain/time.ts`, som også har `DAY_MS`. `servicesParamSchema` (validering af `?services=`) eksporteres fra `lib/schemas/clinics.ts` og bruges af både API og views. Filterreglerne og fejlkoderne står i 6.6; beregningen af første ledige tid i 6.7.
+Bygget i trin 2 (2.3). `ClinicDirectoryController` (offentlig, `session: Session | null`) bruger `ClinicDirectoryRepository` (`public_*`-funktionerne), `AvailabilityRepository.listBusyIntervals()`, `RankingService` og `AvailabilityService`. Offentlige anmeldelser og statistik (`public_reviews()`, `public_clinic_review_stats_many()`) læses i `ReviewsRepository` (`listPublic()`, `reviewStats()`, flyttet fra `ClinicDirectoryRepository` i 6.2; DTO'erne er uændrede); `ClinicDirectoryController` får det som dependency `reviews`. Trustpilot-felterne mappes ét sted, `trustpilotFromColumns()` i `models/db/mappers.ts`. **Mellemformer (besluttet):** `PublicClinicRecord` og `PublicClinicProfileRecord` (rækkerne fra `public_*` før rangering og DTO-formning) er server-interne og ligger i `models/clinicDirectoryRepository.ts`, ikke i `lib/types/`. Tidsintervaller har én type, `BusyInterval` i `lib/types/clinics.ts`, som repository, service og controller bruger. `public_reviews()` returnerer `created_at` (migration `20261017000100`), og `createdMonth` i `PublicReviewDto` beregnes som `"YYYY-MM"` i dansk tid med `toClinicMonth()` i `lib/domain/time.ts`, som også har `DAY_MS`. `servicesParamSchema` (validering af `?services=`) eksporteres fra `lib/schemas/clinics.ts` og bruges af både API og views. Filterreglerne og fejlkoderne står i 6.6; beregningen af første ledige tid i 6.7.
 
 ```ts
 // lib/types/clinics.ts
@@ -1772,7 +1772,7 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 | Metode og route | Input | Output |
 |---|---|---|
 | DELETE `/api/clinics/me` | `{ confirm: "SLET" }` | 204. Rækkefølge: (0) controlleren henter klinikkens id med **brugerens** klient (`ClinicsRepository.requireOwnId()`), aldrig med service role (2.3), (1) sletter klinikkens filer i `public-media` (logo, tandlægeportrætter, portefølje) med service role, (2) sletter auth-brugeren via `AccountDeletionService` (service role), (3) triggeren `clinics_after_owner_removed()` (5.3) afviser åbne leads med `clinic_left` og aflyser fremtidige bookinger, og derefter: en **importeret** klinik bliver `imported` med bevarede grunddata (navn, adresse, postnummer, by, telefon, åbningstider og Trustpilot indtastet af admin), mens prisliste, valgte kategorier, blokerede tider, tandlæger, portefølje, beskrivelse, logo, e-mail, website og klinikindtastet Trustpilot slettes; en klinik, **der oprettede sig selv** (`import_source is null`), bliver `removed`: skjult overalt, CVR nulstillet, samme oprydning plus åbningstider og telefon; kun navn og adresse bevares, så patienternes historik består (5.3). Logger ud |
-| GET/PATCH `/api/clinics/me` | PATCH `{ name?, description?, address?, postalCode?, city?, phone?, email?, website?, trustpilotUrl?, trustpilotScore?, trustpilotReviewCount? }` | `ClinicProfileDto & { status: ClinicStatus; cvr: string }` (forhåndsvisning af fuld profil uanset status). `reviewStats` er `null`, indtil anmeldelser er bygget (6.2) |
+| GET/PATCH `/api/clinics/me` | PATCH `{ name?, description?, address?, postalCode?, city?, phone?, email?, website?, trustpilotUrl?, trustpilotScore?, trustpilotReviewCount? }` | `ClinicProfileDto & { status: ClinicStatus; cvr: string }` (forhåndsvisning af fuld profil uanset status). `reviewStats` er bevidst `null` i forhåndsvisningen; klinikkens egne anmeldelser hentes fra `GET /api/clinics/me/reviews` (10.13) |
 | POST/DELETE `/api/clinics/me/logo` | multipart `file` | `{ logoUrl }` / 204 |
 | GET/PUT `/api/clinics/me/service-groups` | PUT `{ groupIds: string[] }` (erstatter valget; kun aktive kategorier) | `{ groupIds: string[] }`. PUT kalder `set_clinic_service_groups()`; priser i fravalgte kategorier slettes (UI advarer først) |
 | GET/PUT `/api/clinics/me/prices` | PUT `{ prices: { serviceId, priceMin, priceMax, durationMin, note? }[] }` (erstatter hele listen; højst 100 rækker; priser 0-1.000.000 kr.; kun behandlinger i valgte kategorier) | `{ prices: ClinicPriceDto[] }`; 400 ved overskridelse; 409 `SERVICE_GROUP_NOT_SELECTED`. Udskiftningen sker i én transaktion via `replace_clinic_prices()`; en tom liste sletter alle priser |
@@ -1784,7 +1784,7 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 | POST/DELETE `/api/clinics/me/dentists/{id}/photo` | multipart `file` | `{ photoUrl }` (med `?v=`, 9.5) / 204 |
 | POST `/api/clinics/me/portfolio` | multipart: `file`, `dentistId`, `serviceId?`, `caption?`, `patientConsentConfirmed: "true"`, `consentTextVersion` (læses med `readImageForm`; tekstfelterne valideres, før billedet behandles) | 201 portfolio item; 400 uden bekræftelse eller ved forkert `consentTextVersion`; 429 `PORTFOLIO_LIMIT` ved over 60 billeder pr. klinik |
 | PATCH/DELETE `/api/clinics/me/portfolio/{id}` | PATCH `{ caption?, serviceId? }` | item / 204 |
-| GET `/api/clinics/me/reviews` | | `{ reviews: (PublicReviewDto & { replyStatus: ModerationStatus \| null })[] }`. [IKKE BYGGET] (6.2) |
+| GET `/api/clinics/me/reviews` | | `{ reviews: ClinicReviewDto[] }` (10.13): godkendte anmeldelser af egen klinik med eget svar og dets status, via `clinic_reviews()`. 403 `CLINIC_NOT_VERIFIED` for ikke-verificerede. Bygget i 6.2 |
 
 ### 10.9 Leads
 
@@ -1905,6 +1905,8 @@ Bygget i 6.1. Filer: `controllers/bookingsController.ts` (`BookingsController`: 
 
 ### 10.13 Anmeldelser
 
+Bygget i 6.2. `PublicReviewDto` er uændret; de øvrige typer ligger i `lib/types/reviews.ts`.
+
 ```ts
 export type PublicReviewDto = {
   id: string; stars: number; text: string; priceAccuracy: PriceAccuracy;
@@ -1913,16 +1915,36 @@ export type PublicReviewDto = {
   createdMonth: string;   // "YYYY-MM" i dansk tid; beregnes af toClinicMonth(created_at) (lib/domain/time.ts)
   reply: { text: string; createdAt: string } | null;
 };
+export type ReviewEligibleItemDto = {
+  bookingId: string; clinicId: string; clinicName: string; serviceName: string;
+  visitedOn: string;                 // "YYYY-MM-DD" i dansk tid (toClinicDate), bookingens starttid
+  priceEstimate: PriceRange | null;  // præciseret pris, ellers listepris (8.2); null hvis leadet ingen pris har
+};
+export type OwnReviewDto = PublicReviewDto & {
+  bookingId: string; clinic: { id: string; name: string };
+  moderationStatus: ModerationStatus; rejectionReason: string | null;
+  // reply er kun med, når svaret er godkendt
+};
+export type ClinicReviewDto = PublicReviewDto & { replyStatus: ModerationStatus | null }; // reply: eget svar uanset status
+export type ReviewCreatedDto = { id: string; moderationStatus: ModerationStatus };        // altid "pending"
+export type ReviewExportDto = {
+  id: string; bookingId: string; clinicId: string; stars: number; text: string; priceAccuracy: PriceAccuracy;
+  actualPrice: number | null; lackedTransparency: boolean | null; transparencyComment: string | null;
+  moderationStatus: ModerationStatus; rejectionReason: string | null; createdAt: string;
+};
 ```
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/reviews/eligible` | patient | | `{ items: { bookingId, clinicId, clinicName, serviceName, visitedOn, priceEstimate: PriceRange \| null }[] }` |
-| GET `/api/reviews/mine` | patient | | `{ reviews: (PublicReviewDto & { moderationStatus, rejectionReason })[] }` |
-| POST `/api/reviews` | patient | `{ bookingId, stars, text, priceAccuracy, actualPrice?, lackedTransparency?, transparencyComment? }` | 201 `{ id, moderationStatus: "pending" }`; 403 uden gennemført booking; 409 allerede anmeldt |
-| POST `/api/reviews/{id}/reply` | klinik (anmeldt) | `{ text }` | 201 `{ id, moderationStatus: "pending" }` |
+| GET `/api/reviews/eligible` | patient med konto | | `{ items: ReviewEligibleItemDto[] }`: bookinger med `canReview` (effektivt gennemført, ikke anmeldt), nyeste besøg først |
+| GET `/api/reviews/mine` | patient med konto | | `{ reviews: OwnReviewDto[] }`, nyeste først, alle statusser |
+| POST `/api/reviews` | patient med konto | `{ bookingId, stars (1-5), text (20-2000), priceAccuracy, actualPrice? (0-1.000.000 hele kr.), lackedTransparency?, transparencyComment? (max 500) }` (`.strict()`) | 201 `ReviewCreatedDto`; 403 `REVIEW_NOT_ALLOWED` (ikke egen booking, ikke gennemført, `no_show`, aflyst, før `ends_at` + 24 t eller klinikken ikke verificeret); 409 `ALREADY_REVIEWED`; 404 for en ukendt booking; 400 ved ugyldigt input |
+| POST `/api/reviews/{id}/reply` | verificeret klinik (anmeldt) | `{ text }` (1-1000, `.strict()`) | 201 `ReviewCreatedDto`; 404 for en anmeldelse klinikken ikke kan se (fremmed, ukendt eller endnu ikke godkendt); 409 `ALREADY_REPLIED`; 403 `CLINIC_NOT_VERIFIED` |
+| GET `/api/clinics/me/reviews` | verificeret klinik | | `{ reviews: ClinicReviewDto[] }` (10.8) |
 
-`clinicId` udledes på serveren fra `bookingId`.
+`clinicId` udledes på serveren fra `bookingId` (triggeren `reviews_before_insert`) og kan ikke angives. Anonyme får 403 `ANONYMOUS_NOT_ALLOWED` fra `requireRole`. Nye anmeldelser og svar er `pending`, til de godkendes manuelt i databasen (8.5); først da vises de i `GET /api/clinics/{id}/reviews` (10.7), i prisnøjagtigheden og i klinikkens `clinic_reviews()`.
+
+Filer: `controllers/reviewsController.ts` (`ReviewsController`: `eligible`, `create`, `mine`, `listForClinic`, `reply`), `models/reviewsRepository.ts` (`ReviewsRepository`: offentlig læsning og statistik, `create`, `listOwn`, `listOwnForExport`, `listForClinic`, `createReply`), `lib/schemas/reviews.ts`, `lib/domain/reviews.ts` (`priceEstimate`), `lib/constants/reviews.ts` (længder), `toClinicDate()` i `lib/domain/time.ts` og `LeadsRepository.priceEstimates()`. Reglerne håndhæves af RLS-policyerne (8.1) og unique-nøglerne; controlleren genimplementerer dem ikke. `eligible` og `mine` bruger `BookingsRepository.listForPatient()` (klinikkens navn, `canReview`) i stedet for en ny funktion. Svaret på `mine` læser godkendte svar fra `public_reviews()`, fordi patienten ikke kan læse `review_replies`. Svar-routen tjekker først mod `clinic_reviews()` (404/409) og lader derefter policyen være vogter. Kendt begrænsning: `eligible` kan vise et besøg hos en klinik, der siden er blevet ikke-verificeret; `POST` giver da 403. Tests: `tests/api/reviews.test.ts`, `tests/unit/reviews.test.ts`.
 
 ### 10.14 Admin
 
@@ -2093,7 +2115,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 29. *Afklaret:* offentligt vises kun `verified` og `imported` uden ejer; `registered` er usynlig, også efter CVR-overtagelse (5.1 regel 11).
 30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). **Besluttet (2026-10-18):** `on delete set null` og en `sender_role`-kolonne (`patient`/`clinic`), så tråden viser "Klinikken" for beskeder uden afsender. Bygges med beskedtråden (5.2) i en ny migration; eksisterende rækker får `sender_role` ud fra afsenderens rolle.
 31. **Forretningsmodel:** prototypen og siden "Sådan tjener vi penge" siger, at klinikker betaler for leads, og at patienter ikke betaler. Pris pr. lead, abonnement, betaling ved booking eller andet er ikke besluttet, og der er ingen betaling i koden.
-32. **API-test til trin 6:** *Bookingdelen er løst (6.1):* `tests/api/bookings.test.ts` tester en ikke-udløbet og en udløbet `held`-booking gennem API'et. *Mangler:* API-test af en godkendt anmeldelse (6.2).
+32. **API-test til trin 6:** *Bookingdelen er løst (6.1):* `tests/api/bookings.test.ts` tester en ikke-udløbet og en udløbet `held`-booking gennem API'et. *Anmeldelsesdelen er løst (6.2):* `tests/api/reviews.test.ts` godkender en anmeldelse med service role lokalt og tester, at den vises i `GET /api/clinics/{id}/reviews` og påvirker prisnøjagtigheden.
 
 ### 12.4 Udskudt [UDSKUDT]
 

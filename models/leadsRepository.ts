@@ -1,6 +1,7 @@
 import "server-only";
 import type { z } from "zod";
 import { isActiveLead } from "@/lib/domain/leads";
+import { priceEstimate } from "@/lib/domain/reviews";
 import {
   MAX_ACTIVE_LEADS_PER_CASE,
   MAX_LEADS_PER_PATIENT_DAY,
@@ -9,6 +10,7 @@ import {
 import type { leadDecisionSchema } from "@/lib/schemas/leads";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/types/cases";
+import type { PriceRange } from "@/lib/types/common";
 import type {
   ClinicLeadDetailDto,
   ClinicLeadListItemDto,
@@ -320,6 +322,20 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     const serviceIds = (found.cases?.case_services ?? []).map((service) => service.service_id);
     if (found.requested_service_id) serviceIds.push(found.requested_service_id);
     return { id: found.id, status: found.status, clinicId: found.clinic_id, serviceIds: [...new Set(serviceIds)] };
+  }
+
+  // Prisoverslaget pr. lead (architecture 8.2): klinikkens præciserede pris, ellers listepris-snapshottet, ellers null.
+  async priceEstimates(leadIds: readonly string[]): Promise<Map<string, PriceRange | null>> {
+    const result = new Map<string, PriceRange | null>();
+    if (leadIds.length === 0) return result;
+    const rows = await this.runList<Pick<LeadRow, "id" | "list_price_min" | "list_price_max" | "quoted_price_min" | "quoted_price_max">>(
+      this.db.from("leads").select("id, list_price_min, list_price_max, quoted_price_min, quoted_price_max").in("id", [...leadIds]),
+      "leads: prisoverslag fejlede",
+    );
+    for (const row of rows) {
+      result.set(row.id, priceEstimate(priceRange(row.quoted_price_min, row.quoted_price_max), priceRange(row.list_price_min, row.list_price_max)));
+    }
+    return result;
   }
 
   // Alle egne leads med klinikkens navn til dataeksporten.

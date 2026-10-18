@@ -22,6 +22,7 @@ import {
   type PublicClinicProfileRecord,
   type PublicClinicRecord,
 } from "@/models/clinicDirectoryRepository";
+import { ReviewsRepository } from "@/models/reviewsRepository";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { AvailabilityService } from "@/services/availabilityService";
 import { type LatLng, RankingService } from "@/services/rankingService";
@@ -32,6 +33,7 @@ type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
 
 export type ClinicDirectoryDeps = {
   directory: ClinicDirectoryRepository;
+  reviews: ReviewsRepository;
   availability: AvailabilityRepository;
   services: ServicesRepository;
   ranking: RankingService;
@@ -56,6 +58,7 @@ type Plan = {
 // grunddata og Trustpilot.
 export class ClinicDirectoryController {
   private readonly directory: ClinicDirectoryRepository;
+  private readonly reviewsRepo: ReviewsRepository;
   private readonly availability: AvailabilityRepository;
   private readonly services: ServicesRepository;
   private readonly ranking: RankingService;
@@ -68,6 +71,7 @@ export class ClinicDirectoryController {
     deps: Partial<ClinicDirectoryDeps> = {},
   ) {
     this.directory = deps.directory ?? new ClinicDirectoryRepository(supabase);
+    this.reviewsRepo = deps.reviews ?? new ReviewsRepository(supabase);
     this.availability = deps.availability ?? new AvailabilityRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.ranking = deps.ranking ?? new RankingService();
@@ -136,7 +140,7 @@ export class ClinicDirectoryController {
   // GET /api/clinics/{id}/reviews: godkendte anmeldelser og statistik. 404 for ikke-verificerede klinikker.
   async reviews(clinicId: string): Promise<PublicReviewsDto> {
     this.requireFull(await this.directory.findClinic(clinicId));
-    const [stats, reviews] = await Promise.all([this.directory.reviewStats([clinicId]), this.directory.listReviews(clinicId)]);
+    const [stats, reviews] = await Promise.all([this.reviewsRepo.reviewStats([clinicId]), this.reviewsRepo.listPublic(clinicId)]);
     return { stats: stats.get(clinicId) ?? NO_REVIEWS, reviews };
   }
 
@@ -192,7 +196,7 @@ export class ClinicDirectoryController {
     const fullIds = records.filter((record) => record.tier === "full").map((record) => record.id);
     const range = this.slots.searchRange(FIRST_AVAILABLE_SEARCH_DAYS);
     const [stats, busy] = await Promise.all([
-      this.directory.reviewStats(fullIds),
+      this.reviewsRepo.reviewStats(fullIds),
       this.availability.listBusyIntervals(fullIds, range.from, range.to),
     ]);
     return { stats, busy, range };

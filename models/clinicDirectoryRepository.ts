@@ -5,9 +5,7 @@ import {
   publicOpeningHoursJsonSchema,
   publicPricesJsonSchema,
 } from "@/lib/schemas/clinics";
-import { toClinicMonth } from "@/lib/domain/time";
 import type { ClinicListItemDto, ClinicPriceDto, ClinicProfileDto, OpeningHoursDto } from "@/lib/types/clinics";
-import type { PublicReviewDto, ReviewStats } from "@/lib/types/reviews";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Database } from "@/models/db/database.types";
 import { trustpilotFromColumns } from "@/models/db/mappers";
@@ -43,15 +41,6 @@ type NullableColumns =
 type WithNulls<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] | null };
 type PublicClinicRow = WithNulls<Generated, NullableColumns>;
 type PublicProfileRow = WithNulls<GeneratedProfile, NullableColumns | "description" | "email">;
-
-type StatsRow = WithNulls<
-  Functions["public_clinic_review_stats_many"]["Returns"][number],
-  "avg_stars" | "as_quoted_count" | "slightly_higher_count" | "much_higher_count" | "price_accuracy_pct"
->;
-type ReviewRow = WithNulls<
-  Functions["public_reviews"]["Returns"][number],
-  "actual_price" | "lacked_transparency" | "transparency_comment" | "reply_text" | "reply_created_at"
->;
 
 // Offentlig klinikoversigt og -profil (architecture 5.3, 10.7): al læsning går gennem public_*-funktionerne, som kun viser
 // verificerede klinikker (fuldt niveau) og importerede klinikker uden ejer (basisniveau). `registered` og `removed` er
@@ -161,42 +150,6 @@ export class ClinicDirectoryRepository extends BaseRepository<PublicClinicRow, P
       p_service_ids: [...serviceIds],
     });
     return rows?.[0] ? this.profileToDto(rows[0]) : null;
-  }
-
-  // Anmeldelsesstatistik beregnet i databasen (architecture 8.3). Kun verificerede klinikker har en række.
-  async reviewStats(clinicIds: readonly string[]): Promise<Map<string, ReviewStats>> {
-    const result = new Map<string, ReviewStats>();
-    if (clinicIds.length === 0) return result;
-    const rows = await this.rpc<StatsRow[]>("public_clinic_review_stats_many", { p_clinic_ids: [...clinicIds] });
-    for (const row of rows ?? []) {
-      result.set(row.clinic_id, {
-        reviewCount: row.review_count,
-        avgStars: row.avg_stars,
-        priceAccuracyPct: row.price_accuracy_pct,
-        distribution:
-          row.as_quoted_count === null || row.slightly_higher_count === null || row.much_higher_count === null
-            ? null
-            : { asQuoted: row.as_quoted_count, slightlyHigher: row.slightly_higher_count, muchHigher: row.much_higher_count },
-      });
-    }
-    return result;
-  }
-
-  // Godkendte anmeldelser og godkendte svar, nyeste først. Anmelderen vises ikke (architecture 8.1).
-  async listReviews(clinicId: string): Promise<PublicReviewDto[]> {
-    const rows = (await this.rpc<ReviewRow[]>("public_reviews", { p_clinic_id: clinicId })) ?? [];
-    return rows.map((row) => ({
-      id: row.review_id,
-      stars: row.stars,
-      text: row.text,
-      priceAccuracy: row.price_accuracy,
-      actualPrice: row.actual_price,
-      lackedTransparency: row.lacked_transparency,
-      transparencyComment: row.transparency_comment,
-      verifiedVisit: true,
-      createdMonth: toClinicMonth(row.created_at),
-      reply: row.reply_text && row.reply_created_at ? { text: row.reply_text, createdAt: row.reply_created_at } : null,
-    }));
   }
 
   // Postnummerets midtpunkt til afstandsberegning (gemmes ikke), eller null for et ukendt postnummer.

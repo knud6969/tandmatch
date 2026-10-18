@@ -10,3 +10,12 @@ export function toClinicMonth(timestamp: string | Date): string {
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${part("year")}-${part("month")}`;
 }
+
+const dateFormat = new Intl.DateTimeFormat("en-CA", { timeZone: CLINIC_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+// Datoen for et tidsstempel som "YYYY-MM-DD" i dansk tid (fx besøgsdatoen i 10.13).
+export function toClinicDate(timestamp: string | Date): string {
+  const parts = dateFormat.formatToParts(new Date(timestamp));
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
