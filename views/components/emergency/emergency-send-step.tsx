@@ -43,6 +43,16 @@ export function EmergencySendStep({ choice, postalCode, profile, details, onDeta
   const phone = details.phone ?? profile?.phone ?? "";
   const price = choice.clinic.prices.find((p) => p.serviceId === choice.service.id)?.price ?? null;
 
+  // Feltets fejl forsvinder, så snart patienten ændrer feltet.
+  function clearError(field: Field) {
+    setErrors((current) => {
+      if (!(field in current.fields)) return current;
+      const fields = { ...current.fields };
+      delete fields[field];
+      return { ...current, fields };
+    });
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = emergencyLeadSchema.safeParse({
@@ -113,7 +123,10 @@ export function EmergencySendStep({ choice, postalCode, profile, details, onDeta
         rows={5}
         maxLength={EMERGENCY_DESCRIPTION_MAX}
         value={details.description}
-        onChange={(event) => onDetails({ description: event.target.value })}
+        onChange={(event) => {
+          onDetails({ description: event.target.value });
+          clearError("description");
+        }}
         error={errors.fields.description}
         required
       />
@@ -122,7 +135,10 @@ export function EmergencySendStep({ choice, postalCode, profile, details, onDeta
         name="contactName"
         autoComplete="name"
         value={name}
-        onChange={(event) => onDetails({ name: event.target.value })}
+        onChange={(event) => {
+          onDetails({ name: event.target.value });
+          clearError("contactName");
+        }}
         error={errors.fields.contactName}
         required
       />
@@ -133,7 +149,10 @@ export function EmergencySendStep({ choice, postalCode, profile, details, onDeta
         inputMode="tel"
         autoComplete="tel"
         value={phone}
-        onChange={(event) => onDetails({ phone: event.target.value })}
+        onChange={(event) => {
+          onDetails({ phone: event.target.value });
+          clearError("contactPhone");
+        }}
         error={errors.fields.contactPhone}
         required
       />

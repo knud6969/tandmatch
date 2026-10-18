@@ -92,11 +92,15 @@ test.describe("akutvejen", () => {
       await page.getByLabel("Telefon").fill("1234");
       await page.getByRole("button", { name: "Send og reservér tiden" }).click();
       await expect(page.getByText("Beskriv problemet med mindst 10 tegn.")).toBeVisible();
+      await expect(page.getByText("Angiv et gyldigt telefonnummer")).toBeVisible();
       await expect(page.getByTestId("akut-sendt")).toHaveCount(0);
       await expect(page.getByTestId("akut-send")).toContainText("Skriv ikke dit cpr-nummer");
       await expect(page.getByTestId("akut-oversigt")).toContainText("ifølge klinikkens prisliste");
       await page.getByLabel("Hvad er der galt?").fill("Jeg har haft kraftig tandpine siden i nat.");
       await page.getByLabel("Telefon").fill("12 34 56 78");
+      // Feltfejlene forsvinder, når felterne er rettet, uden at der sendes igen.
+      await expect(page.getByText("Beskriv problemet med mindst 10 tegn.")).toHaveCount(0);
+      await expect(page.getByText("Angiv et gyldigt telefonnummer")).toHaveCount(0);
       await expectNoHorizontalScroll(page);
       await shot(page, "akut-trin-3-send");
       await page.getByRole("button", { name: "Send og reservér tiden" }).click();

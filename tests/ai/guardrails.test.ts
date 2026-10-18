@@ -1198,13 +1198,13 @@ describe("regression runde 2: klinikomtale", () => {
 
   it("AI-svar om prisinterval og anmeldelser er stadig blokeret, men de faste tekster forklarer flowet", async () => {
     for (const text of [
-      "Klinikken giver dig en vurdering og et prisinterval, når du sender forespørgslen.",
+      "Klinikken giver dig en vurdering og et prisinterval, når du sender sagen.",
       "Du kan se klinikkernes anmeldelser på listen.",
     ]) {
       expect(findForbiddenCategories(text, REPLY).length).toBeGreaterThan(0);
     }
     const texts = await import("@/lib/constants/ai-texts");
-    expect(texts.OUT_OF_SCOPE_NOTICES.price).toMatch(/klinikkerne selv.*prisinterval/);
+    expect(texts.OUT_OF_SCOPE_NOTICES.price).toMatch(/kan klinikken præcisere prisen/);
     expect(texts.OUT_OF_SCOPE_NOTICES.clinic_recommendation).toMatch(/Anmeldelser.*oversigten/);
   });
 });

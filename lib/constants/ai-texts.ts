@@ -19,7 +19,7 @@ export const PRELIMINARY_ASSESSMENT_LABEL = "Foreløbig vurdering fra AI. Klinik
 
 // Vises når patienten spørger om pris (architecture 7.3).
 export const PRICE_NOTICE_TEXT =
-  "AI-assistenten kender ikke priserne. Priserne kommer fra klinikkernes egne prislister i oversigten, og når du har sendt din forespørgsel, giver klinikkerne selv et prisinterval og første ledige tid. Du kan sortere klinikkerne efter pris i oversigten.";
+  "AI-assistenten kender ikke priserne. Priserne kommer fra klinikkernes egne prislister i oversigten, og når du har sendt din sag, kan klinikken præcisere prisen. Du kan sortere klinikkerne efter pris i oversigten.";
 
 // Vises når patienten spørger, hvilken klinik der er bedst.
 export const CLINIC_RECOMMENDATION_NOTICE_TEXT =

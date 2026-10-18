@@ -57,7 +57,7 @@ export function DeleteAccount({ clinicName }: { clinicName: string }) {
           <Alert tone="danger" title={`Du er ved at slette ${clinicName}`}>
             <ul className="list-disc space-y-1 pl-5">
               <li>Dit login og kontoen slettes med det samme, og du bliver logget ud.</li>
-              <li>Åbne forespørgsler (leads) afvises, og patienterne kan se det på deres sag.</li>
+              <li>Åbne henvendelser afvises, og patienterne kan se det på deres sag.</li>
               <li>Fremtidige bookinger aflyses.</li>
               <li>Tandlæger, portræt- og porteføljebilleder, logo, prisliste og blokerede tider slettes.</li>
               <li>
