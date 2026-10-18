@@ -762,6 +762,11 @@ isOneToOne: false
 "cancel_booking":
 { Args: { "p_booking_id": string }; Returns: undefined
                            },
+"clinic_booking":
+{ Args: { "p_booking_id": string }; Returns: {
+              "booking_id": string,"can_mark_no_show": boolean,"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+            }[]
+                           },
 "clinic_bookings":
 { Args: { "p_from": string,"p_to": string }; Returns: {
               "booking_id": string,"can_mark_no_show": boolean,"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
@@ -874,6 +879,11 @@ isOneToOne: false
                            },
 "participant_messages_last_day":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"patient_bookings":
+{ Args: { "p_booking_id"?: string }; Returns: {
+              "booking_id": string,"clinic_address": string,"clinic_city": string,"clinic_id": string,"clinic_name": string,"created_at": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"reviewed": boolean,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+            }[]
                            },
 "patient_lead_clinics":
 { Args: { "p_case_id"?: string }; Returns: {

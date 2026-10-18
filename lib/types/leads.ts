@@ -1,5 +1,5 @@
 import type { LEAD_DECLINE_REASONS, LEAD_STATUSES } from "@/lib/constants/leads";
-import type { ClinicBookingDto } from "@/lib/types/bookings";
+import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/types/cases";
 import type { ImageDto, PriceRange } from "@/lib/types/common";
 import type { ServiceDto } from "@/lib/types/services";
@@ -26,7 +26,7 @@ export type PatientLeadDto = {
   clinicComment: string | null;
   declineReason: LeadDeclineReason | null;
   declineNote: string | null; // klinikkens egen tekst til afvisningen (højst 200 tegn)
-  booking: null; // PatientBookingDto kommer med trin 6.1
+  booking: PatientBookingDto | null; // aktiv eller seneste; null uden booking
   unreadMessages: number;
 };
 

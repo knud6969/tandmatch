@@ -6,6 +6,7 @@ import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/schemas/cases
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/types/cases";
 import { notDraft } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
+import { BookingsRepository } from "@/models/bookingsRepository";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CaseServicesRepository } from "@/models/caseServicesRepository";
@@ -24,6 +25,7 @@ export type CasesDeps = {
   caseServices: CaseServicesRepository;
   images: CaseImagesRepository;
   leads: LeadsRepository;
+  bookings: BookingsRepository;
   services: ServicesRepository;
   imageUrls: CaseImageUrlService;
   admin: () => SupabaseClient;
@@ -37,6 +39,7 @@ export class CasesController {
   private readonly caseServices: CaseServicesRepository;
   private readonly images: CaseImagesRepository;
   private readonly leads: LeadsRepository;
+  private readonly bookings: BookingsRepository;
   private readonly services: ServicesRepository;
   private readonly imageUrls: CaseImageUrlService;
   // Service role-klienten (architecture 2.3, 2.1.1). Bruges kun til signering og sletning af billedfiler og sagen.
@@ -52,6 +55,7 @@ export class CasesController {
     this.caseServices = deps.caseServices ?? new CaseServicesRepository(supabase);
     this.images = deps.images ?? new CaseImagesRepository(supabase);
     this.leads = deps.leads ?? new LeadsRepository(supabase);
+    this.bookings = deps.bookings ?? new BookingsRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.imageUrls = deps.imageUrls ?? new CaseImageUrlService(this.admin);
   }
@@ -99,9 +103,17 @@ export class CasesController {
   }
 
   // Oversigten over egne sager. Klinikkens navn kommer fra patient_lead_clinics() (også for fjernede klinikker);
-  // bookinger kommer med trin 6.
+  // `nextBooking` er sagens næste fremtidige, bookede tid.
   async list(): Promise<CaseListItemDto[]> {
-    const [rows, clinics] = await Promise.all([this.cases.listOwnForList(), this.leads.clinicsForList()]);
+    const [rows, clinics, bookings] = await Promise.all([
+      this.cases.listOwnForList(),
+      this.leads.clinicsForList(),
+      this.bookings.listForPatient(),
+    ]);
+    const now = Date.now();
+    const upcoming = bookings
+      .filter((booking) => booking.status === "booked" && Date.parse(booking.startsAt) > now)
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
     return rows.map(({ record, serviceNames, leads }) => ({
       id: record.id,
       status: record.status,
@@ -114,7 +126,9 @@ export class CasesController {
         status: lead.status,
         removed: clinics.get(lead.id)?.removed ?? false,
       })),
-      nextBooking: null,
+      nextBooking: ((next) => (next ? { startsAt: next.startsAt, clinicName: next.clinic.name } : null))(
+        upcoming.find((booking) => leads.some((lead) => lead.id === booking.leadId)),
+      ),
     }));
   }
 

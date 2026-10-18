@@ -5,6 +5,7 @@ import type { leadDecisionSchema, sendLeadsSchema } from "@/lib/schemas/leads";
 import type { ClinicLeadDetailDto, ClinicLeadListItemDto, LeadStatus, PatientLeadDto } from "@/lib/types/leads";
 import { clinicNotVerified } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
+import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 import { lazyAdminClient } from "@/models/db/admin";
@@ -17,6 +18,7 @@ type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type LeadsDeps = {
   leads: LeadsRepository;
+  bookings: BookingsRepository;
   cases: CasesRepository;
   clinics: ClinicsRepository;
   imageUrls: CaseImageUrlService;
@@ -30,6 +32,7 @@ export type LeadsDeps = {
 // returnerer patientens navn, kontakt eller id, og som kun giver kontaktfelter for en booket tid (5.5).
 export class LeadsController {
   private readonly leads: LeadsRepository;
+  private readonly bookings: BookingsRepository;
   private readonly cases: CasesRepository;
   private readonly clinics: ClinicsRepository;
   private readonly imageUrls: CaseImageUrlService;
@@ -40,6 +43,7 @@ export class LeadsController {
     deps: Partial<LeadsDeps> = {},
   ) {
     this.leads = deps.leads ?? new LeadsRepository(supabase);
+    this.bookings = deps.bookings ?? new BookingsRepository(supabase);
     this.cases = deps.cases ?? new CasesRepository(supabase);
     this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
     // 2.3 (e): signering af billed-URL'er efter en RLS-beskyttet læsning (clinic_lead_images()). Klienten oprettes først ved brug.
@@ -53,18 +57,25 @@ export class LeadsController {
     await this.cases.requireOwn(caseId);
     await this.leads.sendLeads(caseId, input.clinicIds);
     const created = new Set(input.clinicIds);
-    return (await this.leads.listForCase(caseId)).filter((lead) => created.has(lead.clinic.id));
+    return this.withBookings((await this.leads.listForCase(caseId)).filter((lead) => created.has(lead.clinic.id)));
   }
 
   async listForCase(caseId: string): Promise<PatientLeadDto[]> {
     await this.cases.requireOwn(caseId);
-    return this.leads.listForCase(caseId);
+    return this.withBookings(await this.leads.listForCase(caseId));
   }
 
   // Trækker et ubesvaret lead tilbage (409 LEAD_NOT_PENDING, hvis klinikken har svaret).
   async withdraw(leadId: string): Promise<PatientLeadDto> {
     await this.leads.withdrawLead(leadId); // fremmed lead giver NOT_FOUND (404) fra withdraw_lead()
-    return this.leads.requireOwn(leadId);
+    return (await this.withBookings([await this.leads.requireOwn(leadId)]))[0];
+  }
+
+  // Lægger hvert leads aktuelle booking på (aktiv, ellers den nyeste; null uden booking, architecture 10.9).
+  private async withBookings(leads: PatientLeadDto[]): Promise<PatientLeadDto[]> {
+    if (leads.length === 0) return leads;
+    const bookings = await this.bookings.currentByLead();
+    return leads.map((lead) => ({ ...lead, booking: bookings.get(lead.id) ?? null }));
   }
 
   // ---- Klinikken ----

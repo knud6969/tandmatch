@@ -5,18 +5,20 @@ import type { PatientMeDto } from "@/lib/types/patients";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Tables } from "@/models/db/database.types";
 
-type PatientRow = Pick<Tables<"patients">, "first_name" | "postal_code">;
+type PatientRow = Pick<Tables<"patients">, "first_name" | "postal_code" | "phone">;
+
+const PATIENT_COLUMNS = "first_name, postal_code, phone";
 
 type PatientPatch = z.infer<typeof patchPatientSchema>;
 
 export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto> {
   protected toDto(row: PatientRow): PatientMeDto {
-    return { firstName: row.first_name ?? null, postalCode: row.postal_code ?? null };
+    return { firstName: row.first_name ?? null, postalCode: row.postal_code ?? null, phone: row.phone ?? null };
   }
 
   async findById(userId: string): Promise<PatientMeDto | null> {
     const row = await this.run(
-      this.db.from("patients").select("first_name, postal_code").eq("id", userId).maybeSingle(),
+      this.db.from("patients").select(PATIENT_COLUMNS).eq("id", userId).maybeSingle(),
       "patients: select fejlede",
     );
     return row ? this.toDto(row) : null;
@@ -29,11 +31,11 @@ export class PatientsRepository extends BaseRepository<PatientRow, PatientMeDto>
   async update(userId: string, patch: PatientPatch): Promise<PatientMeDto> {
     const row = await this.patchRow(
       patch,
-      { firstName: "first_name", postalCode: "postal_code" },
+      { firstName: "first_name", postalCode: "postal_code", phone: "phone" },
       {
         update: (columns) =>
-          this.db.from("patients").update(columns).eq("id", userId).select("first_name, postal_code").maybeSingle(),
-        current: () => this.db.from("patients").select("first_name, postal_code").eq("id", userId).maybeSingle(),
+          this.db.from("patients").update(columns).eq("id", userId).select(PATIENT_COLUMNS).maybeSingle(),
+        current: () => this.db.from("patients").select(PATIENT_COLUMNS).eq("id", userId).maybeSingle(),
       },
       "patients: update fejlede",
     );

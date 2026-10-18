@@ -1013,6 +1013,7 @@ withdraw_open_leads(...) -> integer
 | `book_slot(lead_id, service_id, starts_at, contact_name, contact_phone)` | patient (permanent, ejer af sagen) | Leadet skal være `accepted` uden aktiv booking; ydelsen skal være bekræftet på sagen (eller leadets akutydelse). Beregner varighed (`service_duration_min()`) og `ends_at` og kalder `assert_slot_bookable()` (helt kvarter, åbningsvindue, akutvindue kun for akutydelser, blokeringer, varsel og horisont, 6.7). Sætter `contact_email` fra `auth.users`, gemmer telefon på `patients`. Kalder `release_expired_holds()` og indsætter derefter bookingen; overlap afvises af udelukkelsen (→ 409 `SLOT_TAKEN`). Sætter leadet `booked` |
 | `cancel_booking(booking_id)` | patient (ejer) eller klinik (verificeret ejer, lead sendt efter `owner_since`) | Kun `booked` og før `starts_at`. Sætter `cancelled`, `cancelled_by`, `cancelled_at`; leadet tilbage til `accepted` |
 | `mark_booking_no_show(booking_id)` | klinik (verificeret ejer, lead sendt efter `owner_since`) | Kun effektiv status `booked` og `starts_at <= now() < ends_at + interval '24 hours'`. Sætter `no_show`, `no_show_at`. Efter fristen er bookingen gennemført og kan ikke ændres (409 `NO_SHOW_WINDOW_CLOSED`) |
+| `patient_bookings(p_booking_id default null)` | patient (egne bookinger) | Læsefunktion (migration `20261026000100`): `booking_id`, `lead_id`, `clinic_id`, `clinic_name`, `clinic_address`, `clinic_city` (patienten har ingen SELECT på `clinics`, og en fjernet klinik skal kunne vises), `service_id`, `service_name`, `starts_at`, `ends_at`, effektiv `status` (4.2), `hold_expires_at` (kun `held`), `reviewed` (der findes en anmeldelse) og `created_at`. Nyeste starttid først. Giver intet for andres bookinger |
 | `release_expired_holds(clinic_id)` | intern (kaldes kun af funktionerne ovenfor; ingen EXECUTE for `anon`/`authenticated`) | Sætter `held` med `hold_expires_at <= now()` for klinikken til `cancelled` |
 | `complete_due_bookings()` | **kun service role** (planlagt job, `/api/cron/complete-bookings`, hver time) | Sætter `completed`, `completed_at = ends_at + 24 t` for `booked` med `ends_at + interval '24 hours' <= now()`, og `cancelled` for alle `held` med `hold_expires_at <= now()`. Ren oprydning; reglerne bygger på `effective_booking_status()` og `release_expired_holds()`, så intet afhænger af jobbet. Bruger ikke `auth.uid()` |
 | `withdraw_consent(consent_id)`, `confirm_consent_cleanup(consent_id)` | patient (+anonym) | Som før, men billeder hænger på sager. Tilbagetrækning af `image_upload` sletter rækkerne i `case_images` (også på sendte sager), og billederne forsvinder dermed for klinikkerne. Tilbagetrækning af `health_data_sharing` sætter, **hvis patienten ikke har et andet aktivt samtykke af samme type**, alle patientens leads med status `sent`, og `accepted` uden aktiv booking, til `withdrawn` (klinikken mister adgangen, 5.7) og frigiver deres `held`-reservationer. `booked` bookinger består; patienten kan selv aflyse dem (`cancel_booking()`). Nye leads kræver nyt samtykke |
@@ -1027,7 +1028,7 @@ withdraw_open_leads(...) -> integer
 | `touch_last_active()` | `authenticated` | Uændret |
 | `moderate(kind, id, status, reason)` | admin | **[IKKE BYGGET]** (heller ikke planlagt i demoen). Seed-anmeldelser er forhåndsgodkendte |
 | `admin_set_clinic_status(clinic_id, status)` | **kun service role** (seed og admin-scripts) [PROTOTYPE] | Sætter `status` og `verified_at` via et transaktionsflag, som `clinics_guard()` kun accepterer fra denne funktion |
-| `clinic_leads(p_status lead_status default null)`, `clinic_lead_detail(lead_id)`, `clinic_lead_images(lead_id)`, `clinic_bookings(from, to)`, `clinic_reviews()` | klinik | Læsefunktioner (5.7). `p_status = null` giver alle |
+| `clinic_leads(p_status lead_status default null)`, `clinic_lead_detail(lead_id)`, `clinic_lead_images(lead_id)`, `clinic_bookings(from, to)`, `clinic_booking(booking_id)`, `clinic_reviews()` | klinik | Læsefunktioner (5.7). `p_status = null` giver alle |
 | `public_clinics(p_service_ids uuid[], p_clinic_ids uuid[])` | alle, også `anon` | Kun synlige klinikker (5.1 regel 11): basisdata (inkl. Trustpilot) for `imported` uden ejer og for `verified`, plus fulde felter (logo, priser for de angivne ydelser, `has_emergency_hours`) for `verified`. `registered` returneres aldrig. Ingen `owner_id`, ingen `cvr` |
 | `public_clinic_profile(clinic_id)` | alle | Som ovenfor for én klinik, plus beskrivelse, hele prislisten, åbningstider, tandlæger og portefølje (kun `verified`) |
 | `public_busy_intervals(clinic_ids uuid[], from, to)` | alle | Optagede tidsrum (ikke-udløbne `held`- og `booked`-bookinger samt blokeringer) for verificerede klinikker. Kun `starts_at`/`ends_at`, ingen id'er, ingen typer. Grundlag for ledige tider (6.7) |
@@ -1124,6 +1125,7 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 45. (Fil `44_message_sender_role.sql`.) `sender_role` sættes af databasen og kan ikke forfalskes eller ændres; klinik Y ser intet af X's tråd (tabel og alle `clinic_*`-funktioner); tråden er lukket ved `declined`/`withdrawn`; sletning af klinikkonto bevarer beskederne (`sender_id` null, `sender_role = 'clinic'`), og patienten kan markere dem som læst.
 46. (Fil `45_clinic_lead_access.sql`.) En klinik får 0 rækker ved direkte SELECT på `leads` (også egne og tilbagetrukne leads); `clinic_lead_status()` giver status for egne leads og null for fremmede, for en ikke-verificeret klinik og for leads fra før `owner_since`; patienten kan ikke læse `messages.sender_id`, men stadig de øvrige kolonner; `clinic_leads().image_count` tæller ikke billeder, når `image_upload`-samtykket er trukket tilbage.
 47. (Fil `46_clinic_lead_detail_unread.sql`.) `clinic_lead_detail().unread_messages` tæller patientens ulæste beskeder, er 0 efter markering som læst og for et tilbagetrukket lead, og en anden klinik får ingen række; `clinic_leads()` sorterer kun på akut for leads, der ikke er trukket tilbage (et tilbagetrukket akut-lead kommer ikke før et ikke-akut).
+48. (Fil `47_booking_reads.sql`.) `patient_bookings()` giver kun patientens egne bookinger (effektiv status, klinikkens navn, adresse og by, `reviewed`); en anden patient, en klinik og anonyme får ingen række eller afvises. `clinic_booking()` giver kun klinikkens egen booking, uden kontaktfelter for `held`, og en anden klinik og patienten får ingen række.
 
 API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cookie afvises, ny version kræver ny accept) og "vilkårs-accept giver ikke samtykke" (403 `CONSENT_REQUIRED` ved upload/chat).
 
@@ -1138,6 +1140,7 @@ Alle funktionerne returnerer kun leads med `sent_at >= clinics.owner_since` (og 
 - `clinic_leads()` sorterer ubesvarede først, derefter akut (kun for leads, der ikke er trukket tilbage, så rækkefølgen ikke afslører akut-status for et tilbagetrukket lead; migration `20261025000100`), derefter nyeste.
 - `clinic_lead_images(lead_id)`: billedstier og godkendte beskrivelser, kun med aktivt `image_upload`-samtykke. Serveren signerer stierne (9.2).
 - `clinic_bookings(from, to)`: kalenderen: egne bookinger med ydelse, tider, status, `lead_id` og `contact_*` efter reglen i 5.5.
+- `clinic_booking(p_booking_id)`: én af klinikkens egne bookinger med samme kolonner og regler som `clinic_bookings()` (bruges til svaret efter aflysning og udeblivelse; migration `20261026000100`). En anden klinik får ingen række.
 - `clinic_reviews()`: godkendte anmeldelser af egen klinik + eget svar og dets status.
 
 ---
@@ -1599,10 +1602,11 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 | POST `/api/auth/signup` | besøgende | Diskrimineret på `role`: patient `{ role: "patient", email, password (8-72), firstName (1-50) }`; klinik `{ role: "clinic", email, password (8-72), cvr (8 cifre), clinicName (2-100), address, postalCode, city, phone }` | 201 `{ userId, role }`. Signup-triggeren opretter `profiles` + `patients` eller `profiles` + `clinics` (status `registered`). Findes en **importeret** klinik uden ejer med samme CVR, knyttes kontoen til den [PROTOTYPE]; har den en ejer: 409 `CLINIC_EXISTS`. Controlleren forhåndstjekker med `is_cvr_claimed()`, fordi fejlen fra triggeren kommer tilbage fra GoTrue som en generisk fejl (4.3). 409 ved aktiv anonym session | Bygget (patient trin 0, klinik trin 1). `is_cvr_claimed()` kaldes via `ClinicsRepository.isCvrClaimed()` |
 | POST `/api/auth/login`, POST `/api/auth/logout` | | uændret | uændret | Bygget |
 | GET `/api/me` | med session | | `{ id, role, isAnonymous, displayName, anonymousExpiresAt, clinic?: { id, name, status } }` | Bygget. `clinic` hentes via `ClinicsRepository.findOwn()` |
-| GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget uden `phone` ([IKKE BYGGET], 6.1) |
+| GET/PATCH `/api/patients/me` | patient | PATCH `{ firstName?, postalCode?, phone? }` | `{ firstName, postalCode, phone }` | Bygget (`phone` i 6.1). `phone` valideres med `phoneSchema` (`lib/schemas/phone.ts`, samme som klinikkens telefon og bookingens `contactPhone`); `null` rydder nummeret. Gemmes også af `book_slot()` |
 | DELETE `/api/patients/me` | patient eller anonym | `{ confirm: "SLET" }` | 204 | Bygget |
-| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag. Billeder beskrives med metadata (`id`, `view`, `quality`, `description`, `createdAt`), uden sti eller URL | Delvis: `cases`, `chat` (3.3), `leads` (4.1, `LeadExportDto` uden beskeder og billeder) og `consents` er bygget. `bookings` og `reviews` [IKKE BYGGET] (6.1-6.2) |
+| GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag. Billeder beskrives med metadata (`id`, `view`, `quality`, `description`, `createdAt`), uden sti eller URL | Delvis: `cases`, `chat` (3.3), `leads` (4.1, `LeadExportDto` uden beskeder og billeder), `bookings` (6.1, `BookingExportDto`: patientens egne bookinger med klinikkens navn, ydelse, effektiv status og de kontaktoplysninger patienten selv har angivet) og `consents` er bygget. `reviews` [IKKE BYGGET] (6.2) |
 | GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Sletter `{case_id}/`-mapper og auth-brugeren | Bygget |
+| GET/POST `/api/cron/complete-bookings` | intern (`CRON_SECRET`) | | 200 `{ completed, releasedHolds }` (10.10) | Bygget (6.1) |
 
 IP-rate-limited (10 pr. time): login, signup og konvertering af anonym konto (`POST /api/auth/convert`, samme grænse som signup), anonym session, patienters billedupload og klinikkernes billedupload (10.8). Afsendelse af leads har 30 pr. time (`leads-send`, 10.5). Routes, som anonyme må kalde, kalder `touch_last_active()`.
 
@@ -1665,7 +1669,7 @@ export type CaseListItemDto = {
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/cases` | kun patient med konto (anonyme: 403) | | `{ cases: CaseListItemDto[] }`. Indtil 4.1/6.1 har leads tom `clinicName`, og `nextBooking` er `null` |
+| GET `/api/cases` | kun patient med konto (anonyme: 403) | | `{ cases: CaseListItemDto[] }`. `nextBooking` er sagens næste fremtidige `booked` tid (fra 6.1); `clinicName` kommer fra `patient_lead_clinics()` |
 | POST `/api/cases` | kun patient med konto (anonyme: 403) | `{}` | 201 `CaseDto` |
 | GET `/api/cases/{id}` | patient (+anonym), ejer | | `CaseDto` |
 | PATCH `/api/cases/{id}` | patient (+anonym), `draft` | `{ postalCode?, preferredTimeframe? }` | `CaseDto` |
@@ -1795,7 +1799,7 @@ export type PatientLeadDto = {
             removed: boolean };      // true → UI viser "Klinikken er ikke længere på TandMatch"; logoUrl er null
   // Patienter har ingen SELECT på clinics; klinikkens navn m.m. på egne leads læses via en security definer-funktion
   // (patient_lead_clinics(p_case_id default null), migration 20261021000100), der også returnerer 'removed' klinikker
-  // (uden logo), men kun for patientens egne leads. booking er null indtil 6.1.
+  // (uden logo), men kun for patientens egne leads. `booking` udfyldes af `LeadsController` fra `BookingsRepository.currentByLead()` (6.1).
   status: LeadStatus;
   sentAt: string; respondedAt: string | null;
   listPrice: PriceRange | null;
@@ -1838,7 +1842,7 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
 
 `unreadMessages` på `GET /api/leads/{id}` kommer fra `clinic_lead_detail()` (ét kald pr. RPC, 2.1). For et lead med status `withdrawn` returnerer `GET /api/leads` og `GET /api/leads/{id}` kun `id`, `status`, `sentAt` og `withdrawnAt`; øvrige felter er tomme værdier (`false`, `[]`, `null`, `0`, `""`) (5.7).
 
-Bygget i 5.1: `LeadsController` (`listForClinic`, `getForClinic`, `decide`) og `LeadsRepository`. En ikke-verificeret klinik får 403 `CLINIC_NOT_VERIFIED` på alle tre routes; ukendt eller fremmed lead giver 404, beslutning på et lead, der ikke er `sent`, 409 `LEAD_NOT_PENDING`. `GET /api/leads/{id}` sætter `seen_at` før detaljen læses. `ClinicBookingDto` og `BookingStatus` ligger i `lib/types/bookings.ts`, som 6.1 udvider.
+Bygget i 5.1: `LeadsController` (`listForClinic`, `getForClinic`, `decide`) og `LeadsRepository`. En ikke-verificeret klinik får 403 `CLINIC_NOT_VERIFIED` på alle tre routes; ukendt eller fremmed lead giver 404, beslutning på et lead, der ikke er `sent`, 409 `LEAD_NOT_PENDING`. `GET /api/leads/{id}` sætter `seen_at` før detaljen læses. `ClinicBookingDto` og `BookingStatus` ligger i `lib/types/bookings.ts`, som blev udvidet i 6.1 (10.10).
 
 Patienten læser sine leads via `GET /api/cases/{id}/leads` (10.5).
 
@@ -1850,7 +1854,7 @@ export type BookingStatus = "held" | "booked" | "completed" | "no_show" | "cance
 export type PatientBookingDto = {
   id: string; leadId: string; clinic: { id: string; name: string; address: string; city: string };
   service: { id: string; name: string }; startsAt: string; endsAt: string; status: BookingStatus;
-  canCancel: boolean; canReview: boolean;   // canReview først efter ends_at + 24 t
+  canCancel: boolean; canReview: boolean;   // canCancel: booked og før starttid. canReview: effektivt completed (ends_at + 24 t) og endnu ikke anmeldt
   holdExpiresAt: string | null;             // kun held (akut)
 };
 export type ClinicBookingDto = {
@@ -1858,20 +1862,30 @@ export type ClinicBookingDto = {
   startsAt: string; endsAt: string; status: BookingStatus;
   contact: { name: string; phone: string; email: string } | null;   // kun booked/completed (5.5), aldrig held
   canMarkNoShow: boolean;              // starts_at <= nu < ends_at + 24 t
+  canCancel: boolean;                  // booked og før starttid (klinikken kan aflyse, 6.1)
   holdExpiresAt: string | null;        // kun held
+};
+// Dataeksporten (10.2): patientens egne bookinger
+export type BookingExportDto = {
+  id: string; leadId: string; clinicId: string; clinicName: string; serviceName: string;
+  startsAt: string; endsAt: string; status: BookingStatus;
+  contactName: string; contactPhone: string; contactEmail: string;
+  cancelledBy: "patient" | "clinic" | null; cancelledAt: string | null; noShowAt: string | null; completedAt: string | null;
 };
 ```
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/leads/{id}/availability` | patient (ejer af sagen) | `?serviceId=&from=&to=` | `{ slots: SlotDto[] }` (som 10.7, men kun for leadets klinik og sagens ydelser) |
-| POST `/api/leads/{id}/booking` | patient (ejer), lead `accepted` | `{ serviceId, startsAt, contactName, contactPhone }` | 201 `PatientBookingDto`; 409 `SLOT_TAKEN`, `LEAD_NOT_ACCEPTED`, `SLOT_UNAVAILABLE` |
-| GET `/api/bookings` | patient: egne; klinik: egne (`?from=&to=`) | | `{ bookings: PatientBookingDto[] }` eller `{ bookings: ClinicBookingDto[] }` |
-| POST `/api/bookings/{id}/cancel` | patient eller klinik (ejer), før starttid | | `PatientBookingDto` / `ClinicBookingDto` |
+| GET `/api/leads/{id}/availability` | patient med konto (ejer af sagen), lead `accepted` | `?serviceId=&from=&to=` | `{ slots: SlotDto[] }` (som 10.7, men kun for leadets klinik og sagens ydelser). 409 `LEAD_NOT_ACCEPTED`, 409 `CLINIC_NOT_AVAILABLE`, 400 for en ydelse uden for sagen, 404 for fremmed lead |
+| POST `/api/leads/{id}/booking` | patient (ejer), lead `accepted` | `{ serviceId, startsAt, contactName, contactPhone }` | 201 `PatientBookingDto`; 409 `SLOT_TAKEN`, `LEAD_NOT_ACCEPTED`, `SLOT_UNAVAILABLE`, `CLINIC_NOT_AVAILABLE`; 400 for en ydelse uden for sagen eller ugyldig kontakt; 403 `ACCOUNT_REQUIRED` for anonyme; 404 for fremmed lead |
+| GET `/api/bookings` | patient med konto: egne (nyeste starttid først); verificeret klinik: egne (`?from=&to=`; uden grænser 7 dage tilbage og 60 dage frem, højst 92 dage pr. kald, ellers 400) | | `{ bookings: PatientBookingDto[] }` eller `{ bookings: ClinicBookingDto[] }` |
+| POST `/api/bookings/{id}/cancel` | patient eller verificeret klinik (ejer), før starttid | `{}` | `PatientBookingDto` / `ClinicBookingDto` (efter rollen); 409 `BOOKING_NOT_CANCELLABLE` (efter starttid eller ikke længere `booked`); 404 for fremmed booking |
 | POST `/api/bookings/{id}/no-show` | klinik (ejer), fra starttid til 24 timer efter sluttid | `{}` | `ClinicBookingDto`; 409 `NO_SHOW_WINDOW_CLOSED` |
 | GET og POST `/api/cron/complete-bookings` | intern (`CRON_SECRET`), hver time | | 200 `{ completed: number, releasedHolds: number }`. Kalder `complete_due_bookings()` med service role. Undtaget fra vilkårs-gaten |
 
 Der findes ingen route til at markere et besøg gennemført; det sker automatisk 24 timer efter sluttid (4.2, 8.1).
+
+Bygget i 6.1. Filer: `controllers/bookingsController.ts` (`BookingsController`: `availabilityForLead`, `book`, `list`, `cancel`, `markNoShow`; rollen afgør patient- eller klinikvej), `models/bookingsRepository.ts` (`book_slot`, `cancel_booking`, `mark_booking_no_show`, `patient_bookings`, `clinic_bookings`, `clinic_booking`, `complete_due_bookings`; mapper til DTO'erne og normaliserer tidspunkter til ISO med `Z`), `lib/schemas/{bookings,phone}.ts`, `lib/domain/bookings.ts` (`canCancel`, `canMarkNoShow`, `canReview`, `graceEndsAt`, `pickLeadBooking`) og `lib/constants/bookings.ts`. `CronController.completeBookings()` bruger `BookingsRepository` med service role-klienten. Ledige tider for et lead genbruger `AvailabilityService` (nye `resolveRange()` og `durationFor()`, som `ClinicDirectoryController` også bruger) og `ClinicDirectoryRepository.findClinic()`; der er ingen kopi af beregningen. Kontaktfelter til klinikken kommer kun fra `clinic_bookings()`, `clinic_booking()` og `clinic_lead_detail()` (5.5). `canCancel`, `canReview` og `canMarkNoShow` beregnes i TypeScript ud fra den effektive status fra databasen; databasen er vogteren (`cancel_booking()`, `mark_booking_no_show()`). `canReview` er kun sand ved effektivt `completed` (`ends_at + 24 t`) og hvis der ikke allerede er en anmeldelse (`patient_bookings().reviewed`). Fejlkoder ud over de generelle: `BOOKING_NOT_CANCELLABLE`, `CLINIC_NOT_AVAILABLE` (409), og `CLINIC_NOT_VERIFIED` (403) for en ikke-verificeret klinik. `PatientLeadDto.booking` er den aktive (`held`/`booked`) booking, ellers den nyeste (`pickLeadBooking()`); `CaseListItemDto.nextBooking` er sagens næste fremtidige `booked` tid. Tests: `tests/api/bookings.test.ts`, `tests/unit/bookings.test.ts`, `tests/rls/47_booking_reads.sql`.
 
 ### 10.11 Akutvej
 
@@ -1932,7 +1946,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 7 | Akutvej, demodata og finpudsning | [IKKE BYGGET] |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
-**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 32 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4) og `20261023000100`, `20261024000100` og `20261025000100` (trin 5). Alle 32 er kørt i det fælles projekt (senest `20261025000100` den 2026-10-18; brugeren kører dem). Nye ændringer kommer som nye filer (2.6). Sættet:
+**Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 33 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3) og `20261021000100`, `20261022000100` (trin 4) og `20261023000100`, `20261024000100` og `20261025000100` (trin 5) og `20261026000100` (trin 6). De første 32 er kørt i det fælles projekt (senest `20261025000100` den 2026-10-18; brugeren kører dem); `20261026000100` er **Ikke kørt i det fælles projekt endnu**. Nye ændringer kommer som nye filer (2.6). Sættet:
 
 | Fil | Indhold |
 |---|---|
@@ -1968,6 +1982,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | `20261023000100_messages_sender_role.sql` | `messages.sender_id` nullable med `on delete set null`, enum `message_sender_role` og kolonne `sender_role` (udledt af trigger), opdateret update-policy, `clinic_leads()`, `clinic_lead_messages()` og `clinic_mark_messages_read()` bruger `sender_role` (12.3 punkt 30). |
 | `20261024000100_clinic_lead_access.sql` | Policyen på `leads` erstattes af `leads_select_case_owner` (kun sagens ejer); ny `clinic_lead_status(p_lead_id)`; kolonne-grant på `messages` uden `sender_id`; `clinic_leads()` tæller kun billeder med aktivt `image_upload`-samtykke i `image_count`, ligesom `clinic_lead_images()` (security trin 5 H1 og L1, review 5). |
 | `20261025000100_clinic_lead_detail_unread.sql` | `clinic_lead_detail()` returnerer `unread_messages`, og dens `image_count` tæller kun billeder med aktivt `image_upload`-samtykke som `clinic_leads()` (security 5.5d L1); `clinic_leads()` sorterer kun på akut for leads, der ikke er trukket tilbage (review 5.5c). |
+| `20261026000100_booking_reads.sql` | `patient_bookings(p_booking_id default null)` (patientens egne bookinger med klinikkens navn, adresse og by, `reviewed`, `created_at`; effektiv status) og `clinic_booking(p_booking_id)` (én af klinikkens bookinger, samme kontaktregel som `clinic_bookings()`). **Ikke kørt i det fælles projekt endnu** (6.1). |
 
 **Nedskæring** hvis tiden ikke slår til, i denne rækkefølge: portefølje → klinikkens svar på anmeldelser → beskedtråd → kort (listen er nok) → akutvindue (akutvejen bruger almindelige tider). Skæres **aldrig**: isolation af leads og skjulte kontaktoplysninger (RLS), samtykke før chat/upload/deling, AI-reglerne (ingen priser, ingen klinikanbefaling, akut-henvisning), maks. 3 leads, ingen dobbeltbooking, "Slet min samtale" og oprydning af anonyme data.
 
@@ -2078,7 +2093,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 29. *Afklaret:* offentligt vises kun `verified` og `imported` uden ejer; `registered` er usynlig, også efter CVR-overtagelse (5.1 regel 11).
 30. **Klinikkens beskeder ved sletning af klinikkonto (security L6):** `messages.sender_id` har `on delete cascade`, så klinikkens beskeder forsvinder fra patientens tråd, når klinikkontoen slettes. Det strider mod beslutningen om, at patientens historik bevares (punkt 28). **Besluttet (2026-10-18):** `on delete set null` og en `sender_role`-kolonne (`patient`/`clinic`), så tråden viser "Klinikken" for beskeder uden afsender. Bygges med beskedtråden (5.2) i en ny migration; eksisterende rækker får `sender_role` ud fra afsenderens rolle.
 31. **Forretningsmodel:** prototypen og siden "Sådan tjener vi penge" siger, at klinikker betaler for leads, og at patienter ikke betaler. Pris pr. lead, abonnement, betaling ved booking eller andet er ikke besluttet, og der er ingen betaling i koden.
-32. **API-test til trin 6:** der er endnu ingen API-test af en godkendt anmeldelse eller af en ikke-udløbet `held`-booking gennem API'et (kun i RLS-testene). Tilføjes, når anmeldelser og booking bygges (6.1-6.2).
+32. **API-test til trin 6:** *Bookingdelen er løst (6.1):* `tests/api/bookings.test.ts` tester en ikke-udløbet og en udløbet `held`-booking gennem API'et. *Mangler:* API-test af en godkendt anmeldelse (6.2).
 
 ### 12.4 Udskudt [UDSKUDT]
 

@@ -18,3 +18,21 @@ export const EMERGENCY_HOLD_MINUTES = 30; // (SQL) reservation af akuttid uden s
 // Kun TypeScript (visning): "første ledige tid" søges så langt frem, og ledige tider hentes højst så mange dage pr. kald.
 export const FIRST_AVAILABLE_SEARCH_DAYS = 14;
 export const MAX_AVAILABILITY_RANGE_DAYS = 14;
+
+// Klinikkens kalender (GET /api/bookings): uden ?from=&to= vises bookinger fra så mange dage tilbage (så en udeblivelse kan
+// registreres) og BOOKING_HORIZON_DAYS frem. Højst så mange dage pr. kald.
+export const CLINIC_BOOKINGS_DEFAULT_PAST_DAYS = 7;
+export const MAX_BOOKINGS_RANGE_DAYS = 92;
+
+// Kontaktnavn ved booking (SQL: book_slot() og bookings.contact_name, 2-100 tegn).
+export const CONTACT_NAME_MIN_CHARS = 2;
+export const CONTACT_NAME_MAX_CHARS = 100;
+
+// Danske navne til bookingens status (architecture 4.2, 10.10).
+export const BOOKING_STATUS_LABEL = {
+  held: "Reserveret",
+  booked: "Booket",
+  completed: "Gennemført",
+  no_show: "Udeblevet",
+  cancelled: "Aflyst",
+} as const satisfies Record<(typeof BOOKING_STATUSES)[number], string>;

@@ -3,10 +3,10 @@ import {
   clinicAddressSchema,
   clinicCitySchema,
   clinicNameSchema,
-  clinicPhoneSchema,
   cvrSchema,
   postalCodeSchema,
 } from "@/lib/schemas/clinics";
+import { phoneSchema } from "@/lib/schemas/phone";
 
 export const emailSchema = z
   .string()
@@ -51,7 +51,7 @@ export const signupSchema = z.discriminatedUnion("role", [
       address: clinicAddressSchema,
       postalCode: postalCodeSchema,
       city: clinicCitySchema,
-      phone: clinicPhoneSchema,
+      phone: phoneSchema,
     })
     .strict(),
 ]);

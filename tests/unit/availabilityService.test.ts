@@ -216,3 +216,25 @@ describe("AvailabilityService.searchRange", () => {
     expect(service().firstSlot({ openingHours, busy: [], durationMin: 30, isEmergency: false, from, to })?.startsAt).toBe("2026-10-14T08:30:00.000Z");
   });
 });
+
+describe("AvailabilityService.resolveRange og durationFor", () => {
+  it("uden grænser dækker tidsrummet 14 dage fra nu", () => {
+    const range = service().resolveRange();
+    if (!range.ok) throw new Error("forventede et tidsrum");
+    expect(range.from.toISOString()).toBe(NOW.toISOString());
+    expect(range.to.getTime() - range.from.getTime()).toBe(14 * 24 * 3_600_000);
+  });
+
+  it("afviser slutning før start og mere end 14 dage", () => {
+    expect(service().resolveRange("2026-10-15T00:00:00Z", "2026-10-14T00:00:00Z").ok).toBe(false);
+    expect(service().resolveRange("2026-10-15T00:00:00Z", "2026-10-29T00:00:01Z").ok).toBe(false);
+    const exact = service().resolveRange("2026-10-15T00:00:00Z", "2026-10-29T00:00:00Z");
+    expect(exact.ok).toBe(true);
+  });
+
+  it("varigheden er klinikkens egen, ellers katalogets, lagt sammen", () => {
+    const prices = [{ serviceId: "a", durationMin: 45 }];
+    expect(service().durationFor(prices, [{ id: "a", defaultDurationMin: 30 }, { id: "b", defaultDurationMin: 20 }])).toBe(65);
+    expect(service().durationFor([], [{ id: "b", defaultDurationMin: 20 }])).toBe(20);
+  });
+});

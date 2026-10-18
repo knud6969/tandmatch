@@ -1,16 +1,18 @@
 import type { ChatExportDto } from "@/lib/types/ai";
+import type { BookingExportDto } from "@/lib/types/bookings";
 import type { CaseExportDto } from "@/lib/types/cases";
 import type { ConsentDto } from "@/lib/types/consents";
 import type { LeadExportDto } from "@/lib/types/leads";
 
-export type PatientMeDto = { firstName: string | null; postalCode: string | null };
+export type PatientMeDto = { firstName: string | null; postalCode: string | null; phone: string | null };
 
 // Dataeksport (GDPR art. 15/20, architecture 10.2): { exportedAt, cases, chat, leads, bookings, reviews, consents }.
-// [IKKE BYGGET] bookings (trin 6) og reviews (trin 6) tilføjes, når deres repositories findes.
+// [IKKE BYGGET] reviews tilføjes med 6.2.
 export type PatientExportDto = {
   exportedAt: string;
   cases: CaseExportDto[];
   chat: ChatExportDto[]; // egne AI-samtaler pr. sag
   leads: LeadExportDto[];
+  bookings: BookingExportDto[];
   consents: ConsentDto[];
 };

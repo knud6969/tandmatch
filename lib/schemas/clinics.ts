@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneSchema } from "@/lib/schemas/phone";
 import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import {
@@ -43,11 +44,6 @@ export const postalCodeSchema = z.string().trim().regex(/^[0-9]{4}$/, "Angiv et 
 
 export const clinicCitySchema = z.string().trim().min(1, "Angiv byen.").max(80, "Byen må højst være 80 tegn.");
 
-export const clinicPhoneSchema = z
-  .string()
-  .trim()
-  .regex(/^[+0-9 ()-]{6,20}$/, "Angiv et gyldigt telefonnummer.");
-
 // ---------------------------------------------------------------------------------------------------------
 // Egen klinik (architecture 10.8)
 
@@ -89,7 +85,7 @@ export const patchClinicSchema = z
     address: clinicAddressSchema.optional(),
     postalCode: postalCodeSchema.optional(),
     city: clinicCitySchema.optional(),
-    phone: clinicPhoneSchema.nullable().optional(),
+    phone: phoneSchema.nullable().optional(),
     email: z
       .union([z.literal("").transform(() => null), z.email("Angiv en gyldig e-mailadresse.").max(CLINIC_EMAIL_MAX_CHARS)])
       .nullable()

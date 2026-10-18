@@ -26,6 +26,7 @@ import {
   notFound,
 } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
+import { BookingsRepository } from "@/models/bookingsRepository";
 import type { Tables } from "@/models/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
@@ -92,7 +93,6 @@ type ClinicLeadDetailRow = Omit<ClinicLeadListRow, "service_names"> & {
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
-  can_mark_no_show: boolean | null;
 };
 type ClinicLeadImageRow = { image_id: string; storage_path: string; approved_description: string | null };
 
@@ -118,6 +118,16 @@ type LeadClinicRow = {
   logo_path: string | null;
   logo_updated_at: string | null;
   removed: boolean;
+};
+
+// Leadet, som en booking bruger det. `serviceIds` er sagens bekræftede ydelser (og en evt. ønsket akutydelse).
+export type LeadBookingContext = { id: string; status: LeadStatus; clinicId: string; serviceIds: string[] };
+type LeadBookingContextRow = {
+  id: string;
+  status: LeadStatus;
+  clinic_id: string;
+  requested_service_id: string | null;
+  cases: { case_services: { service_id: string }[] | null } | null;
 };
 
 const LEAD_COLUMNS =
@@ -202,7 +212,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
       clinicComment: row.clinic_comment,
       declineReason: row.decline_reason,
       declineNote: row.decline_note,
-      booking: null,
+      booking: null, // lægges på af LeadsController (BookingsRepository.currentByLead)
       unreadMessages: (row.messages ?? []).filter((m) => m.sender_role === "clinic" && m.read_at === null).length,
     };
   }
@@ -295,6 +305,23 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     return this.requireRow(row).status;
   }
 
+  // Det en booking kræver at vide om patientens eget lead: status, klinik, de ydelser sagen har bekræftet og den ønskede
+  // akutydelse (kun ved akut-lead). RLS: andres leads giver null, så 404.
+  async requireBookingContext(leadId: string): Promise<LeadBookingContext> {
+    const row = await this.run<LeadBookingContextRow>(
+      this.db
+        .from("leads")
+        .select("id, status, clinic_id, requested_service_id, cases(case_services(service_id))")
+        .eq("id", leadId)
+        .maybeSingle(),
+      "leads: select fejlede",
+    );
+    const found = this.requireRow(row);
+    const serviceIds = (found.cases?.case_services ?? []).map((service) => service.service_id);
+    if (found.requested_service_id) serviceIds.push(found.requested_service_id);
+    return { id: found.id, status: found.status, clinicId: found.clinic_id, serviceIds: [...new Set(serviceIds)] };
+  }
+
   // Alle egne leads med klinikkens navn til dataeksporten.
   async listOwnForExport(): Promise<LeadExportDto[]> {
     const rows = await this.runList<LeadRow>(
@@ -326,21 +353,20 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
 
   private toClinicBooking(row: ClinicLeadDetailRow): ClinicBookingDto | null {
     if (!row.booking_id || !row.booking_status || !row.booking_starts_at || !row.booking_ends_at) return null;
-    return {
+    // Databasen returnerer kontaktfelterne kun for booked/completed (5.5); de mappes, som de er.
+    return BookingsRepository.toClinicDto({
       id: row.booking_id,
       leadId: row.lead_id,
-      service: { id: row.booking_service_id ?? "", name: row.booking_service_name ?? "" },
+      serviceId: row.booking_service_id ?? "",
+      serviceName: row.booking_service_name ?? "",
       startsAt: row.booking_starts_at,
       endsAt: row.booking_ends_at,
       status: row.booking_status,
-      // Databasen returnerer kontaktfelterne kun for booked/completed (5.5); her mappes de, som de er.
-      contact:
-        row.contact_name !== null && row.contact_phone !== null && row.contact_email !== null
-          ? { name: row.contact_name, phone: row.contact_phone, email: row.contact_email }
-          : null,
-      canMarkNoShow: row.can_mark_no_show ?? false,
       holdExpiresAt: row.booking_hold_expires_at,
-    };
+      contactName: row.contact_name,
+      contactPhone: row.contact_phone,
+      contactEmail: row.contact_email,
+    });
   }
 
   // Klinikkens leads (clinic_leads), evt. filtreret på status. Tom liste for en klinik, der ikke er verificeret.

@@ -2,6 +2,7 @@ import {
   BOOKING_HORIZON_DAYS,
   CLINIC_TIME_ZONE,
   FIRST_AVAILABLE_SEARCH_DAYS,
+  MAX_AVAILABILITY_RANGE_DAYS,
   MIN_BOOKING_NOTICE_MIN,
   MIN_EMERGENCY_NOTICE_MIN,
   SLOT_STEP_MINUTES,
@@ -58,6 +59,31 @@ export class AvailabilityService {
   searchRange(days = FIRST_AVAILABLE_SEARCH_DAYS): { from: Date; to: Date } {
     const from = this.clock();
     return { from, to: new Date(from.getTime() + days * DAY_MS) };
+  }
+
+  // Tidsrummet en forespørgsel om ledige tider dækker: uden `from` nu, uden `to` MAX_AVAILABILITY_RANGE_DAYS frem.
+  // Slutningen skal ligge efter starten, og tidsrummet er højst MAX_AVAILABILITY_RANGE_DAYS langt. Ren kode uden
+  // ApiError (servicen er uden I/O og middleware); controlleren gør en afvisning til 400.
+  resolveRange(from?: string, to?: string): { ok: true; from: Date; to: Date } | { ok: false; message: string } {
+    const start = from ? new Date(from) : this.searchRange().from;
+    const end = to ? new Date(to) : new Date(start.getTime() + MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
+    if (end.getTime() <= start.getTime()) return { ok: false, message: "Slutningen skal ligge efter starten." };
+    if (end.getTime() - start.getTime() > MAX_AVAILABILITY_RANGE_DAYS * DAY_MS) {
+      return { ok: false, message: `Du kan højst hente ${MAX_AVAILABILITY_RANGE_DAYS} dage ad gangen.` };
+    }
+    return { ok: true, from: start, to: end };
+  }
+
+  // Samlet varighed af behandlingerne hos en klinik: klinikkens egen (`durationMin`), ellers katalogets standard (som
+  // service_duration_min() i databasen).
+  durationFor(
+    prices: readonly { serviceId: string; durationMin: number }[],
+    services: readonly { id: string; defaultDurationMin: number }[],
+  ): number {
+    return services.reduce(
+      (sum, service) => sum + (prices.find((price) => price.serviceId === service.id)?.durationMin ?? service.defaultDurationMin),
+      0,
+    );
   }
 
   // Tidligst mulige starttid: nu + varsel (almindelig 30 min, akut 0 min).

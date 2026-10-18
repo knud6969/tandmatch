@@ -2,8 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { DEFAULT_MAX_DISTANCE_KM } from "@/lib/constants/clinics";
-import { FIRST_AVAILABLE_SEARCH_DAYS, MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
-import { DAY_MS } from "@/lib/domain/time";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/constants/services";
 import type { availabilityQuerySchema, clinicProfileQuerySchema, clinicsQuerySchema } from "@/lib/schemas/clinics";
 import type {
@@ -117,21 +116,16 @@ export class ClinicDirectoryController {
     const [service] = await this.services.requireActive([query.serviceId]);
     const record = this.requireFull(await this.directory.findClinic(clinicId, [service.id]));
 
-    const from = query.from ? new Date(query.from) : this.slots.searchRange().from;
-    const to = query.to ? new Date(query.to) : new Date(from.getTime() + MAX_AVAILABILITY_RANGE_DAYS * DAY_MS);
-    if (to.getTime() <= from.getTime()) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Slutningen skal ligge efter starten.");
-    }
-    if (to.getTime() - from.getTime() > MAX_AVAILABILITY_RANGE_DAYS * DAY_MS) {
-      throw new ApiError(400, "VALIDATION_ERROR", `Du kan højst hente ${MAX_AVAILABILITY_RANGE_DAYS} dage ad gangen.`);
-    }
+    const range = this.slots.resolveRange(query.from, query.to);
+    if (!range.ok) throw new ApiError(400, "VALIDATION_ERROR", range.message);
+    const { from, to } = range;
 
     const busy = (await this.availability.listBusyIntervals([clinicId], from, to)).get(clinicId) ?? [];
     return {
       slots: this.slots.slots({
         openingHours: record.openingHours,
         busy,
-        durationMin: this.durationAt(record, [service]),
+        durationMin: this.slots.durationFor(record.prices, [service]),
         isEmergency: service.category === "emergency",
         from,
         to,
@@ -204,14 +198,6 @@ export class ClinicDirectoryController {
     return { stats, busy, range };
   }
 
-  // Klinikkens varighed for behandlingerne: klinikkens egen, ellers katalogets (som service_duration_min() i databasen).
-  private durationAt(record: Pick<PublicClinicRecord, "prices">, services: readonly ServiceDto[]): number {
-    return services.reduce(
-      (sum, service) => sum + (record.prices.find((price) => price.serviceId === service.id)?.durationMin ?? service.defaultDurationMin),
-      0,
-    );
-  }
-
   private toListItem(
     record: PublicClinicRecord | PublicClinicProfileRecord,
     plan: Plan,
@@ -255,12 +241,12 @@ export class ClinicDirectoryController {
       firstAvailableAt:
         this.slots.firstSlot({
           ...search,
-          durationMin: this.durationAt(record, plan.appointment),
+          durationMin: this.slots.durationFor(record.prices, plan.appointment),
           isEmergency: plan.appointmentIsEmergency,
         })?.startsAt ?? null,
       firstEmergencyAt:
         plan.emergency && hasEmergencyHours
-          ? (this.slots.firstSlot({ ...search, durationMin: this.durationAt(record, [plan.emergency]), isEmergency: true })?.startsAt ?? null)
+          ? (this.slots.firstSlot({ ...search, durationMin: this.slots.durationFor(record.prices, [plan.emergency]), isEmergency: true })?.startsAt ?? null)
           : null,
     };
   }
