@@ -513,13 +513,19 @@ describe("udeblivelse og gennemførte besøg", () => {
   });
 });
 
+function middayTomorrow(): Date {
+  const d = new Date(Date.now() + 24 * HOUR);
+  d.setUTCHours(10, 0, 0, 0); // 11 eller 12 dansk tid
+  return d;
+}
+
 // 12.3 punkt 32: en ikke-udløbet held-booking gennem API'et.
 describe("reserveret akuttid (held)", () => {
   it("er en reservation for begge parter, uden kontakt for klinikken, og blokerer tiden", async () => {
     const k = await clinic();
     const p = await patient();
     const leadId = await sendTo(p, k); // sent
-    const starts = new Date(Date.now() + 3 * HOUR);
+    const starts = middayTomorrow(); // inden for åbningstiden uanset hvornår testen kører
     const id = await insertBooking(leadId, k, p, starts, { status: "held" });
 
     const detail = await k.c.get(`/api/leads/${leadId}`);
@@ -551,7 +557,7 @@ describe("reserveret akuttid (held)", () => {
 
     // tiden er optaget for en anden patient hos samme klinik
     const second = await acceptedLead(k);
-    const free = await second.p.c.get(`/api/leads/${second.leadId}/availability?serviceId=${second.p.serviceId}&to=${new Date(Date.now() + 5 * HOUR).toISOString()}`);
+    const free = await second.p.c.get(`/api/leads/${second.leadId}/availability?serviceId=${second.p.serviceId}&to=${new Date(starts.getTime() + 5 * HOUR).toISOString()}`);
     assert.ok(!free.body.slots.some((s: { startsAt: string }) => s.startsAt === quarter(starts.getTime()).toISOString()));
     const taken = await second.p.c.post(`/api/leads/${second.leadId}/booking`, bookBody(second.p, quarter(starts.getTime()).toISOString()));
     assert.equal(code(taken), "SLOT_TAKEN");
@@ -561,7 +567,7 @@ describe("reserveret akuttid (held)", () => {
     const k = await clinic();
     const p = await patient();
     const leadId = await sendTo(p, k);
-    const starts = new Date(Date.now() + 3 * HOUR);
+    const starts = middayTomorrow();
     await insertBooking(leadId, k, p, starts, { status: "held", holdExpiresAt: new Date(Date.now() - MINUTE) });
     const mine = (await p.c.get("/api/bookings")).body.bookings[0];
     assert.equal(mine.status, "cancelled", "effektiv status");

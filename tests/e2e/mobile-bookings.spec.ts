@@ -35,13 +35,13 @@ async function acceptedLead(patient: Patient, clinic: ClinicHandle): Promise<str
   return leadId;
 }
 
-async function bookViaApi(patient: Patient, leadId: string): Promise<{ id: string; startsAt: string }> {
+async function bookViaApi(patient: Patient, leadId: string, slotIndex = 0): Promise<{ id: string; startsAt: string }> {
   const catalog = (await (await patient.page.request.get("/api/services")).json()) as { groups: { services: { id: string; slug: string }[] }[] };
   const serviceId = catalog.groups.flatMap((g) => g.services).find((s) => s.slug === "blegning")!.id;
   const avail = await patient.page.request.get(`/api/leads/${leadId}/availability?serviceId=${serviceId}`);
   const { slots } = (await avail.json()) as { slots: { startsAt: string }[] };
   const res = await patient.page.request.post(`/api/leads/${leadId}/booking`, {
-    data: { serviceId, startsAt: slots[0].startsAt, contactName: "Lea Hansen", contactPhone: PHONE },
+    data: { serviceId, startsAt: slots[slotIndex].startsAt, contactName: "Lea Hansen", contactPhone: PHONE },
   });
   expect(res.status(), await res.text()).toBe(201);
   return (await res.json()) as { id: string; startsAt: string };
@@ -137,6 +137,40 @@ test.describe("mobil og dubletter (6.7b)", () => {
     } finally {
       await cleanup(past, [clinic]);
       await cleanup(future, []);
+    }
+  });
+
+  test("6. booking på samme lead viser loftet og et link til beskedtråden; telefon under 8 cifre afvises", async ({ browser }, testInfo) => {
+    const clinic = await bookableClinic(browser, testInfo, "loft");
+    const patient = await patientWithCase(browser, testInfo);
+    try {
+      const leadId = await acceptedLead(patient, clinic);
+      for (let i = 0; i < 5; i++) {
+        const booking = await bookViaApi(patient, leadId, i * 2);
+        const cancel = await patient.page.request.post(`/api/bookings/${booking.id}/cancel`, { data: {} });
+        expect(cancel.ok(), await cancel.text()).toBeTruthy();
+      }
+      const page = patient.page;
+      await page.goto(`/patient/sag/${patient.caseId}/book/${leadId}`);
+      await expect(page.getByTestId("tid").first()).toBeVisible();
+      await page.getByTestId("tid").first().click();
+      await page.getByLabel("Fulde navn").fill("Lea Hansen");
+
+      // Kontaktfelter: for kort telefonnummer afvises før noget sendes.
+      await page.getByLabel("Telefon").fill("1234567");
+      const bar = page.getByTestId("bundlinje");
+      await bar.getByRole("button", { name: "Book tid", exact: true }).click();
+      await expect(page.getByTestId("booking-bekraeftelse")).toHaveCount(0);
+      await expect(page.getByText("Der er lavet og aflyst så mange tider")).toHaveCount(0);
+
+      await page.getByLabel("Telefon").fill(PHONE);
+      await bar.getByRole("button", { name: "Book tid", exact: true }).click();
+      await expect(page.getByText(/Der er lavet og aflyst så mange tider på denne henvendelse \(højst 5\)/)).toBeVisible();
+      await expect(page.getByRole("link", { name: "Gå til beskedtråden med klinikken" })).toBeVisible();
+      await expect(page.getByTestId("booking-bekraeftelse")).toHaveCount(0);
+      await expectNoHorizontalScroll(page);
+    } finally {
+      await cleanup(patient, [clinic]);
     }
   });
 
