@@ -72,6 +72,15 @@ test.describe("mobil og dubletter (6.7b)", () => {
       await expect(bar).toContainText("Vælg en tid");
       await expect(bar.getByRole("button", { name: "Book tid", exact: true })).toBeDisabled();
 
+      // Første tid (øverst, langt fra formularen): bundlinjen og Book tid er helt i viewport.
+      const firstTime = page.getByTestId("tid").first();
+      await firstTime.scrollIntoViewIfNeeded();
+      await firstTime.click();
+      await expect(bar.getByTestId("valgt-tid")).toContainText(await firstTime.innerText());
+      await expect(bar).toBeInViewport({ ratio: 1 });
+      await expect(bar.getByRole("button", { name: "Book tid", exact: true })).toBeInViewport({ ratio: 1 });
+      await page.screenshot({ path: `test-results/book-bundlinje-foerste-${width(page)}.png` });
+
       // Tryk på den sidste tid på siden (langt fra formularen): bundlinjen ligger stadig i viewport.
       const lastTime = page.getByTestId("tid").last();
       await lastTime.scrollIntoViewIfNeeded();
@@ -161,11 +170,11 @@ test.describe("mobil og dubletter (6.7b)", () => {
       const bar = page.getByTestId("bundlinje");
       await bar.getByRole("button", { name: "Book tid", exact: true }).click();
       await expect(page.getByTestId("booking-bekraeftelse")).toHaveCount(0);
-      await expect(page.getByText("Der er lavet og aflyst så mange tider")).toHaveCount(0);
+      await expect(page.getByText("Du har booket og aflyst for mange tider")).toHaveCount(0);
 
       await page.getByLabel("Telefon").fill(PHONE);
       await bar.getByRole("button", { name: "Book tid", exact: true }).click();
-      await expect(page.getByText(/Der er lavet og aflyst så mange tider på denne henvendelse \(højst 5\)/)).toBeVisible();
+      await expect(page.getByText(/Du har booket og aflyst for mange tider på denne henvendelse \(højst 5\)/)).toBeVisible();
       await expect(page.getByRole("link", { name: "Gå til beskedtråden med klinikken" })).toBeVisible();
       await expect(page.getByTestId("booking-bekraeftelse")).toHaveCount(0);
       await expectNoHorizontalScroll(page);

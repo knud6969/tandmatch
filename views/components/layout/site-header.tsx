@@ -143,7 +143,7 @@ export function SiteHeader() {
               );
             })}
           </ul>
-          {/* Fade i kanten viser, at fanerne kan rulles; kun når der er flere faner end plads. */}
+          {/* Fade i højre kant på skærme under xl; skjules fra xl, hvor alle faner har plads. */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface to-transparent xl:hidden"

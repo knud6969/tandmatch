@@ -137,7 +137,7 @@ export function ClinicCalendar() {
     };
   }, [data, showCancelled, today]);
 
-  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote what="kalender" />;
+  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Din kalender bliver tilgængelig, når TandMatch har verificeret klinikken." />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
 
   const days = showPast ? [...past, ...upcoming] : upcoming;
@@ -170,12 +170,12 @@ export function ClinicCalendar() {
         {days.map(([key, bookings]) => (
           <li key={key} className="min-w-0">
             <Card className="flex flex-col gap-3 p-4 sm:p-5" data-testid="kalender-dag">
-              <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-ink first-letter:uppercase">
+              <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold text-ink">
+                <span className="first-letter:uppercase">{formatDay(bookings[0]?.startsAt ?? `${key}T12:00:00Z`)}</span>
                 {key === today && <Badge tone="brand">I dag</Badge>}
-                {formatDay(bookings[0]?.startsAt ?? `${key}T12:00:00Z`)}
               </h2>
               {bookings.length === 0 ? (
-                <p className="text-base text-ink-muted">Ingen bookinger i dag.</p>
+                hasBookings ? <p className="text-base text-ink-muted">Ingen bookinger i dag.</p> : null
               ) : (
                 <ul className="flex flex-col gap-3">
                   {bookings.map((booking) => (

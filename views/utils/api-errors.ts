@@ -1,8 +1,11 @@
 import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
 import {
+  ALREADY_REPLIED_TEXT,
+  ALREADY_REVIEWED_TEXT,
   BOOKING_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
+  LEAD_NOT_ACCEPTED_TEXT,
   MESSAGE_LIMIT_TEXT,
   NO_SHOW_WINDOW_CLOSED_TEXT,
   REVIEW_NOT_ALLOWED_TEXT,
@@ -81,13 +84,13 @@ const MESSAGES: Record<string, string> = {
   INTERNAL: "Der opstod en fejl hos os. Prøv igen om lidt.",
   SLOT_TAKEN: SLOT_TAKEN_TEXT,
   SLOT_UNAVAILABLE: SLOT_UNAVAILABLE_TEXT,
-  LEAD_NOT_ACCEPTED: "Klinikken har ikke accepteret din henvendelse, så du kan ikke booke endnu. Genindlæs siden for at se status.",
+  LEAD_NOT_ACCEPTED: LEAD_NOT_ACCEPTED_TEXT,
   BOOKING_NOT_CANCELLABLE: BOOKING_NOT_CANCELLABLE_TEXT,
   NO_SHOW_WINDOW_CLOSED: NO_SHOW_WINDOW_CLOSED_TEXT,
   REVIEW_NOT_ALLOWED: REVIEW_NOT_ALLOWED_TEXT,
   BOOKING_LIMIT: BOOKING_LIMIT_TEXT,
-  ALREADY_REVIEWED: "Du har allerede anmeldt dette besøg.",
-  ALREADY_REPLIED: "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.",
+  ALREADY_REVIEWED: ALREADY_REVIEWED_TEXT,
+  ALREADY_REPLIED: ALREADY_REPLIED_TEXT,
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 

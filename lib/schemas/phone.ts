@@ -1,8 +1,5 @@
 import { z } from "zod";
-
-// Mindst så mange cifre. Databasens check (6-20 tilladte tegn) er løsere; TypeScript er strengere (security trin 6, L2),
-// så "(((((("-lignende værdier ikke kan gemmes.
-export const MIN_PHONE_DIGITS = 8;
+import { MIN_PHONE_DIGITS } from "@/lib/constants/limits";
 
 // Telefonnummer, delt af klinikkens profil, patientens profil og bookingens kontaktfelt. Spejler check constraints på
 // clinics.phone, patients.phone og bookings.contact_phone (architecture 4.3).

@@ -1,9 +1,12 @@
 import "server-only";
 import type { ZodType } from "zod";
 import {
+  ALREADY_REPLIED_TEXT,
+  ALREADY_REVIEWED_TEXT,
   BOOKING_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
+  LEAD_NOT_ACCEPTED_TEXT,
   MESSAGE_LIMIT_TEXT,
   NO_SHOW_WINDOW_CLOSED_TEXT,
   REVIEW_NOT_ALLOWED_TEXT,
@@ -225,7 +228,7 @@ export const aiUnavailable = () =>
 
 // Booking (architecture 10.10). Fabrikkerne bruges af både controllere og repositories.
 export const leadNotAccepted = () =>
-  conflict("LEAD_NOT_ACCEPTED", "Klinikken har ikke accepteret din henvendelse, eller der er allerede en tid.");
+  conflict("LEAD_NOT_ACCEPTED", LEAD_NOT_ACCEPTED_TEXT);
 
 export const clinicNotAvailable = () => conflict("CLINIC_NOT_AVAILABLE", "Klinikken kan ikke modtage bookinger lige nu.");
 
@@ -246,6 +249,6 @@ export const noShowWindowClosed = () => conflict("NO_SHOW_WINDOW_CLOSED", NO_SHO
 // Anmeldelse (architecture 10.13).
 export const reviewNotAllowed = () => new ApiError(403, "REVIEW_NOT_ALLOWED", REVIEW_NOT_ALLOWED_TEXT);
 
-export const alreadyReviewed = () => conflict("ALREADY_REVIEWED", "Du har allerede anmeldt dette besøg.");
+export const alreadyReviewed = () => conflict("ALREADY_REVIEWED", ALREADY_REVIEWED_TEXT);
 
-export const alreadyReplied = () => conflict("ALREADY_REPLIED", "Du har allerede svaret på denne anmeldelse.");
+export const alreadyReplied = () => conflict("ALREADY_REPLIED", ALREADY_REPLIED_TEXT);

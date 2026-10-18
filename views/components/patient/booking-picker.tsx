@@ -189,7 +189,6 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
     const errors: { name?: string; phone?: string } = {};
     const parsedName = contactNameSchema.safeParse(currentName);
     if (!parsedName.success) errors.name = parsedName.error.issues[0]?.message ?? "Skriv dit fulde navn.";
-    const trimmed = currentName.trim();
     if (!phoneSchema.safeParse(currentPhone).success) errors.phone = "Angiv et gyldigt telefonnummer, fx 12 34 56 78.";
     setFieldErrors(errors);
     if (errors.name || errors.phone) return;
@@ -200,7 +199,7 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
       try {
         result = await apiRequest<PatientBookingDto>(`/api/leads/${leadId}/booking`, {
           method: "POST",
-          body: { serviceId: currentService, startsAt: chosen.startsAt, contactName: trimmed, contactPhone: currentPhone.trim() },
+          body: { serviceId: currentService, startsAt: chosen.startsAt, contactName: parsedName.data, contactPhone: currentPhone.trim() },
         });
       } catch (e) {
         // Tiden er væk eller ikke længere mulig: vælg på ny blandt friske tider.
@@ -216,7 +215,7 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       {back}
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Book tid hos {lead.clinic.name}</h1>
@@ -287,9 +286,9 @@ export function BookingPicker({ caseId, leadId }: { caseId: string; leadId: stri
             )}
           </form>
 
-          {/* Bundlinjen følger med i bunden af skærmen på mobil, så "Book tid" altid er inden for rækkevidde efter valg af tid. */}
+          {/* Bundlinjen er fast i bunden af skærmen under lg (siden har bundpolstring, så intet skjules), så "Book tid" altid er inden for rækkevidde efter valg af tid. */}
           <div
-            className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3 shadow-raised sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:rounded-card lg:border lg:px-4 lg:shadow-card"
+            className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-raised sm:px-6 lg:static lg:rounded-card lg:border lg:px-4 lg:py-3 lg:shadow-card"
             data-testid="bundlinje"
           >
             <div className="min-w-0">

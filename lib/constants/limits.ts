@@ -44,3 +44,7 @@ export const CLEANUP_BATCH_SIZE = 200;
 // Beskedtråd (architecture 7.6). Samme døgnloft er håndhævet i databasen.
 export const MESSAGE_MAX_CHARS = 2000;
 export const MESSAGE_MAX_PER_DAY = 200;
+
+// Mindst så mange cifre i et telefonnummer. Databasens check (6-20 tilladte tegn) er løsere; TypeScript er strengere
+// (security trin 6, L2), så "(((((("-lignende værdier ikke kan gemmes. Bruges af lib/schemas/phone.ts.
+export const MIN_PHONE_DIGITS = 8;

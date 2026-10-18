@@ -369,7 +369,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
 
   private toClinicBooking(row: ClinicLeadDetailRow): ClinicBookingDto | null {
     if (!row.booking_id || !row.booking_status || !row.booking_starts_at || !row.booking_ends_at) return null;
-    // Databasen returnerer kontaktfelterne kun for booked/completed (5.5); de mappes, som de er.
+    // Databasen returnerer kontaktfelterne kun for booked/completed (5.5); toClinicBookingDto afgør, hvilke kontaktfelter der følger med.
     return toClinicBookingDto({
       id: row.booking_id,
       leadId: row.lead_id,
