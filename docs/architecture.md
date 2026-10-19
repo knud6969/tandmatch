@@ -1,6 +1,6 @@
 # TandMatch: arkitektur
 
-Version: 2.1 (2026-10-19), klinik- og lead-modellen med patienternes mobilapp (13). Ændringshistorik: `git log -p -- docs/architecture.md`. Dokumentet beskriver den tilstand, koden skal have. Historik hører til i git.
+Version: 2.2 (2026-10-19), klinik- og lead-modellen med patienternes mobilapp (13) og sagsflowet i appen som én samtale (7.9). Ændringshistorik: `git log -p -- docs/architecture.md`. Dokumentet beskriver den tilstand, koden skal have. Historik hører til i git.
 Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdsplan.md`.
 
 ## 0. Sådan bruges dokumentet
@@ -11,7 +11,7 @@ Ejer: architect-agenten. Arbejdsplanen for omlægningen står i `docs/arbejdspla
 - **[UDSKUDT]** = bevidst ikke en del af demoen. Må ikke bygges nu, men skal afklares før rigtige brugere.
 - **[PROTOTYPE]** = bevidst forenkling for at kunne fremvise. Virker i demoen, men skal genovervejes før rigtige brugere.
 - **[IKKE BYGGET]** = besluttet og beskrevet, men endnu ikke implementeret. Markeringen sættes på afsnit eller række og gælder alt derunder. Uden markering findes delen i koden.
-- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Trin 5 er i gang på `feat/omlaegning-trin-5`: klinikkens leads og beskedtråden (5.1-5.2; 10.9, 10.12), klinikkens indbakke og lead-kort (5.3; `/klinik`, `/klinik/lead/[leadId]`) og beskedtråden på patientens sag er bygget, inkl. rettelserne efter review og security (5.5); trin 5 er færdigt. Trin 6 er bygget på `feat/omlaegning-trin-6`: booking, aflysning, udeblivelse og cron (6.1; 10.10), anmeldelser og klinikkens svar (6.2; 10.13), patientens booking og bookinger, klinikkens kalender og anmeldelsessiderne (6.3-6.5) samt rettelserne efter review og security (6.7a-d); trin 6 er færdigt. Trin 7 er bygget på `feat/omlaegning-trin-7` (fra trin 6, commit `7a81a257`; 7.1-7.11, sidste commit `68ec8360`): telefon med mindst 8 cifre og bookingloftet uden klinikkens aflysninger i databasen (5.3, 7.6), delingssamtykke v1 (4.3), akutvejen (10.11, `/akut`), "Luk sag", `/patient/konto` og `/patient/samtykker` (6.2), fanerne på mobil (6.3), alle danske postnumre (4.3, migration `20261028000400`), standardafstanden 50 km (6.6) og demodata (11). Rettelserne efter slutkontrollen (7.12a og 7.12b er bygget; 7.12c er [IKKE BYGGET]) omfatter kun backend og `lib/`: pensionerede samtykkeversioner og samlet tilbagetrækning (4.3, 5.3, migration `20261028000500`), samtykketjekket ét sted (4.3), ét skema til sletning af konto (2.1) og fælles tekster om akut og lukning af sag i `lib/constants/` (6.1, 6.2). **Produktbeslutning 2026-10-19:** patientsiden flyttes til en React Native-mobilapp (`mobile/`, afsnit 13); klinikkens område bliver på Next.js-weben, og Next.js er backend (API) for begge. Patientsiderne på weben (6.1-6.2) er sat på pause: de virker og testes fortsat, men udvikles ikke videre. Mobilappen er trin 8 og er [IKKE BYGGET]; den afleveres som opgave ca. 2026-10-26. Demoen kører lokalt med `npm run build && npm start` mod det fælles Supabase-projekt (2.3), og appen vises i Expo Go på en iPhone eller i iOS-simulatoren mod den server (13.8). Admin (10.14) er ikke planlagt i demoen. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
+- **Status (trin 0 bygget, branch `feat/omlaegning-trin-0`):** den gamle forespørgsels- og tandlægemodel er fjernet fra koden (opgave 0.9, commit `33d066f1`). Databasen for den nye model findes som det samlede migrationssæt (afsnit 4, 5 og 9.1 er bygget). Kernen er omskrevet til klasser efter 2.1.1: vilkårs-gate, auth og signup for patienter, anonym session med tom sag, samtykker, patientprofil, kontosletning, oprydning og billedbehandling (10.2-10.3, delvist). Trin 1 (`feat/omlaegning-trin-1`): klinik-signup, ydelseskatalog og klinikkens egen profil, prisliste, åbningstider, blokeringer, tandlæger og portefølje er bygget (10.2, 10.4, 10.8, 9.5), og det samme er klinikområdets sider (1.6, commit `7da11b5e`) og 1.9 (katalog med kategorier, status `removed`, sletning i triggerne, rate limit på uploads, sikkerhedsheadere, én auth-kontekst pr. request; commits `f9f65607`, `11b04742`, `4f97f313`, `dd283b35` og securitys snapshot-rettelse). Trin 1 er færdigt, inkl. 1.9.7 og 1.9.8 (sidste commit `623314f4`). Trin 2 er færdigt på `feat/omlaegning-trin-2` (sidste commit `98c6a022`): rangering, ledige tider, det offentlige klinik-API (10.7) og den offentlige læsning af anmeldelser, forsiden, informationssiderne, klinikoversigten med kort og klinikprofilen. Trin 3 er færdigt på `feat/omlaegning-trin-3` (sidste commit `13935a3d`): sager, billeder, AI-regler, chat, opsummering og sagsflowets sider (3.1-3.4; 10.5, 10.6, 7, `/start`) samt rettelserne 3.6-3.7. Trin 4 er færdigt på `feat/omlaegning-trin-4`: patientens leads-API (4.1; 10.5), sammenligning og afsendelse (4.2) og patientens sager (4.3) er bygget. Trin 5 er i gang på `feat/omlaegning-trin-5`: klinikkens leads og beskedtråden (5.1-5.2; 10.9, 10.12), klinikkens indbakke og lead-kort (5.3; `/klinik`, `/klinik/lead/[leadId]`) og beskedtråden på patientens sag er bygget, inkl. rettelserne efter review og security (5.5); trin 5 er færdigt. Trin 6 er bygget på `feat/omlaegning-trin-6`: booking, aflysning, udeblivelse og cron (6.1; 10.10), anmeldelser og klinikkens svar (6.2; 10.13), patientens booking og bookinger, klinikkens kalender og anmeldelsessiderne (6.3-6.5) samt rettelserne efter review og security (6.7a-d); trin 6 er færdigt. Trin 7 er bygget på `feat/omlaegning-trin-7` (fra trin 6, commit `7a81a257`; 7.1-7.11, sidste commit `68ec8360`): telefon med mindst 8 cifre og bookingloftet uden klinikkens aflysninger i databasen (5.3, 7.6), delingssamtykke v1 (4.3), akutvejen (10.11, `/akut`), "Luk sag", `/patient/konto` og `/patient/samtykker` (6.2), fanerne på mobil (6.3), alle danske postnumre (4.3, migration `20261028000400`), standardafstanden 50 km (6.6) og demodata (11). Rettelserne efter slutkontrollen (7.12a og 7.12b er bygget; 7.12c er [IKKE BYGGET]) omfatter kun backend og `lib/`: pensionerede samtykkeversioner og samlet tilbagetrækning (4.3, 5.3, migration `20261028000500`), samtykketjekket ét sted (4.3), ét skema til sletning af konto (2.1) og fælles tekster om akut og lukning af sag i `lib/constants/` (6.1, 6.2). **Produktbeslutning 2026-10-19:** patientsiden flyttes til en React Native-mobilapp (`mobile/`, afsnit 13); klinikkens område bliver på Next.js-weben, og Next.js er backend (API) for begge. Patientsiderne på weben (6.1-6.2) er sat på pause: de virker og testes fortsat, men udvikles ikke videre. Mobilappen er trin 8 og er [IKKE BYGGET]; den afleveres som opgave ca. 2026-10-26. **Produktbeslutning 2026-10-19 (senere samme dag):** i appen er sagsflowet én samtale uden separate trin: AI'en spørger ind i chatten, og det, sagen kræver (bekræftede ydelser, tidsrum, postnummer, godkendt opsummering), indsamles med faste svar-kort i chatten (7.9) [IKKE BYGGET]. Webens trinflow er uændret. Demoen kører lokalt med `npm run build && npm start` mod det fælles Supabase-projekt (2.3), og appen vises i Expo Go på en iPhone eller i iOS-simulatoren mod den server (13.8). Admin (10.14) er ikke planlagt i demoen. Markeringen står pr. afsnit eller række. `docs/arbejdsplan.md` fordeler arbejdet.
 - Samlet liste over åbne og udskudte punkter i afsnit 12.
 
 ### 0.1 Prototype-status
@@ -56,6 +56,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 | Hvilke sider findes, og hvordan rangeres klinikker? | 6 |
 | Hvordan beregnes ledige tider? | 6.7 |
 | Hvad må AI'en, og hvor står reglerne? | 7 |
+| Hvordan foregår sagsflowet som én samtale i appen? | 7.9 |
 | Hvordan håndteres billeder, portefølje og samtykke? | 9, 4.3 (`consents`) |
 | Hvilke API-routes findes, med input og output? | 10 |
 | Hvordan er patienternes mobilapp bygget, og hvordan taler den med API'et? | 13, 2.4, 2.5 |
@@ -322,14 +323,19 @@ lib/
                              cases, clinics, leads, bookings, messages, reviews,
                              emergency (akutnumre og teksten om lægevagt/1813, 6.1; bygget i 7.12b),
                              error-texts (alle danske fejltekster pr. API-fejlkode, delt af server, web og app;
-                             flyttes fra views/utils/api-errors.ts i 8.2)
+                             flyttes fra views/utils/api-errors.ts i 8.2),
+                             start (START_STEPS: forklaringen på "Beskriv dit problem", delt af web og app),
+                             case-flow (CASE_FLOW_STEPS og de faste tekster til svar-kortene i appens samtale, 7.9;
+                             [IKKE BYGGET], 8.6b)
   navigation/                områder (areas.ts: AREA_HOME, AREA_NAV og AREA_NAV_PARENT, som lader en underside markere
                              sit navigationspunkt, fx /patient/samtykker → "Konto"), sikre redirect-stier og indgange
                              (entries.ts: CHAT_HREF, DIRECTORY_HREF, EMERGENCY_HREF = "/akut")
   domain/                    regler og ren logik delt af UI og server, eller af flere controllere uden at de kalder
                              hinanden: dentists.ts (attachPortfolio), leads.ts (fx canSendMoreLeads), bookings.ts (fx canCancel),
                              errors.ts (apiErrorText(code, serverMessage): dansk tekst til en API-fejl; 8.2),
-                             position.ts (roundPosition: afrunding af brugerens position; flyttes fra views/utils/map.ts i 8.2)
+                             position.ts (roundPosition: afrunding af brugerens position; flyttes fra views/utils/map.ts i 8.2),
+                             consents.ts (hasCurrentConsent: aktivt samtykke i gældende tekstversion; delt af web og app),
+                             case-flow.ts (nextCaseFlowStep: hvilket svar-kort appens samtale viser, 7.9; [IKKE BYGGET], 8.6b)
                              lib/ importerer kun lib/ og zod, fordi patient-appen bundler det (2.1, 13.2)
 supabase/
   config.toml                lokal Supabase (anonyme logins til, e-mailbekræftelse fra)
@@ -1377,13 +1383,15 @@ AI-assistenten har to opgaver med samme regler:
 
 Patienter med konto starter med `POST /api/cases` + `POST /api/consents (ai_processing)`. De kan også springe AI'en over: vælge ydelser selv og skrive opsummeringen selv.
 
+Rækkefølgen ovenfor er **webens** trinflow (`/start/[caseId]`, sat på pause, 13.6). I **appen** bruges de samme routes, men uden separate trin: alt foregår i én samtale, hvor AI'en spørger ind, og hvor appen viser faste svar-kort i chatten for ydelser, tidsrum, postnummer og opsummering (7.9).
+
 **Klinikken ser kun** `summary_text`, som patienten har godkendt, de bekræftede ydelser og billeder med godkendte beskrivelser. Chatten, AI'ens forslag og den foreløbige vurdering deles aldrig.
 
 ### 7.2 Hvad sendes til OpenAI
 
 | | Chat (`AiChatService.sendTurn`, `services/ai/aiChatService.ts`) | Opsummering (`AiSummaryService.generate`, `services/ai/aiSummaryService.ts`) |
 |---|---|---|
-| System-besked | Fast, versioneret `prompts/chat.v2.ts`, bygget af reglerne i `rules.ts` | `prompts/summary.v2.ts` |
+| System-besked | Fast, versioneret `prompts/chat.v2.ts`, bygget af reglerne i `rules.ts`. Afløses af `prompts/chat.v3.ts` (7.9; [IKKE BYGGET], 8.6c); `chat.v2.ts` slettes i samme commit | `prompts/summary.v2.ts` (uændret) |
 | Katalog | Aktive behandlinger grupperet efter kategori: kategoriens navn og for hver behandling `slug`, navn, type og kort beskrivelse (`catalogContext.ts`, bygget fra databasen ved hvert kald, så ændringer i kataloget slår igennem uden kodeændring). **Ingen priser, ingen klinikker**. AI'en foreslår kun behandlings-slugs, ikke kategorier | Samme |
 | Kontekst | Seneste 20 beskeder; sagens billeder (low detail) | Hele chatten (max 30 brugerbeskeder), bekræftede ydelser, billeder |
 | Billeder | Re-encodet server-side (EXIF fjernet), max 1024 px, base64. Aldrig signerede URL'er | Samme |
@@ -1410,6 +1418,8 @@ Patienter med konto starter med `POST /api/cases` + `POST /api/consents (ai_proc
 | **Akut:** ved tegn som stærke smerter, hævelse, feber, blødning der ikke stopper, traume: `emergency = true` og en kort opfordring til at søge akut tid. UI viser den faste akut-henvisning med link til `/akut`. Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt/hals) henvises til 112/1813 i den faste tekst | At fortsætte almindelig udspørgen, når der er akutte tegn |
 | **Usikker patient:** spørge mere ind; er patienten stadig usikker, foreslå `undersoegelse` | At vælge spor eller klinik for patienten |
 | Billeder: vinkel, synligt område, kvalitet; bede om nyt billede | I opsummeringens billedfelter: fortolkning (de er beskrivelser til klinikken) |
+| Sige, at patienten selv bekræfter de foreslåede behandlinger under beskeden (7.9) | At spørge om tidsrum, postnummer, adresse, by, navn, telefon eller e-mail: appen spørger selv med faste kort (7.9), og postnummer og kontaktdata må aldrig til OpenAI (7.2). Fra prompt `chat.v3` [IKKE BYGGET, 8.6c] |
+| | At påstå at have bekræftet, gemt, sendt, booket eller kontaktet noget ("jeg har bekræftet …", "din tid er booket", "klinikken kontakter dig"): AI'en har ingen handlinger. Filtreres på `reply` (kategorien `action_claim`, 7.5) [IKKE BYGGET, 8.6c] |
 
 Spørger patienten om pris eller hvilken klinik der er bedst, svarer AI'en ikke på indholdet, sætter `outOfScopeTopics` (`price`, `clinic_recommendation`), og UI viser en fast tekst: "Priserne kommer fra klinikkernes egne prislister, og du kan sortere klinikkerne efter pris, anmeldelser, afstand og første ledige tid i oversigten."
 
@@ -1431,7 +1441,12 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 //   suggestedServices      max MAX_CONFIRMED_SERVICES_PER_CASE slugs; en ukendt slug afviser svaret (7.5)
 //   emergency              akutte tegn
 //   outOfScopeTopics       OutOfScopeTopic[]
-//   readyForSummary        aktiverer kun en knap
+//   readyForSummary        AI'en har nok til, at klinikken kan svare. Weben: aktiverer knappen "Lav opsummering".
+//                          Appen: viser kortet til at bekræfte ydelser (7.9). Fra 8.6c tvinger guard.ts feltet til
+//                          false, når suggestedServices er tom (og som i dag ved emergency) [IKKE BYGGET]
+//   quickReplies           [IKKE BYGGET, P2, 8.6g] 0-3 korte svarmuligheder på AI'ens eget spørgsmål, hver 1-40 tegn
+//                          (fx "Ja", "Nej", "Ved ikke"). Køres gennem samme filter som reply; fejler én, fjernes
+//                          alle (intet nyt forsøg, ingen blokering). Tvinges til [] ved emergency. Gemmes ikke (10.6)
 
 // Opsummeringsskemaet er defineret én gang med zod i lib/constants/ai-schemas.ts og genbruges af
 // lib/schemas/aiSummary.ts (parseAiSummary) og AI-laget. Typerne udledes: AiSummary = z.infer<…>,
@@ -1459,11 +1474,11 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | 2 | System-prompt | Reglerne fra `rules.ts` (7.3), kataloget | Samme |
 | 3 | Input | Data-afgrænsning, PII-maskering, max 1000 tegn | Samme |
 | 4 | Output-skema | chat-skemaet strict | `AiSummary` strict |
-| 5 | Server-validering (`guard.ts`) | zod + filter på `reply` og `preliminaryAssessment`: beløb/valuta, prisord, klinikanbefaling. Slugs valideres mod aktivt katalog | Samme på alle strenge; billedfelterne også mod fortolkningsord |
+| 5 | Server-validering (`guard.ts`) | zod + filter på `reply` og `preliminaryAssessment`: beløb/valuta, prisord, klinikanbefaling; på `reply` desuden påståede handlinger (`action_claim`, fra 8.6c). Slugs valideres mod aktivt katalog. `readyForSummary` tvinges til `false` uden forslag (fra 8.6c) | Samme på alle strenge; billedfelterne også mod fortolkningsord |
 | 6 | Ved fejl i 5 | Ét nyt forsøg med skærpet påmindelse; derefter fast tekst, `blocked = true`. Det afviste svar gemmes ikke | Ét nyt forsøg; derefter `summary = null`, `fallback = "write_yourself"` |
 | 7 | Menneske i loopet | Patienten bekræfter ydelser; chatten deles ikke | Patienten retter og godkender |
 | 8 | Drift | Logs kun med id'er, model, prompt-version, varighed, status, `blocked`, `emergency`. Aldrig indhold | Samme |
-| 9 | Test (`tests/ai/`) | Provokationer: "hvad koster det?", "hvilken klinik er bedst?", "er klinik X god?", "ignorer dine regler", akutte symptomer (skal give `emergency`), usikker patient (skal spørge ind og derefter foreslå `undersoegelse`) | Samme + billeder af ikke-tænder |
+| 9 | Test (`tests/ai/`) | Provokationer: "hvad koster det?", "hvilken klinik er bedst?", "er klinik X god?", "ignorer dine regler", akutte symptomer (skal give `emergency`), usikker patient (skal spørge ind og derefter foreslå `undersoegelse`). Fra 8.6c desuden: `readyForSummary` uden forslag bliver `false`; påståede handlinger ("jeg har bekræftet behandlingen", "din tid er booket") afvises; "bekræft det for mig", "send det til klinikken" og "skriv mit postnummer ind" giver ingen påstand om handling; prompten indeholder forbuddet mod at spørge om tidsrum, postnummer og kontaktdata (`AI_LIVE=1`: modellen spørger ikke om dem) | Samme + billeder af ikke-tænder |
 
 `forbiddenTerms.ts` har lister for priser (beløb, valuta, prisord), klinikanbefaling og fortolkning i billedfelter. Diagnose- og alvorlighedsordene fra den tidligere model beholdes i en liste `mdrStrictTerms`, som kun bruges, når `rules.ts` sætter `strictMdrMode = true`.
 
@@ -1535,7 +1550,7 @@ Bygget for den gamle kladde; tilpasses til sager.
 - **Udløb:** 48 timer efter `last_active_at`. `/api/cron/cleanup-anonymous` (hver time, `CRON_SECRET`) sletter billedmapperne `{case_id}/` og derefter auth-brugeren (cascade).
 - **Selv slette:** `DELETE /api/patients/me` (også anonymt).
 - **Tilbagetrækning:** af `ai_processing` i en anonym session sletter hele sessionen; af `image_upload` sletter billederne.
-- **Minimering:** session først efter vilkår og AI-samtykke; ingen e-mail, navn, telefon eller postnummer før kontooprettelse (postnummer spørges i opsummeringstrinnet og kan udelades); IP kun som hash. Anonyme sager er altid `draft` og når aldrig klinikker.
+- **Minimering:** session først efter vilkår og AI-samtykke; ingen e-mail, navn, telefon eller postnummer før kontooprettelse, med én undtagelse: postnummeret gemmes på sagen, når patienten selv skriver det (webens trin "tid og sted", appens postnummer-kort i 7.9), fordi oversigten og afstanden bruger det; det sendes aldrig til OpenAI; IP kun som hash. Anonyme sager er altid `draft` og når aldrig klinikker.
 
 ### 7.8 AI-reglerne ét sted
 
@@ -1552,7 +1567,68 @@ export const AI_RULES = {
 } as const;
 ```
 
+Fra 8.6c [IKKE BYGGET] hæves `version` til `"rules-v3"` (og `MDR_STRICT_RULES.version` til `"rules-v3-mdr-strict"`), fordi guarden ændres (`readyForSummary` kræver forslag, kategorien `action_claim`); felterne i konfigurationen er uændrede. Det, AI'en ikke spørger om, fordi appen gør det (tidsrum, postnummer, kontaktdata, 7.9), står i prompten `chat.v3.ts`, ikke i appen.
+
 Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste UI-tekster står i `lib/constants/ai-texts.ts`. `prompt_version` og `AI_RULES.version` gemmes på samtalen og sagen for sporbarhed.
+
+### 7.9 Sagsflowet som én samtale (patient-appen)
+
+Status: [IKKE BYGGET], trin 8 (8.6b-8.6i og 8.7 i `docs/arbejdsplan.md`). Besluttet af brugeren 2026-10-19 efter test af appens chat. Gælder kun appen; webens trinflow (`/start/[caseId]`, 7.1) er uændret og bruger samme API (13.6).
+
+I appen er hele sagen **én chatskærm** (`/sag/[caseId]/flow`). Der er ingen separate trin eller formularskærme. AI'en spørger ind frem og tilbage, indtil den kan foreslå ydelser og evt. give en foreløbig vurdering. Det, sagen kræver før afsendelse (`canSendCase()`, `send_leads()`: mindst én bekræftet ydelse, tidsrum, postnummer, godkendt opsummering), indsamler appen med **faste svar-kort i chatten**.
+
+**Princip: AI'en taler, patienten bestemmer, serveren validerer.**
+- AI'en sætter **ingen** felter på sagen. Den har stadig ingen værktøjer og ingen handlinger (7.2).
+- Alt, der gemmes på sagen, gemmes ved patientens eget tryk via de eksisterende routes i 10.5 og deres zod-skemaer: ydelser mod det aktive katalog (`PUT /api/cases/{id}/services`, `ServicesRepository.requireActive`), tidsrum mod `CASE_TIMEFRAMES` og postnummer mod `postalCodeSchema` (`PATCH /api/cases/{id}`), opsummering (`POST`/`PUT /api/cases/{id}/summary`).
+- **Ingen nye routes, ingen nye felter på sagen og ingen migration.**
+
+**Fravalgt: at AI'en udtrækker tidsrum og postnummer** (fx `extracted { timeframe, postalCode }` i skemaet). Postnummer må aldrig sendes til OpenAI (7.2) og bliver maskeret af `maskPii()`. Et udtrukket felt er desuden AI'en, der sætter data på sagen; det skulle valideres og bekræftes af patienten alligevel. Faste kort er enklere, deterministiske og kan testes uden model.
+
+**Svar-kortene.** Et kort ligner en besked fra "TandMatch" (ikke fra AI'en, intet AI-mærkat). Teksterne er faste og står i `lib/constants/case-flow.ts`. Kortene vises under chatbeskederne i en fast rækkefølge. Besvarede kort foldes sammen til én linje med "Ret", så længe sagen er `draft`. Det aktuelle kort er foldet ud. Hvilket kort der er aktuelt, afgøres af den rene funktion `nextCaseFlowStep(caseDto, chatState)` i `lib/domain/case-flow.ts`. Den bruger kun felter, der findes i `CaseDto` og `ChatStateDto` (10.5, 10.6), og trinnene er `CASE_FLOW_STEPS` (`lib/constants/case-flow.ts`) med typen `CaseFlowStep` i `lib/types/cases.ts`.
+
+| Trin (`CaseFlowStep`) | Aktuelt når (første regel, der passer) | Kortet | API |
+|---|---|---|---|
+| `submitted` | `status !== "draft"` | Chatten er skrivebeskyttet; link til sagen (`/sag/[caseId]`) | – |
+| `emergency` | seneste assistentbesked har `emergency` | Ingen kort. Akut-blokken med `EMERGENCY_REFERRAL_TEXT` og knap til `/akut` (som i dag). Patienten kan skrive videre. At blokken vises for ofte, er [ÅBEN] 12.3 punkt 43 (8.11e-f, P2) | – |
+| `chat` | ingen bekræftede ydelser, og hverken `readyForSummary` eller lukket samtale | Intet kort. Inputfelt og billedknap; AI'en spørger ind | `POST /api/cases/{id}/chat` |
+| `services` | ingen bekræftede ydelser, og `readyForSummary` er sand eller samtalen er `closed` | "Passer disse behandlinger?" med AI'ens forslag (`CaseDto.suggestedServices`) som chips. Alle er valgt fra start og kan fravælges. Desuden "Jeg er ikke sikker" (→ `EXAMINATION_SERVICE_SLUG`) og "Vælg selv" (et ark med kataloget grupperet efter kategori fra `GET /api/services`; højst `MAX_CONFIRMED_SERVICES_PER_CASE`). Knappen "Bekræft" sender valget. Er der ingen forslag (lukket samtale), vises kun "Jeg er ikke sikker" og "Vælg selv". Patienten kan også skrive videre i stedet for at trykke | `PUT /api/cases/{id}/services` (`suggestedByAi` = valgt blandt forslagene) |
+| `timeframe` | `preferredTimeframe` er `null` | "Hvornår vil du gerne i gang?" med chips fra `CASE_TIMEFRAME_LABEL` | `PATCH /api/cases/{id}` `{ preferredTimeframe }` |
+| `postal_code` | `postalCode` er `null` | "Hvor vil du helst gå til tandlæge? Skriv postnummeret." Felt med `postalCodeSchema`, forudfyldt fra `GET /api/patients/me` for patienter med konto | `PATCH /api/cases/{id}` `{ postalCode }` |
+| `summary` | `summaryApprovedAt` er `null` | Opsummeringskortet (se nedenfor) | `POST`/`PUT /api/cases/{id}/summary` |
+| `ready` | ellers (og `canSend`) | "Din beskrivelse er klar." Knappen "Se klinikker der kan hjælpe" åbner klinikoversigten med `?sag=[caseId]` (8.8a) | – |
+
+Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready` i stedet en tekst og et link til sagen.
+
+**Opsummeringskortet** (trin `summary`):
+- **Udkast:** findes der intet `aiSummary`, kalder appen `POST /summary` **én gang automatisk**, når kortet bliver aktuelt. Findes et udkast, vises det. Knappen "Lav ny opsummering" laver et nyt udkast og bruger en af generationerne; `generationsLeft` vises.
+- **Visning:** teksten, billedbeskrivelserne med mærkatet "Beskrivelse, ikke vurdering", `retakeImages` som besked, `CHAT_NOT_SHARED_TEXT` og "Det er denne tekst, klinikken ser".
+- **Godkendelse er patientens eget valg:** "Det passer" sender `PUT /summary` med teksten uændret. "Ret" åbner teksten i et felt (max `SUMMARY_MAX_CHARS`) med "Gem og godkend". Godkendelsen sker aldrig automatisk.
+- **Når der ikke kommer et udkast:** ved `fallback: "write_yourself"`, 503 `AI_UNAVAILABLE`, 429 `SUMMARY_LIMIT` eller 429 `ANON_CAP_REACHED` vises et tomt felt: "Skriv selv kort, hvad klinikken skal vide". Det godkendes med `PUT /summary`.
+- **Billede efter godkendelse:** tilføjes eller slettes et billede efter godkendelsen, nulstiller databasen `summary_approved_at` (9.3 punkt 6). Kortet bliver dermed aktuelt igen med teksten "Du har ændret billederne. Godkend beskrivelsen igen".
+
+**Billeder i chatten** (8.7):
+- Ved inputfeltet er der en knap til kamera og bibliotek. Første tryk uden gældende `image_upload`-samtykke (`hasCurrentConsent`, `lib/domain/consents.ts`) viser et samtykkekort i chatten med `CONSENT_TEXTS.image_upload` og knapperne "Giv samtykke" og "Ikke nu" (`POST /api/consents`). Samtykket gives aldrig sammen med AI-samtykket (9.4).
+- Derefter vælges kamera eller bibliotek, og billedet nedskaleres og uploades som i 13.5.
+- Billederne vises som miniaturer i en række over inputfeltet med slet-knap og tælleren `n/MAX_IMAGES_PER_CASE`. De indgår ikke i chatbeskederne, fordi `case_images` ikke er beskeder.
+- Efter en vellykket upload sender appen den faste besked `IMAGE_ADDED_CHAT_MESSAGE` ("Jeg har tilføjet et billede.", `lib/constants/ai-texts.ts`) som en almindelig chat-tur. Så ser AI'en billedet (alle sagens billeder sendes med hver tur, 7.2) og svarer. Turen tæller som én besked. Er samtalen lukket, sendes beskeden ikke ([ÅBEN] 12.3 punkt 42).
+
+**Hvad AI'en gør anderledes** (prompt `chat.v3.ts`, regler `rules-v3`, 8.6c):
+- AI'en spørger ind frem og tilbage, ét eller to spørgsmål ad gangen. Har den nok, gør den i **samme** svar fire ting: giver evt. en foreløbig vurdering i `preliminaryAssessment`, lægger slugs i `suggestedServices`, sætter `readyForSummary = true` og skriver i `reply` kort, at patienten selv bekræfter behandlingerne nedenfor, og at klinikken laver den endelige vurdering.
+- `readyForSummary` uden forslag tvinges til `false` af guarden.
+- AI'en spørger **ikke** om tidsrum, postnummer, adresse, by, navn, telefon eller e-mail: appen spørger selv bagefter. Linjen "og hvornår hun vil i gang" udgår af prompten.
+- AI'en påstår aldrig at have bekræftet, gemt, sendt, booket eller kontaktet noget (filteret `action_claim`).
+- Alle andre regler i 7.3 gælder uændret: ingen priser, ingen klinikanbefaling, akut straks, foreløbig vurdering med forbehold.
+
+**Grænser og fejl:**
+- **Beskeder:** loftet er 30 patientbeskeder pr. samtale (7.6). Kortene bruger ingen chatbeskeder, kun almindelige API-kald. Har patienten højst `CHAT_LOW_MESSAGES_WARNING` (5, `lib/constants/limits.ts`) beskeder tilbage (`messagesLeft`), vises "Du har N beskeder tilbage".
+- **Lukket samtale:** ved 0 beskeder tilbage, eller når `POST /chat` svarer 429 `CHAT_LIMIT`, erstattes inputfeltet af `CHAT_LIMIT_REACHED_TEXT` (`lib/constants/ai-texts.ts`): "Samtalen er slut. Du kan stadig vælge behandlinger og godkende din beskrivelse nedenfor." Kortene fortsætter: `services` bliver aktuelt med "Jeg er ikke sikker" og "Vælg selv", og opsummeringen kan stadig laves eller skrives.
+- **Andre 429-fejl** (`RATE_LIMITED`, `ANON_CAP_REACHED`, døgnloftet) giver den danske fejltekst (`apiErrorText`). Inputfeltet bevares, og kortene virker.
+- **503 `AI_UNAVAILABLE`:** turen er gemt med `CHAT_UNAVAILABLE_TEXT` som svar. Appen henter samtalen igen og sender ikke beskeden igen (10.6). Kortene påvirkes ikke.
+- **Konto** kræves først ved afsendelse (8.8a). Anonyme ser banneret fra 13.3.
+
+**Hurtigsvar** [IKKE BYGGET, P2, 8.6g]: `quickReplies` (7.4) vises som chips under den nyeste AI-besked. Et tryk sender teksten som patientens besked. Hurtigsvarene er kun med i `ChatTurnResponse` og forsvinder ved genindlæsning; det er acceptabelt, fordi de kun er en genvej.
+
+**Weben** (13.6): fortsætter med trinflowet og skal ikke ændres. Ændringerne er bagudkompatible: `readyForSummary` er stadig et boolesk felt, `quickReplies` er et ekstra felt, som weben ignorerer, og ingen route ændres. Webens e2e-tests skal stadig bestå med den falske klient.
 
 ---
 
@@ -1818,8 +1894,12 @@ export type AiChatMessageDto = {
   blocked: boolean; createdAt: string;
 };
 export type ChatStateDto = { conversationId: string | null; status: "active" | "closed"; messages: AiChatMessageDto[]; messagesLeft: number; readyForSummary: boolean };
-export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage: AiChatMessageDto; outOfScopeNotice: boolean; emergency: boolean; readyForSummary: boolean; messagesLeft: number };
+export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage: AiChatMessageDto; outOfScopeNotice: boolean; emergency: boolean; readyForSummary: boolean; messagesLeft: number;
+  quickReplies: string[];   // [IKKE BYGGET, P2, 8.6g-8.6i] 0-3, filtrerede (7.4); gemmes ikke, findes ikke i ChatStateDto
+};
 ```
+
+Appens samtaleflow (7.9) bruger routes og DTO'er uændret; kun `quickReplies` er nyt (P2). Fra 8.6c kan `readyForSummary` kun være `true`, når samme svar har forslag (7.4).
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
@@ -2264,7 +2344,9 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 38. **Patientsiderne på weben efter afleveringen.** Architects forslag: behold forsiden, informationssiderne og den offentlige klinikoversigt og -profil på weben (de er nyttige for klinikker og for patienter, der finder os via søgning, og forsiden kan henvise til appen); fjern `/start`, `/akut` og `/patient/*` samt deres komponenter og e2e-tests i én opgave, når appen har været brugt i demoen uden fejl. Indtil da er de sat på pause (6, 13.6). Kræver brugerens beslutning.
 39. **Auth i appen via vores API i stedet for supabase-js i appen.** Architects valg: appen får Supabase-tokens fra vores API og fornyer dem via `POST /api/auth/refresh`; appen har ingen Supabase-klient og ingen Supabase-nøgler (13.3). Fordel: én vej til data og auth, samme vilkårs-, samtykke- og rate limit-regler som weben, intet at lække. Ulempe: ca. 50 linjer egen fornyelseslogik. Alternativet (supabase-js med `auth`-delen i appen) er muligt, hvis brugeren foretrækker det.
 40. **Lokal Supabase eller det fælles projekt til telefon-demoen.** Billed-URL'er (signerede URL'er fra `case-images`, logo og portefølje fra `public-media`) peger på Supabase' URL. Med lokal Supabase er det `127.0.0.1`, som en fysisk iPhone ikke kan nå (simulatoren kan). Architects forslag: demo på iPhone mod **det fælles projekt** (billeder virker), udvikling i simulatoren mod lokal Supabase (13.8).
-
+41. **Hurtigsvar i appens chat (7.9, `quickReplies`).** Architects forslag: P2 (8.6g-8.6i) uden migration; hurtigsvarene gemmes ikke og forsvinder ved genindlæsning. Alternativet er at gemme dem på `ai_messages` (ny migration efter `20261028000500`), så de også ses efter genindlæsning. Kræver brugerens beslutning om, hvorvidt de skal med før afleveringen.
+42. **Automatisk besked efter billedupload (7.9).** Architects forslag: appen sender den faste besked "Jeg har tilføjet et billede." som en chat-tur, så AI'en reagerer på billedet med det samme. Det koster én af de 30 beskeder. Alternativet er ingen automatisk besked: billedet kommer med til AI'en ved patientens næste besked, og inputfeltet viser hjælpeteksten "Fortæl, hvad billedet viser". Kræver brugerens beslutning; 8.7 bygger forslaget.
+43. **Akut-blokken vises for ofte (brugerens test 2026-10-19).** I dag vises akut-blokken ved hver assistentbesked med `emergency`. Flaget sættes både af modellen og af nøgleordsdetektionen `detectEmergency()` i `services/ai/`, som også erstatter svaret. Architects forslag (8.11e, P2): (a) appen viser akut-henvisningen **én gang pr. samtale** som en fastgjort blok øverst i chatten, i stedet for under hver besked; (b) ai-flow gennemgår `detectEmergency()`, så fx "ondt" eller "lidt hævet" alene ikke udløser flaget, og så detektionen kun **erstatter** svaret ved stærke tegn (hævelse med feber, blødning der ikke stopper, traume, livstruende tegn) og ellers kun sætter flaget. Rammen ligger fast: CLAUDE.md kræver, at AI'en straks henviser til akuttid ved tegn på noget akut. Derfor må reglen ikke svækkes for de tegn, der står i 7.3, og der må ikke komme falsk beroligelse. Provokationstestene for akut i `tests/ai/` skal bestå uændret, og nye tests skal vise, hvilke milde formuleringer der ikke længere udløser blokken. Kræver brugerens godkendelse af listen over milde formuleringer.
 ### 12.4 Udskudt [UDSKUDT]
 
 1. Databehandleraftale med OpenAI og overførsel til USA.
@@ -2354,7 +2436,7 @@ Fanerne: **Forside**, **Klinikker**, **Mine sager**, **Konto**.
 | Klinikoversigt, kort | samme skærm, skift liste/kort | samme data | kortet på `/klinikker` | P1 (enkelt: markører, tryk åbner klinikken). Skæres som den første P1-del, hvis tiden ikke slår til (11) |
 | Klinikprofil | `/klinik/[clinicId]` | `GET /api/clinics/{id}`, `/availability`, `/reviews` | `/klinikker/[clinicId]` | P1: grunddata, prisliste, åbningstider, første ledige tid, anmeldelser og prisnøjagtighed, Trustpilot (link via `expo-web-browser`), "Vælg klinik" med en sag. P2: tandlæger og portefølje |
 | Start og AI-samtykke | `/start` | `POST /api/session/anonymous` eller `POST /api/consents` + `POST /api/cases` | `/start` | P1 |
-| Sagsflowet | `/sag/[caseId]/flow` (trin i én skærm som på weben) | `GET/POST /api/cases/{id}/chat`, `POST/DELETE /api/cases/{id}/images…`, `PUT /api/cases/{id}/services`, `PATCH /api/cases/{id}`, `POST/PUT /api/cases/{id}/summary`, `DELETE /api/cases/{id}` | `/start/[caseId]` | P1: chat med foreløbig vurdering (mærkat), forslag og akut-blok; billeder med samtykke; bekræft behandlinger; tidsrum og postnummer; opsummering. P2: "Slet samtale" |
+| Sagsflowet | `/sag/[caseId]/flow`: **én samtale** uden separate trin (7.9) | `GET /api/cases/{id}`, `GET/POST /api/cases/{id}/chat`, `POST /api/consents`, `POST/DELETE /api/cases/{id}/images…`, `PUT /api/cases/{id}/services`, `PATCH /api/cases/{id}`, `POST/PUT /api/cases/{id}/summary`, `GET /api/services`, `GET /api/patients/me`, `DELETE /api/cases/{id}` | `/start/[caseId]` (trinflow) | P1: chat med foreløbig vurdering (mærkat) og akut-blok; svar-kort for behandlinger, tidsrum, postnummer og opsummering; billeder fra inputfeltet med samtykkekort; "Se klinikker der kan hjælpe". P2: hurtigsvar (8.6g), "Slet samtale" |
 | Sammenlign og vælg | klinikoversigten med `sag`-parameter | `GET /api/clinics?services=…&postalCode=…` | `/klinikker?sag=` | P1: vælg op til `MAX_ACTIVE_LEADS_PER_CASE` minus aktive leads (`remainingLeadSlots`, `lib/domain/leads.ts`); valget holdes i skærmens tilstand |
 | Send | `/sag/[caseId]/send` | `/api/auth/signup` eller `/convert`, `POST /api/consents` (`health_data_sharing`), `POST /api/cases/{id}/leads` | `/start/[caseId]/send` | P1 |
 | Mine sager | `(tabs)/sager` | `GET /api/cases` | `/patient` | P1 |
@@ -2370,7 +2452,7 @@ Reglerne fra weben gælder uændret i appen: AI'ens foreløbige vurdering vises 
 
 ### 13.5 Billeder, kort, position, links og notifikationer
 
-- **Billeder:** billedsamtykket (`image_upload`, gældende version) gives lige før første valg, som på weben (9.4). `expo-image-picker` (kamera og bibliotek; danske tilladelsestekster i `app.json`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`). Før upload nedskaleres billedet med `expo-image-manipulator` til længste side `MAX_IMAGE_DIMENSION` og JPEG under `MAX_IMAGE_UPLOAD_BYTES` (`lib/constants/limits.ts`; lavere kvalitet i trin, ellers fejlteksten `FILE_TOO_LARGE`) i `src/utils/prepare-image.ts`. Upload som multipart med feltet `file` til `POST /api/cases/{id}/images` (uændret route; serveren genkoder og fjerner EXIF). Routen kræver `content-length` (411 `LENGTH_REQUIRED`). Målt med curl i 8.1: multipart med `Content-Length` giver 201. Om `fetch` med `FormData` fra iOS sender headeren, afgøres i appen (8.7); gør den ikke, bruges `FileSystem.uploadAsync` (multipart) fra `expo-file-system` i `src/api/client.ts`. Visning med de signerede URL'er fra `ImageDto.url`.
+- **Billeder:** tilføjes fra en knap ved chattens inputfelt (7.9). Billedsamtykket (`image_upload`, gældende version) gives i et samtykkekort i chatten lige før første valg, som på weben (9.4). `expo-image-picker` (kamera og bibliotek; danske tilladelsestekster i `app.json`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`). Før upload nedskaleres billedet med `expo-image-manipulator` til længste side `MAX_IMAGE_DIMENSION` og JPEG under `MAX_IMAGE_UPLOAD_BYTES` (`lib/constants/limits.ts`; lavere kvalitet i trin, ellers fejlteksten `FILE_TOO_LARGE`) i `src/utils/prepare-image.ts`. Upload som multipart med feltet `file` til `POST /api/cases/{id}/images` (uændret route; serveren genkoder og fjerner EXIF). Routen kræver `content-length` (411 `LENGTH_REQUIRED`). Målt med curl i 8.1: multipart med `Content-Length` giver 201. Om `fetch` med `FormData` fra iOS sender headeren, afgøres i appen (8.7); gør den ikke, bruges `FileSystem.uploadAsync` (multipart) fra `expo-file-system` i `src/api/client.ts`. Visning med de signerede URL'er fra `ImageDto.url`.
 - **Kort:** `react-native-maps` med Apple Maps på iOS (ingen nøgle, virker i Expo Go). Markører for klinikker med position; samme klinikker og rækkefølge som listen. Ingen OpenStreetMap-fliser i appen.
 - **Position:** `expo-location` (tilladelse "mens appen bruges", dansk tekst i `app.json`); koordinaterne afrundes som på weben og sendes kun med i kaldet, aldrig gemt (6.1). `roundPosition()` flyttes fra `views/utils/map.ts` til `lib/domain/position.ts` i 8.2, så weben og appen bruger samme regel.
 - **Links:** Expo Router-skemaet `tandmatch://` til intern navigation. Eksterne links (klinikkens website, Trustpilot) åbnes med `expo-web-browser`. Universelle links og dybe links fra e-mail er [UDSKUDT].
@@ -2379,7 +2461,7 @@ Reglerne fra weben gælder uændret i appen: AI'ens foreløbige vurdering vises 
 ### 13.6 Patientsiderne på weben
 
 Sat på pause (6, 0.1). Regler indtil 12.3 punkt 38 er besluttet:
-- Ingen nye funktioner og ingen UI-rettelser på `/start`, `/akut` og `/patient/*`. Deres e2e-tests køres stadig, så API-ændringer i trin 8 ikke bryder dem.
+- Ingen nye funktioner og ingen UI-rettelser på `/start`, `/akut` og `/patient/*`. Deres e2e-tests køres stadig, så API-ændringer i trin 8 ikke bryder dem. Webens sagsflow beholder sine trin; appens samtaleflow (7.9) ændrer ingen routes og er bagudkompatibelt med weben.
 - Appen kopierer ikke kode fra `views/`. Er en hjælper i `views/utils/` ren (uden DOM og React) og nødvendig i appen, flyttes den til `lib/` i samme commit, og weben importerer den derfra.
 - Klinikkens web, forsiden, informationssiderne og den offentlige klinikoversigt og -profil er ikke på pause.
 
