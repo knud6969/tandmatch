@@ -81,8 +81,8 @@ describe("AiChatService", () => {
     expect(client.calls).toHaveLength(2);
     expect(client.calls[1].instructions).toContain("overtrådte reglerne");
     expect(client.calls[0].instructions).not.toContain("overtrådte reglerne");
-    expect(out.promptVersion).toBe("chat.v2");
-    expect(out.rulesVersion).toBe("rules-v2");
+    expect(out.promptVersion).toBe("chat.v3");
+    expect(out.rulesVersion).toBe("rules-v3");
     expect(out.model).toBe("fake-model");
   });
 

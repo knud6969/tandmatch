@@ -15,7 +15,8 @@ export type ForbiddenCategory =
   | "mdr_strict" // diagnose- og alvorlighedsord. Kun når rules.strictMdrMode er true
   | "assessment" // foreløbig vurdering i en tekst, hvor den ikke hører hjemme (reply og opsummeringen)
   | "speculation" // gætteri uden diagnoseord ("sandsynligvis", "ligner en …"). Kun i opsummeringen
-  | "image_interpretation"; // fortolkning i billedfelter
+  | "image_interpretation" // fortolkning i billedfelter
+  | "action_claim"; // påstand om at have bekræftet, gemt, sendt, booket eller kontaktet noget. Kun i reply (7.9)
 
 const L = String.raw`\p{L}`;
 const rx = (source: string) => new RegExp(source, "iu");
@@ -167,6 +168,18 @@ const IMAGE_INTERPRETATION_PATTERNS: RegExp[] = [
   rx(String.raw`karies|caries|hul\b|huller|infektion|betænd|abces|revn|knæk|skade|ødelagt|rådden|dårlig|sund|usund|slid|slidt|erosion|misfarv|plak|tandsten|paradentos|alvorlig|bekymr|problem|ser\s+ud\s+til|tyder|ligner|muligvis|sandsynlig|formentlig|normal|unormal|skæv`),
 ];
 
+// ---------- Påståede handlinger (kun reply, architecture 7.9) ----------
+// AI'en har ingen værktøjer og kan ikke bekræfte, gemme, sende, booke eller kontakte. Patienten gør det selv i appen.
+const ACTION_VERB = String.raw`(?:bekræftet|bekræfter|valgt|vælger|booket|booker|sendt|sender|bestilt|bestiller|gemt|gemmer|kontaktet|kontakter|registreret|registrerer|oprettet|opretter|reserveret|reserverer|noteret|noterer|indsendt|indsender|videresendt|videresender|confirmed|booked|sent|saved|scheduled|submitted)`;
+const ACTION_CLAIM_PATTERNS: RegExp[] = [
+  rx(String.raw`(?<!${L})(jeg|vi)\s+(?:har\s+|har\s+nu\s+|har\s+allerede\s+|har\s+lige\s+|har\s+så\s+|vil\s+nu\s+|skal\s+nok\s+|kan\s+godt\s+|lige\s+|nu\s+|i\s+det\s+samme\s+)*${ACTION_VERB}(?!${L})`),
+  rx(String.raw`(?<!${L})i\s+(?:have|has|will)\s+(?:now\s+)?${ACTION_VERB}|(?<!${L})i'?(?:ll|ve)\s+(?:now\s+)?${ACTION_VERB}`),
+  rx(String.raw`(?<!${L})(din|dit|dine|tiden|aftalen|behandlingen|behandlingerne|henvendelsen|beskrivelsen|opsummeringen|forespørgslen|bookingen|ydelsen|ydelserne|valget)\s+(?:${L}+\s+)?(?:er|bliver|blev)\s+(?:nu\s+|allerede\s+|hermed\s+)*${ACTION_VERB}(?!${L})`),
+  rx(String.raw`(?<!${L})klinikken?\s+(?:vil\s+)?(?:snart\s+|nu\s+)?(?:kontakter|ringer\s+til|skriver\s+til|vender\s+tilbage\s+til|tager\s+kontakt\s+til)\s+(?:dig|dem)`),
+  rx(String.raw`(?<!${L})(?:klinikkerne|tandlægen)\s+(?:vil\s+)?(?:snart\s+)?(?:kontakter|ringer\s+til|skriver\s+til|vender\s+tilbage\s+til)\s+(?:dig|dem)`),
+  rx(String.raw`(?<!${L})har\s+(?:nu\s+)?(?:bekræftet|booket|sendt|bestilt|gemt|kontaktet)\s+(?:din|dit|dine|det|den|dem|behandlingen|behandlingerne)`),
+];
+
 const PATTERNS: Record<Exclude<ForbiddenCategory, "mdr_strict">, RegExp[]> = {
   price: PRICE_PATTERNS,
   clinic_recommendation: CLINIC_PATTERNS,
@@ -174,6 +187,7 @@ const PATTERNS: Record<Exclude<ForbiddenCategory, "mdr_strict">, RegExp[]> = {
   assessment: ASSESSMENT_PATTERNS,
   speculation: SPECULATION_PATTERNS,
   image_interpretation: IMAGE_INTERPRETATION_PATTERNS,
+  action_claim: ACTION_CLAIM_PATTERNS,
 };
 
 export type FilterOptions = {
@@ -184,7 +198,8 @@ export type FilterOptions = {
 
 export const DEFAULT_CATEGORIES: readonly ForbiddenCategory[] = ["price", "clinic_recommendation", "definitive"];
 // Svar til patienten: også vurderinger, som kun må stå i preliminaryAssessment.
-export const REPLY_CATEGORIES: readonly ForbiddenCategory[] = [...DEFAULT_CATEGORIES, "assessment"];
+// action_claim kun her (reply), ikke i vurderingen eller opsummeringen.
+export const REPLY_CATEGORIES: readonly ForbiddenCategory[] = [...DEFAULT_CATEGORIES, "assessment", "action_claim"];
 
 // Returnerer kategorierne for forbudt indhold (tom liste = tilladt).
 // Patientens egne ord åbner aldrig for forbudte ord her (K3): den eneste undtagelse, patientens eget budget i

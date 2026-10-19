@@ -22,7 +22,7 @@ import {
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
-import { CHAT_RETRY_REMINDER } from "./prompts/chat.v2";
+import { CHAT_RETRY_REMINDER } from "./prompts/chat.v3";
 import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
@@ -131,7 +131,8 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
       emergency: false,
       lifeThreatening: false,
       outOfScopeTopics: topics,
-      readyForSummary: turn.readyForSummary,
+      // 7.9: uden forslag er der intet for patienten at bekræfte.
+      readyForSummary: turn.readyForSummary && unique(turn.suggestedServices).length > 0,
       blocked: false,
     };
   }

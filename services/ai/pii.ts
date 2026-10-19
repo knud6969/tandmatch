@@ -25,6 +25,9 @@ const STREET = new RegExp(
 const POSTAL = /(?<![\d.])(\d{4})\s+(\p{Lu}\p{Ll}{2,}(?:\s+(?:[NVSKCØ]|NV|SV)(?![\p{L}\d]))?)/gu;
 const YEAR_CONTEXT = /(?:^|\s)(?:i|siden|fra|før|efter|omkring|ca\.?|cirka|år|til|indtil|sidst|medio|primo|ultimo|den|engang|tilbage)\s*$/i;
 
+// Postnummer med ledeord uden by: "mit postnummer er 2100", "postnr. 8000" (8.6c: postnummer må aldrig til OpenAI).
+const POSTAL_LABELLED = /((?:post(?:nummer(?:et)?|nr\.?))(?:\s+(?:er|:))?\s*:?\s*)(\d{4})(?![\d])/giu;
+
 // Navneudsagn: "Jeg hedder Knud Aundal", "mit navn er knud", "my name is Anna Hansen".
 const NAME_LEAD = /(jeg\s+hedder|mit\s+navn\s+er|mit\s+fulde\s+navn\s+er|my\s+name\s+is|i\s+am\s+called)(\s+)([\p{L}'-]+(?:\s+[\p{L}'-]+){0,2})/giu;
 // "Jeg er Knud Aundal": kun med to navne med stort begyndelsesbogstav, ellers rammes almindelige sætninger.
@@ -71,6 +74,7 @@ export function maskPii(text: string): string {
     .replace(CPR, mask)
     .replace(STREET, mask)
     .replace(POSTAL, maskPostal)
+    .replace(POSTAL_LABELLED, (_m: string, lead: string, digits: string) => `${lead}${mask(digits)}`)
     .replace(PHONE, mask)
     .replace(NAME_LEAD, maskName)
     .replace(NAME_JEG_ER, maskName)

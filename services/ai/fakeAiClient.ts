@@ -71,7 +71,7 @@ function fakeChat(params: StructuredCallParams) {
   if (text.includes("blegning") || text.includes("hvidere")) {
     return {
       ...turn,
-      reply: "Så kan blegning være relevant. Hvornår vil du helst i gang?",
+      reply: "Så kan blegning være relevant. Du kan selv bekræfte behandlingen nedenfor, og klinikken laver den endelige vurdering.",
       suggestedServices: ["blegning"],
       readyForSummary: true,
     };
@@ -79,7 +79,7 @@ function fakeChat(params: StructuredCallParams) {
   if (text.includes("undersøgelse") || text.includes("tjek")) {
     return {
       ...turn,
-      reply: "Så kan en undersøgelse passe godt. Hvornår vil du helst i gang?",
+      reply: "Så kan en undersøgelse passe godt. Du kan selv bekræfte behandlingen nedenfor, og klinikken laver den endelige vurdering.",
       suggestedServices: ["undersoegelse"],
       readyForSummary: true,
     };

@@ -1418,8 +1418,8 @@ Rækkefølgen ovenfor er **webens** trinflow (`/start/[caseId]`, sat på pause, 
 | **Akut:** ved tegn som stærke smerter, hævelse, feber, blødning der ikke stopper, traume: `emergency = true` og en kort opfordring til at søge akut tid. UI viser den faste akut-henvisning med link til `/akut`. Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt/hals) henvises til 112/1813 i den faste tekst | At fortsætte almindelig udspørgen, når der er akutte tegn |
 | **Usikker patient:** spørge mere ind; er patienten stadig usikker, foreslå `undersoegelse` | At vælge spor eller klinik for patienten |
 | Billeder: vinkel, synligt område, kvalitet; bede om nyt billede | I opsummeringens billedfelter: fortolkning (de er beskrivelser til klinikken) |
-| Sige, at patienten selv bekræfter de foreslåede behandlinger under beskeden (7.9) | At spørge om tidsrum, postnummer, adresse, by, navn, telefon eller e-mail: appen spørger selv med faste kort (7.9), og postnummer og kontaktdata må aldrig til OpenAI (7.2). Fra prompt `chat.v3` [IKKE BYGGET, 8.6c] |
-| | At påstå at have bekræftet, gemt, sendt, booket eller kontaktet noget ("jeg har bekræftet …", "din tid er booket", "klinikken kontakter dig"): AI'en har ingen handlinger. Filtreres på `reply` (kategorien `action_claim`, 7.5) [IKKE BYGGET, 8.6c] |
+| Sige, at patienten selv bekræfter de foreslåede behandlinger under beskeden (7.9) | At spørge om tidsrum, postnummer, adresse, by, navn, telefon eller e-mail: appen spørger selv med faste kort (7.9), og postnummer og kontaktdata må aldrig til OpenAI (7.2). Fra prompt `chat.v3` |
+| | At påstå at have bekræftet, gemt, sendt, booket eller kontaktet noget ("jeg har bekræftet …", "din tid er booket", "klinikken kontakter dig"): AI'en har ingen handlinger. Filtreres på `reply` (kategorien `action_claim`, 7.5) |
 
 Spørger patienten om pris eller hvilken klinik der er bedst, svarer AI'en ikke på indholdet, sætter `outOfScopeTopics` (`price`, `clinic_recommendation`), og UI viser en fast tekst: "Priserne kommer fra klinikkernes egne prislister, og du kan sortere klinikkerne efter pris, anmeldelser, afstand og første ledige tid i oversigten."
 
@@ -1567,7 +1567,7 @@ export const AI_RULES = {
 } as const;
 ```
 
-Fra 8.6c [IKKE BYGGET] hæves `version` til `"rules-v3"` (og `MDR_STRICT_RULES.version` til `"rules-v3-mdr-strict"`), fordi guarden ændres (`readyForSummary` kræver forslag, kategorien `action_claim`); felterne i konfigurationen er uændrede. Det, AI'en ikke spørger om, fordi appen gør det (tidsrum, postnummer, kontaktdata, 7.9), står i prompten `chat.v3.ts`, ikke i appen.
+Fra 8.6c (bygget) er `version` til `"rules-v3"` (og `MDR_STRICT_RULES.version` til `"rules-v3-mdr-strict"`), fordi guarden ændres (`readyForSummary` kræver forslag, kategorien `action_claim`); felterne i konfigurationen er uændrede. Det, AI'en ikke spørger om, fordi appen gør det (tidsrum, postnummer, kontaktdata, 7.9), står i prompten `chat.v3.ts`, ikke i appen.
 
 Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste UI-tekster står i `lib/constants/ai-texts.ts`. `prompt_version` og `AI_RULES.version` gemmes på samtalen og sagen for sporbarhed.
 

@@ -51,7 +51,7 @@ async function account(): Promise<Patient> {
 }
 
 const say = (p: Patient, message: string) => p.c.post(`/api/cases/${p.caseId}/chat`, { message });
-const MODEL_REPLY = "Så kan blegning være relevant. Hvornår vil du helst i gang?"; // den falske klients svar på "blegning"
+const MODEL_REPLY = "Så kan blegning være relevant. Du kan selv bekræfte behandlingen nedenfor, og klinikken laver den endelige vurdering."; // den falske klients svar på "blegning"
 
 async function messagesOf(caseId: string) {
   const conv = await admin.from("ai_conversations").select("id").eq("case_id", caseId).single();
