@@ -1,6 +1,6 @@
 // Fjerner demodata oprettet af scripts/seed-demo.ts: brugere med @demo.tandmatch.test, deres sager, leads,
 // bookinger og anmeldelser, klinikker med import_source = 'seed' og tilhørende filer i storage.
-// Postnumre (supabase/seed.sql) og ydelseskataloget røres ikke.
+// Postnumre (migrationen 20261028000400) og ydelseskataloget røres ikke.
 //
 // Kører kun mod lokal Supabase, medmindre --allow-remote gives. --dry-run viser kun, hvad der ville blive slettet.
 // Kørsel: npm run unseed:demo
