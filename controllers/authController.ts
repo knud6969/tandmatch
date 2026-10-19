@@ -2,9 +2,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/auth";
-import type { AuthUserDto } from "@/lib/types/auth";
+import type { AuthResultDto, MobileSessionDto } from "@/lib/types/auth";
 import { ApiError, unauthenticated } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
+import type { AuthResult } from "@/models/authRepository";
 import type { TermsPayload } from "@/middleware/termsCookie";
 import { AuthRepository } from "@/models/authRepository";
 import { PatientsRepository } from "@/models/patientsRepository";
@@ -44,8 +45,9 @@ export class AuthController {
     this.terms = deps.terms ?? new TermsRepository(supabase);
   }
 
-  async login(terms: TermsPayload | null, input: LoginInput): Promise<AuthUserDto> {
-    const userId = await this.auth.signInWithPassword(input.email, input.password);
+  // `mobile`: appen (X-TandMatch-Client: mobile) får tokens i svaret. Klienten har da ingen cookies (models/db/supabase.ts).
+  async login(terms: TermsPayload | null, input: LoginInput, mobile = false): Promise<AuthResultDto> {
+    const { userId, session } = await this.auth.signInWithPassword(input.email, input.password);
 
     if (terms) {
       await this.terms.upsertAcceptance(userId, terms);
@@ -55,16 +57,34 @@ export class AuthController {
     if (!profile) {
       throw new ApiError(500, "PROFILE_MISSING", "Kontoen er ikke klar. Prøv igen om lidt.");
     }
-    return { userId, role: profile.role };
+    return this.result({ userId, session }, profile.role, mobile);
   }
 
-  // Logout kræver ikke vilkårs-accept og læser ingen data (architecture 2.5).
-  async logout(): Promise<void> {
+  // Logout kræver ikke vilkårs-accept og læser ingen data (architecture 2.5). Med bearer tilbagekaldes tokenets session.
+  async logout(accessToken: string | null = null): Promise<void> {
+    if (accessToken !== null) {
+      await this.auth.signOutToken(accessToken);
+      return;
+    }
     await this.auth.signOutLocal();
   }
 
+  // Fornyer appens tokens. Et genbrugt eller ugyldigt refresh-token giver 401 (models/authRepository.ts).
+  async refresh(refreshToken: string): Promise<MobileSessionDto> {
+    return this.auth.refresh(refreshToken);
+  }
+
+  // Tokens følger kun med til appen; ellers er svaret som før.
+  private result(auth: AuthResult, role: AuthResultDto["role"], mobile: boolean): AuthResultDto {
+    return mobile && auth.session ? { userId: auth.userId, role, session: auth.session } : { userId: auth.userId, role };
+  }
+
   // En anonym session skal konverteres i stedet for at oprette en ny konto.
-  async signup(terms: TermsPayload | null, input: SignupInput): Promise<AuthUserDto> {
+  // Appen opretter kun patienter; klinikker opretter sig på weben.
+  async signup(terms: TermsPayload | null, input: SignupInput, mobile = false): Promise<AuthResultDto> {
+    if (mobile && input.role !== "patient") {
+      throw new ApiError(400, "VALIDATION_ERROR", "Klinikker opretter sig på weben.");
+    }
     if (this.session?.isAnonymous) {
       throw new ApiError(409, "ANONYMOUS_SESSION_ACTIVE", "Din samtale skal konverteres til en konto i stedet.");
     }
@@ -73,12 +93,12 @@ export class AuthController {
     }
 
     const metadata = await this.signupMetadata(input);
-    const userId = await this.auth.signUp(input.email, input.password, metadata);
+    const created = await this.auth.signUp(input.email, input.password, metadata);
 
     if (terms) {
-      await this.terms.upsertAcceptance(userId, terms);
+      await this.terms.upsertAcceptance(created.userId, terms);
     }
-    return { userId, role: input.role };
+    return this.result(created, input.role, mobile);
   }
 
   // Metadata, som signup-triggeren handle_new_user() opretter rækkerne ud fra (architecture 4.3).
@@ -103,14 +123,20 @@ export class AuthController {
 
   // Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
   // Sag, samtaler, billeder og samtykker følger med, fordi id'et er uændret. Routen har sikret, at sessionen er anonym.
-  async convertAnonymous(input: ConvertInput): Promise<AuthUserDto> {
+  // Med bearer (`accessToken`) har klienten ingen session at opfriske: brugeren logges ind igen med de nye
+  // oplysninger (samme user id), og appen får de nye tokens, hvis `mobile`.
+  async convertAnonymous(input: ConvertInput, mobile = false, accessToken: string | null = null): Promise<AuthResultDto> {
     if (!this.session) {
       throw unauthenticated();
     }
-    await this.auth.setCredentials(input.email, input.password);
+    await this.auth.setCredentials(input.email, input.password, accessToken ?? undefined);
     // Triggeren på auth.users har nu sat profiles.is_anonymous = false. Opfrisk sessionen, så JWT'en matcher.
     await this.patients.update(this.session.userId, { firstName: input.firstName });
-    await this.auth.refreshSession();
-    return { userId: this.session.userId, role: "patient" };
+    if (accessToken === null) {
+      await this.auth.refreshSession();
+      return { userId: this.session.userId, role: "patient" };
+    }
+    const renewed = await this.auth.signInWithPassword(input.email, input.password);
+    return this.result({ userId: this.session.userId, session: renewed.session }, "patient", mobile);
   }
 }

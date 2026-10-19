@@ -1,8 +1,9 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
-import { createAuthContext } from "@/middleware/session";
+import { cookies, headers } from "next/headers";
+import { TERMS_TOKEN_HEADER } from "@/lib/constants/sessions";
+import { createAuthContext, type AuthContext } from "@/middleware/session";
 import { AUTH_COOKIE_OPTIONS } from "@/models/db/config";
+import { isTokenTransport } from "@/models/db/supabase";
 import { TermsRepository } from "@/models/termsRepository";
 import {
   TERMS_COOKIE,
@@ -13,9 +14,15 @@ import {
 } from "@/middleware/termsCookie";
 import { ApiError } from "@/middleware/http";
 
-export async function readCurrentTermsCookie(): Promise<TermsPayload | null> {
+// Den aktuelle vilkårs-accept: fra headeren X-Terms-Token (appen) eller cookien tm_terms (browseren), begge signeret med
+// samme HMAC og verificeret ens. Kommer requesten fra appen (Authorization eller X-TandMatch-Client), læses cookies
+// ikke, så de to veje ikke kan blandes (architecture 2.5 punkt 3).
+export async function readCurrentTerms(): Promise<TermsPayload | null> {
+  const h = await headers();
+  const headerValue = h.get(TERMS_TOKEN_HEADER)?.trim() || undefined;
+  if (isTokenTransport(h)) return verifyCurrentTermsCookie(headerValue);
   const store = await cookies();
-  return verifyCurrentTermsCookie(store.get(TERMS_COOKIE)?.value);
+  return (await verifyCurrentTermsCookie(store.get(TERMS_COOKIE)?.value)) ?? (await verifyCurrentTermsCookie(headerValue));
 }
 
 // Kaldes fra /api/terms/accept efter at accepten er skrevet til databasen (hvis der er en session).
@@ -32,7 +39,7 @@ export async function setTermsCookie(payload: TermsPayload): Promise<void> {
 // hvis accepten allerede ligger i terms_acceptances.
 // `supabase` er requestens ene klient (middleware/session.ts, AuthContext): routen giver den videre til
 // requireRole() og controlleren.
-export type TermsGate = { supabase: SupabaseClient } & (
+export type TermsGate = Pick<AuthContext, "supabase" | "transport" | "accessToken"> & (
   | { userId: null; terms: TermsPayload }
   | { userId: string; terms: TermsPayload | null }
 );
@@ -41,14 +48,14 @@ export type TermsGate = { supabase: SupabaseClient } & (
 // Uden session: gyldig signeret cookie kræves.
 // Med session: accept i terms_acceptances for aktuelle versioner, ellers overføres cookie-accepten (indsættes).
 export async function requireTerms(): Promise<TermsGate> {
-  const terms = await readCurrentTermsCookie();
-  const { supabase, userId } = await createAuthContext();
+  const terms = await readCurrentTerms();
+  const { supabase, userId, transport, accessToken } = await createAuthContext();
 
   if (!userId) {
     if (!terms) {
       throw termsRequiredError();
     }
-    return { supabase, userId: null, terms };
+    return { supabase, transport, accessToken, userId: null, terms };
   }
 
   const termsRepo = new TermsRepository(supabase);
@@ -59,7 +66,7 @@ export async function requireTerms(): Promise<TermsGate> {
     }
     await termsRepo.upsertAcceptance(userId, terms);
   }
-  return { supabase, userId, terms };
+  return { supabase, transport, accessToken, userId, terms };
 }
 
 function termsRequiredError(): ApiError {

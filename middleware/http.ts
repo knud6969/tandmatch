@@ -29,8 +29,11 @@ export class ApiError extends Error {
 
 const MAX_BODY_CHARS = 10_000;
 
-export function jsonResponse(data: unknown, status = 200): Response {
-  return Response.json(data, { status });
+// Svar med tokens må aldrig caches af proxyer eller klienten.
+export const NO_STORE = { "Cache-Control": "no-store" } as const;
+
+export function jsonResponse(data: unknown, status = 200, headers?: HeadersInit): Response {
+  return Response.json(data, { status, headers });
 }
 
 export function noContent(): Response {

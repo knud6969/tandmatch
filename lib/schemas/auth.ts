@@ -70,3 +70,10 @@ export const deleteAccountSchema = z
     confirm: z.literal("SLET", { message: "Skriv SLET for at bekræfte." }),
   })
   .strict();
+
+// Fornyelse af appens session: POST /api/auth/refresh. Refresh-tokenet sendes kun i bodyen (architecture 10.2).
+export const refreshSchema = z
+  .object({
+    refreshToken: z.string().min(1, "Angiv refresh-token.").max(512),
+  })
+  .strict();

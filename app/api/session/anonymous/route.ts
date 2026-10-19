@@ -1,8 +1,9 @@
 import { anonymousSessionSchema } from "@/lib/schemas/session";
-import { jsonResponse, readJson, withApi } from "@/middleware/http";
+import { NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
 import { enforceIpRateLimit } from "@/middleware/rateLimit";
 import { getSession } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
+import { isMobileClient } from "@/models/db/supabase";
 import { SessionController } from "@/controllers/sessionController";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
@@ -16,6 +17,7 @@ export const POST = withApi(async (req) => {
     await enforceIpRateLimit("anonymous-session", req);
   }
   const { supabase } = gate;
-  const result = await new SessionController(supabase, existing).createAnonymous(gate.userId, gate.terms, input);
-  return jsonResponse(result.body, result.status);
+  const mobile = isMobileClient(req);
+  const result = await new SessionController(supabase, existing).createAnonymous(gate.userId, gate.terms, input, mobile);
+  return jsonResponse(result.body, result.status, mobile ? NO_STORE : undefined);
 });

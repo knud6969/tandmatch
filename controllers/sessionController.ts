@@ -47,6 +47,7 @@ export class SessionController {
     userId: string | null,
     terms: TermsPayload | null,
     input: AnonymousSessionInput,
+    mobile = false,
   ): Promise<AnonymousSessionResult> {
     const aiConsent = (patientId: string): NewConsent => ({
       patientId,
@@ -76,7 +77,7 @@ export class SessionController {
     if (!terms) {
       throw new ApiError(403, "TERMS_REQUIRED", "Du skal acceptere brugervilkårene og privatlivspolitikken først.");
     }
-    const newUserId = await this.auth.signInAnonymously();
+    const { userId: newUserId, session } = await this.auth.signInAnonymously();
 
     let caseId: string;
     try {
@@ -94,6 +95,8 @@ export class SessionController {
       throw err;
     }
 
-    return { body: { caseId, expiresAt: anonymousExpiresAt(new Date().toISOString()) }, status: 201 };
+    // Appen får tokens i svaret ved en ny session (ved retry har den dem allerede).
+    const body = { caseId, expiresAt: anonymousExpiresAt(new Date().toISOString()), ...(mobile && session ? { session } : {}) };
+    return { body, status: 201 };
   }
 }

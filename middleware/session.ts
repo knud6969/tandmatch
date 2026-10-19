@@ -1,8 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ANONYMOUS_SESSION_HOURS } from "@/lib/constants/sessions";
-import { createSupabaseServerClient } from "@/models/db/supabase";
+import { createSupabaseRequestClient, isTokenTransport, type AuthTransport } from "@/models/db/supabase";
 import { AuthRepository } from "@/models/authRepository";
 import { ProfilesRepository } from "@/models/profilesRepository";
 import { ApiError, anonymousNotAllowed, forbidden, unauthenticated } from "@/middleware/http";
@@ -18,13 +18,28 @@ export type Session = {
 // Brugerens klient og verificerede bruger-id for ét kald. Oprettes én gang pr. request (requireTerms() eller
 // createAuthContext()) og gives videre til requireRole() m.fl. og til controlleren, så Supabase Auth kun slås op og evt.
 // fornyes ét sted pr. request. Flere klienter pr. request fornyede samme refresh token samtidig (architecture 2.4).
-export type AuthContext = { supabase: SupabaseClient; userId: string | null };
+// `transport` er "bearer" for appen (Authorization eller X-TandMatch-Client) og ellers "cookie". `accessToken` er kun
+// sat ved bearer, og kun hvis requesten har et token (routes som convert og logout bruger det).
+export type AuthContext = {
+  supabase: SupabaseClient;
+  userId: string | null;
+  transport: AuthTransport;
+  accessToken: string | null;
+};
 
 // Opretter klienten og verificerer brugeren hos Supabase Auth (getUser), ikke kun cookien.
+// Med bearer verificeres tokenet; et ugyldigt eller udløbet token giver 401 (også selvom requesten har en gyldig cookie,
+// som ikke læses), så appen kan forny tokenet og prøve igen (architecture 2.4).
 export async function createAuthContext(): Promise<AuthContext> {
-  const supabase = await createSupabaseServerClient();
-  const userId = await new AuthRepository(supabase).findUserId();
-  return { supabase, userId };
+  const { supabase, transport, accessToken } = await createSupabaseRequestClient();
+  if (transport === "bearer" && accessToken === null) {
+    return { supabase, userId: null, transport, accessToken };
+  }
+  const userId = await new AuthRepository(supabase).findUserId(accessToken ?? undefined);
+  if (transport === "bearer" && !userId) {
+    throw unauthenticated();
+  }
+  return { supabase, userId, transport, accessToken };
 }
 
 // Læser den aktuelle session ud fra konteksten (eller en ny, hvis kalderen ikke har en, fx layouts).
@@ -93,7 +108,9 @@ export async function requireRole(
 }
 
 // Fjerner Supabase-cookies, når kontoen er slettet, så browseren ikke beholder en død session.
+// Gør intet ved bearer: appen har ingen cookies og sletter selv sine tokens.
 export async function clearAuthCookies(): Promise<void> {
+  if (isTokenTransport(await headers())) return;
   const cookieStore = await cookies();
   for (const cookie of cookieStore.getAll()) {
     if (cookie.name.startsWith("sb-")) {

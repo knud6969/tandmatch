@@ -29,8 +29,9 @@ export class TermsController {
   }
 
   // Accepten gælder kun, hvis versionerne er de aktuelle. Er der en session, skrives også en række i
-  // terms_acceptances. Returnerer den accept, routen gemmer i den signerede cookie.
-  async accept(input: TermsAcceptInput): Promise<TermsPayload> {
+  // terms_acceptances (med bearer verificeres tokenet; et ugyldigt token giver ingen række). Returnerer den accept, routen
+  // gemmer i den signerede cookie eller udleverer som termsToken til appen.
+  async accept(input: TermsAcceptInput, accessToken?: string): Promise<TermsPayload> {
     if (input.termsVersion !== TERMS_VERSION || input.privacyVersion !== PRIVACY_VERSION) {
       throw new ApiError(400, "OUTDATED_TERMS", "Vilkårene er opdateret. Læs de nye vilkår og accepter igen.");
     }
@@ -41,7 +42,7 @@ export class TermsController {
       acceptedAt: new Date().toISOString(),
     };
 
-    const userId = await this.auth.findUserId();
+    const userId = await this.auth.findUserId(accessToken);
     if (userId) {
       await this.terms.upsertAcceptance(userId, payload);
     }
