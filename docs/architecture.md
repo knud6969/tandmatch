@@ -303,7 +303,7 @@ lib/
 supabase/
   config.toml                lokal Supabase (anonyme logins til, e-mailbekræftelse fra)
   migrations/                det samlede sæt (11)
-  data/                      postal-codes.csv: alle danske postnumre med by og koordinater fra DAWA, kilden til
+  data/                      postal-codes.csv: alle danske postnumre med by og koordinater fra GeoNames (CC BY 4.0), kilden til
                              migrationen 20261028000400 (4.3; [IKKE BYGGET], trin 7)
   seed.sql                   kun referencedata, som ikke kræver auth-brugere. Postnumrene flyttes til migrationen
                              20261028000400 (trin 7); derefter har filen kun en kommentar, indtil der kommer anden referencedata
@@ -315,7 +315,7 @@ tests/
                              vilkårs-gate, samtykker, sessioner m.m. (5.6, API-tests)
   e2e/                       Playwright, 390 px og 1280 px
 scripts/                     seed-demo.ts, unseed-demo.ts, generate-postal-codes.ts (kun til udvikling, køres manuelt:
-                             henter DAWA én gang og skriver supabase/data/postal-codes.csv og migrationen; aldrig fra
+                             læser en manuelt hentet GeoNames DK.txt og skriver supabase/data/postal-codes.csv og migrationen; aldrig fra
                              appen, seed eller tests; [IKKE BYGGET], trin 7)
 proxy.ts                     session-refresh og grov rolle-redirect (Next 16)
 ```
@@ -620,7 +620,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 
 #### `consent_text_versions`, `postal_codes` og tællere
 - `consent_text_versions` (`type`, `text_version`, `ai_disclosure`): kendte samtykketekster. Offentligt læsbar.
-- `postal_codes` (`postal_code text PK, city, lat, lng`): offentligt opslag. Seedes i dag af `supabase/seed.sql` (21 postnumre). **[IKKE BYGGET, trin 7]:** alle danske postnumre (uden stormodtagere) indsættes af migrationen `20261028000400_postal_codes_dk.sql` fra `supabase/data/postal-codes.csv`, så de også når det fælles projekt med `supabase db push`. Kilde: DAWA (`https://api.dataforsyningen.dk/postnumre`, Dataforsyningen; vilkår og den krævede kildeangivelse tjekkes ved hentningen og skrives i migrationens hoved sammen med hentedatoen), hentet én gang med `scripts/generate-postal-codes.ts`; `lat`/`lng` er postnummerets visuelle center (`visueltcenter` er `[lng, lat]`), afrundet til 4 decimaler. Ingen netværkskald ved runtime. Indsættelsen er idempotent (`on conflict (postal_code) do update set city, lat, lng`), så DAWA-værdierne også erstatter de 21 omtrentlige rækker i det fælles projekt; `seed.sql` indsætter derefter ikke postnumre. Klinikkernes egne `lat`/`lng` ændres ikke af migrationen (12.3 punkt 13).
+- `postal_codes` (`postal_code text PK, city, lat, lng`): offentligt opslag. Seedes i dag af `supabase/seed.sql` (21 postnumre). **[IKKE BYGGET, trin 7]:** alle danske postnumre (uden stormodtagere) indsættes af migrationen `20261028000400_postal_codes_dk.sql` fra `supabase/data/postal-codes.csv`, så de også når det fælles projekt med `supabase db push`. Kilde: GeoNames' postnummerfil for Danmark (`https://download.geonames.org/export/zip/DK.zip`, CC BY 4.0; DAWA er nedlagt og svarer 410). Udvikleren henter og pakker filen ud manuelt; `scripts/generate-postal-codes.ts` læser `DK.txt` (tabulatorsepareret: postnummer i kolonne 2, by i kolonne 3, `lat`/`lng` i kolonne 10-11) og skriver CSV og migration med kilde, licens, kildeangivelse og hentedato i hovedet; koordinaterne afrundes til 4 decimaler. Kildeangivelsen "Postnumre og koordinater: GeoNames (CC BY 4.0)" vises også på `/om-os`. Ingen netværkskald ved runtime. Indsættelsen er idempotent (`on conflict (postal_code) do update set city, lat, lng`), så GeoNames-værdierne også erstatter de 21 omtrentlige rækker i det fælles projekt; `seed.sql` indsætter derefter ikke postnumre. Klinikkernes egne `lat`/`lng` ændres ikke af migrationen (12.3 punkt 13).
 - `ai_limits`, `ai_usage_daily`, `ai_patient_usage_daily`, `ai_anon_user_usage_daily`, `rate_limits`: ingen brugeradgang; kun funktioner og service role (7.6). Indhold: lofter som nøgle/værdi (bl.a. `anon_daily_ai_calls`, `anon_user_daily_ai_calls`, `chat_messages_per_patient_day`), daglig tæller for alle anonyme AI-kald (ingen persondata), AI-kald pr. anonym bruger pr. døgn, udkast pr. patient pr. døgn, forsøg pr. bucket og IP-hash.
 
 #### Behandlingskataloget: to niveauer
