@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { hasCurrentConsent } from "@/lib/domain/consents";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 import type { ClinicListDto, ClinicListItemDto } from "@/lib/types/clinics";
 import type { PatientLeadDto } from "@/lib/types/leads";
@@ -19,7 +20,7 @@ import { apiRequest } from "@/views/utils/api-client";
 import { caseDirectoryHref, caseFlowHref, caseHref, clinicsHref } from "@/views/utils/case-links";
 import { isUuid } from "@/views/utils/ids";
 import { writeSelection } from "@/views/utils/compare-selection";
-import { hasCurrentConsent, loadConsents } from "@/views/utils/consents";
+import { loadConsents } from "@/views/utils/consents";
 import { loadCaseSelection, noSlotsText, type CaseSelectionContext } from "@/views/utils/use-case-selection";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";

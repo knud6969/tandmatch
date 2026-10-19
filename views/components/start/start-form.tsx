@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CONSENT_TEXT_VERSIONS, CONSENT_TEXTS, CONSENT_TYPE_LABEL } from "@/lib/constants/consents";
 import { AI_BOUNDARY_TEXT } from "@/lib/constants/ai-texts";
+import { START_STEPS } from "@/lib/constants/start";
 import type { CaseDto, CaseListItemDto } from "@/lib/types/cases";
 import type { AnonymousSessionDto } from "@/lib/types/session";
 import { useSession } from "@/views/components/session/session-provider";
@@ -18,13 +19,6 @@ import { apiRequest } from "@/views/utils/api-client";
 import { useAction } from "@/views/utils/use-action";
 import { useLoad } from "@/views/utils/use-load";
 
-const STEPS = [
-  "Du beskriver dit problem med dine egne ord og kan uploade billeder, hvis du vil.",
-  "AI-assistenten stiller uddybende spørgsmål og hjælper dig med at sætte ord på det.",
-  "Du bekræfter selv behandlingerne og godkender en opsummering.",
-  "Du sammenligner klinikker og vælger selv, hvilke der skal have din beskrivelse.",
-];
-
 function Intro() {
   return (
     <header className="flex flex-col gap-3">
@@ -33,7 +27,7 @@ function Intro() {
         Fortæl, hvad du oplever, eller hvad du gerne vil have lavet. Du kan starte uden at oprette en konto.
       </p>
       <ol className="mt-1 flex list-decimal flex-col gap-1.5 pl-5 text-base leading-relaxed text-ink">
-        {STEPS.map((step) => (
+        {START_STEPS.map((step) => (
           <li key={step}>{step}</li>
         ))}
       </ol>

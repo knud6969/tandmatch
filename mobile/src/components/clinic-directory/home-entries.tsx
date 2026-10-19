@@ -3,7 +3,7 @@ import { Badge, Button } from "~/components/ui";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
 type Props = {
-  // Chatten (8.6) er ikke bygget endnu: uden `onDescribe` vises indgangen som "Kommer snart".
+  // Åbner chatten (/start). Uden `onDescribe` vises indgangen som "Kommer snart".
   onDescribe?: () => void;
   onFindClinic: () => void;
   onEmergency: () => void;

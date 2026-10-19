@@ -28,6 +28,7 @@ export function HomeScreen() {
           Se priser, anmeldelser og ledige tider på ét sted, og book direkte. Du bestemmer selv, hvilke klinikker du vil høre fra.
         </Text>
         <HomeEntries
+          onDescribe={() => router.push("/start")}
           onFindClinic={() => router.push("/klinikker")}
           onEmergency={() => router.push({ pathname: "/klinikker", params: { akut: "1" } })}
         />

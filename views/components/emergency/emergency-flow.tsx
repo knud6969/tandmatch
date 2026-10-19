@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { hasCurrentConsent } from "@/lib/domain/consents";
 import type { EmergencyLeadCreatedDto } from "@/lib/types/leads";
 import type { PatientMeDto } from "@/lib/types/patients";
 import { EmergencyAccountStep } from "@/views/components/emergency/emergency-account-step";
@@ -14,7 +15,7 @@ import { Card } from "@/views/components/ui/card";
 import { SLOT_TAKEN_TEXT } from "@/lib/constants/error-texts";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseHref } from "@/views/utils/case-links";
-import { hasCurrentConsent, loadConsents } from "@/views/utils/consents";
+import { loadConsents } from "@/views/utils/consents";
 import { formatDateTime, formatTime } from "@/views/utils/format";
 
 function Step({ number, title, children }: { number: number; title: string; children: ReactNode }) {

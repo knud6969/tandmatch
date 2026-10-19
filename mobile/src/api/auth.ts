@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/auth";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import type { AuthResultDto } from "@/lib/types/auth";
+import type { AnonymousSessionDto } from "@/lib/types/session";
 import { clearSession, saveSession } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
 
@@ -39,4 +41,15 @@ export async function logout(): Promise<void> {
   } finally {
     await clearSession();
   }
+}
+
+// Anonym start (architecture 10.2): opretter session, AI-samtykke og tom sag. 201 giver tokens, som gemmes; 200 (retry med en
+// eksisterende anonym session) giver kun den eksisterende kladde.
+export async function startAnonymousSession(): Promise<AnonymousSessionDto> {
+  const result = await apiRequest<AnonymousSessionDto>("/api/session/anonymous", {
+    method: "POST",
+    json: { aiConsent: { textVersion: CONSENT_TEXT_VERSIONS.ai_processing } },
+  });
+  if (result.session) await saveSession(result.session);
+  return result;
 }

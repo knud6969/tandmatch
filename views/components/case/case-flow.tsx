@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { hasCurrentConsent } from "@/lib/domain/consents";
 import type { CaseDto } from "@/lib/types/cases";
 import { ChatPanel } from "@/views/components/chat/chat-panel";
 import { DeleteConversation } from "@/views/components/case/delete-conversation";
@@ -16,7 +17,7 @@ import { cx } from "@/views/components/ui/cx";
 import { LoadState } from "@/views/components/ui/load-state";
 import { apiRequest } from "@/views/utils/api-client";
 import { caseHref } from "@/views/utils/case-links";
-import { hasCurrentConsent, loadConsents } from "@/views/utils/consents";
+import { loadConsents } from "@/views/utils/consents";
 import { useLoad } from "@/views/utils/use-load";
 
 const STEPS = [
