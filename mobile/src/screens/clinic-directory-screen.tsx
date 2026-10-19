@@ -3,18 +3,22 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
+import { remainingLeadSlots } from "@/lib/domain/leads";
 import { getCase } from "~/api/cases";
+import { listCaseLeads } from "~/api/leads";
 import { listClinics } from "~/api/clinics";
 import { getServiceGroups } from "~/api/services";
 import { ClinicCard } from "~/components/clinic-directory/clinic-card";
 import { ClinicFilters } from "~/components/clinic-directory/clinic-filters";
 import { CriteriaBox } from "~/components/clinic-directory/criteria-box";
 import { EmergencyNotice } from "~/components/clinic-directory/emergency-notice";
+import { SelectButton } from "~/components/leads/select-button";
 import { ServicePicker } from "~/components/clinic-directory/service-picker";
 import { Button, StatusMessage } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, spacing } from "~/theme";
 import { activeFilterCount, buildClinicsQuery, DEFAULT_FILTERS, toggleService, type DirectoryFilters } from "~/utils/clinic-filters";
+import { clinicsWord, setLimits, useSelection } from "~/utils/lead-selection";
 import { getRoundedPosition, PositionError } from "~/utils/position";
 
 // Klinikoversigten som liste med filtre (architecture 6.6, 13.4). Rækkefølgen og kriterierne er serverens.
@@ -36,16 +40,21 @@ export function ClinicDirectoryScreen() {
     }
   }, [params.akut, router]);
 
-  // Fra sagsflowets "Se klinikker der kan hjælpe": filtrer på sagens bekræftede behandlinger og postnummer (vælg og send kommer i 8.8a).
+  // Fra sagsflowets "Se klinikker der kan hjælpe": filtrer på sagens bekræftede behandlinger og postnummer og lad patienten vælge klinikker (8.8a).
   const caseId = params.sag;
   const [appliedCase, setAppliedCase] = useState<string | null>(null);
   useEffect(() => {
     if (!caseId || appliedCase === caseId) return;
     let cancelled = false;
-    getCase(caseId)
-      .then((dto) => {
+    Promise.all([getCase(caseId), listCaseLeads(caseId).catch(() => [])])
+      .then(([dto, leads]) => {
         if (cancelled) return;
         setAppliedCase(caseId);
+        setLimits(
+          caseId,
+          remainingLeadSlots(dto.leadCount, dto.totalLeadCount),
+          leads.filter((lead) => !lead.clinic.removed).map((lead) => lead.clinic.id),
+        );
         setFilters((f) => ({
           ...f,
           serviceSlugs: dto.services.map((service) => service.slug),
@@ -59,6 +68,7 @@ export function ClinicDirectoryScreen() {
     };
   }, [caseId, appliedCase]);
 
+  const selection = useSelection(caseId);
   const query = buildClinicsQuery(filters);
   const clinics = useLoad(() => listClinics(query), [query]);
   const catalog = useLoad(getServiceGroups);
@@ -87,6 +97,12 @@ export function ClinicDirectoryScreen() {
       <Text accessibilityRole="header" style={styles.title}>
         Find en klinik
       </Text>
+      {caseId ? (
+        <Text style={styles.muted}>
+          Vælg de klinikker, du vil kontakte med din beskrivelse. Kun verificerede klinikker kan kontaktes.
+          {selection.slots > 0 ? ` Du kan vælge op til ${selection.slots}.` : " Du kan ikke kontakte flere klinikker lige nu."}
+        </Text>
+      ) : null}
       <Button
         label={filtersOpen ? "Skjul filtre" : count > 0 ? `Filtre og sortering (${count})` : "Filtre og sortering"}
         variant="secondary"
@@ -134,12 +150,15 @@ export function ClinicDirectoryScreen() {
         ListHeaderComponent={header}
         ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
         renderItem={({ item }) => (
-          <ClinicCard
-            clinic={item}
-            hasServices={hasServices}
-            emergency={filters.emergency}
-            onPress={() => router.push({ pathname: "/klinik/[clinicId]", params: { clinicId: item.id } })}
-          />
+          <View style={styles.cardGroup}>
+            <ClinicCard
+              clinic={item}
+              hasServices={hasServices}
+              emergency={filters.emergency}
+              onPress={() => router.push({ pathname: "/klinik/[clinicId]", params: caseId ? { clinicId: item.id, sag: caseId } : { clinicId: item.id } })}
+            />
+            {caseId ? <SelectButton caseId={caseId} clinic={item} /> : null}
+          </View>
         )}
         ListEmptyComponent={
           clinics.loading && !list ? (
@@ -155,6 +174,14 @@ export function ClinicDirectoryScreen() {
           ) : undefined
         }
       />
+      {caseId && selection.ids.length > 0 ? (
+        <View style={styles.bar}>
+          <Button
+            label={`Fortsæt med ${clinicsWord(selection.ids.length)}`}
+            onPress={() => router.push({ pathname: "/sag/[caseId]/send", params: { caseId, klinikker: selection.ids.join(",") } })}
+          />
+        </View>
+      ) : null}
       <ServicePicker
         visible={pickerOpen}
         groups={catalog.data ?? []}
@@ -171,6 +198,8 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   header: { gap: spacing.md, marginBottom: spacing.lg },
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
+  cardGroup: { gap: spacing.sm },
+  bar: { padding: spacing.lg, backgroundColor: colors.canvas, borderTopWidth: 1, borderTopColor: colors.line },
   count: { fontSize: fontSize.sm, color: colors.inkMuted },
   center: { padding: spacing.xxl, alignItems: "center" },
   empty: { gap: spacing.sm, paddingVertical: spacing.xl },

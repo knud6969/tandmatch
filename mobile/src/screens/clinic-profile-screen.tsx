@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/types/clinics";
 import { getClinic, getClinicReviews } from "~/api/clinics";
+import { SelectButton } from "~/components/leads/select-button";
 import { getServiceGroups } from "~/api/services";
 import { OpeningHours } from "~/components/clinic-directory/opening-hours";
 import { PriceList } from "~/components/clinic-directory/price-list";
@@ -31,7 +32,7 @@ function Reviews({ clinicId }: { clinicId: string }) {
   );
 }
 
-function Profile({ clinic }: { clinic: ClinicProfileDto }) {
+function Profile({ clinic, caseId }: { clinic: ClinicProfileDto; caseId?: string }) {
   const catalog = useLoad(getServiceGroups);
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
@@ -70,6 +71,7 @@ function Profile({ clinic }: { clinic: ClinicProfileDto }) {
             )}
           </Text>
         ) : null}
+        {caseId ? <SelectButton caseId={caseId} clinic={clinic} /> : null}
         {clinic.phone ? <Button label={`Ring: ${clinic.phone}`} onPress={() => void Linking.openURL(phoneHref(clinic.phone ?? ""))} /> : null}
         {website ? <Button label={`Klinikkens website: ${websiteLabel(website)}`} variant="secondary" onPress={() => openWeb(website)} /> : null}
       </View>
@@ -110,7 +112,7 @@ function Profile({ clinic }: { clinic: ClinicProfileDto }) {
 // Trustpilot og siger tydeligt, at klinikken ikke er på TandMatch endnu.
 export function ClinicProfileScreen() {
   const router = useRouter();
-  const { clinicId } = useLocalSearchParams<{ clinicId: string }>();
+  const { clinicId, sag } = useLocalSearchParams<{ clinicId: string; sag?: string }>();
   const clinic = useLoad(() => getClinic(clinicId), [clinicId]);
   return (
     <Screen>
@@ -122,7 +124,7 @@ export function ClinicProfileScreen() {
         </>
       ) : (
         <LoadState {...clinic} onRetry={clinic.reload}>
-          {(data) => <Profile clinic={data} />}
+          {(data) => <Profile clinic={data} caseId={sag} />}
         </LoadState>
       )}
     </Screen>

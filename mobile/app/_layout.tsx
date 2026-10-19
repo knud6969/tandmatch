@@ -22,6 +22,7 @@ function Guarded() {
         <Stack.Screen name="opret" />
         <Stack.Screen name="klinik/[clinicId]" />
         <Stack.Screen name="start" />
+        <Stack.Screen name="sag/[caseId]/send" />
         <Stack.Screen name="sag/[caseId]/flow" options={{ gestureEnabled: false }} />
       </Stack.Protected>
       <Stack.Protected guard={!hasTerms}>
