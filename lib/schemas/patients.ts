@@ -11,8 +11,3 @@ export const patchPatientSchema = z
   })
   .strict();
 
-export const deleteAccountSchema = z
-  .object({
-    confirm: z.literal("SLET", { message: "Skriv SLET for at bekræfte." }),
-  })
-  .strict();

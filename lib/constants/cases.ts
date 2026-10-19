@@ -17,3 +17,7 @@ export const CASE_STATUS_LABEL = {
   submitted: "Sendt",
   closed: "Lukket",
 } as const satisfies Record<(typeof CASE_STATUSES)[number], string>;
+
+// Konsekvensen af "Luk sag" (architecture 6.2). Samme tekst på web og i appen.
+export const CLOSE_CASE_CONSEQUENCE =
+  "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og en reserveret akuttid frigives. Bookede tider består; du kan aflyse dem under Bookinger.";

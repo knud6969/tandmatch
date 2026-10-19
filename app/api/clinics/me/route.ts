@@ -1,4 +1,5 @@
-import { deleteClinicSchema, patchClinicSchema } from "@/lib/schemas/clinics";
+import { deleteAccountSchema } from "@/lib/schemas/auth";
+import { patchClinicSchema } from "@/lib/schemas/clinics";
 import { jsonResponse, noContent, readJson, withApi } from "@/middleware/http";
 import { clearAuthCookies, requireRole } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";
@@ -24,7 +25,7 @@ export const PATCH = withApi(async (req) => {
 export const DELETE = withApi(async (req) => {
   const gate = await requireTerms();
   const session = await requireRole("clinic", { ctx: gate });
-  await readJson(req, deleteClinicSchema);
+  await readJson(req, deleteAccountSchema);
   const { supabase } = gate;
   await new ClinicsController(supabase, session).deleteAccount();
   await clearAuthCookies();

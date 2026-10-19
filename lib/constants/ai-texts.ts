@@ -1,3 +1,4 @@
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
 import type { ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
 
 // Faste danske tekster om AI’ens grænser. Skrevet i koden og ikke af modellen (architecture 7.3, 7.5).
@@ -32,18 +33,18 @@ export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
 
 // Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til EMERGENCY_HREF (/akut, lib/navigation/entries.ts).
 export const EMERGENCY_REFERRAL_TEXT =
-  "Det, du beskriver, kan kræve hurtig hjælp. Søg en akut tid eller kontakt tandlægevagten så hurtigt som muligt. Du kan se klinikker med akutte tider i oversigten.";
+  "Det, du beskriver, kan kræve hurtig hjælp. Tryk på “Jeg har ondt” for at se klinikker med en ledig akuttid, og søg hjælp så hurtigt som muligt.";
 
 // Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt eller hals).
 export const LIFE_THREATENING_REFERRAL_TEXT =
-  "Har du svært ved at trække vejret eller synke, eller er ansigt eller hals kraftigt hævet, så ring 112 med det samme. Ellers kan du ringe til lægevagten på 1813 eller søge en akut tandlægetid.";
+  `Har du svært ved at trække vejret eller synke, eller er ansigt eller hals kraftigt hævet, så ring ${EMERGENCY_CALL_NUMBER} med det samme. ${OUT_OF_HOURS_HELP_TEXT}`;
 
 // Fast tekst når AI-svaret blev afvist af filteret to gange (architecture 7.5, række 6).
 export const CHAT_BLOCKED_TEXT =
   "Det kan jeg desværre ikke hjælpe med her. Prøv at formulere det anderledes, eller skriv din beskrivelse selv.";
 
 export const CHAT_NOT_SHARED_TEXT =
-  "Samtalen deles ikke med tandlæger. Det er den opsummering, du godkender, der sendes.";
+  "Samtalen deles ikke med klinikker. Det er den opsummering, du godkender, der sendes.";
 
 export const DESCRIPTION_LABEL = "Beskrivelse, ikke vurdering";
 

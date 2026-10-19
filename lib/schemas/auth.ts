@@ -63,3 +63,10 @@ export const convertSchema = z
     firstName: firstNameSchema,
   })
   .strict();
+
+// Bekræftelse af kontosletning (patient og klinik): DELETE /api/patients/me og /api/clinics/me.
+export const deleteAccountSchema = z
+  .object({
+    confirm: z.literal("SLET", { message: "Skriv SLET for at bekræfte." }),
+  })
+  .strict();

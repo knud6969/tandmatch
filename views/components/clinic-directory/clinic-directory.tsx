@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMERGENCY_FILTER_HOURS } from "@/lib/constants/clinics";
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
 import type { ClinicListDto } from "@/lib/types/clinics";
 import { CHAT_HREF } from "@/lib/navigation/entries";
 import { Alert } from "@/views/components/ui/alert";
@@ -171,8 +172,7 @@ export function ClinicDirectory() {
         {filters.emergency && (
           <Alert tone="warning" title="Akut tandpine">
             Her ser du klinikker med en ledig akuttid inden for {EMERGENCY_FILTER_HOURS} timer, sorteret efter den tidligste. Er det
-            livstruende, eller har du svært ved at trække vejret eller synke, så ring 112. Uden for klinikkernes åbningstid kan du kontakte
-            tandlægevagten via 1813.
+            livstruende, eller har du svært ved at trække vejret eller synke, så ring {EMERGENCY_CALL_NUMBER}. {OUT_OF_HOURS_HELP_TEXT}
           </Alert>
         )}
       </header>
@@ -241,8 +241,8 @@ export function ClinicDirectory() {
                   <p>Prøv at udvide afstanden, fjerne et filter eller vælge færre behandlinger.</p>
                   {filters.emergency && (
                     <p className="mt-2" data-testid="akut-henvisning">
-                      Har du akut tandpine lige nu, så kontakt tandlægevagten via 1813 (uden for åbningstid) eller ring til din egen
-                      tandlæge. Ring 112, hvis det er livstruende.
+                      Har du akut tandpine lige nu, så ring til din egen tandlæge. {OUT_OF_HOURS_HELP_TEXT} Ring{" "}
+                      {EMERGENCY_CALL_NUMBER}, hvis det er livstruende.
                     </p>
                   )}
                   {activeCount > 0 && (

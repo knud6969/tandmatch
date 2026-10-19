@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback } from "react";
 import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
+import { OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
 import { EMERGENCY_DEFAULT_SERVICE_SLUG } from "@/lib/constants/services";
 import type { ClinicListDto, ClinicListItemDto, SlotDto } from "@/lib/types/clinics";
 import type { ServiceDto } from "@/lib/types/services";
@@ -52,7 +53,7 @@ export function EmergencyClinicStep({ search, onSearch, onChoose, notice }: Prop
   if (!service) {
     return (
       <Alert tone="warning" title="Der er ingen akutydelser lige nu">
-        <p>Ring til tandlægevagten på 1813, hvis du har akut brug for hjælp.</p>
+        <p>{OUT_OF_HOURS_HELP_TEXT}</p>
       </Alert>
     );
   }
@@ -144,8 +145,7 @@ function ClinicList({ service, search, onPick }: { service: ServiceDto; search: 
     return (
       <Alert tone="warning" title="Ingen klinikker med ledig akuttid" >
         <p data-testid="ingen-akuttid">
-          Vi kan ikke finde en klinik med en ledig akuttid lige nu. Har du akut brug for hjælp uden for åbningstid, så kontakt tandlægevagten via
-          1813.
+          Vi kan ikke finde en klinik med en ledig akuttid lige nu. {OUT_OF_HOURS_HELP_TEXT}
         </p>
         <Link href="/klinikker?akut=1" className="mt-2 inline-flex min-h-11 items-center font-semibold text-brand-700">
           Se alle klinikker i oversigten

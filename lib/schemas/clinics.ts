@@ -103,12 +103,6 @@ export const patchClinicSchema = z
   })
   .strict();
 
-export const deleteClinicSchema = z
-  .object({
-    confirm: z.literal("SLET", { message: "Skriv SLET for at bekræfte." }),
-  })
-  .strict();
-
 // Prisliste: erstatter hele listen (PUT).
 const priceRowSchema = z
   .object({

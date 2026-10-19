@@ -1,4 +1,5 @@
-import { deleteAccountSchema, patchPatientSchema } from "@/lib/schemas/patients";
+import { deleteAccountSchema } from "@/lib/schemas/auth";
+import { patchPatientSchema } from "@/lib/schemas/patients";
 import { jsonResponse, noContent, readJson, withApi } from "@/middleware/http";
 import { clearAuthCookies, requireRole } from "@/middleware/session";
 import { requireTerms } from "@/middleware/termsGate";

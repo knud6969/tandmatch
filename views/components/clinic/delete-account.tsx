@@ -9,7 +9,7 @@ import { TextField } from "@/views/components/ui/text-field";
 import { useSession } from "@/views/components/session/session-provider";
 import { apiRequest } from "@/views/utils/api-client";
 import { apiErrorMessage } from "@/views/utils/api-errors";
-import { deleteClinicSchema } from "@/lib/schemas/clinics";
+import { deleteAccountSchema } from "@/lib/schemas/auth";
 
 // Sletning af klinikkontoen (architecture 10.8). Tydelig advarsel om konsekvenserne og en skrevet bekræftelse.
 export function DeleteAccount({ clinicName }: { clinicName: string }) {
@@ -22,7 +22,7 @@ export function DeleteAccount({ clinicName }: { clinicName: string }) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = deleteClinicSchema.safeParse({ confirm: confirm.trim() });
+    const parsed = deleteAccountSchema.safeParse({ confirm: confirm.trim() });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Skriv SLET for at bekræfte.");
       return;

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/constants/ai-texts";
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_NUMBER } from "@/lib/constants/emergency";
 import { EMERGENCY_HREF } from "@/lib/navigation/entries";
 
-// Fast akut-tekst: livstruende symptomer (112) og lægevagten (1813). Fælles for chattens akut-blok og /akut (architecture 6.1).
+// Fast akut-tekst: livstruende symptomer (112) og lægevagten. Fælles for chattens akut-blok og /akut (architecture 6.1).
 // Med `linkToEmergency` fører en knap til akutvejen; på /akut selv er den overflødig.
 export function EmergencyNotice({ linkToEmergency = false }: { linkToEmergency?: boolean }) {
   return (
@@ -15,11 +16,11 @@ export function EmergencyNotice({ linkToEmergency = false }: { linkToEmergency?:
             Se klinikker med ledig akuttid
           </Link>
         )}
-        <a href="tel:112" className="inline-flex min-h-11 items-center font-semibold underline">
-          Ring 112
+        <a href={`tel:${EMERGENCY_CALL_NUMBER}`} className="inline-flex min-h-11 items-center font-semibold underline">
+          Ring {EMERGENCY_CALL_NUMBER}
         </a>
-        <a href="tel:1813" className="inline-flex min-h-11 items-center font-semibold underline">
-          Ring 1813
+        <a href={`tel:${OUT_OF_HOURS_NUMBER}`} className="inline-flex min-h-11 items-center font-semibold underline">
+          Ring {OUT_OF_HOURS_NUMBER} (Region Hovedstaden)
         </a>
       </p>
     </div>

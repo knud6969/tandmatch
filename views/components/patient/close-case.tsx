@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CLOSE_CASE_CONSEQUENCE } from "@/lib/constants/cases";
 import { Button } from "@/views/components/ui/button";
 import { Card } from "@/views/components/ui/card";
 import { StatusMessage } from "@/views/components/ui/status-message";
@@ -29,8 +30,7 @@ export function CloseCase({ caseId, onClosed }: Props) {
       {confirming ? (
         <div className="flex flex-col gap-3">
           <p className="text-base text-ink" id="luk-sag-konsekvens">
-            Klinikker, der ikke har svaret, og accepterede henvendelser uden booket tid trækkes tilbage, og en reserveret akuttid
-            frigives. Bookede tider består; du kan aflyse dem under Bookinger.
+            {CLOSE_CASE_CONSEQUENCE}
           </p>
           <div className="flex flex-col gap-2 sm:flex-row" role="group" aria-label="Bekræft lukning af sagen" aria-describedby="luk-sag-konsekvens">
             <Button variant="danger" onClick={closeCase} disabled={close.busy}>

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { deleteAccountSchema } from "@/lib/schemas/patients";
+import { deleteAccountSchema } from "@/lib/schemas/auth";
 import { useSession } from "@/views/components/session/session-provider";
 import { Alert } from "@/views/components/ui/alert";
 import { Button } from "@/views/components/ui/button";
