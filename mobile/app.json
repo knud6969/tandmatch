@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "TandMatch",
+    "slug": "tandmatch",
+    "scheme": "tandmatch",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dk.tandmatch.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "TandMatch bruger kameraet, så du kan tage et billede af dit tandproblem. Billedet sendes først, når du har givet samtykke.",
+        "NSPhotoLibraryUsageDescription": "TandMatch bruger dine fotos, så du kan vælge et billede af dit tandproblem. Billedet sendes først, når du har givet samtykke.",
+        "NSLocationWhenInUseUsageDescription": "TandMatch bruger din position til at finde klinikker tæt på dig. Positionen gemmes ikke."
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser"]
+  }
+}
