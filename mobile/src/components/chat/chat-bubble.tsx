@@ -20,7 +20,7 @@ function AssistantExtras({ message }: { message: AiChatMessageDto }) {
       ))}
       {message.suggestedServices.length > 0 ? (
         <View style={styles.suggestions} testID="forslag">
-          <Text style={styles.suggestionsTitle}>Behandlinger, din beskrivelse kan passe til. Du bekræfter selv i næste trin:</Text>
+          <Text style={styles.suggestionsTitle}>Behandlinger, din beskrivelse kan passe til. Du bekræfter selv nedenfor:</Text>
           <View style={styles.badges}>
             {message.suggestedServices.map((service) => (
               <Badge key={service.id} label={service.name} />

@@ -19,18 +19,18 @@ export function getCase(caseId: string): Promise<CaseDto> {
   return apiRequest<CaseDto>(`/api/cases/${caseId}`);
 }
 
-export function patchCase(caseId: string, input: z.infer<typeof patchCaseSchema>): Promise<CaseDto> {
+export function updateCase(caseId: string, input: z.infer<typeof patchCaseSchema>): Promise<CaseDto> {
   return apiRequest<CaseDto>(`/api/cases/${caseId}`, { method: "PATCH", json: input });
 }
 
 export type ConfirmedServiceInput = { serviceId: string; suggestedByAi: boolean };
 
-export function putCaseServices(caseId: string, services: ConfirmedServiceInput[]): Promise<CaseDto> {
+export function confirmServices(caseId: string, services: ConfirmedServiceInput[]): Promise<CaseDto> {
   return apiRequest<CaseDto>(`/api/cases/${caseId}/services`, { method: "PUT", json: { services } });
 }
 
 // Udkast til opsummering (kræver aktivt ai_processing-samtykke).
-export function generateSummary(caseId: string): Promise<SummaryResponse> {
+export function createSummary(caseId: string): Promise<SummaryResponse> {
   return apiRequest<SummaryResponse>(`/api/cases/${caseId}/summary`, { method: "POST", json: {} });
 }
 

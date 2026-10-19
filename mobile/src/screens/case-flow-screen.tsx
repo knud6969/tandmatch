@@ -2,18 +2,29 @@ import { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { nextCaseFlowStep } from "@/lib/domain/case-flow";
 import { hasCurrentConsent } from "@/lib/domain/consents";
+import type { CaseDto } from "@/lib/types/cases";
 import { getCase } from "~/api/cases";
 import { getConsents, grantConsent } from "~/api/consents";
+import { getServiceGroups } from "~/api/services";
+import { useSession } from "~/auth/session-context";
 import { ChatPanel } from "~/components/chat/chat-panel";
+import { PostalCodeCard } from "~/components/case/postal-code-card";
+import { ReadyCard } from "~/components/case/ready-card";
+import { ServicesCard } from "~/components/case/services-card";
+import { SummaryCard } from "~/components/case/summary-card";
+import { TimeframeCard } from "~/components/case/timeframe-card";
 import { Button, LoadState, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
+import { useCaseActions } from "~/hooks/use-case-actions";
 import { useChat } from "~/hooks/use-chat";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, spacing } from "~/theme";
+import { cardModes } from "~/utils/case-cards";
 
-// Sagsflowet (architecture 6.1, 13.4). Foreløbig kun chatten (8.6a); resten af flowet designes af arkitekten.
-// De færdige trinkomponenter fra 8.6b (behandlinger, tid og sted, opsummering) står i ~/components/case/ uden for navigationen.
+// Sagsflowet som én samtale (architecture 7.9, 13.4): chatten med AI'en og under den faste svar-kort fra TandMatch
+// (behandlinger, tidsrum, postnummer, opsummering, klar). Hvilket kort der er aktuelt, afgøres af nextCaseFlowStep().
 export function CaseFlowScreen() {
   const { caseId } = useLocalSearchParams<{ caseId: string }>();
   const router = useRouter();
@@ -21,6 +32,10 @@ export function CaseFlowScreen() {
   const consents = useLoad(getConsents);
   const [aiGranted, setAiGranted] = useState(false);
   const chat = useChat(caseId, caseLoad.reload);
+  const actions = useCaseActions(caseId);
+  const catalog = useLoad(getServiceGroups);
+  const session = useSession();
+  const hasAccount = session.me !== null && !session.me.isAnonymous;
 
   const grant = useAction(async () => {
     await grantConsent("ai_processing");
@@ -30,8 +45,44 @@ export function CaseFlowScreen() {
 
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
   const dto = caseLoad.data;
+  const changed = caseLoad.reload;
+
+  function renderCards() {
+    if (!dto) return null;
+    const step = nextCaseFlowStep(dto, { messages: chat.messages, status: chat.closed ? "closed" : "active", readyForSummary: chat.ready });
+    const modes = cardModes(step);
+    const answered = (id: keyof typeof modes) => modes[id] === "answered";
+    return (
+      <View style={styles.cards}>
+        {modes.services !== "hidden" ? (
+          <ServicesCard
+            key={dto.suggestedServices.map((s) => s.id).join(",")}
+            caseDto={dto}
+            answered={answered("services")}
+            actions={actions}
+            catalog={{ groups: catalog.data, loading: catalog.loading, error: catalog.error, reload: catalog.reload }}
+            onSaved={changed}
+          />
+        ) : null}
+        {modes.timeframe !== "hidden" ? <TimeframeCard caseDto={dto} answered={answered("timeframe")} actions={actions} onSaved={changed} /> : null}
+        {modes.postal_code !== "hidden" ? (
+          <PostalCodeCard caseDto={dto} answered={answered("postal_code")} hasAccount={hasAccount} actions={actions} onSaved={changed} />
+        ) : null}
+        {modes.summary !== "hidden" ? <SummaryCard caseDto={dto} answered={answered("summary")} actions={actions} onSaved={changed} /> : null}
+        {modes.ready !== "hidden" ? (
+          <ReadyCard
+            canSend={dto.canSend}
+            onSeeClinics={() => router.push({ pathname: "/klinikker", params: { sag: caseId } })}
+            onOpenCases={() => router.replace("/sager")}
+          />
+        ) : null}
+      </View>
+    );
+  }
+
   const aiConsent = aiGranted || (consents.data !== null && hasCurrentConsent(consents.data, "ai_processing"));
 
+  const cards = dto && dto.status === "draft" ? renderCards() : null;
   let body;
   if (!dto || consents.loading) {
     body = (
@@ -78,6 +129,8 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
+        cards={cards}
+        cardsKey={cardsKey(dto)}
       />
     );
   }
@@ -99,7 +152,14 @@ export function CaseFlowScreen() {
   );
 }
 
+// Ændres, når kortene skifter, så chatten ruller ned til det nye kort.
+function cardsKey(dto: CaseDto | null): string {
+  if (!dto) return "";
+  return [dto.services.length, dto.preferredTimeframe, dto.postalCode, dto.summaryApprovedAt, dto.aiSummary ? 1 : 0].join("|");
+}
+
 const styles = StyleSheet.create({
+  cards: { gap: spacing.md },
   safe: { flex: 1, backgroundColor: colors.canvas },
   flex: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.line },

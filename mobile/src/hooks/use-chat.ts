@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { getChat, sendChatMessage } from "~/api/chat";
 import type { AiChatMessageDto } from "@/lib/types/ai";
+import { isChatLimitCode } from "~/utils/case-cards";
 import { runChatTurn, type TurnOutcome } from "~/utils/chat-turn";
 import { useLoad } from "./use-load";
 
@@ -12,6 +13,8 @@ export function useChat(caseId: string, onTurn: () => void) {
   const [needsConsent, setNeedsConsent] = useState(false);
   const [ready, setReady] = useState<boolean | null>(null);
   const [messagesLeft, setMessagesLeft] = useState<number | null>(null);
+  // 429 CHAT_LIMIT: samtalen er lukket ved loftet, selv om vores egen tilstand ikke vidste det.
+  const [limitHit, setLimitHit] = useState(false);
 
   const state = chat.data;
   const messages = [...(state?.messages ?? []), ...extra];
@@ -27,6 +30,9 @@ export function useChat(caseId: string, onTurn: () => void) {
         onTurn();
       } else if (outcome.kind === "consent_required") {
         setNeedsConsent(true);
+      } else if (outcome.kind === "failed" && isChatLimitCode(outcome.code)) {
+        setLimitHit(true);
+        chat.reload();
       } else if (outcome.kind === "saved_without_reply") {
         // Hent samtalen igen i stedet for at lægge beskeden tilbage, så den ikke sendes to gange.
         setExtra([]);
@@ -50,8 +56,9 @@ export function useChat(caseId: string, onTurn: () => void) {
     needsConsent,
     clearNeedsConsent: () => setNeedsConsent(false),
     ready: ready ?? state?.readyForSummary ?? false, // bruges af det kommende flow (AI'en har nok til en opsummering)
-    messagesLeft: messagesLeft ?? state?.messagesLeft ?? 0,
-    closed: state?.status === "closed",
+    messagesLeft: limitHit ? 0 : (messagesLeft ?? state?.messagesLeft ?? 0),
+    // Lukket ved loftet: serverens status, 429 CHAT_LIMIT eller ingen beskeder tilbage. Kortene virker stadig.
+    closed: state?.status === "closed" || limitHit || (state !== null && (messagesLeft ?? state.messagesLeft) <= 0),
     send,
   };
 }

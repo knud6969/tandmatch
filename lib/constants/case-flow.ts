@@ -17,6 +17,7 @@ export const CASE_FLOW_TEXTS = {
   summaryWriteYourself: "Skriv selv kort, hvad klinikken skal vide",
   imagesChanged: "Du har ændret billederne. Godkend beskrivelsen igen",
   readyTitle: "Din beskrivelse er klar.",
+  readyCannotSend: "Du kan ikke sende flere henvendelser på denne sag lige nu. Du kan følge sagen under Mine sager.",
   readySeeClinics: "Se klinikker der kan hjælpe",
   answeredEdit: "Ret",
 } as const;

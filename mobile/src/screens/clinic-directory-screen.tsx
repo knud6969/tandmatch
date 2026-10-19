@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
+import { getCase } from "~/api/cases";
 import { listClinics } from "~/api/clinics";
 import { getServiceGroups } from "~/api/services";
 import { ClinicCard } from "~/components/clinic-directory/clinic-card";
@@ -19,7 +20,7 @@ import { getRoundedPosition, PositionError } from "~/utils/position";
 // Klinikoversigten som liste med filtre (architecture 6.6, 13.4). Rækkefølgen og kriterierne er serverens.
 export function ClinicDirectoryScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ akut?: string }>();
+  const params = useLocalSearchParams<{ akut?: string; sag?: string }>();
   const [filters, setFilters] = useState<DirectoryFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -34,6 +35,29 @@ export function ClinicDirectoryScreen() {
       router.setParams({ akut: undefined });
     }
   }, [params.akut, router]);
+
+  // Fra sagsflowets "Se klinikker der kan hjælpe": filtrer på sagens bekræftede behandlinger og postnummer (vælg og send kommer i 8.8a).
+  const caseId = params.sag;
+  const [appliedCase, setAppliedCase] = useState<string | null>(null);
+  useEffect(() => {
+    if (!caseId || appliedCase === caseId) return;
+    let cancelled = false;
+    getCase(caseId)
+      .then((dto) => {
+        if (cancelled) return;
+        setAppliedCase(caseId);
+        setFilters((f) => ({
+          ...f,
+          serviceSlugs: dto.services.map((service) => service.slug),
+          postalCode: dto.postalCode ?? f.postalCode,
+          position: dto.postalCode ? null : f.position,
+        }));
+      })
+      .catch(() => undefined); // Uden sagen vises oversigten ufiltreret.
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId, appliedCase]);
 
   const query = buildClinicsQuery(filters);
   const clinics = useLoad(() => listClinics(query), [query]);

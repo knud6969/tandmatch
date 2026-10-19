@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AI_BOUNDARY_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/constants/ai-texts";
+import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/constants/limits";
 import type { AiChatMessageDto } from "@/lib/types/ai";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { LoadState, StatusMessage } from "~/components/ui";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
+import { lowMessagesLeft } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
 import { ChatBubble } from "./chat-bubble";
 
@@ -34,6 +35,9 @@ type Props = {
   consentError: string | null;
   onGrantConsent: () => void;
   onSend: (text: string) => Promise<TurnOutcome>;
+  // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
+  cards?: ReactNode;
+  cardsKey?: string;
 };
 
 // Samtalen med AI-assistenten (architecture 6.1, 7, 10.6). Fast tekst om AI'ens grænser og om personoplysninger, foreløbige
@@ -48,7 +52,7 @@ export function ChatPanel(props: Props) {
   useEffect(() => {
     const id = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(id);
-  }, [messages.length, pending]);
+  }, [messages.length, pending, props.cardsKey]);
 
   async function send() {
     const text = draft.trim();
@@ -79,6 +83,7 @@ export function ChatPanel(props: Props) {
 
   const blockedByConsent = !props.aiConsentGiven;
   const finished = props.closed || props.messagesLeft === 0;
+  const low = lowMessagesLeft(props.messagesLeft, finished);
 
   return (
     <View style={styles.flex}>
@@ -113,16 +118,20 @@ export function ChatPanel(props: Props) {
             </View>
           </>
         ) : null}
+        {props.cards}
       </ScrollView>
 
       <View style={styles.footer}>
         {blockedByConsent ? (
           <ConsentGate type="ai_processing" onGrant={props.onGrantConsent} pending={props.consentPending} error={props.consentError} />
         ) : finished ? (
-          <StatusMessage message="Samtalen er slut. Du kan gå videre med det, du har skrevet." />
+          <StatusMessage message={CHAT_LIMIT_REACHED_TEXT} />
         ) : (
           <>
             {sendError ? <StatusMessage message={sendError} tone="danger" /> : null}
+            {low !== null ? (
+              <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
+            ) : null}
             <Text style={styles.hint}>{CHAT_PII_WARNING_TEXT}</Text>
             <View style={styles.inputRow}>
               <TextInput
