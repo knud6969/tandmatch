@@ -295,6 +295,8 @@ const IMPORTED: ImportedSpec[] = [
 type VerifiedSpec = {
   key: string; cvr: string; name: string; address: string; postalCode: string; city: string; phone: string; email: string;
   description: string; factor: number; saturday: boolean; emergencyWindow: boolean; hue: number;
+  // Akutvindue alle ugens dage (07-22, uden for de almindelige åbningstider), så /akut aldrig er tom inden for 48 timer.
+  emergencyAllWeek?: boolean;
   trustpilot?: { url: string; score: number; count: number };
   dentists: { name: string; title: string; bio: string }[];
 };
@@ -326,6 +328,32 @@ const VERIFIED: VerifiedSpec[] = [
     dentists: [
       { name: 'Sara Skabelon', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Peter Pladsholder', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+    ] },
+  { key: 'v4', cvr: '90001005', name: 'Demo Tandklinik Østerbro', address: 'Skitseallé 50', postalCode: '2100', city: 'København Ø', phone: '+45 00 00 10 05',
+    email: 'klinik-v4@demo.tandmatch.test', description: 'Fiktiv demoklinik på Østerbro med akuttider alle ugens dage.', factor: 1.05, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 180,
+    trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v4.dk', score: 4.6, count: 98 },
+    dentists: [
+      { name: 'Freja Østerbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+      { name: 'Oliver Akutsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+    ] },
+  { key: 'v5', cvr: '90001006', name: 'Demo Tandlægerne Vesterbro', address: 'Modelgade 60', postalCode: '1500', city: 'København V', phone: '+45 00 00 10 06',
+    email: 'klinik-v5@demo.tandmatch.test', description: 'Fiktiv demoklinik på Vesterbro med akuttider alle ugens dage.', factor: 0.95, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 330,
+    dentists: [
+      { name: 'Ida Vesterbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+      { name: 'Noah Prøvesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+    ] },
+  { key: 'v6', cvr: '90001007', name: 'Demo Tandcenter Amager', address: 'Eksempelstræde 70', postalCode: '2300', city: 'København S', phone: '+45 00 00 10 07',
+    email: 'klinik-v6@demo.tandmatch.test', description: 'Fiktiv demoklinik på Amager med åbent om lørdagen.', factor: 0.85, saturday: true, emergencyWindow: false, hue: 100,
+    trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v6.dk', score: 4.0, count: 45 },
+    dentists: [
+      { name: 'Hannah Amagersen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+      { name: 'Victor Skitsesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+    ] },
+  { key: 'v7', cvr: '90001008', name: 'Demo Tandklinik Hellerup', address: 'Fiktivvej 80', postalCode: '2900', city: 'Hellerup', phone: '+45 00 00 10 08',
+    email: 'klinik-v7@demo.tandmatch.test', description: 'Fiktiv demoklinik i Hellerup med fokus på kosmetisk tandpleje.', factor: 1.25, saturday: false, emergencyWindow: false, hue: 260,
+    dentists: [
+      { name: 'Sebastian Hellerupsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
+      { name: 'Alma Demosen', title: 'Specialtandlæge i protetik', bio: 'Fiktiv specialtandlæge til demoformål.' },
     ] },
 ];
 
@@ -470,6 +498,14 @@ async function seed(config: Config): Promise<void> {
     }))), 'prisliste');
 
     const hours: Record<string, unknown>[] = [1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: clinicId, weekday, opens_at: '08:00', closes_at: '16:00', is_emergency: false }));
+    if (spec.emergencyAllWeek) {
+      // Akutvinduer 07-08 og 16-22 på hverdage (omkring de almindelige tider; vinduer må ikke overlappe) og 07-22 i weekenden.
+      for (const weekday of [1, 2, 3, 4, 5]) {
+        hours.push({ clinic_id: clinicId, weekday, opens_at: '07:00', closes_at: '08:00', is_emergency: true });
+        hours.push({ clinic_id: clinicId, weekday, opens_at: '16:00', closes_at: '22:00', is_emergency: true });
+      }
+      for (const weekday of [6, 7]) hours.push({ clinic_id: clinicId, weekday, opens_at: '07:00', closes_at: '22:00', is_emergency: true });
+    }
     if (spec.saturday) hours.push({ clinic_id: clinicId, weekday: 6, opens_at: '09:00', closes_at: '13:00', is_emergency: false });
     if (spec.emergencyWindow) for (const weekday of [1, 2, 3, 4, 5]) hours.push({ clinic_id: clinicId, weekday, opens_at: '16:00', closes_at: '19:00', is_emergency: true });
     mustOk(await admin.from('clinic_opening_hours').insert(hours), 'åbningstider');
@@ -509,7 +545,7 @@ async function seed(config: Config): Promise<void> {
     mustOk(await admin.rpc('admin_set_clinic_status', { p_clinic_id: clinicId, p_status: 'verified' }), 'verificér klinik');
     clinics.push({ spec, clinicId, userId, client: await signIn(config, spec.email, password) });
   }
-  const [v0, v1, v2, v3] = clinics;
+  const [v0, v1, v2, v3, v4, v5] = clinics;
 
   // --- Patienter og samtykker ---------------------------------------------------------------------------
   log('Opretter patienter og samtykker ...');
@@ -627,35 +663,40 @@ async function seed(config: Config): Promise<void> {
 
   // --- Forhistorik: 9 afsluttede bookinger med godkendte anmeldelser (3 pr. klinik v0-v2) ---------------
   log('Opretter afsluttede bookinger og godkendte anmeldelser ...');
-  const historyClinics = [v0, v1, v2];
   const historyServices = ['undersoegelse', 'tandrensning', 'blegning'];
   let planIndex = 0;
   const reviewIds: string[] = [];
-  for (const patient of [p0, p1, p2]) {
-    for (const [k, clinic] of historyClinics.entries()) {
-      const slug = historyServices[(patient.index + k) % historyServices.length];
-      const caseId = await createCase({
-        patient, services: [slug], timeframe: 'flexible', summary: `Jeg ønsker ${slug === 'blegning' ? 'blegning' : slug === 'tandrensning' ? 'tandrensning' : 'en undersøgelse'}.`,
-      }, true);
-      const leads = await sendLeads(patient, caseId, [clinic.clinicId]);
-      const leadId = leads.get(clinic.clinicId) as string;
-      const [lMin, lMax] = await listPrice(clinic, slug);
-      await accept(clinic, leadId, null, [lMin, lMax]);
-      const daysAgo = 4 + k * 2 + patient.index * 9;
-      const startsAt = localToUtc(addDays(todayLocal(), -daysAgo), 10, 0);
-      const bookingId = await insertPastBooking(clinic, patient, leadId, slug, startsAt, 'completed');
+  async function addHistory(historyClinics: ClinicHandle[], dayOffset: number): Promise<void> {
+    for (const patient of [p0, p1, p2]) {
+      for (const [i, clinic] of historyClinics.entries()) {
+        const k = i + dayOffset;
+        const slug = historyServices[(patient.index + k) % historyServices.length];
+        const caseId = await createCase({
+          patient, services: [slug], timeframe: 'flexible', summary: `Jeg ønsker ${slug === 'blegning' ? 'blegning' : slug === 'tandrensning' ? 'tandrensning' : 'en undersøgelse'}.`,
+        }, true);
+        const leads = await sendLeads(patient, caseId, [clinic.clinicId]);
+        const leadId = leads.get(clinic.clinicId) as string;
+        const [lMin, lMax] = await listPrice(clinic, slug);
+        await accept(clinic, leadId, null, [lMin, lMax]);
+        const daysAgo = 4 + k * 2 + patient.index * 9;
+        const startsAt = localToUtc(addDays(todayLocal(), -daysAgo), 10, 0);
+        const bookingId = await insertPastBooking(clinic, patient, leadId, slug, startsAt, 'completed');
 
-      const plan = REVIEW_PLANS[planIndex % REVIEW_PLANS.length];
-      planIndex += 1;
-      const review = must(await admin.from('reviews').insert({
-        booking_id: bookingId, clinic_id: clinic.clinicId, patient_id: patient.userId, stars: plan.stars, text: REVIEW_TEXTS[plan.text],
-        price_accuracy: plan.accuracy, actual_price: plan.accuracy === 'as_quoted' ? null : Math.round(lMax * (plan.accuracy === 'much_higher' ? 1.4 : 1.12)),
-        lacked_transparency: plan.transparency, transparency_comment: plan.transparency ? 'Ekstra omkostninger blev ikke nævnt på forhånd.' : null,
-      }).select('id').single(), 'anmeldelse') as { id: string };
-      mustOk(await admin.from('reviews').update({ moderation_status: 'approved', moderated_at: new Date().toISOString() }).eq('id', review.id), 'godkend anmeldelse');
-      reviewIds.push(review.id);
+        const plan = REVIEW_PLANS[planIndex % REVIEW_PLANS.length];
+        planIndex += 1;
+        const review = must(await admin.from('reviews').insert({
+          booking_id: bookingId, clinic_id: clinic.clinicId, patient_id: patient.userId, stars: plan.stars, text: REVIEW_TEXTS[plan.text],
+          price_accuracy: plan.accuracy, actual_price: plan.accuracy === 'as_quoted' ? null : Math.round(lMax * (plan.accuracy === 'much_higher' ? 1.4 : 1.12)),
+          lacked_transparency: plan.transparency, transparency_comment: plan.transparency ? 'Ekstra omkostninger blev ikke nævnt på forhånd.' : null,
+        }).select('id').single(), 'anmeldelse') as { id: string };
+        mustOk(await admin.from('reviews').update({ moderation_status: 'approved', moderated_at: new Date().toISOString() }).eq('id', review.id), 'godkend anmeldelse');
+        reviewIds.push(review.id);
+      }
     }
   }
+  await addHistory([v0, v1, v2], 0);
+  // v4 og v5 får hver tre godkendte anmeldelser med blandet prisnøjagtighed (v0, v4 og v5 viser prisnøjagtighed fra 2100).
+  await addHistory([v4, v5], 3);
   // Klinikkens offentlige svar på de to første anmeldelser (godkendt)
   for (const [i, reviewId] of reviewIds.slice(0, 2).entries()) {
     const reply = must(await admin.from('review_replies').insert({
@@ -692,6 +733,15 @@ async function seed(config: Config): Promise<void> {
     p_requested_starts_at: localToUtc(heldDay, 16, 30).toISOString(), p_contact_name: PATIENTS[3].fullName, p_contact_phone: PATIENTS[3].phone,
   }), 'akut-lead med reservation');
 
+  // Akut-lead hos v4, som klinikken accepterer straks: der findes altid en booket akuttid (kalender, sag og indbakke).
+  // Går gennem send_emergency_lead() som akutvejen i appen (sag + reservation), og accepten laves af klinikkens egen session.
+  const v4Emergency = must(await p3.client.rpc('send_emergency_lead', {
+    p_clinic_id: v4.clinicId, p_service_id: sid('akut_konsultation'), p_starts_at: localToUtc(nextWeekday(1), 17, 0).toISOString(),
+    p_description: 'Jeg har ondt i en kindtand og har brug for en akuttid hurtigst muligt.',
+    p_contact_name: PATIENTS[3].fullName, p_contact_phone: PATIENTS[3].phone, p_postal_code: PATIENTS[3].postalCode,
+  }), 'akut-lead hos v4') as { case_id: string; lead_id: string }[];
+  await accept(v4, v4Emergency[0].lead_id, 'Vi har en akuttid til dig. Kom som aftalt.', null);
+
   // --- Laura: kladde uden leads --------------------------------------------------------------------------
   await createCase({ patient: p4, services: ['retainer'], timeframe: 'flexible', summary: 'Min retainer er knækket.' }, false);
 
@@ -706,8 +756,14 @@ async function seed(config: Config): Promise<void> {
   log(`  Rækker: ${Object.entries(counts).map(([t, n]) => `${t}=${n}`).join(', ')}`);
   log(`  Adgangskode til alle demo-brugere (vises kun nu): ${password}`);
   log(`  Patienter:  patient1..patient5${DEMO_EMAIL_SUFFIX}`);
-  log(`  Klinikker:  klinik-v0..klinik-v3${DEMO_EMAIL_SUFFIX} (verificerede), klinik-registreret${DEMO_EMAIL_SUFFIX}`);
-  log('  Bemærk: den reserverede akuttid (held) udløber efter 30 minutter.');
+  log(`  Klinikker:  klinik-v0..klinik-v7${DEMO_EMAIL_SUFFIX} (verificerede), klinik-registreret${DEMO_EMAIL_SUFFIX}`);
+  log('  Demo-rejser:');
+  log('    patient1 (Mette, 2200): hovedforløb med billeder, beskedtråd, accepteret lead med kommende booking, afvist og tilbagetrukket lead.');
+  log('    patient2 (Jonas, 8000): accepteret lead uden booking og et ubesvaret lead.');
+  log('    patient3 (Sofie, 5000): booking der lige er slut (kan ikke anmeldes endnu).');
+  log('    patient4 (Emil, 2100): akutvejen: en reserveret akuttid hos v0 (udløber efter 30 minutter) og en booket akuttid hos v4; desuden en udeblivelse.');
+  log('    patient5 (Laura, 9000): kladde uden leads.');
+  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 og v5 har akuttider alle ugens dage.');
 }
 
 // Standardvarigheder fra supabase/migrations/…_services_catalog.sql (bruges til prislistens varighed og forhistorik).

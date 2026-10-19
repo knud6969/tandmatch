@@ -79,7 +79,7 @@ async function runFlow(page: Page, caseId: string) {
   await expect(page.getByRole("heading", { level: 1, name: "Find en klinik" })).toBeVisible();
   await expect(page.getByText("Vælg klinikker til din sag")).toBeVisible();
   const boxes = page.getByRole("checkbox", { name: /Vælg til kontakt/ });
-  await expect(boxes.nth(3)).toBeVisible(); // mindst fire verificerede klinikker i demodata
+  await expect(boxes.nth(3)).toBeVisible(); // otte verificerede klinikker i demodata (7.9)
   await expectNoHorizontalScroll(page);
 
   // Vælg tre. Det fjerde kan ikke vælges i UI'et.
@@ -193,7 +193,8 @@ async function runFlow(page: Page, caseId: string) {
   // Standardafstanden (50 km fra 2100) udelukker de fjerne demoklinikker, så den udvides som i resten af testen.
   await page.goto(directoryUrl(caseId));
   await expect(page.getByText("Du har allerede kontaktet klinikken").first()).toBeVisible();
-  await expect(boxes).toHaveCount(1);
+  // De tre kontaktede klinikker har ingen afkrydsningsboks; de øvrige verificerede demoklinikker har (8 i alt).
+  await expect(boxes.first()).toBeVisible();
   await boxes.first().check();
   await expect(page.getByTestId("valgte-antal")).toHaveText("1 af 1 mulige klinikker valgt");
   await expectNoHorizontalScroll(page);

@@ -37,7 +37,7 @@ select tt.denied(format('select tt.emg(%L, %L, %L, p_postal => %L)', 'Z', 'akut_
 
 select tt.as_postgres();
 select tt.eq((select count(*) from public.cases where patient_id = tt.id('pA') and is_emergency)::int, 0, 'ingen akutsag efter afvisninger');
-select tt.eq((select count(*) from public.leads l join public.cases c on c.id = l.case_id where c.is_emergency)::int, 0, 'ingen akut-leads efter afvisninger');
+select tt.eq((select count(*) from public.leads l join public.cases c on c.id = l.case_id where c.is_emergency and l.clinic_id = tt.cid('Z'))::int, 0, 'ingen akut-leads efter afvisninger');
 
 -- Succes
 select tt.as_user(tt.id('pA'));
@@ -48,7 +48,7 @@ select tt.eq((select count(*) from public.cases where patient_id = tt.id('pA') a
 select tt.eq((select count(*) from public.case_services cs join public.cases c on c.id = cs.case_id where c.is_emergency and c.patient_id = tt.id('pA') and cs.service_id = tt.svc('akut_konsultation'))::int, 1, 'ydelsen er bekræftet');
 select tt.eq((select b.status::text from public.bookings b join public.leads l on l.id = b.lead_id join public.cases c on c.id = l.case_id
                where c.is_emergency and c.patient_id = tt.id('pA')), 'held', 'tiden er reserveret (held)');
-select tt.eq((select count(*) from public.bookings b where b.hold_expires_at is not null and b.hold_expires_at > now())::int, 1, 'reservationen har udløbstid');
+select tt.eq((select count(*) from public.bookings b where b.clinic_id = tt.cid('Z') and b.hold_expires_at is not null and b.hold_expires_at > now())::int, 1, 'reservationen har udløbstid');
 
 -- Samme tid til en anden patient: SLOT_TAKEN og ingen halv sag
 select tt.as_user(tt.id('pB'));

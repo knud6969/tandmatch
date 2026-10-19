@@ -95,12 +95,17 @@ test.describe("klinikoversigt og profil", () => {
     await expect(page.getByRole("heading", { name: "Anmeldelser på TandMatch" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Trustpilot (ekstern kilde)" })).toBeVisible();
     await expect(page.getByText("ifølge klinikkens prisliste").first()).toBeVisible();
-    // Egne anmeldelser er markeret som verificerede og vises adskilt fra Trustpilot.
-    await expect(page.getByText("Verificeret besøg").first()).toBeVisible();
-    await expect(page.getByText("Prisnøjagtighed").first()).toBeVisible();
     await expect(page.getByText("Noget gik galt")).toHaveCount(0);
     await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap-bidragydere");
     await expectNoHorizontalScroll(page);
+
+    // Egne anmeldelser er markeret som verificerede og vises adskilt fra Trustpilot. Markøren ovenfor kan høre til en
+    // klinik uden anmeldelser (demodata: v0, v4 og v5 har dem), så vi åbner Nørrebro-klinikken, som altid har tre.
+    await visit(page, "/klinikker");
+    await cards.filter({ hasText: "Demo Tandklinik Nørrebro" }).first().getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/klinikker\/[0-9a-f-]{36}(\?.*)?$/);
+    await expect(page.getByText("Verificeret besøg").first()).toBeVisible();
+    await expect(page.getByText("Prisnøjagtighed").first()).toBeVisible();
 
     expect(csp()).toEqual([]);
   });
