@@ -29,7 +29,7 @@ select tt.eq(public.has_active_consent('image_upload'), true, 'efter: image_uplo
 select tt.eq(public.has_active_consent('ai_processing'), true, 'efter: ai_processing er stadig aktivt');
 -- Nu må brugeren give health_data_sharing
 select tt.allowed(format('insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values (%L, %L, %L, false)',
-                         tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v0-prototype'), 'efter: health_data_sharing kan gives');
+                         tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v1-klinikker'), 'efter: health_data_sharing kan gives');
 
 -- En anden bruger med case_id får intet
 select tt.as_user(tt.id('pB'));

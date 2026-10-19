@@ -1,7 +1,6 @@
 -- Test 30 (security 0.7, L2, M3, M5, M6, L3): databasen selv kræver hele kvarterer på bookings.starts_at, også ved
 -- skrivning som postgres/service role; effective_booking_status(uuid) findes ikke længere; patienter kan ikke slette
--- sager; ingen TRUNCATE/REFERENCES/TRIGGER for anon/authenticated; delingssamtykke trækker kun leads tilbage, hvis
--- der ikke findes et andet aktivt samtykke.
+-- sager; ingen TRUNCATE/REFERENCES/TRIGGER for anon/authenticated; tilbagetrækning af delingssamtykke gælder typen (7.12a).
 begin;
 \ir _helpers.sql
 \ir _fixtures.sql
@@ -48,19 +47,21 @@ select tt.denied('truncate public.messages', 'authenticated kan ikke TRUNCATE me
 select tt.as_anon();
 select tt.denied('truncate public.clinics cascade', 'anon kan ikke TRUNCATE clinics', '42501');
 
--- L3: to aktive delingssamtykker; tilbagetrækning af det ene rører ikke leads
+-- L3 (7.12a, punkt 31): tilbagetrækning gælder typen. To aktive delingssamtykker (v0 som fixture, v1 fra fixtures);
+-- tilbagetrækning af det ene trækker begge tilbage, og leadet trækkes tilbage.
 select tt.as_postgres();
 insert into public.consents (patient_id, type, text_version, granted_while_anonymous)
 values (tt.id('pA'), 'health_data_sharing', 'health_data_sharing@v0-prototype', false);
+update public.consents set created_at = created_at - interval '1 hour'
+ where patient_id = tt.id('pA') and type = 'health_data_sharing' and text_version = 'health_data_sharing@v0-prototype';
 select tt.mk_case('pA', 'L3a');
 select tt.mk_lead('L3a', 'Y', 'sent');
 select tt.as_user(tt.id('pA'));
-select tt.eq((select consent_type::text from public.withdraw_consent((select id from public.consents where patient_id = tt.id('pA') and type = 'health_data_sharing' order by created_at limit 1))), 'health_data_sharing', 'det ene samtykke trækkes tilbage');
+select tt.eq((select w.withdrawn_leads from public.withdraw_consent(
+  (select id from public.consents where patient_id = tt.id('pA') and type = 'health_data_sharing' and text_version = 'health_data_sharing@v1-klinikker' limit 1)) w),
+  1, 'tilbagetrækning trækker leadet tilbage selv om en anden version var aktiv');
 select tt.as_postgres();
-select tt.eq((select status::text from public.leads where id = tt.lead('L3a', 'Y')), 'sent', 'leadet er uberørt, når et andet aktivt samtykke findes');
-select tt.as_user(tt.id('pA'));
-select tt.eq((select withdrawn_leads from public.withdraw_consent((select id from public.consents where patient_id = tt.id('pA') and type = 'health_data_sharing' and withdrawn_at is null))), 1, 'det sidste samtykke trækker leadet tilbage');
-select tt.as_postgres();
+select tt.eq((select count(*) from public.consents where patient_id = tt.id('pA') and type = 'health_data_sharing' and withdrawn_at is null)::int, 0, 'alle aktive delingssamtykker er trukket tilbage');
 select tt.eq((select status::text from public.leads where id = tt.lead('L3a', 'Y')), 'withdrawn', 'leadet er trukket tilbage');
 
 rollback;

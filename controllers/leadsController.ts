@@ -9,7 +9,6 @@ import type {
   LeadStatus,
   PatientLeadDto,
 } from "@/lib/types/leads";
-import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
@@ -85,9 +84,7 @@ export class LeadsController {
   // Kræver et aktivt delingssamtykke med den gældende tekstversion (architecture 4.3, 10.5). Et samtykke til en
   // ældre tekst giver ikke ret til nye leads. Databasen tjekker selv typen i send_leads() som sidste værn.
   private async requireCurrentSharingConsent(): Promise<void> {
-    if (!(await this.consents.findCurrentActive("health_data_sharing"))) {
-      throw new ApiError(403, "CONSENT_REQUIRED", "Du skal give samtykke til deling med klinikker først.");
-    }
+    await this.consents.requireCurrentActive("health_data_sharing", "Du skal give samtykke til deling med klinikker først.");
   }
 
   async listForCase(caseId: string): Promise<PatientLeadDto[]> {

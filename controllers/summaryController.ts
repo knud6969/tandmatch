@@ -4,7 +4,7 @@ import type { z } from "zod";
 import type { approveSummarySchema } from "@/lib/schemas/chat";
 import { buildsOnAiDraft, imageDescription } from "@/lib/domain/summary";
 import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
-import { ApiError, aiUnavailable, consentRequired } from "@/middleware/http";
+import { ApiError, aiUnavailable } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CaseServicesRepository } from "@/models/caseServicesRepository";
@@ -75,9 +75,7 @@ export class SummaryController {
   // Kvaliteten gemmes på billedet (ai_quality). Serveren blokerer ikke godkendelsen; patienten informeres kun.
   async generate(caseId: string): Promise<SummaryResponse> {
     await this.cases.requireOwnDraft(caseId);
-    if (!(await this.consents.findCurrentActive("ai_processing"))) {
-      throw consentRequired("Du skal give samtykke til AI-behandling, før du kan få en opsummering.");
-    }
+    await this.consents.requireCurrentActive("ai_processing", "Du skal give samtykke til AI-behandling, før du kan få en opsummering.");
 
     const conversation = await this.chat.findConversation(caseId);
     const messages = conversation ? await this.chat.listMessages(conversation.id) : [];

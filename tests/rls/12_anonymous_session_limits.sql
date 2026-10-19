@@ -14,9 +14,9 @@ select tt.mk_booking(tt.mk_lead('S_done', 'X', 'booked'), 'undersoegelse', now()
 select tt.as_user(tt.id('pAnon'), true);
 select tt.denied(format('select public.send_leads(%L, array[%L]::uuid[])', tt.id('SAnon'), tt.cid('X')), 'anonym kan ikke kalde send_leads', 'ACCOUNT_REQUIRED');
 select tt.denied(format('insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values (%L, %L, %L, true)',
-                        tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v0-prototype'), 'anonym kan ikke give health_data_sharing');
+                        tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v1-klinikker'), 'anonym kan ikke give health_data_sharing');
 select tt.denied(format('insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values (%L, %L, %L, false)',
-                        tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v0-prototype'), 'anonym kan ikke give health_data_sharing (falsk markering)');
+                        tt.id('pAnon'), 'health_data_sharing', 'health_data_sharing@v1-klinikker'), 'anonym kan ikke give health_data_sharing (falsk markering)');
 select tt.denied(format('insert into public.cases (patient_id) values (%L)', tt.id('pAnon')), 'anonym kan ikke oprette en anden kladde', 'DRAFT_LIMIT');
 select tt.denied(format('insert into public.cases (patient_id, is_emergency) values (%L, true)', tt.id('pAnon')), 'anonym kan ikke oprette en akut sag', 'ACCOUNT_REQUIRED');
 select tt.allowed(format('insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values (%L, %L, %L, true)',

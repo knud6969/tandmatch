@@ -408,13 +408,13 @@ isOneToOne: true
                   ]
                 },"consent_text_versions": {
                   Row: {
-                    "ai_disclosure": boolean,"text_version": string,"type": Database["public"]['Enums']["consent_type"]
+                    "ai_disclosure": boolean,"retired_at": string | null,"text_version": string,"type": Database["public"]['Enums']["consent_type"]
                   }
                   Insert: {
-                    "ai_disclosure"?: boolean,"text_version": string,"type": Database["public"]['Enums']["consent_type"]
+                    "ai_disclosure"?: boolean,"retired_at"?: string | null,"text_version": string,"type": Database["public"]['Enums']["consent_type"]
                   }
                   Update: {
-                    "ai_disclosure"?: boolean,"text_version"?: string,"type"?: Database["public"]['Enums']["consent_type"]
+                    "ai_disclosure"?: boolean,"retired_at"?: string | null,"text_version"?: string,"type"?: Database["public"]['Enums']["consent_type"]
                   }
                   Relationships: [
                     

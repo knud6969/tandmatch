@@ -6,7 +6,7 @@ import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "
 import type { chatMessageSchema } from "@/lib/schemas/chat";
 import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
-import { ApiError, aiConsentRequired, aiUnavailable } from "@/middleware/http";
+import { AI_CONSENT_REQUIRED_MESSAGE, ApiError, aiUnavailable } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
@@ -118,8 +118,7 @@ export class ChatController {
     await this.cases.requireOwnDraft(caseId);
 
     // AI-samtykket (nuværende tekstversion) er en forudsætning (vilkårs-accept giver det ikke, architecture 7.1).
-    const consent = await this.consents.findCurrentActive("ai_processing");
-    if (!consent) throw aiConsentRequired();
+    const consent = await this.consents.requireCurrentActive("ai_processing", AI_CONSENT_REQUIRED_MESSAGE);
 
     let conversation = await this.chat.findConversation(caseId);
     if (!conversation) {

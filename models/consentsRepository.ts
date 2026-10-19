@@ -2,7 +2,7 @@ import "server-only";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import type { ConsentDto } from "@/lib/types/consents";
 import type { ConsentType } from "@/lib/types/common";
-import { ApiError, notFound, unauthenticated } from "@/middleware/http";
+import { ApiError, consentRequired, notFound, unauthenticated } from "@/middleware/http";
 import { BaseRepository } from "@/models/base/baseRepository";
 import type { Database, Tables } from "@/models/db/database.types";
 
@@ -125,6 +125,14 @@ export class ConsentsRepository extends BaseRepository<ConsentRow, ConsentDto> {
   async findCurrentActive(type: ConsentType): Promise<ConsentDto | null> {
     const consent = await this.findActive(type);
     return consent && consent.textVersion === CONSENT_TEXT_VERSIONS[type] ? consent : null;
+  }
+
+  // Kræver det gældende samtykke (aktivt og nuværende tekstversion) og returnerer det; ellers 403 CONSENT_REQUIRED
+  // med controllerens besked. Det eneste sted serveren tjekker gældende samtykke (architecture 4.3).
+  async requireCurrentActive(type: ConsentType, message: string): Promise<ConsentDto> {
+    const consent = await this.findCurrentActive(type);
+    if (!consent) throw consentRequired(message);
+    return consent;
   }
 
   // Bekræfter at oprydningen efter tilbagetrækning er udført (filerne er fjernet fra storage).

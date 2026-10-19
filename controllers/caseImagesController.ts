@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/constants/limits";
 import type { ImageDto } from "@/lib/types/common";
-import { ApiError, consentRequired } from "@/middleware/http";
+import { ApiError } from "@/middleware/http";
 import type { Session } from "@/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
@@ -52,10 +52,7 @@ export class CaseImagesController {
     await this.cases.requireOwnDraft(caseId);
 
     // Samtykket skal være aktivt og den nuværende tekstversion. Vilkårs-accept giver ingen ret til upload (9.4).
-    const consent = await this.consents.findCurrentActive("image_upload");
-    if (!consent) {
-      throw consentRequired("Du skal give samtykke til billeder (nyeste version), før du uploader.");
-    }
+    const consent = await this.consents.requireCurrentActive("image_upload", "Du skal give samtykke til billeder (nyeste version), før du uploader.");
 
     const existing = await this.images.listForCase(caseId);
     if (existing.length >= MAX_IMAGES_PER_CASE) {

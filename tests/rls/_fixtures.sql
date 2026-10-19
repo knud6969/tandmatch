@@ -147,7 +147,7 @@ select tt.id(p), t.type, t.v, false
   from unnest(array['pA', 'pB']) p,
        (values ('ai_processing'::public.consent_type, 'ai_processing@v0-prototype'),
                ('image_upload', 'image_upload@v1-ai-disclosure'),
-               ('health_data_sharing', 'health_data_sharing@v0-prototype')) t(type, v);
+               ('health_data_sharing', 'health_data_sharing@v1-klinikker')) t(type, v);
 insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values
   (tt.id('pAnon'), 'ai_processing', 'ai_processing@v0-prototype', true),
   (tt.id('pAnon'), 'image_upload', 'image_upload@v1-ai-disclosure', true);

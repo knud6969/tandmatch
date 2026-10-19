@@ -52,7 +52,7 @@ select tt.allowed(format('select public.cancel_booking(%L)', tt.booking(tt.lead(
 -- Nye leads kræver nyt samtykke
 select tt.denied(format('select public.send_leads(%L, array[%L]::uuid[])', tt.id('C3'), tt.cid('V')), 'nyt lead kræver nyt samtykke', 'CONSENT_REQUIRED');
 select tt.allowed(format('insert into public.consents (patient_id, type, text_version, granted_while_anonymous) values (%L, %L, %L, false)',
-                         tt.id('pA'), 'health_data_sharing', 'health_data_sharing@v0-prototype'), 'nyt samtykke kan gives');
+                         tt.id('pA'), 'health_data_sharing', 'health_data_sharing@v1-klinikker'), 'nyt samtykke kan gives');
 select tt.allowed(format('select public.send_leads(%L, array[%L]::uuid[])', tt.id('C3'), tt.cid('V')), 'nyt lead kan sendes efter nyt samtykke');
 
 rollback;

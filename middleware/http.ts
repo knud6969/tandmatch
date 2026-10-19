@@ -218,7 +218,8 @@ export const messageLimit = () =>
 export const consentRequired = (message: string) => new ApiError(403, "CONSENT_REQUIRED", message);
 
 // AI-samtykket mangler til chatten. Teksten står kun her.
-export const aiConsentRequired = () => consentRequired("Du skal give samtykke til AI-behandling, før du kan chatte.");
+export const AI_CONSENT_REQUIRED_MESSAGE = "Du skal give samtykke til AI-behandling, før du kan chatte.";
+export const aiConsentRequired = () => consentRequired(AI_CONSENT_REQUIRED_MESSAGE);
 
 // Samtalen er lukket eller har nået grænsen for antal beskeder (architecture 7.6).
 export const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukket eller har nået grænsen for antal beskeder.");
