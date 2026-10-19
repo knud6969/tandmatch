@@ -1251,7 +1251,7 @@ Rangeringen ligger i `RankingService` (`services/rankingService.ts`, ingen I/O, 
 - **Filtre** (regler som bygget):
   - **Behandlinger:** slugs i `?services=`, højst `MAX_SELECTED_SERVICES` (5). En ukendt eller inaktiv slug giver 400 `UNKNOWN_SERVICE`.
   - **Position:** `postalCode` eller `lat`+`lng` (aldrig gemt). Ukendt postnummer giver 400 `UNKNOWN_POSTAL_CODE`; `lat` uden `lng` (eller omvendt) giver 400.
-  - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` i `lib/constants/clinics.ts` = 25 i dag; **50 km [IKKE BYGGET, trin 7]**, besluttet 12.3 punkt 33; samme standard i API'et, oversigten, URL-filtrene og `/akut`) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
+  - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` i `lib/constants/clinics.ts` = 50 km, bygget i 7.16, besluttet 12.3 punkt 33; samme standard i API'et, oversigten, URL-filtrene og `/akut`) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
   - **Maks. pris:** `maxPrice` kræver mindst én valgt behandling (ellers 400) og sammenlignes med summen af `price_min` for de valgte behandlinger; klinikker uden pris for alle valgte falder fra.
   - **Min. stjerner**, **kun med akuttid** inden for `EMERGENCY_FILTER_HOURS` (48 timer) og **kun klinikker, der kan kontaktes** (`verified`).
   - Ukendte query-parametre ignoreres (`readQuery`).

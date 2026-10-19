@@ -65,6 +65,6 @@ export const CLINIC_SORT_LABEL = {
   first_available: "Tidligste ledige tid først",
 } as const satisfies Record<(typeof CLINIC_SORTS)[number], string>;
 
-export const DEFAULT_MAX_DISTANCE_KM = 25;
+export const DEFAULT_MAX_DISTANCE_KM = 50;
 export const EMERGENCY_FILTER_HOURS = 48; // "kun med akuttid inden for 48 timer"
 export const MAX_SELECTED_SERVICES = 5; // som antal bekræftede ydelser pr. sag (7.6)

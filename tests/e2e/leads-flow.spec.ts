@@ -190,7 +190,7 @@ async function runFlow(page: Page, caseId: string) {
   await expect(more).toHaveAttribute("href", `/klinikker?sag=${caseId}&services=blegning&postalCode=2100`);
   await more.click();
   await expect(page).toHaveURL(new RegExp(`/klinikker\\?.*sag=${caseId}`));
-  // Standardafstanden (25 km fra 2100) udelukker de fjerne demoklinikker, så den udvides som i resten af testen.
+  // Standardafstanden (50 km fra 2100) udelukker de fjerne demoklinikker, så den udvides som i resten af testen.
   await page.goto(directoryUrl(caseId));
   await expect(page.getByText("Du har allerede kontaktet klinikken").first()).toBeVisible();
   await expect(boxes).toHaveCount(1);

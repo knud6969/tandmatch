@@ -269,12 +269,12 @@ describe("GET /api/clinics: filtre og sorteringer", () => {
     assert.ok(r.criteria.some((line) => line.includes("Nærmeste først")));
   });
 
-  it("begrænser til 25 km som standard, når der er en position, og følger maxDistanceKm", async () => {
+  it("begrænser til 50 km som standard, når der er en position, og følger maxDistanceKm", async () => {
     const near = await list("?postalCode=2100");
     assert.ok(find(near.clinics, clinicA.clinicId));
     assert.equal(find(near.clinics, clinicB.clinicId), undefined);
     assert.equal(find(near.clinics, importedFarId), undefined);
-    assert.ok(near.criteria.includes("Højst 25 km væk"));
+    assert.ok(near.criteria.includes("Højst 50 km væk"));
     const wide = await list("?postalCode=2100&maxDistanceKm=500");
     assert.ok(find(wide.clinics, clinicB.clinicId));
   });
