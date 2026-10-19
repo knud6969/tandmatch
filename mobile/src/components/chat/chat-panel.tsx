@@ -6,7 +6,7 @@ import type { AiChatMessageDto } from "@/lib/types/ai";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { LoadState, StatusMessage } from "~/components/ui";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
-import { lowMessagesLeft } from "~/utils/case-cards";
+import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
 import { ChatBubble } from "./chat-bubble";
 
@@ -37,6 +37,8 @@ type Props = {
   onSend: (text: string) => Promise<TurnOutcome>;
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
+  // Hurtigsvar vises kun, når intet svar-kort venter på patienten (chat-trinnet).
+  quickRepliesAllowed?: boolean;
   cardsKey?: string;
 };
 
@@ -54,20 +56,20 @@ export function ChatPanel(props: Props) {
     return () => clearTimeout(id);
   }, [messages.length, pending, props.cardsKey]);
 
-  async function send() {
-    const text = draft.trim();
+  async function send(override?: string) {
+    const text = (override ?? draft).trim();
     if (!text || sending) return;
     setSending(true);
     setSendError(null);
-    setDraft("");
+    if (override === undefined) setDraft("");
     const outcome = await props.onSend(text);
     setSending(false);
     // Beskeden er ikke gemt: læg den tilbage, så patienten kan prøve igen uden at skrive forfra.
     if (outcome.kind === "failed") {
-      setDraft(text);
+      if (override === undefined) setDraft(text);
       setSendError(outcome.message);
     } else if (outcome.kind === "consent_required") {
-      setDraft(text);
+      if (override === undefined) setDraft(text);
     }
   }
 
@@ -84,6 +86,13 @@ export function ChatPanel(props: Props) {
   const blockedByConsent = !props.aiConsentGiven;
   const finished = props.closed || props.messagesLeft === 0;
   const low = lowMessagesLeft(props.messagesLeft, finished);
+  const quickReplies = visibleQuickReplies({
+    messages,
+    pending: pending !== null || sending,
+    finished: finished || blockedByConsent,
+    cardActive: !props.quickRepliesAllowed,
+    typing: draft.trim() !== "",
+  });
 
   return (
     <View style={styles.flex}>
@@ -117,6 +126,21 @@ export function ChatPanel(props: Props) {
               <Text style={styles.muted}>AI-assistenten skriver …</Text>
             </View>
           </>
+        ) : null}
+        {quickReplies.length > 0 ? (
+          <View style={styles.chips} accessibilityLabel="Svarforslag">
+            {quickReplies.map((reply) => (
+              <Pressable
+                key={reply}
+                accessibilityRole="button"
+                accessibilityLabel={`Svar: ${reply}`}
+                onPress={() => void send(reply)}
+                style={styles.chip}
+              >
+                <Text style={styles.chipText}>{reply}</Text>
+              </Pressable>
+            ))}
+          </View>
         ) : null}
         {props.cards}
       </ScrollView>
@@ -170,6 +194,18 @@ const styles = StyleSheet.create({
   boundary: { gap: spacing.xs, backgroundColor: colors.infoBg, borderColor: colors.infoLine, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
   boundaryTitle: { fontSize: fontSize.sm, fontWeight: "700", color: colors.ink },
   boundaryText: { fontSize: fontSize.sm, color: colors.ink },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  chip: {
+    minHeight: MIN_TOUCH,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.brand600,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  chipText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
   pendingRow: { flexDirection: "row", justifyContent: "flex-end" },
   pendingBubble: { maxWidth: "92%", backgroundColor: colors.brand600, borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   pendingText: { fontSize: fontSize.md, lineHeight: 22, color: colors.onBrand },

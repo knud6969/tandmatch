@@ -2,7 +2,6 @@ import { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { nextCaseFlowStep } from "@/lib/domain/case-flow";
 import { hasCurrentConsent } from "@/lib/domain/consents";
 import type { CaseDto } from "@/lib/types/cases";
 import { getCase } from "~/api/cases";
@@ -21,7 +20,7 @@ import { useCaseActions } from "~/hooks/use-case-actions";
 import { useChat } from "~/hooks/use-chat";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, spacing } from "~/theme";
-import { cardModes } from "~/utils/case-cards";
+import { cardModes, flowStepForApp } from "~/utils/case-cards";
 
 // Sagsflowet som én samtale (architecture 7.9, 13.4): chatten med AI'en og under den faste svar-kort fra TandMatch
 // (behandlinger, tidsrum, postnummer, opsummering, klar). Hvilket kort der er aktuelt, afgøres af nextCaseFlowStep().
@@ -47,13 +46,18 @@ export function CaseFlowScreen() {
   const dto = caseLoad.data;
   const changed = caseLoad.reload;
 
+  function stepOf(d: CaseDto) {
+    return flowStepForApp(d, { messages: chat.messages, status: chat.closed ? "closed" : "active", readyForSummary: chat.ready });
+  }
+
   function renderCards() {
     if (!dto) return null;
-    const step = nextCaseFlowStep(dto, { messages: chat.messages, status: chat.closed ? "closed" : "active", readyForSummary: chat.ready });
+    const step = stepOf(dto);
     const modes = cardModes(step);
     const answered = (id: keyof typeof modes) => modes[id] === "answered";
     return (
       <View style={styles.cards}>
+        {caseLoad.error ? <StatusMessage message={caseLoad.error} tone="danger" /> : null}
         {modes.services !== "hidden" ? (
           <ServicesCard
             key={dto.suggestedServices.map((s) => s.id).join(",")}
@@ -129,6 +133,7 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
+        quickRepliesAllowed={stepOf(dto) === "chat"}
         cards={cards}
         cardsKey={cardsKey(dto)}
       />

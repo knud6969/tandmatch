@@ -1,5 +1,7 @@
 import { CHAT_LOW_MESSAGES_WARNING, MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
-import type { CaseFlowStep } from "@/lib/types/cases";
+import { nextCaseFlowStep } from "@/lib/domain/case-flow";
+import type { AiChatMessageDto, ChatStateDto } from "@/lib/types/ai";
+import type { CaseDto, CaseFlowStep } from "@/lib/types/cases";
 import type { SummaryResponse } from "@/lib/types/ai";
 import { errorCodeOf } from "./chat-turn";
 
@@ -71,4 +73,34 @@ export function summaryAttemptFromError(error: unknown): SummaryAttempt {
 // Kortet laver kun ét automatisk udkast: kun når der hverken er et udkast eller en tekst, og kun hvis det ikke allerede er forsøgt.
 export function shouldAutoGenerate(input: { hasDraft: boolean; hasText: boolean; attempted: boolean }): boolean {
   return !input.hasDraft && !input.hasText && !input.attempted;
+}
+
+// Appen lader ikke en akut-markering blokere flowet (brugerens beslutning): henvisningen står i AI'ens tekst, og kortene
+// vises som normalt. Derfor ses der bort fra `emergency` på beskederne, når det aktuelle trin findes.
+export function flowStepForApp(
+  caseDto: Pick<CaseDto, "status" | "services" | "preferredTimeframe" | "postalCode" | "summaryApprovedAt">,
+  chatState: Pick<ChatStateDto, "messages" | "status" | "readyForSummary">,
+): CaseFlowStep {
+  const messages = chatState.messages.map((m) => (m.emergency ? { ...m, emergency: false } : m));
+  return nextCaseFlowStep(caseDto, { ...chatState, messages });
+}
+
+// Hurtigsvar (8.6i): 0-4 korte svar på AI'ens seneste besked. Læses defensivt, indtil typen findes overalt.
+export function quickRepliesOf(message: AiChatMessageDto | undefined): string[] {
+  const raw = (message as { quickReplies?: unknown } | undefined)?.quickReplies;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((r): r is string => typeof r === "string" && r.trim() !== "").slice(0, 4);
+}
+
+// Kun under AI'ens seneste svar, og kun når intet svar-kort venter på patienten, samtalen er aktiv, og patienten ikke skriver.
+export function visibleQuickReplies(input: {
+  messages: AiChatMessageDto[];
+  pending: boolean;
+  finished: boolean;
+  cardActive: boolean;
+  typing: boolean;
+}): string[] {
+  const last = input.messages[input.messages.length - 1];
+  if (!last || last.role !== "assistant" || input.pending || input.finished || input.cardActive || input.typing) return [];
+  return quickRepliesOf(last);
 }
