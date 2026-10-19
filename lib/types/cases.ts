@@ -1,3 +1,4 @@
+import type { CASE_FLOW_STEPS } from "@/lib/constants/case-flow";
 import type { CASE_STATUSES, CASE_TIMEFRAMES } from "@/lib/constants/cases";
 import type { AiSummary } from "@/lib/types/ai";
 import type { ImageDto } from "@/lib/types/common";
@@ -7,6 +8,8 @@ import type { ServiceDto } from "@/lib/types/services";
 // Sager (architecture 4.3 `cases`, 10.5). Udvides i trin 2 med CaseDto m.fl.
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 export type CaseTimeframe = (typeof CASE_TIMEFRAMES)[number];
+// Trin i appens samtaleflow (architecture 7.9).
+export type CaseFlowStep = (typeof CASE_FLOW_STEPS)[number];
 
 // Sagens egne felter, som de står i databasen (camelCase).
 export type CaseRecordDto = {

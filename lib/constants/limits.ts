@@ -48,3 +48,6 @@ export const MESSAGE_MAX_PER_DAY = 200;
 // Mindst så mange cifre i et telefonnummer. Databasens check (6-20 tilladte tegn) er løsere; TypeScript er strengere
 // (security trin 6, L2), så "(((((("-lignende værdier ikke kan gemmes. Bruges af lib/schemas/phone.ts.
 export const MIN_PHONE_DIGITS = 8;
+
+// Appen viser "Du har N beskeder tilbage", når så få eller færre er tilbage i samtalen (architecture 7.9).
+export const CHAT_LOW_MESSAGES_WARNING = 5;

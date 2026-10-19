@@ -59,3 +59,10 @@ export const IMAGE_QUALITY_LABELS: Record<ImageQuality, string> = {
 // Fast svar, når AI-modellen ikke kan svare. Turen er brugt, og patientens besked er gemt (architecture 10.6).
 export const CHAT_UNAVAILABLE_TEXT =
   "Jeg kunne ikke svare lige nu. Prøv at sende din besked igen om lidt, eller skriv din beskrivelse selv.";
+
+// Når samtalen er lukket ved loftet (architecture 7.9). Kortene fortsætter.
+export const CHAT_LIMIT_REACHED_TEXT =
+  "Samtalen er slut. Du kan stadig vælge behandlinger og godkende din beskrivelse nedenfor.";
+
+// Fast besked, appen sender efter et vellykket billedupload, så AI'en ser billedet (architecture 7.9).
+export const IMAGE_ADDED_CHAT_MESSAGE = "Jeg har tilføjet et billede.";
