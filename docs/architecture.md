@@ -1444,9 +1444,10 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 //   readyForSummary        AI'en har nok til, at klinikken kan svare. Weben: aktiverer knappen "Lav opsummering".
 //                          Appen: viser kortet til at bekræfte ydelser (7.9). Fra 8.6c tvinger guard.ts feltet til
 //                          false, når suggestedServices er tom (og som i dag ved emergency) [IKKE BYGGET]
-//   quickReplies           [IKKE BYGGET, P2, 8.6g] 0-3 korte svarmuligheder på AI'ens eget spørgsmål, hver 1-40 tegn
-//                          (fx "Ja", "Nej", "Ved ikke"). Køres gennem samme filter som reply; fejler én, fjernes
-//                          alle (intet nyt forsøg, ingen blokering). Tvinges til [] ved emergency. Gemmes ikke (10.6)
+//   quickReplies           (bygget, 8.6g) 0-4 korte svarmuligheder på AI'ens eget spørgsmål, hver 1-60 tegn
+//                          (fx "Et par dage", "Over en uge"). Køres gennem reply-filteret og desuden et filter mod
+//                          tidsrum, postnummer, navn, telefon og e-mail; fejler ét, fjernes alle (intet nyt forsøg,
+//                          ingen blokering). Tvinges til [] ved emergency og ved readyForSummary. Gemmes ikke (10.6)
 
 // Opsummeringsskemaet er defineret én gang med zod i lib/constants/ai-schemas.ts og genbruges af
 // lib/schemas/aiSummary.ts (parseAiSummary) og AI-laget. Typerne udledes: AiSummary = z.infer<…>,
@@ -1619,6 +1620,12 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 - AI'en påstår aldrig at have bekræftet, gemt, sendt, booket eller kontaktet noget (filteret `action_claim`).
 - Alle andre regler i 7.3 gælder uændret: ingen priser, ingen klinikanbefaling, akut straks, foreløbig vurdering med forbehold.
 
+**Mere styrende AI og færre falske akut-markeringer** (prompt `chat.v4.ts`, regler `rules-v4`, 8.6g og 8.11e; brugerens test 2026-10-19: "man chatter bare uden der sker noget"):
+- Ét kort spørgsmål ad gangen, hver gang med 2-4 hurtigsvar i `quickReplies`, indtil problemet er afgrænset (straks, hvis patienten er klar, fx "jeg vil have blegning"). Så giver AI'en forslag, evt. en foreløbig vurdering og `readyForSummary = true`, og siger kort, at patienten kan bekræfte nedenfor og derefter se klinikker.
+- **Akut:** årsagen til de falske markeringer var, at `emergency` blev sat af modellen alene (prompten nævnte "stærke smerter, hævelse, feber" uden grænse, så almindelig tandpine blev flaget), og at guarden stolede på flaget (`turn.emergency || detected.emergency`). Prompten lister nu kun reelle akutte tegn og siger udtrykkeligt, at mild tandpine, "lidt ondt" og "lidt hævet tandkød" ikke er akut. Guarden godtager et model-flag uden egen detektion kun, hvis patientens tekst indeholder et stærkt ord (hævelse, feber, blødning, traume, vejrtrækning, ulidelig m.fl.). Detektionen (`detectEmergency`) ignorerer "lidt/let hævet tandkød" og fanger "smertestillende hjælper ikke". Alle tegn i 7.3 giver stadig `emergency`.
+- **Akut-henvisning i chatten (`emergencyReferralInChat` i `rules.ts`, sat til `false` 2026-10-19; testene kører med `true`):** brugerens beslutning 2026-10-19 er, at akut-henvisninger ikke skal vises i chatten for nu. Er værdien `false`, indsættes hverken akut-instruktionen i prompten, guardens nødtekst, 112/1813-teksten eller den faste akut-tekst i svaret, og `ChatTurnResponse.emergency` er `false`; `emergencyDetected` beregnes stadig i guarden. **Det afviger midlertidigt fra akut-reglen i CLAUDE.md** og står i `docs/security.md` (kompromis 29). Slås til igen ved at sætte `emergencyReferralInChat: true` (ingen anden kode ændres). Testene dækker begge tilstande.
+- **Styrende samtale:** AI'en stiller ét spørgsmål ad gangen med 2-4 hurtigsvar, indtil problemet er afgrænset (ikke et fast antal udvekslinger), og går direkte til forslag, hvis patienten er klar.
+
 **Grænser og fejl:**
 - **Beskeder:** loftet er 30 patientbeskeder pr. samtale (7.6). Kortene bruger ingen chatbeskeder, kun almindelige API-kald. Har patienten højst `CHAT_LOW_MESSAGES_WARNING` (5, `lib/constants/limits.ts`) beskeder tilbage (`messagesLeft`), vises "Du har N beskeder tilbage".
 - **Lukket samtale:** ved 0 beskeder tilbage, eller når `POST /chat` svarer 429 `CHAT_LIMIT`, erstattes inputfeltet af `CHAT_LIMIT_REACHED_TEXT` (`lib/constants/ai-texts.ts`): "Samtalen er slut. Du kan stadig vælge behandlinger og godkende din beskrivelse nedenfor." Kortene fortsætter: `services` bliver aktuelt med "Jeg er ikke sikker" og "Vælg selv", og opsummeringen kan stadig laves eller skrives.
@@ -1626,7 +1633,7 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 - **503 `AI_UNAVAILABLE`:** turen er gemt med `CHAT_UNAVAILABLE_TEXT` som svar. Appen henter samtalen igen og sender ikke beskeden igen (10.6). Kortene påvirkes ikke.
 - **Konto** kræves først ved afsendelse (8.8a). Anonyme ser banneret fra 13.3.
 
-**Hurtigsvar** [IKKE BYGGET, P2, 8.6g]: `quickReplies` (7.4) vises som chips under den nyeste AI-besked. Et tryk sender teksten som patientens besked. Hurtigsvarene er kun med i `ChatTurnResponse` og forsvinder ved genindlæsning; det er acceptabelt, fordi de kun er en genvej.
+**Hurtigsvar** (bygget, 8.6g-h; 8.6i er appen): `quickReplies` (7.4) vises som chips under den nyeste AI-besked. Et tryk sender teksten som patientens besked. Hurtigsvarene er kun med i `ChatTurnResponse` og forsvinder ved genindlæsning; det er acceptabelt, fordi de kun er en genvej.
 
 **Weben** (13.6): fortsætter med trinflowet og skal ikke ændres. Ændringerne er bagudkompatible: `readyForSummary` er stadig et boolesk felt, `quickReplies` er et ekstra felt, som weben ignorerer, og ingen route ændres. Webens e2e-tests skal stadig bestå med den falske klient.
 
@@ -1895,7 +1902,7 @@ export type AiChatMessageDto = {
 };
 export type ChatStateDto = { conversationId: string | null; status: "active" | "closed"; messages: AiChatMessageDto[]; messagesLeft: number; readyForSummary: boolean };
 export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage: AiChatMessageDto; outOfScopeNotice: boolean; emergency: boolean; readyForSummary: boolean; messagesLeft: number;
-  quickReplies: string[];   // [IKKE BYGGET, P2, 8.6g-8.6i] 0-3, filtrerede (7.4); gemmes ikke, findes ikke i ChatStateDto
+  quickReplies: string[];   // (bygget, 8.6g-h) 0-4, filtrerede (7.4); gemmes ikke: kun i ChatTurnResponse.assistantMessage, altid [] i GET /chat
 };
 ```
 

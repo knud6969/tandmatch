@@ -19,7 +19,7 @@ const chat: ChatArg = { messages: [], status: "active", readyForSummary: false }
 function assistant(emergency: boolean): AiChatMessageDto {
   return {
     id: "m", role: "assistant", content: "x", preliminaryAssessment: null, suggestedServices: [],
-    emergency, outOfScopeTopics: [], blocked: false, createdAt: "2026-10-19T10:00:00Z",
+    emergency, outOfScopeTopics: [], blocked: false, quickReplies: [], createdAt: "2026-10-19T10:00:00Z",
   };
 }
 

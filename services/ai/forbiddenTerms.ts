@@ -272,6 +272,10 @@ const NEGATED_SYMPTOM = rx(
 const FEVER_TEMPERATURE = String.raw`(?<![\d.,])(?:3[89]|4[0-2])(?:[.,]\d)?\s*(?:grader|°|i\s+temp${L}*|i\s+feber|i\s+temperatur|c(?!${L}))|temp${L}*\s+(?:på\s+|er\s+|over\s+)?(?:3[89]|4[0-2])(?![\d])`;
 const FACE_PART = String.raw`(?:kind|kinden|ansigt|ansigtet|læbe|læben|øjet|hals|halsen|kæbe|kæben|tandkød|tandkødet|gummen)`;
 // Et spørgsmål som "Har du feber eller hævelse?" beskriver ikke et symptom.
+// 8.11e: "lidt hævet tandkød" er ikke akut. Hævelse i kind, ansigt, hals, øje, læbe eller kæbe tæller stadig.
+const MILD_GUM_SWELLING = rx(
+  String.raw`(?:lidt|let|en\s+smule|en\s+anelse|svagt)\s+(?:${L}+\s+)?(?:hævet|hævelse${L}*)(?!(?:\s+${L}+){0,3}\s+(?:kind|kinden|ansigt|ansigtet|hals|halsen|øjet|læbe|læben|kæbe|kæben))`,
+);
 const QUESTION_ABOUT_SYMPTOMS = rx(String.raw`(?:^|(?<=[.!?]\s))(?:har|får|oplever|er\s+der)\s+(?:du|der)\b[^.!?\n]*\?`);
 const EMERGENCY_PATTERNS: RegExp[] = [
   rx(String.raw`(stærke?|voldsomme?|kraftige?|slemme?|uudholdelige?|ulidelige?|frygtelige?|enorme?|vildt|rigtig\s+mange)\s+(${L}+\s+)?(smerte${L}*|ondt)`),
@@ -289,6 +293,8 @@ const EMERGENCY_PATTERNS: RegExp[] = [
   rx(String.raw`blød${L}*[^.!?\n]{0,40}(stopper\s+ikke|ikke\s+stoppe|vil\s+ikke\s+stoppe|kraftig|meget|ophører\s+ikke)|(stopper|ophører)\s+ikke[^.!?\n]{0,30}blød`),
   rx(String.raw`bløder\s+og\s+bløder|bløder\s+(hele\s+tiden|konstant|vedvarende|stadig|stadigvæk|igen\s+og\s+igen|i\s+timevis)|bliver\s+ved\s+(med\s+)?at\s+bløde|bløde\s+i\s+timevis`),
   rx(String.raw`traume|ulykke|slået\s+(en\s+|min\s+|mine\s+)?(tand|tænder)|tand\w*\s+(${L}+\s+)?(er\s+)?(slået|røget|faldet|røg|faldt|gik)\s+ud|tand\w*\s+(er\s+)?(knækket|brækket|splintret|sprunget)|(knækket|brækket|splintret)\s+(en\s+|min\s+|mine\s+)?(${L}+\s+)?tand|(fik|har\s+fået)\s+(et\s+)?(slag|stød)|slag\s+(i|mod|på)\s+(munden|kæben|ansigtet)|faldet\s+(og|på)|knækket\s+(efter|pga|på\s+grund\s+af)`),
+  // Smertestillende, der ikke dæmper smerten (8.11e)
+  rx(String.raw`(smertestillende|ipren|ibuprofen|panodil|pamol|paracetamol)[^.!?\n]{0,40}(hjælper\s+ikke|virker\s+ikke|nytter\s+ikke|hjælper\s+(intet|ingenting)|ingen\s+effekt)|(hjælper|virker)\s+ikke[^.!?\n]{0,40}(smertestillende|ipren|ibuprofen|panodil|pamol|paracetamol)`),
   rx(String.raw`(svært|problemer)\s+ved\s+(at\s+)?(trække\s+vejret|synke|sluge)|vejrtræknings${L}*|kan\s+ikke\s+synke`),
   rx(String.raw`(kan\s+ikke|svært\s+at)\s+(åbne|spærre)\s+(munden|op)`),
   // Engelsk
@@ -306,6 +312,7 @@ export function detectEmergency(text: string): EmergencyDetection {
   const cleaned = text
     .toLowerCase()
     .replace(new RegExp(NEGATED_SYMPTOM.source, "giu"), " ")
+    .replace(new RegExp(MILD_GUM_SWELLING.source, "giu"), " ")
     .replace(QUESTION_ABOUT_SYMPTOMS, " ");
   const emergency = EMERGENCY_PATTERNS.some((p) => p.test(cleaned));
   const lifeThreatening = LIFE_THREATENING_PATTERNS.some((p) => p.test(cleaned));
@@ -316,4 +323,33 @@ export function detectEmergency(text: string): EmergencyDetection {
 export function wordsOf(text: string, minLength = 2): string[] {
   const matches = text.toLowerCase().match(/[\p{L}\d]+(?:[.,][\d]+)*/gu) ?? [];
   return [...new Set(matches.filter((w) => w.length >= minLength))];
+}
+
+// 8.11e: et akut-flag fra modellen alene (uden at detectEmergency fandt noget) accepteres kun, hvis patientens tekst
+// har et stærkt ord. Almindelig tandpine ("ondt i min tand") er ikke akut og må ikke flages af modellen alene.
+const STRONG_EMERGENCY_WORD = rx(
+  String.raw`hæv|opsvul|svulm|feber|blød|blod|slag|ulykke|traume|slået|vejr|synke|sluge|ulidelig|uudholdelig|smertestillende|ipren|panodil|pamol|pus\b|byld|abces|stærk|voldsom|kraftig|knækket|brækket|splintret|swell|fever|bleed|trauma|unbearable|severe`,
+);
+
+export function hasStrongEmergencyWord(text: string): boolean {
+  const cleaned = text.toLowerCase().replace(new RegExp(MILD_GUM_SWELLING.source, "giu"), " ");
+  return STRONG_EMERGENCY_WORD.test(cleaned);
+}
+
+// ---------- Hurtigsvar (8.6g) ----------
+// Hurtigsvar er patientens mulige svar, ikke AI'ens påstande. Udover reply-filteret afvises tekster, der beder om eller
+// indeholder postnummer, tidsrum for opstart, navn, telefon eller e-mail. "Over en uge" (varighed) er tilladt.
+const QUICK_REPLY_BLOCKED: RegExp[] = [
+  rx(String.raw`postnummer|postnr|adresse|e-?mail|mail|@|telefon|tlf|mobil|navn|cpr`),
+  rx(String.raw`(?<!\d)\d{4}(?!\d)|\d[\d\s-]{6,}\d`),
+  rx(String.raw`i\s+gang|hurtigst|snarest|så\s+snart|(næste|denne|kommende)\s+(uge|måned|mdr)|inden\s+for|om\s+(en|et|\d+)\s+(uge|uger|måned|måneder|dage)\s+(vil|kan|skal)|når\s+som\s+helst|fleksibel`),
+];
+
+// Returnerer de godkendte hurtigsvar. Fejler ét, droppes alle (svaret beholdes af kalderen).
+export function filterQuickReplies(replies: readonly string[], options: FilterOptions): string[] {
+  const cleaned = [...new Set(replies.map((r) => r.trim()).filter((r) => r.length > 0 && r.length <= 60))].slice(0, 4);
+  const bad = cleaned.some(
+    (r) => findForbiddenCategories(r, options).length > 0 || QUICK_REPLY_BLOCKED.some((p) => p.test(r)),
+  );
+  return bad ? [] : cleaned;
 }

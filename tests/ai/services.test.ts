@@ -8,7 +8,11 @@ import { AiChatService } from "@/services/ai/aiChatService";
 import { AiSummaryService } from "@/services/ai/aiSummaryService";
 import { AiTimeoutError } from "@/services/ai/errors";
 import { FakeAiClient } from "@/services/ai/fakeAiClient";
-import { AI_RULES, MDR_STRICT_RULES } from "@/services/ai/rules";
+import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/services/ai/rules";
+// Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
+// akut-reglen fortsat er dækket; tilstanden "slået fra" testes eksplicit.
+const AI_RULES: AiRules = Object.freeze({ ...PRODUCTION_RULES, emergencyReferralInChat: true });
+const MDR_STRICT_RULES: AiRules = Object.freeze({ ...PRODUCTION_MDR_RULES, emergencyReferralInChat: true });
 import { CHAT_SCHEMA_NAME, SUMMARY_SCHEMA_NAME } from "@/services/ai/schemas";
 
 const GROUPS: ServiceGroupDto[] = [
@@ -31,6 +35,7 @@ const turn = (over: Record<string, unknown> = {}) => ({
   emergency: false,
   outOfScopeTopics: [],
   readyForSummary: false,
+  quickReplies: [],
   ...over,
 });
 
@@ -81,8 +86,8 @@ describe("AiChatService", () => {
     expect(client.calls).toHaveLength(2);
     expect(client.calls[1].instructions).toContain("overtrådte reglerne");
     expect(client.calls[0].instructions).not.toContain("overtrådte reglerne");
-    expect(out.promptVersion).toBe("chat.v3");
-    expect(out.rulesVersion).toBe("rules-v3");
+    expect(out.promptVersion).toBe("chat.v4");
+    expect(out.rulesVersion).toBe("rules-v4");
     expect(out.model).toBe("fake-model");
   });
 
@@ -101,7 +106,7 @@ describe("AiChatService", () => {
   });
 
   it("livstruende tegn giver 112 i svaret, også når modellen fejler", async () => {
-    const out = await new AiChatService(new FakeAiClient(() => { throw new AiTimeoutError(); })).sendTurn({
+    const out = await new AiChatService(new FakeAiClient(() => { throw new AiTimeoutError(); }), AI_RULES).sendTurn({
       history: [], userMessage: "Jeg kan ikke trække vejret og halsen er hævet", catalog: GROUPS, images: [],
     });
     expect(out.emergency).toBe(true);

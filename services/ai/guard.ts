@@ -15,6 +15,8 @@ import {
   DEFAULT_CATEGORIES,
   REPLY_CATEGORIES,
   detectEmergency,
+  filterQuickReplies,
+  hasStrongEmergencyWord,
   detectOutOfScopeTopics,
   findForbiddenCategories,
   isPhrasedAsPreliminary,
@@ -22,7 +24,7 @@ import {
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
-import { CHAT_RETRY_REMINDER } from "./prompts/chat.v3";
+import { CHAT_RETRY_REMINDER } from "./prompts/chat.v4";
 import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
@@ -51,10 +53,12 @@ export type ChatGuardResult = {
   reply: string;
   preliminaryAssessment: string | null;
   suggestedServices: string[];
-  emergency: boolean;
+  emergency: boolean; // det der vises (false, når rules.emergencyReferralInChat er slået fra)
+  emergencyDetected: boolean; // beregnet internt uanset indstillingen
   lifeThreatening: boolean;
   outOfScopeTopics: OutOfScopeTopic[];
   readyForSummary: boolean;
+  quickReplies: string[]; // hurtigsvar (7.4); gemmes ikke
   blocked: boolean;
 };
 
@@ -86,7 +90,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     } catch (err) {
       if (err instanceof AiInvalidOutputError) continue;
       // Ved akutte tegn viser vi hellere den faste akut-henvisning end en fejl.
-      if (detected.emergency && (err instanceof AiTimeoutError || err instanceof AiUnavailableError)) break;
+      if (detected.emergency && rules.emergencyReferralInChat && (err instanceof AiTimeoutError || err instanceof AiUnavailableError)) break;
       throw err;
     }
 
@@ -105,21 +109,25 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     // Ukendte slugs afvises (7.5).
     if (turn.suggestedServices.some((slug) => !input.knownSlugs.has(slug))) continue;
 
-    const emergency = turn.emergency || detected.emergency;
+    // 8.11e: et model-flag alene udløser kun akut, hvis patientens tekst har et stærkt tegn. Mild tandpine er ikke akut.
+    const modelEmergency = turn.emergency && hasStrongEmergencyWord(maskedUserMessage);
+    const emergency = modelEmergency || detected.emergency;
     const topics = mergeTopics(turn.outOfScopeTopics, detectedTopics).filter((t) => rules.blockedTopics.includes(t));
-    if (emergency) {
+    if (emergency && rules.emergencyReferralInChat) {
       // Akut: ingen almindelig samtale. Ingen forslag, ingen vurdering, ingen opsummering.
       // Fanger detektionen akut, men modellen ikke, erstattes svaret af den faste henvisning, så der ikke står
       // almindelige spørgsmål ved siden af (B1).
       return {
         maskedUserMessage,
-        reply: turn.emergency ? turn.reply : emergencyText(detected.lifeThreatening),
+        reply: modelEmergency ? turn.reply : emergencyText(detected.lifeThreatening),
         preliminaryAssessment: null,
         suggestedServices: [],
         emergency: true,
+        emergencyDetected: true,
         lifeThreatening: detected.lifeThreatening,
         outOfScopeTopics: topics,
         readyForSummary: false,
+        quickReplies: [],
         blocked: false,
       };
     }
@@ -128,26 +136,36 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
       reply: turn.reply,
       preliminaryAssessment: assessment,
       suggestedServices: unique(turn.suggestedServices),
+      // Slået fra: flaget beregnes, men vises ikke og ingen henvisningstekst indsættes (rules.ts).
       emergency: false,
+      emergencyDetected: emergency,
       lifeThreatening: false,
       outOfScopeTopics: topics,
       // 7.9: uden forslag er der intet for patienten at bekræfte.
       readyForSummary: turn.readyForSummary && unique(turn.suggestedServices).length > 0,
+      // 8.6g: ved fund droppes kun hurtigsvarene, ikke hele svaret. Ingen hurtigsvar, når patienten skal bekræfte ydelser.
+      quickReplies:
+        turn.readyForSummary && unique(turn.suggestedServices).length > 0
+          ? []
+          : filterQuickReplies(turn.quickReplies, replyFilterOptions(rules)),
       blocked: false,
     };
   }
 
   // Fast tekst fra koden. Det afviste svar bruges ikke.
+  const showEmergency = detected.emergency && rules.emergencyReferralInChat;
   return {
     maskedUserMessage,
-    reply: detected.emergency ? emergencyText(detected.lifeThreatening) : CHAT_BLOCKED_TEXT,
+    reply: showEmergency ? emergencyText(detected.lifeThreatening) : CHAT_BLOCKED_TEXT,
     preliminaryAssessment: null,
     suggestedServices: [],
-    emergency: detected.emergency,
-    lifeThreatening: detected.lifeThreatening,
+    emergency: showEmergency,
+    emergencyDetected: detected.emergency,
+    lifeThreatening: showEmergency && detected.lifeThreatening,
     outOfScopeTopics: detectedTopics,
     readyForSummary: false,
-    blocked: !detected.emergency,
+    quickReplies: [],
+    blocked: !showEmergency,
   };
 }
 

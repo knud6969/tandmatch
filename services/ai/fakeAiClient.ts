@@ -37,7 +37,7 @@ function lastPatientText(params: StructuredCallParams): string {
   return raw.replace(/<\/?patient_input>/g, "").trim().toLowerCase();
 }
 
-const QUESTION = "Hvor i munden sidder det, og hvor længe har du haft det?";
+const QUESTION = "Hvor længe har du haft det?";
 
 // Markører i patientens besked (kun i tests):
 //   test_price        svar med pris (filteret skal blokere)
@@ -56,15 +56,19 @@ function fakeChat(params: StructuredCallParams) {
     emergency: false,
     outOfScopeTopics: [] as string[],
     readyForSummary: false,
+    quickReplies: ["Et par dage", "Over en uge", "Over en måned"] as string[],
   };
   if (text.includes("test_timeout")) throw new AiTimeoutError();
   if (text.includes("test_invalid")) throw new AiInvalidOutputError();
   if (text.includes("test_price")) return { ...turn, reply: "Det koster ca. 2.500 kr." };
+  if (text.includes("test_bad_quick")) return { ...turn, quickReplies: ["Ja", "Til 2.500 kr.", "Nej"] };
+  if (text.includes("test_emergency_flag")) return { ...turn, reply: "Søg en akut tid.", emergency: true };
   if (text.includes("test_unknown_slug")) return { ...turn, suggestedServices: ["findes_ikke"] };
   if (text.includes("karies")) {
     return {
       ...turn,
       reply: "Kan du beskrive, hvornår det gør ondt?",
+      quickReplies: ["Når jeg spiser noget koldt", "Når jeg tygger", "Hele tiden"],
       preliminaryAssessment: "Det du beskriver, kan pege på et hul i en tand. Klinikken laver den endelige vurdering.",
     };
   }
@@ -74,6 +78,7 @@ function fakeChat(params: StructuredCallParams) {
       reply: "Så kan blegning være relevant. Du kan selv bekræfte behandlingen nedenfor, og klinikken laver den endelige vurdering.",
       suggestedServices: ["blegning"],
       readyForSummary: true,
+      quickReplies: [],
     };
   }
   if (text.includes("undersøgelse") || text.includes("tjek")) {
@@ -82,6 +87,7 @@ function fakeChat(params: StructuredCallParams) {
       reply: "Så kan en undersøgelse passe godt. Du kan selv bekræfte behandlingen nedenfor, og klinikken laver den endelige vurdering.",
       suggestedServices: ["undersoegelse"],
       readyForSummary: true,
+      quickReplies: [],
     };
   }
   return turn;

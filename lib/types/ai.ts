@@ -26,6 +26,8 @@ export type AiChatMessageDto = {
   emergency: boolean;
   outOfScopeTopics: OutOfScopeTopic[];
   blocked: boolean;
+  // Hurtigsvar (7.4, 8.6g): kun i ChatTurnResponse.assistantMessage; gemmes ikke, så altid [] andre steder (GET /chat).
+  quickReplies: string[];
   createdAt: string;
 };
 

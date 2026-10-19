@@ -79,6 +79,7 @@ export class ChatController {
       emergency: record.emergency,
       outOfScopeTopics: record.outOfScopeTopics,
       blocked: record.blocked,
+      quickReplies: [], // gemmes ikke (7.9); answerTurn sætter dem på turens svar
       createdAt: record.createdAt,
     };
   }
@@ -183,7 +184,7 @@ export class ChatController {
     const byId = new Map(flatten(catalog).map((s) => [s.id, s]));
     return {
       userMessage: this.toMessageDto(reserved.message, byId),
-      assistantMessage: this.toMessageDto(assistant, byId),
+      assistantMessage: { ...this.toMessageDto(assistant, byId), quickReplies: result.quickReplies },
       outOfScopeNotice: result.outOfScopeTopics.length > 0,
       emergency: result.emergency,
       readyForSummary: result.readyForSummary,

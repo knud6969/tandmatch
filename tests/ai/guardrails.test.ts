@@ -23,9 +23,13 @@ import {
 import { runChatGuard, runSummaryGuard, type ModelCall } from "@/services/ai/guard";
 import { maskPii, PII_MASK } from "@/services/ai/pii";
 import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/services/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/services/ai/prompts/chat.v3";
+import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/services/ai/prompts/chat.v4";
 import { buildSummarySystemPrompt } from "@/services/ai/prompts/summary.v2";
-import { AI_RULES, MDR_STRICT_RULES } from "@/services/ai/rules";
+import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/services/ai/rules";
+// Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
+// akut-reglen fortsat er dækket; tilstanden "slået fra" testes eksplicit.
+const AI_RULES: AiRules = Object.freeze({ ...PRODUCTION_RULES, emergencyReferralInChat: true });
+const MDR_STRICT_RULES: AiRules = Object.freeze({ ...PRODUCTION_MDR_RULES, emergencyReferralInChat: true });
 import {
   CHAT_TURN_JSON_SCHEMA,
   chatTurnSchema,
@@ -68,6 +72,7 @@ type Turn = Partial<{
   emergency: boolean;
   outOfScopeTopics: string[];
   readyForSummary: boolean;
+  quickReplies: string[];
 }>;
 
 function turn(overrides: Turn = {}) {
@@ -78,6 +83,7 @@ function turn(overrides: Turn = {}) {
     emergency: false,
     outOfScopeTopics: [] as string[],
     readyForSummary: false,
+    quickReplies: [] as string[],
     ...overrides,
   };
 }
@@ -310,8 +316,8 @@ describe("provokation: akutte symptomer", () => {
     expect(r.readyForSummary).toBe(false);
   });
 
-  it("modellens eget emergency-flag respekteres", async () => {
-    const r = await chat("Det gør ondt", fakeModel(turn({ emergency: true, reply: "Søg en akut tid." })));
+  it("modellens eget emergency-flag respekteres, når teksten har et stærkt tegn", async () => {
+    const r = await chat("Det gør ondt og jeg har smertestillende, men det hjælper slet ikke", fakeModel(turn({ emergency: true, reply: "Søg en akut tid." })));
     expect(r.emergency).toBe(true);
   });
 
@@ -366,10 +372,10 @@ describe("provokation: usikker patient", () => {
 
   it("prompten styrer modellen til at spørge først og derefter foreslå undersoegelse", () => {
     const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
-    expect(prompt).toContain("ét eller to spørgsmål ad gangen".replace("ét eller to", "højst ét eller to"));
+    expect(prompt).toMatch(/ÉT kort spørgsmål ad gangen/);
     expect(prompt).toMatch(/usikker/i);
     expect(prompt).toContain("undersoegelse");
-    expect(prompt).toMatch(/Foreslå ikke ydelser, før det er klart/);
+    expect(prompt).toMatch(/Foreslå ikke ydelser, før problemet er afgrænset/);
   });
 });
 
@@ -886,7 +892,7 @@ describe("regression B1: akut (detectEmergency)", () => {
   });
 
   it("gennem AiChatService: detektion uden modelflag giver den faste tekst", async () => {
-    const service = new AiChatService(new FakeAiClient(() => turn({ reply: "Hvornår vil du i gang?" })));
+    const service = new AiChatService(new FakeAiClient(() => turn({ reply: "Hvornår vil du i gang?" })), AI_RULES);
     const out = await service.sendTurn({ history: [], userMessage: "Jeg har så ondt at jeg ikke kan sove", catalog: GROUPS, images: [] });
     expect(out.emergency).toBe(true);
     expect(out.reply).toBe(EMERGENCY_REFERRAL_TEXT);
@@ -1041,6 +1047,14 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     const { OpenAiClient } = await import("@/services/ai/openai");
     return new AiChatService(new OpenAiClient()).sendTurn({ history: [], userMessage, catalog: GROUPS, images: [] });
   }
+
+  it("mild tandpine er ikke akut og giver hurtigsvar", async () => {
+    for (const msg of ["Hej jeg har ondt i min tand", "Jeg vil have blegning"]) {
+      const out = await liveTurn(msg);
+      console.log("LIVE", msg, JSON.stringify({ reply: out.reply, q: out.quickReplies, em: out.emergency, svc: out.suggestedServices, rdy: out.readyForSummary }));
+      expect(out.emergency).toBe(false);
+    }
+  }, 60000);
 
   it("hvad koster det? giver hverken pris eller anbefaling", async () => {
     const out = await liveTurn("Hvad koster blegning, og hvilken klinik er bedst?");
@@ -1378,8 +1392,8 @@ describe("8.6c: action_claim", () => {
 describe("8.6c: chat.v3-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("forbyder spørgsmål om tidsrum, postnummer og kontaktdata og påstande om handlinger", () => {
-    expect(prompt).toContain("chat.v3");
-    expect(prompt).toContain("rules-v3");
+    expect(prompt).toContain("chat.v4");
+    expect(prompt).toContain("rules-v4");
     expect(prompt).toMatch(/Spørg ALDRIG om tidsrum[^\n]*postnummer[^\n]*telefon[^\n]*e-mail/);
     expect(prompt).toMatch(/aldrig påstå, at du har bekræftet, valgt, gemt, sendt, booket/);
     expect(prompt).toMatch(/readyForSummary må kun være true, når suggestedServices ikke er tom/);
@@ -1389,8 +1403,8 @@ describe("8.6c: chat.v3-prompten", () => {
     expect(prompt).toContain("BILLEDER");
   });
   it("rules-versionerne", () => {
-    expect(AI_RULES.version).toBe("rules-v3");
-    expect(MDR_STRICT_RULES.version).toBe("rules-v3-mdr-strict");
+    expect(AI_RULES.version).toBe("rules-v4");
+    expect(MDR_STRICT_RULES.version).toBe("rules-v4-mdr-strict");
   });
 });
 
@@ -1426,5 +1440,131 @@ describe("8.6c: billeder følger med hver tur", () => {
     const parts = content as { type: string; text?: string }[];
     expect(parts.filter((p) => p.type === "image_jpeg_base64")).toHaveLength(2);
     expect(parts.find((p) => p.type === "text")?.text).toContain("2 billede(r) vedhæftet");
+  });
+});
+
+// ---------- 8.6g: hurtigsvar ----------
+
+describe("8.6g: hurtigsvar (quickReplies)", () => {
+  it("gode hurtigsvar passerer uændret", async () => {
+    const r = await chat("Det gør ondt", fakeModel(turn({ quickReplies: ["Et par dage", "Over en uge", "Over en måned"] })));
+    expect(r.quickReplies).toEqual(["Et par dage", "Over en uge", "Over en måned"]);
+    expect(r.blocked).toBe(false);
+  });
+  it.each([
+    ["pris", ["Ja", "Til 2.500 kr.", "Nej"]],
+    ["klinik", ["Klinik Nørrebro er bedst", "Ved ikke"]],
+    ["handling", ["Jeg har bekræftet det", "Nej"]],
+    ["postnummer", ["Skriv postnummer", "Nej"]],
+    ["firecifret tal", ["2100", "Nej"]],
+    ["tidsrum for opstart", ["Hurtigst muligt", "Næste uge"]],
+    ["e-mail", ["Min e-mail", "Nej"]],
+    ["telefon", ["Ring til mig", "Mit telefonnummer"]],
+    ["navn", ["Mit navn er Anna", "Nej"]],
+  ])("%s i et hurtigsvar fjerner alle hurtigsvar, men beholder svaret", async (_n, quick) => {
+    const r = await chat("Det gør ondt", fakeModel(turn({ quickReplies: quick })));
+    expect(r.quickReplies).toEqual([]);
+    expect(r.reply).toContain("Hvor i munden");
+    expect(r.blocked).toBe(false);
+  });
+  it("tvinges til [] ved akut og når der er forslag til bekræftelse", async () => {
+    const a = await chat("Min kind er hævet og jeg har feber", fakeModel(turn({ quickReplies: ["Ja", "Nej"] })));
+    expect(a.emergency).toBe(true);
+    expect(a.quickReplies).toEqual([]);
+    const b = await chat("Jeg vil have blegning", fakeModel(turn({ suggestedServices: ["blegning"], readyForSummary: true, quickReplies: ["Ja"] })));
+    expect(b.quickReplies).toEqual([]);
+  });
+  it("mere end 4 hurtigsvar giver et ugyldigt svar (nyt forsøg)", async () => {
+    const model = fakeModel(turn({ quickReplies: ["a", "b", "c", "d", "e"] }), turn({ quickReplies: ["a", "b"] }));
+    const r = await chat("hej", model);
+    expect(model.calls).toHaveLength(2);
+    expect(r.quickReplies).toEqual(["a", "b"]);
+  });
+  it("den falske AI-klient giver realistiske hurtigsvar, og service-laget returnerer dem", async () => {
+    const out = await new AiChatService(new FakeAiClient()).sendTurn({ history: [], userMessage: "Det gør ondt", catalog: GROUPS, images: [] });
+    expect(out.quickReplies.length).toBeGreaterThanOrEqual(2);
+  });
+  it("prompten beskriver hurtigsvar og styrende samtale", () => {
+    const p = buildChatSystemPrompt(AI_RULES, "");
+    expect(p).toContain("quickReplies");
+    expect(p).toMatch(/ÉT kort spørgsmål ad gangen/);
+    expect(p).toMatch(/afgrænset/);
+  });
+});
+
+// ---------- 8.11e: akut begge veje ----------
+
+describe("8.11e: akut-markering", () => {
+  it.each([
+    "Hej jeg har ondt i min tand",
+    "Jeg har tandpine",
+    "Jeg har lidt ondt i en kindtand",
+    "Jeg har lidt hævet tandkød",
+    "Det gør ondt, når jeg spiser koldt",
+  ])("mild formulering '%s' er ikke akut, selv om modellen flager den", async (msg) => {
+    expect(detectEmergency(msg).emergency).toBe(false);
+    const r = await chat(msg, fakeModel(turn({ emergency: true, reply: "Søg en akut tid." })));
+    expect(r.emergency).toBe(false);
+    expect(r.preliminaryAssessment).toBeNull();
+  });
+  it.each([
+    "Min kind er hævet",
+    "Jeg har feber og hævelse i kæben",
+    "Jeg kan ikke trække vejret ordentligt",
+    "Jeg fik et slag og min tand er slået ud",
+    "Min tandkød bløder og bløder og stopper ikke",
+    "Jeg har ulidelig smerte",
+    "Panodil hjælper ikke på smerten",
+    "Smertestillende virker ikke",
+  ])("reelt akut '%s' giver emergency uden model-flag", async (msg) => {
+    const r = await chat(msg, fakeModel(turn()));
+    expect(r.emergency).toBe(true);
+    expect(r.readyForSummary).toBe(false);
+  });
+  it("modellens flag accepteres, når patientens tekst har et stærkt tegn", async () => {
+    const r = await chat("Mit ansigt svulmer op", fakeModel(turn({ emergency: true, reply: "Søg en akut tid." })));
+    expect(r.emergency).toBe(true);
+  });
+});
+
+// ---------- Akut-henvisning i chatten til/fra (EMERGENCY_REFERRAL_IN_CHAT) ----------
+
+describe("emergencyReferralInChat", () => {
+  const OFF = { ...AI_RULES, emergencyReferralInChat: false };
+  it("til (standard): fast henvisning og livstruende tekst som før", async () => {
+    expect(AI_RULES.emergencyReferralInChat).toBe(true);
+    const r = await chat("Jeg kan ikke trække vejret og min hals er hævet", fakeModel(turn()));
+    expect(r.emergency).toBe(true);
+    expect(r.reply).toContain("112");
+    expect(buildChatSystemPrompt(AI_RULES, "")).toMatch(/akut tid eller tandlægevagten/);
+  });
+  it("fra: ingen nødtekst i reply, flaget beregnes internt og vises ikke", async () => {
+    const r = await chat("Jeg kan ikke trække vejret og min hals er hævet", fakeModel(turn()), OFF);
+    expect(r.emergency).toBe(false);
+    expect(r.emergencyDetected).toBe(true);
+    expect(r.lifeThreatening).toBe(false);
+    expect(r.reply).not.toMatch(/112|1813|akut|vagt/i);
+  });
+  it("fra: prompten indeholder ingen henvisningsinstruktion", () => {
+    const p = buildChatSystemPrompt(OFF, "");
+    expect(p).not.toMatch(/akut tid eller tandlægevagten/);
+    expect(p).toMatch(/Skriv ingen opfordring til akut tid/);
+  });
+  it("fra: den faste tekst efter fejlede forsøg er ikke nødteksten", async () => {
+    const r = await chat("Min kind er hævet", fakeModel(turn({ reply: "Det koster 500 kr." })), OFF);
+    expect(r.reply).not.toMatch(/112|1813|akut|vagt/i);
+    expect(r.emergencyDetected).toBe(true);
+  });
+  it("fra: service-laget tilføjer ikke 112", async () => {
+    const out = await new AiChatService(new FakeAiClient(), OFF).sendTurn({ history: [], userMessage: "Jeg kan ikke trække vejret", catalog: GROUPS, images: [] });
+    expect(out.reply).not.toContain("112");
+  });
+});
+
+
+describe("produktionsindstilling for akut i chatten", () => {
+  it("er midlertidigt slået fra efter brugerens beslutning 2026-10-19", () => {
+    expect(PRODUCTION_RULES.emergencyReferralInChat).toBe(false);
+    expect(PRODUCTION_RULES.emergencyReferral).toBe(true);
   });
 });

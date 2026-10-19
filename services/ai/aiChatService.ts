@@ -11,7 +11,7 @@ import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext"
 import { runChatGuard, type ChatGuardResult } from "@/services/ai/guard";
 import type { ModelMessage, ModelPart, StructuredModelClient } from "@/services/ai/modelClient";
 import { buildChatMessages, type HistoryMessage } from "@/services/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/services/ai/prompts/chat.v3";
+import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/services/ai/prompts/chat.v4";
 import { AI_RULES, type AiRules } from "@/services/ai/rules";
 import { CHAT_SCHEMA_NAME, CHAT_TURN_JSON_SCHEMA } from "@/services/ai/schemas";
 
@@ -29,8 +29,8 @@ export type ChatTurnInput = {
 
 export type ChatTurnOutput = ChatGuardResult & {
   model: string;
-  promptVersion: string; // fx "chat.v3"
-  rulesVersion: string; // fx "rules-v3"
+  promptVersion: string; // fx "chat.v4"
+  rulesVersion: string; // fx "rules-v4"
 };
 
 export class AiChatService {
@@ -71,7 +71,7 @@ export class AiChatService {
 
     // Ved livstruende tegn skal 112/1813 stå i svaret, også når modellens eget svar er godkendt.
     const reply =
-      result.lifeThreatening && !result.reply.includes("112")
+      this.rules.emergencyReferralInChat && result.lifeThreatening && !result.reply.includes("112")
         ? `${result.reply} ${LIFE_THREATENING_REFERRAL_TEXT}`
         : result.reply;
 

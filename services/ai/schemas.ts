@@ -22,6 +22,7 @@ export const chatTurnSchema = z.strictObject({
   emergency: z.boolean(),
   outOfScopeTopics: topics,
   readyForSummary: z.boolean(),
+  quickReplies: z.array(z.string().min(1).max(60)).max(4),
 });
 
 // Modellens opsummering: samme form som den færdige, men billederne har en kort intern reference ("img_1").
@@ -43,8 +44,9 @@ export const CHAT_TURN_JSON_SCHEMA = {
     emergency: { type: "boolean" },
     outOfScopeTopics: topicsJson,
     readyForSummary: { type: "boolean" },
+    quickReplies: stringArray,
   },
-  required: ["reply", "preliminaryAssessment", "suggestedServices", "emergency", "outOfScopeTopics", "readyForSummary"],
+  required: ["reply", "preliminaryAssessment", "suggestedServices", "emergency", "outOfScopeTopics", "readyForSummary", "quickReplies"],
   additionalProperties: false,
 } as const;
 

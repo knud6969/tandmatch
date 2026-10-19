@@ -128,6 +128,18 @@ describe("chat: guard og fejl", () => {
     assert.deepEqual(r.body.assistantMessage.suggestedServices, []);
   });
 
+  it("hurtigsvar: kun i svaret på turen, og altid [] i GET /chat", async () => {
+    const p = await anonymous();
+    const r = await say(p, "Jeg har ondt i en tand");
+    assert.equal(r.status, 201);
+    assert.equal(r.body.emergency, false);
+    assert.ok(Array.isArray(r.body.assistantMessage.quickReplies));
+    assert.ok(r.body.assistantMessage.quickReplies.length >= 2);
+    assert.deepEqual(r.body.userMessage.quickReplies, []);
+    const state = await p.c.get(`/api/cases/${p.caseId}/chat`);
+    for (const m of state.body.messages) assert.deepEqual(m.quickReplies, []);
+  });
+
   it("akutte symptomer giver emergency uden forslag", async () => {
     const p = await anonymous();
     const r = await say(p, "Jeg har stærke smerter og feber, og min blegning gør ondt");
@@ -135,6 +147,7 @@ describe("chat: guard og fejl", () => {
     assert.equal(r.body.emergency, true);
     assert.equal(r.body.assistantMessage.emergency, true);
     assert.deepEqual(r.body.assistantMessage.suggestedServices, []);
+    assert.deepEqual(r.body.assistantMessage.quickReplies, []);
     assert.equal(r.body.readyForSummary, false);
   });
 

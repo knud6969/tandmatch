@@ -175,6 +175,7 @@ export function ChatPanel({ caseId, aiConsentGiven, onAiConsent, onTurn, onConti
               emergency: false,
               outOfScopeTopics: [],
               blocked: false,
+              quickReplies: [],
               createdAt: "",
             }}
           />
