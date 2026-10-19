@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { roundPosition } from "@/views/utils/map";
+import { roundPosition } from "@/lib/domain/position";
 
 export type Position = { lat: number; lng: number };
 

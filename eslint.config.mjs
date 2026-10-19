@@ -81,11 +81,23 @@ const layerRules = [
     ["@/models/*", "@/controllers/*", "@/services/*", "@/middleware/*", "@/app/*"],
     "Views henter data via /api med views/utils/api-client og importerer kun views/ og lib/.",
   ),
-  layer(
-    ["lib/**/*.ts"],
-    ["@/models/*", "@/controllers/*", "@/services/*", "@/middleware/*", "@/views/*", "@/app/*"],
-    "lib/ er delt kode uden afhængigheder til andre lag.",
-  ),
+  // lib/ deles med appen i mobile/ og må kun importere @/lib/... og zod (architecture 2.1, 13.2).
+  {
+    files: ["lib/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^(?!@/lib/|zod$)",
+              message: "lib/ deles med appen i mobile/ og må kun importere @/lib/... og zod.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 const eslintConfig = defineConfig([
@@ -99,6 +111,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Patient-appen (Expo) har sin egen konfiguration (architecture 13.2).
+    "mobile/**",
   ]),
 ]);
 
