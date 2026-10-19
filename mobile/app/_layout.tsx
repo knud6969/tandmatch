@@ -18,6 +18,9 @@ function Guarded() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
       <Stack.Protected guard={hasTerms}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="opret" />
+        <Stack.Screen name="klinik/[clinicId]" />
       </Stack.Protected>
       <Stack.Protected guard={!hasTerms}>
         <Stack.Screen name="vilkaar" />

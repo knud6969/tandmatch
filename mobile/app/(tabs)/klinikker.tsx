@@ -1,1 +1,1 @@
-export { ClinicsScreen as default } from "~/screens/clinics-screen";
+export { ClinicDirectoryScreen as default } from "~/screens/clinic-directory-screen";

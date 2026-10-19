@@ -7,7 +7,7 @@ import { useAction } from "~/hooks/use-action";
 import { colors, fontSize, spacing } from "~/theme";
 
 function webUrl(path: string): string {
-  return `${(process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000").replace(/\/+$/, "")}${path}`;
+  return `${(process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:3000").replace(/\/+$/, "")}${path}`;
 }
 
 // Vilkårsskærmen: vises, indtil brugeren har accepteret vilkår og læst privatlivspolitikken (architecture 2.5, 13.3).
