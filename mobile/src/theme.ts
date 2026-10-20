@@ -27,9 +27,11 @@ export const colors = {
   successInk: "#155c33",
 } as const;
 
+// Afstande og hjørner i punkter (React Native bruger ikke rem).
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 export const radius = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
 // Trykflader er mindst 44 x 44 pt (architecture 13.1).
 export const MIN_TOUCH = 44;
 
+// Skriftstørrelser; brødtekst er mindst 16 for læsbarhed på mobil.
 export const fontSize = { sm: 14, md: 16, lg: 18, xl: 22, xxl: 28 } as const;

@@ -6,6 +6,7 @@ import { colors, fontSize, radius, spacing } from "~/theme";
 import { formatKr, formatMonth, formatPercent } from "~/utils/format";
 import { StarRating, Stars } from "./star-rating";
 
+// Kun måned vises (ikke dato), så anmelderen ikke kan genkendes ud fra tidspunktet.
 function ReviewItem({ review }: { review: PublicReviewDto }) {
   return (
     <View style={styles.item}>

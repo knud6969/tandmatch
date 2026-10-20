@@ -32,6 +32,7 @@ function Guarded() {
   );
 }
 
+// Rod: sessionen (vilkår, login) leveres til alle ruter, og vilkårsvagten styrer hvilke skærme der er tilgængelige.
 export default function RootLayout() {
   return (
     <SessionProvider>

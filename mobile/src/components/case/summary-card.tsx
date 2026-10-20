@@ -23,6 +23,7 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
   const [generating, setGenerating] = useState(false);
   const [attempted, setAttempted] = useState(false);
 
+  // Udkast fra AI'en. Ved fejl eller loft åbnes feltet, så patienten selv kan skrive.
   async function generate() {
     setAttempted(true);
     setGenerating(true);
@@ -38,6 +39,7 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
     setGenerating(false);
   }
 
+  // Udkast laves automatisk højst én gang; godkendelsen sker aldrig automatisk.
   const autoGenerate = !answered && shouldAutoGenerate({ hasDraft: caseDto.aiSummary !== null, hasText: caseDto.summaryText !== null, attempted });
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -59,8 +61,10 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
   const trimmed = text.trim();
   const writeYourself = attempt?.kind === "write_yourself";
   const showField = editing;
+  // Er billeder tilføjet efter en gemt tekst, skal patienten kigge teksten igennem igen, før den godkendes.
   const imagesChanged = caseDto.summaryApprovedAt === null && caseDto.summaryText !== null && caseDto.images.length > 0;
   const noMoreDrafts = attempt?.generationsLeft === 0;
+  // Billedbeskrivelser er AI'ens foreløbige og mærkes som sådan; klinikken ser selv billederne.
   const described = caseDto.images.filter((image) => image.description);
 
   return (

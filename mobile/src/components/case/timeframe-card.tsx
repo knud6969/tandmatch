@@ -12,6 +12,7 @@ import { FlowCard, FoldedCard } from "./flow-card";
 type Props = { caseDto: CaseDto; answered: boolean; actions: CaseActions; onSaved: () => void };
 
 // "Hvornår vil du gerne i gang?": et tryk på et tidsrum gemmer det (architecture 7.9).
+// Chips har rollen radiogroup, da kun ét tidsrum kan være valgt.
 export function TimeframeCard({ caseDto, answered, actions, onSaved }: Props) {
   const [editing, setEditing] = useState(false);
   const save = useAction(async (value: CaseTimeframe) => {

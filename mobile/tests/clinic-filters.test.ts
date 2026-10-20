@@ -1,6 +1,7 @@
 import { MAX_SELECTED_SERVICES } from "@/lib/constants/clinics";
 import { activeFilterCount, buildClinicsQuery, canSortBy, DEFAULT_FILTERS, toggleService } from "~/utils/clinic-filters";
 
+// Sikrer, at filtrene giver samme forespørgsel som weben, og at meningsløse parametre udelades.
 describe("buildClinicsQuery", () => {
   it("giver tom forespørgsel uden filtre", () => {
     expect(buildClinicsQuery(DEFAULT_FILTERS)).toBe("");
@@ -27,6 +28,7 @@ describe("buildClinicsQuery", () => {
   });
 });
 
+// Sikrer, at behandlingsvalget holder sig inden for loftet og nulstiller prissortering uden behandlinger.
 describe("toggleService", () => {
   it("vælger og fravælger, og nulstiller prissortering uden behandlinger", () => {
     const one = toggleService(DEFAULT_FILTERS, "a");
@@ -42,6 +44,7 @@ describe("toggleService", () => {
   });
 });
 
+// Sikrer, at sorteringsregler og filtertælleren stemmer med filtrene.
 describe("hjælpere", () => {
   it("canSortBy kræver position til afstand og behandling til pris", () => {
     expect(canSortBy(DEFAULT_FILTERS, "distance")).toBe(false);

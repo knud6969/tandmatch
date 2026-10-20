@@ -15,6 +15,7 @@ const STEPS = [
   { title: "Book din tid", text: "Vælg en ledig tid, og få bekræftelse. Bagefter kan du anmelde besøget." },
 ] as const;
 
+// Forside: forklarer platformen og giver tre indgange (beskriv, find klinik, akut). Anonyme brugere får en opfordring til at oprette konto.
 export function HomeScreen() {
   const router = useRouter();
   const { me } = useSession();

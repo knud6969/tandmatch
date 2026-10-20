@@ -19,6 +19,7 @@ export function useChat(caseId: string, onTurn: () => void) {
   const state = chat.data;
   const messages = [...(state?.messages ?? []), ...extra];
 
+  // Hver tur giver ét udfald (runChatTurn), og hvert udfald har sin egen opfølgning her.
   const send = useCallback(
     async (text: string): Promise<TurnOutcome> => {
       setPending(text);

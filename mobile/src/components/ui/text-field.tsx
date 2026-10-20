@@ -3,6 +3,7 @@ import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
 type Props = Omit<TextInputProps, "style"> & { label: string; error?: string | null };
 
+// Tekstfelt med synlig label og fejltekst; labelen er også tilgængelighedslabel.
 export function TextField({ label, error, ...input }: Props) {
   return (
     <View style={styles.wrap}>

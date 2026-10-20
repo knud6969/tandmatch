@@ -38,6 +38,7 @@ beforeEach(async () => {
   await saveTermsToken("t");
 });
 
+// Sikrer, at chatten bruger de rigtige endpoints, og at en anonym start kun gemmer tokens, når serveren giver nye.
 describe("chat-API", () => {
   it("sender beskeden som JSON til sagens chat", async () => {
     respond = () => json(201, turn());
@@ -67,6 +68,7 @@ describe("chat-API", () => {
   });
 });
 
+// Sikrer, at hvert udfald af en tur (svar, manglende samtykke, AI utilgængelig, fejl) kan skelnes, så beskeder aldrig sendes to gange.
 describe("runChatTurn", () => {
   it("giver svaret ved succes", async () => {
     const outcome = await runChatTurn(async () => turn({ readyForSummary: true }));
@@ -100,6 +102,7 @@ describe("runChatTurn", () => {
   });
 });
 
+// Sikrer, at kun et aktivt samtykke i den gældende tekstversion tæller (GDPR).
 describe("samtykke", () => {
   it("kun et aktivt samtykke i gældende tekstversion tæller", () => {
     const base = { id: "1", type: "ai_processing" as const, textVersion: CONSENT_TEXT_VERSIONS.ai_processing, grantedAt: "", grantedWhileAnonymous: false, withdrawnAt: null };
@@ -110,6 +113,7 @@ describe("samtykke", () => {
   });
 });
 
+// Sikrer, at et akut svar vises som et almindeligt svar uden særskilt blok.
 describe("akut", () => {
   it("et akut svar er et almindeligt svar: teksten vises uændret, og der er ingen særskilt blok", async () => {
     const emergencyTurn = turn({ emergency: true, assistantMessage: message({ emergency: true, content: "Kontakt tandlægevagten." }) as never });

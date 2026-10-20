@@ -23,6 +23,7 @@ export function updateCase(caseId: string, input: z.infer<typeof patchCaseSchema
   return apiRequest<CaseDto>(`/api/cases/${caseId}`, { method: "PATCH", json: input });
 }
 
+// Patientens bekræftede behandlinger; `suggestedByAi` gemmer, om AI'en foreslog dem (AI'en vælger ikke for patienten).
 export type ConfirmedServiceInput = { serviceId: string; suggestedByAi: boolean };
 
 export function confirmServices(caseId: string, services: ConfirmedServiceInput[]): Promise<CaseDto> {

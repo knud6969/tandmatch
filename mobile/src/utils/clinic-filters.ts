@@ -21,6 +21,7 @@ export const DEFAULT_FILTERS: DirectoryFilters = {
   sort: null,
 };
 
+// Postnummeret valideres med samme skema som serveren.
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
 export const hasOrigin = (filters: DirectoryFilters) => filters.position !== null || filters.postalCode !== "";
 
@@ -41,6 +42,7 @@ export function buildClinicsQuery(filters: DirectoryFilters): string {
   return params.toString();
 }
 
+// Sorteringer, der kræver noget andet (afstand kræver udgangspunkt, pris kræver en behandling), tilbydes ikke uden det.
 export function canSortBy(filters: DirectoryFilters, sort: ClinicSort): boolean {
   if (sort === "distance") return hasOrigin(filters);
   if (sort === "price") return filters.serviceSlugs.length > 0;

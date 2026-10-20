@@ -3,6 +3,7 @@ import { roundPosition } from "@/lib/domain/position";
 
 export type Position = { lat: number; lng: number };
 
+// Fejl med en dansk tekst, der kan vises direkte til patienten.
 export class PositionError extends Error {}
 
 const FAILED = "Vi kunne ikke få din position. Tjek tilladelsen i Indstillinger, eller skriv dit postnummer i stedet.";

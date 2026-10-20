@@ -16,6 +16,7 @@ export type CaseActions = {
   profilePostalCode: () => Promise<string | null>;
 };
 
+// Memoiseret pr. sag, så kortene ikke rendrer igen uden grund.
 export function useCaseActions(caseId: string): CaseActions {
   return useMemo(
     () => ({

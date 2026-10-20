@@ -6,6 +6,7 @@ import { Button, Checkbox, CheckboxText, Screen, StatusMessage } from "~/compone
 import { useAction } from "~/hooks/use-action";
 import { colors, fontSize, spacing } from "~/theme";
 
+// Vilkår og privatliv ligger på weben, så der kun er én kilde til teksten.
 function webUrl(path: string): string {
   return `${(process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:3000").replace(/\/+$/, "")}${path}`;
 }

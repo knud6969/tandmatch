@@ -9,6 +9,7 @@ const TONES: Record<Tone, { bg: string; line: string; ink: string }> = {
   danger: { bg: colors.dangerBg, line: colors.dangerLine, ink: colors.dangerInk },
 };
 
+// Besked i en tone. Fejl får rollen "alert", så skærmlæsere læser dem op med det samme.
 export function StatusMessage({ message, tone = "info" }: { message: string; tone?: Tone }) {
   const t = TONES[tone];
   return (

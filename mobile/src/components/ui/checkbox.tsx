@@ -4,6 +4,7 @@ import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
 type Props = { checked: boolean; onChange: (checked: boolean) => void; children: ReactNode; accessibilityLabel: string };
 
+// Afkrydsning, hvor hele rækken er trykflade. Rollen og tilstanden læses op af skærmlæsere.
 export function Checkbox({ checked, onChange, children, accessibilityLabel }: Props) {
   return (
     <Pressable
@@ -19,6 +20,7 @@ export function Checkbox({ checked, onChange, children, accessibilityLabel }: Pr
   );
 }
 
+// Standardtekst ved siden af afkrydsningen.
 export function CheckboxText({ children }: { children: ReactNode }) {
   return <Text style={styles.label}>{children}</Text>;
 }

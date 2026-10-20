@@ -41,6 +41,7 @@ beforeEach(async () => {
 
 const body = () => JSON.parse(String(calls[0].init.body));
 
+// Sikrer, at kortene kalder de rigtige endpoints med de rigtige metoder og bodies.
 describe("kortenes API-kald", () => {
   it("bekræfter behandlinger med suggestedByAi", async () => {
     respond = () => json(200, {});
@@ -68,6 +69,7 @@ describe("kortenes API-kald", () => {
   });
 });
 
+// Sikrer, at kortenes rækkefølge og tilstand følger sagens trin.
 describe("hvilke kort der vises", () => {
   const dto = { status: "draft", services: [], preferredTimeframe: null, postalCode: null, summaryApprovedAt: null } as never;
   const chat = (over = {}) => ({ messages: [], status: "active", readyForSummary: false, ...over }) as never;
@@ -107,6 +109,7 @@ describe("hvilke kort der vises", () => {
   });
 });
 
+// Sikrer, at AI'ens forslag er forvalgt, men at patientens eget valg går forud og loftet holdes.
 describe("behandlingsvalg", () => {
   it("forslagene er valgt fra start, og et bekræftet valg går forud", () => {
     expect(initialServiceSelection([], ["a", "b"])).toEqual(["a", "b"]);
@@ -121,6 +124,7 @@ describe("behandlingsvalg", () => {
   });
 });
 
+// Sikrer, at advarslen om få beskeder kun vises, når samtalen stadig er åben.
 describe("beskedloft", () => {
   it("advarer ved 5 og færre, men ikke ved 0 eller lukket samtale", () => {
     expect(lowMessagesLeft(6, false)).toBeNull();
@@ -131,6 +135,7 @@ describe("beskedloft", () => {
   });
 });
 
+// Sikrer, at fejl og grænser giver "Skriv selv" i stedet for et tomt kort, og at udkastet kun laves automatisk én gang.
 describe("opsummering", () => {
   const response = (over: Partial<SummaryResponse> = {}): SummaryResponse =>
     ({ summary: { summaryText: "Udkast" }, retakeImages: [], outOfScopeNotice: false, fallback: "none", generationsLeft: 2, ...over }) as SummaryResponse;
@@ -157,6 +162,7 @@ describe("opsummering", () => {
   });
 });
 
+// Sikrer, at kun fire cifre accepteres.
 describe("postnummer", () => {
   it("kræver fire cifre og giver den danske fejl", () => {
     expect(postalCodeError("2100")).toBeNull();

@@ -5,6 +5,7 @@ import { Button } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 
 // Fast akut-tekst: livstruende symptomer (112) og lægevagten. Teksterne og numrene kommer fra lib/constants.
+// Rollen "alert" får skærmlæsere til at læse henvisningen op med det samme.
 export function EmergencyNotice() {
   return (
     <View accessibilityRole="alert" style={styles.box}>

@@ -4,6 +4,7 @@ import { Button } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
 import { toggleClinic, useSelection } from "~/utils/lead-selection";
 
+// Faste tekster, så oversigt og profil siger det samme.
 export const BASIC_NOT_CONTACTABLE_TEXT = "Kan ikke kontaktes via TandMatch endnu";
 export const ALREADY_CONTACTED_TEXT = "Du har allerede kontaktet denne klinik med sagen";
 export const SELECTION_FULL_TEXT = "Du har valgt det højeste antal klinikker. Fravælg en for at vælge en anden.";

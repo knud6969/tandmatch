@@ -28,6 +28,7 @@ export function SignupForm({ onSubmit, pending, error, submitLabel = "Opret kont
       setErrors(parsed.success ? {} : fieldErrorsFrom(parsed.error));
       return;
     }
+    // Konvertering af en anonym session bruger samme felter; her sikres, at værdierne også opfylder dét skema.
     const values = convertSchema.parse({ email: parsed.data.email, password: parsed.data.password, firstName: parsed.data.firstName });
     setErrors({});
     onSubmit(values);

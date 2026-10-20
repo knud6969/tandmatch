@@ -10,6 +10,7 @@ type Props = {
 };
 
 // Forsidens tre indgange (architecture 13.4): "Beskriv dit problem", "Find en klinik" og "Jeg har ondt".
+// Chatindgangen er størst og står øverst, så den fanger opmærksomheden først; akutvejen er altid ét tryk væk.
 export function HomeEntries({ onDescribe, onFindClinic, onEmergency }: Props) {
   return (
     <View style={styles.wrap}>

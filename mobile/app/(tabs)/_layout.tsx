@@ -2,11 +2,13 @@ import { Tabs } from "expo-router";
 import { Text, type ColorValue } from "react-native";
 import { colors } from "~/theme";
 
+// Fanebjælken for patientens hovedsider.
 function icon(symbol: string) {
   // Enkle tegn i stedet for et ikonbibliotek (ingen ekstra pakker i skelettet).
   return ({ color }: { color: ColorValue }) => <Text style={{ color, fontSize: 20 }}>{symbol}</Text>;
 }
 
+// Fire faner; labels er på dansk og tekstikonerne har tilstrækkelig kontrast via tema-farverne.
 export default function TabsLayout() {
   return (
     <Tabs

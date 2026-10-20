@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiRequestError } from "~/api/client";
 
+// Fælles hook til alle hentninger, så indlæsning, fejl og "prøv igen" ser ens ud overalt.
 export type LoadResult<T> = { data: T | null; error: string | null; loading: boolean; reload: () => void };
 
 // Henter data ved start og når `reload` kaldes. Fejl bliver til danske tekster.
@@ -11,6 +12,7 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    // Et svar fra en forældet hentning (deps ændret eller skærmen lukket) må ikke overskrive nyere data.
     let cancelled = false;
     // Starter en ny hentning, når deps eller `reload` ændres.
     // eslint-disable-next-line react-hooks/set-state-in-effect

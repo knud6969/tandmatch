@@ -14,6 +14,7 @@ export const BASIC_CLINIC_PROFILE_TEXT =
 export const NO_REVIEWS_TEXT = "Ingen verificerede anmeldelser endnu";
 export const PRICE_FINAL_NOTE = "Klinikken laver den endelige vurdering, og den endelige pris kan afvige.";
 
+// Trustpilot vises altid med kilde: hvem der har angivet scoren og linket.
 export function trustpilotSource(trustpilot: NonNullable<TrustpilotInfo>): string {
   return trustpilot.enteredBy === "clinic" ? "angivet af klinikken" : "angivet af TandMatch";
 }

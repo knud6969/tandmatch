@@ -31,6 +31,7 @@ export function PostalCodeCard({ caseDto, answered, hasAccount, actions, onSaved
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
+  // Forudfylder fra profilen, men kun hvis patienten ikke allerede er begyndt at skrive.
   useEffect(() => {
     if (!hasAccount || caseDto.postalCode) return;
     let cancelled = false;
@@ -52,6 +53,7 @@ export function PostalCodeCard({ caseDto, answered, hasAccount, actions, onSaved
     return <FoldedCard testID="kort-postnummer-besvaret" label="Postnummer" value={caseDto.postalCode} onEdit={() => setEditing(true)} />;
   }
 
+  // Fejl vises først efter første forsøg, så feltet ikke er rødt, mens man skriver.
   const submit = () => {
     setTouched(true);
     const error = postalCodeError(value);

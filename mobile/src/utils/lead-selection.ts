@@ -4,6 +4,7 @@ import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
 // Patientens valg af klinikker til en sag (architecture 13.4). Holdes i hukommelsen, så oversigten og profilen deler det.
 export type LeadSelection = { ids: string[]; slots: number; contacted: string[] };
 
+// Et tomt valg deles, så useSyncExternalStore får samme reference og ikke rendrer i en løkke.
 const EMPTY: LeadSelection = { ids: [], slots: MAX_ACTIVE_LEADS_PER_CASE, contacted: [] };
 const store = new Map<string, LeadSelection>();
 const listeners = new Set<() => void>();
@@ -42,6 +43,7 @@ export function clearSelection(caseId: string) {
   emit();
 }
 
+// Abonnerer på valget; serverversionen er tom, fordi valget kun findes i appens hukommelse.
 export function useSelection(caseId: string | undefined): LeadSelection {
   return useSyncExternalStore(
     (cb) => {
@@ -53,6 +55,7 @@ export function useSelection(caseId: string | undefined): LeadSelection {
   );
 }
 
+// Klinik-id'er fra ruten (kommasepareret); dubletter fjernes, og der er højst så mange, som en sag må have.
 export function parseClinicIds(value: string | undefined): string[] {
   return [...new Set((value ?? "").split(",").map((s) => s.trim()).filter(Boolean))].slice(0, MAX_ACTIVE_LEADS_PER_CASE);
 }
@@ -79,6 +82,7 @@ export function sendBlockReason(
   return null;
 }
 
+// Danske tekster til hver grund (architecture 13.4).
 export const SEND_BLOCK_TEXT: Record<SendBlock, string> = {
   closed: "Sagen er lukket og kan ikke sendes til flere klinikker.",
   none: "Du har ikke valgt nogen klinikker. Gå tilbage og vælg de klinikker, du vil kontakte.",

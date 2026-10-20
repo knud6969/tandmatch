@@ -6,6 +6,7 @@ import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 // Svar-kortene i chatten er fra "TandMatch", ikke fra AI'en (architecture 7.9): eget afsendernavn, blå kant og intet AI-mærkat.
 export const FLOW_CARD_SENDER = "TandMatch";
 
+// Kortets ramme; accessibilityLabel nævner afsenderen, så en skærmlæser skelner kortet fra AI'ens beskeder.
 export function FlowCard({ title, children, testID }: { title?: string; children: ReactNode; testID?: string }) {
   return (
     <View style={styles.card} testID={testID} accessibilityLabel={title ? `Fra ${FLOW_CARD_SENDER}: ${title}` : `Fra ${FLOW_CARD_SENDER}`}>

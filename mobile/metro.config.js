@@ -1,3 +1,4 @@
+// Metro skal kende lib/ uden for mobile/, ellers kan @/lib/* ikke bundtes (architecture 13.2).
 const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 

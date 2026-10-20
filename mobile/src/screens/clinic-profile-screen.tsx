@@ -18,11 +18,13 @@ import { colors, fontSize, radius, spacing } from "~/theme";
 import { BASIC_CLINIC_LABEL, BASIC_CLINIC_PROFILE_TEXT, BASIC_CLINIC_PROFILE_TITLE, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
 import { formatKm, formatShortDateTime, phoneHref, safeWebHref, websiteLabel } from "~/utils/format";
 
+// Åbner kun web-adresser, der er godkendt af safeWebHref (kilden er klinikkens egen tekst, så den må ikke blindt åbnes).
 function openWeb(url: string) {
   const href = safeWebHref(url);
   if (href) void WebBrowser.openBrowserAsync(href);
 }
 
+// Anmeldelser hentes først, når sektionen vises, og kun for verificerede klinikker (kræver en booking).
 function Reviews({ clinicId }: { clinicId: string }) {
   const reviews = useLoad(() => getClinicReviews(clinicId), [clinicId]);
   return (
@@ -32,6 +34,7 @@ function Reviews({ clinicId }: { clinicId: string }) {
   );
 }
 
+// Fuld profil for verificerede klinikker, grunddata for basisniveau (architecture 6.1). Ledig tid og priser findes kun på fuldt niveau.
 function Profile({ clinic, caseId }: { clinic: ClinicProfileDto; caseId?: string }) {
   const catalog = useLoad(getServiceGroups);
   const full = clinic.tier === "full";

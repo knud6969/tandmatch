@@ -15,6 +15,7 @@ type Props = {
 
 // Valg af behandlinger (højst MAX_SELECTED_SERVICES), grupperet efter kataloget.
 export function ServicePicker({ visible, groups, selected, onToggle, onClose }: Props) {
+  // Ved loftet dæmpes de fravalgte; de valgte kan stadig fjernes.
   const full = selected.length >= MAX_SELECTED_SERVICES;
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>

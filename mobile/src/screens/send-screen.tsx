@@ -25,8 +25,10 @@ import { PRICE_SOURCE } from "~/utils/clinic-texts";
 import { formatPriceRange } from "~/utils/format";
 import { clearSelection, clinicsWord, parseClinicIds, SEND_BLOCK_TEXT, sendBlockReason } from "~/utils/lead-selection";
 
+// Alt skærmen skal bruge, hentes samlet så den kan vises i ét hug.
 type Loaded = { caseDto: CaseDto; clinics: ClinicListItemDto[]; contacted: string[]; consent: boolean };
 
+// Henter sagen, tidligere leads, samtykke og de valgte klinikker (med pris for patientens ydelser).
 async function loadSendData(caseId: string, ids: string[]): Promise<Loaded> {
   const caseDto = await getCase(caseId);
   const [leads, consents, list] = await Promise.all([
@@ -44,6 +46,7 @@ async function loadSendData(caseId: string, ids: string[]): Promise<Loaded> {
   };
 }
 
+// Kort for en valgt klinik; prisen vises altid med kilde (architecture 7.4).
 function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
   return (
     <Card>
@@ -62,6 +65,7 @@ function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
   );
 }
 
+// Kvittering efter afsendelse; klinikken laver den endelige vurdering.
 function Sent({ leads, onOpen }: { leads: PatientLeadDto[]; onOpen: () => void }) {
   return (
     <>
@@ -105,6 +109,7 @@ export function SendScreen() {
     await grantConsent("health_data_sharing");
     return true as const;
   });
+  // Serveren er den endelige vagt for samtykke; mangler det, vises samtykke-kortet igen i stedet for en fejl.
   const send = useAction(async () => {
     try {
       return await sendLeads(caseId, ids);

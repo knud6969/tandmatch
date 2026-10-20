@@ -68,6 +68,7 @@ export function ClinicDirectoryScreen() {
     };
   }, [caseId, appliedCase]);
 
+  // Valget af klinikker huskes pr. sag, så det overlever, at patienten åbner en profil og vender tilbage.
   const selection = useSelection(caseId);
   const query = buildClinicsQuery(filters);
   const clinics = useLoad(() => listClinics(query), [query]);
@@ -75,6 +76,7 @@ export function ClinicDirectoryScreen() {
 
   const change = useCallback((patch: Partial<DirectoryFilters>) => setFilters((f) => ({ ...f, ...patch })), []);
 
+  // Positionen rundes af (getRoundedPosition), så der ikke sendes en præcis adresse til serveren; den erstatter postnummeret.
   async function findPosition() {
     setLocating(true);
     setPositionError(null);
@@ -92,6 +94,7 @@ export function ClinicDirectoryScreen() {
   const list = clinics.data;
   const hasServices = filters.serviceSlugs.length > 0;
 
+  // Header i selve listen, så filtre og overskrift ruller med i stedet for at æde pladsen på en lille skærm.
   const header = (
     <View style={styles.header}>
       <Text accessibilityRole="header" style={styles.title}>
@@ -163,6 +166,7 @@ export function ClinicDirectoryScreen() {
         ListEmptyComponent={
           clinics.loading && !list ? (
             <View style={styles.center} accessibilityLabel="Henter">
+              {/* Kun ved første hentning; senere opdateringer viser "opdaterer" i tælleren, så listen ikke blinker. */}
               <ActivityIndicator color={colors.brand600} size="large" />
             </View>
           ) : list ? (
@@ -174,6 +178,7 @@ export function ClinicDirectoryScreen() {
           ) : undefined
         }
       />
+      {/* Fast bund-bjælke, så fortsæt-knappen altid er inden for tommelfingerens rækkevidde. */}
       {caseId && selection.ids.length > 0 ? (
         <View style={styles.bar}>
           <Button

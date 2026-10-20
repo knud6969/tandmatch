@@ -18,7 +18,9 @@ type Props = {
 
 // "Vælg selv": kataloget grupperet efter kategori, højst MAX_CONFIRMED_SERVICES_PER_CASE valgt (architecture 7.9).
 export function ServicePickerSheet({ visible, groups, loading, error, onRetry, selected, onToggle, onClose }: Props) {
+  // Fravalgte behandlinger dæmpes ved loftet; de kan stadig fravælges, så patienten kan bytte.
   const full = selected.length >= MAX_CONFIRMED_SERVICES_PER_CASE;
+  // pageSheet: arket kan lukkes med et træk på iOS; onRequestClose dækker Androids tilbage-knap.
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.safe}>

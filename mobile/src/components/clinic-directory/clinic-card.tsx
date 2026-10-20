@@ -22,7 +22,9 @@ type Props = {
 export function ClinicCard({ clinic, hasServices, emergency, onPress }: Props) {
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
+  // Akutfilteret viser første akuttid; ellers første ledige tid.
   const nextAt = emergency ? clinic.firstEmergencyAt : clinic.firstAvailableAt;
+  // Samlet tekst til skærmlæseren, så kortet læses op som én sætning.
   const where = `${clinic.address}, ${clinic.postalCode} ${clinic.city}${clinic.distanceKm !== null ? `, ${formatKm(clinic.distanceKm)} væk` : ""}`;
 
   return (
@@ -33,6 +35,7 @@ export function ClinicCard({ clinic, hasServices, emergency, onPress }: Props) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, full ? styles.full : styles.basic, pressed && styles.pressed]}
     >
+      {/* Basisklinikker har intet billede, kun et neutralt tegn, så de ikke ligner verificerede klinikker. */}
       <View style={[styles.hero, full ? styles.heroFull : styles.heroBasic]}>
         {full && clinic.logoUrl ? (
           <Image source={{ uri: clinic.logoUrl }} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />

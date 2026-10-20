@@ -2,6 +2,7 @@
 // KOPI af de rene dele af views/utils/format.ts; flyttes til lib/ (architecture 13.2: rene hjælpere deles).
 import { CLINIC_TIME_ZONE } from "@/lib/constants/bookings";
 
+// Formattere oprettes én gang; Intl er dyrt at konstruere.
 const krFormat = new Intl.NumberFormat("da-DK");
 const kmFormat = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 1 });
 const oneDecimal = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 1, maximumFractionDigits: 1 });

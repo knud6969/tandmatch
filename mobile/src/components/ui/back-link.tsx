@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 import { colors, fontSize, MIN_TOUCH } from "~/theme";
 
+// Tilbage-link med fuld trykflade (MIN_TOUCH) og hitSlop, så det er let at ramme med tommelfingeren.
 export function BackLink({ label = "Tilbage", onPress }: { label?: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={onPress} style={styles.link} hitSlop={8}>

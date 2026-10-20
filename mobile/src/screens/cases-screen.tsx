@@ -2,6 +2,7 @@ import { StyleSheet, Text } from "react-native";
 import { Screen } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
 
+// Pladsholder for patientens sager, indtil oversigten er bygget.
 export function CasesScreen() {
   return (
     <Screen>

@@ -2,9 +2,10 @@ import type { AiChatMessageDto } from "@/lib/types/ai";
 import { cardModes, flowStepForApp, quickRepliesOf, visibleQuickReplies } from "~/utils/case-cards";
 
 const msg = (over: object = {}) =>
-  ({ id: "m", role: "assistant", content: "x", preliminaryAssessment: null, suggestedServices: [], emergency: false, outOfScopeTopics: [], blocked: false, createdAt: "", ...over }) as AiChatMessageDto;
+  ({ id: "m", role: "assistant", content: "x", preliminaryAssessment: null, suggestedServices: [], emergency: false, outOfScopeTopics: [], blocked: false, quickReplies: [], createdAt: "", ...over }) as AiChatMessageDto;
 const draftCase = { status: "draft", services: [], preferredTimeframe: null, postalCode: null, summaryApprovedAt: null } as never;
 
+// Sikrer, at en akut-markering ikke skjuler kortene (brugerens beslutning, 8.6h).
 describe("akut-markering blokerer ikke kortene", () => {
   it("viser behandlingskortet trods emergency=true", () => {
     const step = flowStepForApp(draftCase, { messages: [msg({ emergency: true })], status: "active", readyForSummary: true });
@@ -16,6 +17,7 @@ describe("akut-markering blokerer ikke kortene", () => {
   });
 });
 
+// Sikrer, at hurtigsvar kun vises under det seneste AI-svar, når patienten kan bruge dem.
 describe("hurtigsvar", () => {
   const base = { pending: false, finished: false, cardActive: false, typing: false };
   it("læses defensivt", () => {

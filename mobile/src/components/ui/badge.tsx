@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fontSize, radius, spacing } from "~/theme";
 
+// Tonerne bruger tema-farver; teksten har mørk farve for kontrast mod den lyse baggrund.
 type Tone = "info" | "success" | "warning" | "danger";
 const TONES: Record<Tone, { bg: string; line: string; ink: string }> = {
   info: { bg: colors.infoBg, line: colors.infoLine, ink: colors.brand800 },
@@ -9,6 +10,7 @@ const TONES: Record<Tone, { bg: string; line: string; ink: string }> = {
   danger: { bg: colors.dangerBg, line: colors.dangerLine, ink: colors.dangerInk },
 };
 
+// Lille statusmærke (fx verificeret klinik eller leadstatus).
 export function Badge({ label, tone = "info" }: { label: string; tone?: Tone }) {
   const t = TONES[tone];
   return (

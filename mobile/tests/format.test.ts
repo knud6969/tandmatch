@@ -1,5 +1,6 @@
 import { formatClock, formatPercent, formatPriceRange, phoneHref, safeWebHref, websiteLabel } from "~/utils/format";
 
+// Sikrer, at tal, tider og links vises på dansk, og at kun sikre links åbnes.
 describe("format", () => {
   it("formaterer prisinterval på dansk", () => {
     expect(formatPriceRange(1200, 1800)).toBe("1.200–1.800 kr.");

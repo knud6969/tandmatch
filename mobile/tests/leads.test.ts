@@ -34,6 +34,7 @@ beforeEach(async () => {
 
 const auth = (i: number) => (calls[i].init.headers as Record<string, string>).Authorization;
 
+// Sikrer, at valget af op til 3 klinikker følger reglerne, og at en afvist afsendelse får en forklaring.
 describe("valg af klinikker", () => {
   it("vælger højst de ledige pladser og ingen dubletter", () => {
     let ids: string[] = [];
@@ -76,6 +77,7 @@ describe("valg af klinikker", () => {
   });
 });
 
+// Sikrer hele vejen fra anonym kladde til sendt lead: de nye tokens bruges, og samtykket gives før afsendelsen.
 describe("anonym → konto → samtykke → send", () => {
   it("konverterer med den anonyme bearer, gemmer nye tokens og bruger dem til samtykke og send", async () => {
     responses = [
@@ -102,6 +104,7 @@ describe("anonym → konto → samtykke → send", () => {
   });
 });
 
+// Sikrer, at serverens fejlkoder bevares og får en dansk tekst.
 describe("fejlkoder ved afsendelse", () => {
   const fail = (status: number, code: string) => async () => {
     responses = [() => json(status, { error: { code, message: "x" } })];

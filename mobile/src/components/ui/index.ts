@@ -1,3 +1,4 @@
+// Samlet indgang til de fælles UI-komponenter.
 export { Badge } from "./badge";
 export { Button } from "./button";
 export { Card } from "./card";

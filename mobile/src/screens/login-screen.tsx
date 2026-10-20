@@ -8,9 +8,11 @@ import { BackLink, Button, Screen } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { colors, fontSize } from "~/theme";
 
+// Log ind som patient. Klinikker logger ind på weben, så de får en forklaring i stedet for en fejl (architecture 13.3).
 export function LoginScreen() {
   const router = useRouter();
   const [clinicNotice, setClinicNotice] = useState<string | null>(null);
+  // Nulstiller klinikbeskeden, så en gammel besked ikke bliver stående ved nyt forsøg.
   const submit = useCallback(async (values: { email: string; password: string }) => {
     setClinicNotice(null);
     return login(values);

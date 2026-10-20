@@ -23,6 +23,7 @@ type Props = {
 
 // "Passer disse behandlinger?": AI'ens forslag er valgt fra start, men patienten bekræfter selv (architecture 7.9).
 export function ServicesCard({ caseDto, answered, catalog, actions, onSaved }: Props) {
+  // Forslagene sendes med ved bekræftelse, så serveren kan se, hvad patienten har ændret i forhold til AI'ens udkast.
   const suggestedIds = useMemo(() => caseDto.suggestedServices.map((s) => s.id), [caseDto.suggestedServices]);
   const [selected, setSelected] = useState<string[]>(() =>
     initialServiceSelection(
@@ -41,6 +42,7 @@ export function ServicesCard({ caseDto, answered, catalog, actions, onSaved }: P
     return [...byId.values()];
   }, [caseDto.suggestedServices, caseDto.services, picked]);
 
+  // "Jeg er i tvivl" vælger undersøgelsen fra kataloget, så patienten altid kan komme videre uden at kende behandlingen.
   const examination = catalog.groups?.flatMap((g) => g.services).find((s) => s.slug === EXAMINATION_SERVICE_SLUG) ?? null;
   const save = useAction(async () => {
     await actions.confirmServices(selected, suggestedIds);

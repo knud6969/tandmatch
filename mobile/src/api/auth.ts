@@ -6,12 +6,14 @@ import type { AnonymousSessionDto } from "@/lib/types/session";
 import { clearSession, saveSession } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
 
+// Typerne følger serverens skemaer, så appen og weben validerer ens (architecture 13.2).
 type LoginInput = z.infer<typeof loginSchema>;
 type SignupInput = Extract<z.infer<typeof signupSchema>, { role: "patient" }>;
 type ConvertInput = z.infer<typeof convertSchema>;
 
 export type LoginOutcome = "ok" | "not_patient";
 
+// Serveren giver kun tokens til mobilklienter; mangler de, er det en serverfejl.
 async function storeSession(result: AuthResultDto): Promise<void> {
   if (!result.session) throw new ApiRequestError(500, "INTERNAL", "");
   await saveSession(result.session);
@@ -25,6 +27,7 @@ export async function login(input: LoginInput): Promise<LoginOutcome> {
   return "ok";
 }
 
+// Opretter en patientkonto og logger ind.
 export async function signupPatient(input: SignupInput): Promise<void> {
   await storeSession(await apiRequest<AuthResultDto>("/api/auth/signup", { method: "POST", json: input }));
 }

@@ -12,6 +12,7 @@ type Props = {
   notice?: string | null;
 };
 
+// Loginformular. Valideres med samme skema som serveren, så fejl vises ved feltet før kaldet. autoComplete/textContentType lader adgangskodemanageren udfylde.
 export function LoginForm({ onSubmit, pending, error, notice }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -4,6 +4,8 @@ import { ApiRequestError } from "~/api/client";
 import { getMe } from "~/api/me";
 import { clearSession, getSession, getTermsToken, subscribeAuthChange } from "./tokens";
 
+// Sessionen for hele appen (architecture 13.3): hvem der er logget ind, og om vilkår er accepteret.
+// Appen er kun til patienter, så en klinik-konto afvises med denne tekst.
 export const CLINIC_ON_WEB_MESSAGE = "Klinikker logger ind på TandMatch på weben.";
 
 export type SessionState = {
@@ -20,6 +22,8 @@ export type SessionState = {
 
 const SessionContext = createContext<SessionState | null>(null);
 
+// Henter tokens og /api/me ved start og hver gang tokens ændres. `ready` er først sand, når første hentning er færdig,
+// så skærmene ikke blinker mellem logget ind og ud.
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [hasTerms, setHasTerms] = useState(false);
@@ -29,6 +33,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0);
 
   const load = useCallback(async () => {
+    // Vilkårstoken og session læses fra SecureStore samtidig.
     const [terms, session] = await Promise.all([getTermsToken(), getSession()]);
     setHasTerms(terms !== null);
     setRetryable(false);
@@ -69,6 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
+// Adgang til sessionen; kræver at SessionProvider ligger øverst i appen.
 export function useSession(): SessionState {
   const value = useContext(SessionContext);
   if (!value) throw new Error("useSession kræver SessionProvider");

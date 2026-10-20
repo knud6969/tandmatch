@@ -11,6 +11,7 @@ export type TurnOutcome =
   // Alt andet: beskeden er ikke gemt, så patienten kan prøve igen uden at skrive forfra.
   | { kind: "failed"; message: string; code: string | null };
 
+// Fejlkoden fra ApiRequestError uden at importere klassen, så filen forbliver ren og let at teste.
 export function errorCodeOf(error: unknown): string | null {
   if (typeof error === "object" && error !== null && "code" in error && typeof (error as { code: unknown }).code === "string") {
     return (error as { code: string }).code;
@@ -18,6 +19,7 @@ export function errorCodeOf(error: unknown): string | null {
   return null;
 }
 
+// Sender én besked og oversætter resultatet til et udfald; kaster aldrig.
 export async function runChatTurn(send: () => Promise<ChatTurnResponse>): Promise<TurnOutcome> {
   try {
     return { kind: "ok", turn: await send() };

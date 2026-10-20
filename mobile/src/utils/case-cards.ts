@@ -29,11 +29,13 @@ export function initialServiceSelection(confirmedIds: string[], suggestedIds: st
   return (confirmedIds.length > 0 ? confirmedIds : suggestedIds).slice(0, MAX_CONFIRMED_SERVICES_PER_CASE);
 }
 
+// Slår en behandling til eller fra; loftet gælder bekræftede behandlinger pr. sag.
 export function toggleSelection(selected: string[], id: string): string[] {
   if (selected.includes(id)) return selected.filter((x) => x !== id);
   return selected.length >= MAX_CONFIRMED_SERVICES_PER_CASE ? selected : [...selected, id];
 }
 
+// Markerer, hvilke behandlinger AI'en havde foreslået, så det er tydeligt, at patienten selv har bekræftet dem.
 export function toServiceInputs(selected: string[], suggestedIds: string[]): { serviceId: string; suggestedByAi: boolean }[] {
   return selected.map((serviceId) => ({ serviceId, suggestedByAi: suggestedIds.includes(serviceId) }));
 }
@@ -51,6 +53,7 @@ export type SummaryAttempt =
   // Intet udkast: patienten skriver selv. `message` er en dansk forklaring ved fejl (ikke ved fallback fra serveren).
   | { kind: "write_yourself"; message: string | null; generationsLeft: number | null; outOfScopeNotice: boolean; retake: SummaryResponse["retakeImages"] };
 
+// Et udkast bruges kun, når serveren ikke er gået i fallback; ellers skriver patienten selv.
 export function summaryAttemptFromResponse(result: SummaryResponse): SummaryAttempt {
   const common = { generationsLeft: result.generationsLeft, outOfScopeNotice: result.outOfScopeNotice, retake: result.retakeImages };
   if (result.summary && result.fallback === "none") return { kind: "draft", text: result.summary.summaryText, ...common };

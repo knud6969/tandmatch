@@ -9,6 +9,7 @@ import { formatPriceRange } from "~/utils/format";
 export function PriceList({ prices, groups }: { prices: ClinicPriceDto[]; groups: ServiceGroupDto[] | null }) {
   if (prices.length === 0) return <Text style={styles.muted}>Klinikken har endnu ikke lagt en prisliste ind.</Text>;
 
+  // Katalogets rækkefølge bruges til grupperingen; priser uden for kataloget kommer i en samlet gruppe til sidst.
   const bySlug = new Map(prices.map((p) => [p.serviceSlug, p]));
   const sections: { name: string; items: ClinicPriceDto[] }[] = [];
   const used = new Set<string>();

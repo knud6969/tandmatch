@@ -2,6 +2,7 @@ import { apiErrorText } from "@/lib/domain/errors";
 import { ApiRequestError, apiRequest } from "~/api/client";
 import { getSession, getTermsToken, saveSession, saveTermsToken } from "~/auth/tokens";
 
+// Klientens kald mod /api/*: headers, token-fornyelse og fejl (architecture 13.3). fetch og SecureStore er mocket.
 // In-memory SecureStore.
 const mockStore = new Map<string, string>();
 jest.mock("expo-secure-store", () => ({
@@ -36,6 +37,7 @@ beforeEach(async () => {
   await saveTermsToken("terms-token");
 });
 
+// Sikrer, at hvert kald bærer klient-, vilkårs- og bearer-header, og at 204 giver undefined.
 describe("headers", () => {
   it("sender klient-, vilkårs- og bearer-header og parser JSON", async () => {
     await saveSession(session(1));
@@ -64,6 +66,7 @@ describe("headers", () => {
   });
 });
 
+// Sikrer, at tokens fornyes præcis én gang (også ved samtidige kald), og at kun en afvisning (401) logger ud.
 describe("fornyelse", () => {
   it("401 UNAUTHENTICATED giver fornyelse og ét nyt forsøg med det nye token", async () => {
     await saveSession(session(1));
@@ -128,6 +131,7 @@ describe("fornyelse", () => {
   });
 });
 
+// Sikrer, at fejl bliver til ApiRequestError med dansk tekst, og at manglende vilkår nulstilles.
 describe("fejl", () => {
   it("TERMS_REQUIRED fjerner vilkårstokenet og giver dansk tekst", async () => {
     handler = () => error(403, "TERMS_REQUIRED", "Terms required");

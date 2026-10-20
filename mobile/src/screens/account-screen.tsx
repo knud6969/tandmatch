@@ -12,8 +12,10 @@ import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize } from "~/theme";
 
+// Samme felter som API'et accepterer, så skærmen ikke gentager typen.
 type Patch = Parameters<typeof patchPatientMe>[0];
 
+// Profilformularen; den gemte version vises straks, uden at hente profilen igen.
 function Profile() {
   const profile = useLoad(getPatientMe);
   const [updated, setUpdated] = useState<PatientMeDto | null>(null);
@@ -29,6 +31,7 @@ function Profile() {
         const data = updated ?? loaded;
         return (
           <ProfileForm
+            // Ny key nulstiller formularens felter, når de gemte værdier ændrer sig.
             key={`${data.firstName}|${data.postalCode}|${data.phone}`}
             profile={data}
             pending={pending}
@@ -45,6 +48,7 @@ function Profile() {
   );
 }
 
+// Konto: log ind/opret for gæster, opfordring til at oprette konto for anonyme og profil for patienter med konto.
 export function AccountScreen() {
   const router = useRouter();
   const { me, ready, notice, retryable, reload } = useSession();

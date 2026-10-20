@@ -5,6 +5,7 @@ import { colors, spacing } from "~/theme";
 
 type Props = { children: ReactNode; scroll?: boolean };
 
+// Fælles skærmramme: sikkert område, scroll og tastaturvenlig. Kanten i bunden håndteres af fanebjælken.
 export function Screen({ children, scroll = true }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>

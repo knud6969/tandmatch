@@ -36,6 +36,7 @@ export function CaseFlowScreen() {
   const session = useSession();
   const hasAccount = session.me !== null && !session.me.isAnonymous;
 
+  // AI-samtykket gives i chatten, første gang det mangler (architecture 10.2); chatten låses op uden at hente samtykkerne igen.
   const grant = useAction(async () => {
     await grantConsent("ai_processing");
     setAiGranted(true);
@@ -46,6 +47,7 @@ export function CaseFlowScreen() {
   const dto = caseLoad.data;
   const changed = caseLoad.reload;
 
+  // Chatten og kortene bruger samme trin, så de aldrig er uenige om, hvad der er aktuelt.
   function stepOf(d: CaseDto) {
     return flowStepForApp(d, { messages: chat.messages, status: chat.closed ? "closed" : "active", readyForSummary: chat.ready });
   }
@@ -60,6 +62,7 @@ export function CaseFlowScreen() {
         {caseLoad.error ? <StatusMessage message={caseLoad.error} tone="danger" /> : null}
         {modes.services !== "hidden" ? (
           <ServicesCard
+            // Ny key ved nye forslag, så kortets lokale valg nulstilles til AI'ens seneste forslag.
             key={dto.suggestedServices.map((s) => s.id).join(",")}
             caseDto={dto}
             answered={answered("services")}
@@ -84,6 +87,7 @@ export function CaseFlowScreen() {
     );
   }
 
+  // Samtykket gælder enten fra serveren eller fra det, der netop er givet; serveren kan dog stadig afvise (needsConsent).
   const aiConsent = aiGranted || (consents.data !== null && hasCurrentConsent(consents.data, "ai_processing"));
 
   const cards = dto && dto.status === "draft" ? renderCards() : null;
@@ -142,6 +146,7 @@ export function CaseFlowScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
+      {/* iOS: padding løfter inputfeltet over tastaturet; Android håndterer det selv. */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Forlad samtalen" onPress={leave} style={styles.close} hitSlop={8}>

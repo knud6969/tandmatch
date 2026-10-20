@@ -10,6 +10,7 @@ import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
 import { ChatBubble } from "./chat-bubble";
 
+// Velkomstbesked vises lokalt og gemmes ikke, så den ikke tæller med i beskedgrænsen.
 const WELCOME: AiChatMessageDto = {
   id: "velkommen",
   role: "assistant",
@@ -19,6 +20,7 @@ const WELCOME: AiChatMessageDto = {
   emergency: false,
   outOfScopeTopics: [],
   blocked: false,
+  quickReplies: [],
   createdAt: "",
 };
 
@@ -51,6 +53,7 @@ export function ChatPanel(props: Props) {
   const [sending, setSending] = useState(false);
   const listRef = useRef<ScrollViewInstance>(null);
 
+  // Ruller ned til det nyeste efter en kort pause, så layoutet (nye beskeder og kort) når at blive målt først.
   useEffect(() => {
     const id = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(id);
@@ -73,6 +76,7 @@ export function ChatPanel(props: Props) {
     }
   }
 
+  // Ingen samtale vises, før den er hentet, så patienten ikke ser en tom chat, der så pludselig fyldes.
   if (props.loading || props.error) {
     return (
       <View style={styles.pad}>
@@ -83,6 +87,7 @@ export function ChatPanel(props: Props) {
     );
   }
 
+  // Uden AI-samtykke vises samtykkekortet i stedet for inputfeltet (architecture 10.2); intet sendes til AI'en før da.
   const blockedByConsent = !props.aiConsentGiven;
   const finished = props.closed || props.messagesLeft === 0;
   const low = lowMessagesLeft(props.messagesLeft, finished);
@@ -101,6 +106,7 @@ export function ChatPanel(props: Props) {
         style={styles.flex}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        // "interactive" lader patienten trække tastaturet ned (iOS) uden at miste placeringen i samtalen.
         keyboardDismissMode="interactive"
         accessibilityLabel="Samtale med AI-assistenten"
       >
@@ -114,6 +120,7 @@ export function ChatPanel(props: Props) {
         {messages.map((message) => (
           <ChatBubble key={message.id} message={message} />
         ))}
+        {/* Patientens besked vises med det samme, mens svaret hentes, så det føles hurtigt. */}
         {pending ? (
           <>
             <View style={styles.pendingRow}>
@@ -145,6 +152,7 @@ export function ChatPanel(props: Props) {
         {props.cards}
       </ScrollView>
 
+      {/* Fast bund: inputfeltet er altid til at nå med tommelfingeren, og kortene ruller i listen over det. */}
       <View style={styles.footer}>
         {blockedByConsent ? (
           <ConsentGate type="ai_processing" onGrant={props.onGrantConsent} pending={props.consentPending} error={props.consentError} />
@@ -156,6 +164,7 @@ export function ChatPanel(props: Props) {
             {low !== null ? (
               <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
             ) : null}
+            {/* Gentager advarslen om personoplysninger ved inputfeltet, hvor patienten skriver. */}
             <Text style={styles.hint}>{CHAT_PII_WARNING_TEXT}</Text>
             <View style={styles.inputRow}>
               <TextInput

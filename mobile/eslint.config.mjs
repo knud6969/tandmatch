@@ -21,6 +21,7 @@ function layer(files, groups, message, ignores = []) {
   };
 }
 
+// Serverens lag, som appen aldrig må importere (kun lib/ deles).
 const NOT_ROOT_LAYERS = [
   "@/models/*",
   "@/controllers/*",
@@ -31,6 +32,7 @@ const NOT_ROOT_LAYERS = [
   "@/lib/navigation/*",
 ];
 
+// Lint håndhæver lagene i appen (architecture 13.2): app/ -> screens -> components, og api/auth kun mod hinanden og lib/.
 export default defineConfig([
   globalIgnores(["node_modules/**", ".expo/**", "dist/**", "expo-env.d.ts"]),
   ...tseslint.configs.recommended,

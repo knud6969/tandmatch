@@ -10,6 +10,7 @@ type Props = {
   accessibilityLabel?: string;
 };
 
+// Fælles knap. Primær er udfyldt, sekundær er omrids. Under indlæsning er den deaktiveret, så der ikke trykkes to gange.
 export function Button({ label, onPress, variant = "primary", disabled = false, loading = false, accessibilityLabel }: Props) {
   const inactive = disabled || loading;
   const primary = variant === "primary";

@@ -8,6 +8,7 @@ import { clearSession, clearTermsToken, getSession, getTermsToken, notifyAuthCha
 // Fornyes adgangstokenet inden for så mange millisekunder, fornyes det før kaldet.
 const REFRESH_MARGIN_MS = 60_000;
 
+// Alle fejl fra API'et (og netværk) kommer som denne klasse, så skærmene kun har én fejltype at håndtere.
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code: string;
@@ -28,10 +29,12 @@ export type ApiRequestOptions = {
   formData?: FormData;
 };
 
+// 127.0.0.1 i stedet for localhost: på en emulator/enhed kan localhost pege på IPv6 eller enheden selv. Sættes via EXPO_PUBLIC_API_URL.
 function baseUrl(): string {
   return (process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:3000").replace(/\/+$/, "");
 }
 
+// Læser fejlformatet { error: { code, message } } fra API'et (architecture 10.1).
 async function readError(response: Response): Promise<ApiRequestError> {
   let code = "UNKNOWN";
   let message = "";
@@ -45,6 +48,7 @@ async function readError(response: Response): Promise<ApiRequestError> {
   return new ApiRequestError(response.status, code, message);
 }
 
+// Ét enkelt HTTP-kald. Klient-headeren fortæller serveren, at kaldet kommer fra appen (bearer-token i stedet for cookies).
 async function send(path: string, options: ApiRequestOptions, accessToken: string | null): Promise<Response> {
   const headers: Record<string, string> = { [MOBILE_CLIENT_HEADER]: MOBILE_CLIENT_VALUE, Accept: "application/json" };
   const termsToken = await getTermsToken();
@@ -76,6 +80,7 @@ function refreshSession(): Promise<void> {
   return refreshing;
 }
 
+// Bytter refresh-tokenet til en ny session. Sendes uden adgangstoken, da det gamle ofte er udløbet.
 async function doRefresh(): Promise<void> {
   const stored = await getSession();
   if (!stored) throw new ApiRequestError(401, "UNAUTHENTICATED", "");
@@ -91,6 +96,8 @@ async function doRefresh(): Promise<void> {
   throw error;
 }
 
+// Alle API-kald går herigennem: fornyer tokenet før kaldet, hvis det snart udløber, og forsøger højst én gang igen efter 401.
+// Mister serveren vilkårstokenet (403 TERMS_REQUIRED), slettes det, så brugeren bliver bedt om at acceptere igen.
 export async function apiRequest<T = void>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   let session = await getSession();
   if (session && session.expiresAt - Date.now() < REFRESH_MARGIN_MS) {

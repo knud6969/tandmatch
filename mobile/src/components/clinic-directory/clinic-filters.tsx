@@ -19,7 +19,9 @@ type Props = {
 
 // Filtrene i oversigten (architecture 6.6, 13.4): behandling, postnummer eller position, akut og sortering.
 export function ClinicFilters({ filters, groups, onChange, onReset, onPickServices, onUsePosition, locating, positionError }: Props) {
+  // Lokal kladde, så et halvt skrevet postnummer ikke sendes som filter; kun gyldige postnumre (eller tomt) giver ny søgning.
   const [postalDraft, setPostalDraft] = useState(filters.postalCode);
+  // Slug til visningsnavn, så den valgte behandling vises med navn.
   const names = new Map((groups ?? []).flatMap((g) => g.services.map((s) => [s.slug, s.name] as const)));
   const postalInvalid = postalDraft !== "" && !isPostalCode(postalDraft);
 

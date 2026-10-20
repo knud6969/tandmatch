@@ -4,6 +4,7 @@ import { formatOneDecimal } from "~/utils/format";
 
 // Stjerner med tekst til skærmlæsere. `value` kan have decimaler.
 export function StarRating({ value, count }: { value: number; count?: number }) {
+  // Afrundes til hele stjerner i visningen; det præcise tal står i teksten ved siden af.
   const rounded = Math.round(Math.min(5, Math.max(0, value)));
   const label = `${formatOneDecimal(value)} af 5 stjerner${count !== undefined ? ` ud fra ${count} anmeldelser` : ""}`;
   return (

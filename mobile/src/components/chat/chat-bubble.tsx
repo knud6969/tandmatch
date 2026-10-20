@@ -32,6 +32,7 @@ function AssistantExtras({ message }: { message: AiChatMessageDto }) {
   );
 }
 
+// Én besked i samtalen. Patientens står til højre; AI'ens til venstre med evt. foreløbig vurdering og forslag. Teksten kan markeres, så patienten kan kopiere den.
 export function ChatBubble({ message }: { message: AiChatMessageDto }) {
   const mine = message.role === "user";
   return (

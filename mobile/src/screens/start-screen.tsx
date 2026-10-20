@@ -11,6 +11,7 @@ import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, spacing } from "~/theme";
 
+// Typet rute, så caseId altid er med som parameter.
 const flowHref = (caseId: string) => ({ pathname: "/sag/[caseId]/flow", params: { caseId } }) as const;
 
 // Anonym: særskilt AI-samtykke og en anonym session med en tom sag (architecture 6.1, 10.2, 13.3).

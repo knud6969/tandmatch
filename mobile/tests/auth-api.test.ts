@@ -31,6 +31,7 @@ beforeEach(async () => {
   await saveTermsToken("t");
 });
 
+// Sikrer, at login, oprettelse og logud gemmer og sletter tokens rigtigt, og at klinik-konti aldrig gemmes i appen.
 describe("auth-API", () => {
   it("login med patient gemmer sessionen", async () => {
     respond = () => json(200, { userId: "u", role: "patient", session });

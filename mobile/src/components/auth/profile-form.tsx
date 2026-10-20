@@ -25,6 +25,7 @@ export function ProfileForm({ profile, onSave, pending, error, saved }: Props) {
   const [errors, setErrors] = useState<FieldErrors<keyof Values>>({});
   const set = (key: keyof Values) => (value: string) => setValues((v) => ({ ...v, [key]: value }));
 
+  // Sender kun felter, der er ændret, så et uændret postnummer ikke afvises af serveren.
   function submit() {
     const patch: Record<string, string | null> = {};
     if (values.firstName.trim() !== (profile.firstName ?? "")) patch.firstName = values.firstName;

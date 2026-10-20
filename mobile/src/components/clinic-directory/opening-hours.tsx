@@ -10,6 +10,7 @@ export function OpeningHours({ hours }: { hours: OpeningHoursDto[] }) {
   return (
     <View style={styles.list}>
       {WEEKDAYS.map((weekday) => {
+        // Flere vinduer pr. dag (fx formiddag og eftermiddag) vises sorteret efter åbningstid.
         const windows = hours.filter((h) => h.weekday === weekday).sort((a, b) => a.opensAt.localeCompare(b.opensAt));
         const text =
           windows.length === 0

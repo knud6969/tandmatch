@@ -6,6 +6,7 @@ import { formatDate, formatOneDecimal } from "~/utils/format";
 import { trustpilotSource } from "~/utils/clinic-texts";
 
 // Kort linje i klinikkort (uden link; hele kortet åbner profilen).
+// Trustpilot vises altid med kilde og aldrig sammenblandet med platformens egne anmeldelser (CLAUDE.md, Anmeldelser).
 export function TrustpilotLine({ trustpilot }: { trustpilot: TrustpilotInfo }) {
   if (!trustpilot) return null;
   return (
