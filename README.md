@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TandMatch
 
-## Getting Started
+En React Native (Expo) app til at finde den rigtige tandklinik til en fair pris. Patienten beskriver sit problem til en AI-chat, ser klinikker med priser, bedømmelser og afstand, og sender sin henvendelse til op til tre klinikker.
 
-First, run the development server:
+## Kør projektet
+
+Appen ligger i mappen mobile og kræver, at serveren i roden kører.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Server og database (i roden)
+cp .env.example .env.local      # udfyld Supabase- og OpenAI-nøgler
+npm install
+supabase start
+supabase db reset
+npm run seed:demo
+npm run dev -- -H 0.0.0.0
+
+# 2. Appen (i et nyt terminalvindue)
+cd mobile
+npm install
+cp .env.example .env            # sæt EXPO_PUBLIC_API_URL=http://127.0.0.1:3000
+npx expo start
+tryk i for at åbne ios simulation på computer
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+På en rigtig iPhone i Expo Go skal EXPO_PUBLIC_API_URL i stedet være http://<computerens IP>:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Video + Github
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+https://github.com/knud6969/tandmatch
 
-## Learn More
+[INDSÆT LINK TIL DEMOVIDEO]
 
-To learn more about Next.js, take a look at the following resources:
+## Hvem har kodet hvad
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Alt kode i repoet er committet af mig Knud Aundal. Størstedelen af koden er skrevet med Claude Code under min styring af krav, arkitektur og test, men det er ikke helt færdigt endnu, da vi har pivoteret flere gange og jeg ikke har uendelige tokens. Den bedømte app til aflevering i GK2 ligger i mobile mappen.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Godkendelsesopgave 2 — INNT E26
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Denne app er udviklet som del af Godkendelsesopgave 2 i faget Innovation og Ny Teknologi. Den bygger videre på Lægetider fra Godkendelsesopgave 1, men er pivoteret til tandlæger på baggrund af feedback og interviews med speciallæger. Appen er en prototype og ikke helt færdig. Billeder i chatten, kort, booking og anmeldelse i appen er ikke bygget endnu og derudover er filstruktur, diverse features, frontend design heller ikke færdigt, da der stadig skal laves en del ændringer, men den overordnede ide om en web baseret applikation til klinikker og en mobilbaseret app og de features der er på hver især forbliver det samme frem til det endelige eksamensprojekt.
