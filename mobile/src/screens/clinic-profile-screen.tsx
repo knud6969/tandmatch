@@ -3,6 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/clinics/types/clinics";
+import { getCase } from "~/api/cases";
 import { getClinic, getClinicReviews } from "~/api/clinics";
 import { SelectButton } from "~/components/leads/select-button";
 import { getServiceGroups } from "~/api/services";
@@ -35,7 +36,7 @@ function Reviews({ clinicId }: { clinicId: string }) {
 }
 
 // Fuld profil for verificerede klinikker, grunddata for basisniveau (architecture 6.1). Ledig tid og priser findes kun på fuldt niveau.
-function Profile({ clinic, caseId }: { clinic: ClinicProfileDto; caseId?: string }) {
+function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; caseId?: string; hasServices: boolean }) {
   const catalog = useLoad(getServiceGroups);
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
@@ -74,7 +75,7 @@ function Profile({ clinic, caseId }: { clinic: ClinicProfileDto; caseId?: string
             )}
           </Text>
         ) : null}
-        {caseId ? <SelectButton caseId={caseId} clinic={clinic} /> : null}
+        {caseId ? <SelectButton caseId={caseId} clinic={clinic} hasServices={hasServices} /> : null}
         {clinic.phone ? <Button label={`Ring: ${clinic.phone}`} onPress={() => void Linking.openURL(phoneHref(clinic.phone ?? ""))} /> : null}
         {website ? <Button label={`Klinikkens website: ${websiteLabel(website)}`} variant="secondary" onPress={() => openWeb(website)} /> : null}
       </View>
@@ -116,7 +117,11 @@ function Profile({ clinic, caseId }: { clinic: ClinicProfileDto; caseId?: string
 export function ClinicProfileScreen() {
   const router = useRouter();
   const { clinicId, sag } = useLocalSearchParams<{ clinicId: string; sag?: string }>();
-  const clinic = useLoad(() => getClinic(clinicId), [clinicId]);
+  // Med en sag hentes prisen for sagens behandlinger, så "Vælg klinik" kan slås fra uden pris (13.4a).
+  const clinic = useLoad(async () => {
+    const slugs = sag ? (await getCase(sag).catch(() => null))?.services.map((s) => s.slug) ?? [] : [];
+    return { profile: await getClinic(clinicId, slugs), hasServices: slugs.length > 0 };
+  }, [clinicId, sag]);
   return (
     <Screen>
       <BackLink label="Alle klinikker" onPress={() => (router.canGoBack() ? router.back() : router.replace("/klinikker"))} />
@@ -127,7 +132,7 @@ export function ClinicProfileScreen() {
         </>
       ) : (
         <LoadState {...clinic} onRetry={clinic.reload}>
-          {(data) => <Profile clinic={data} caseId={sag} />}
+          {(data) => <Profile clinic={data.profile} caseId={sag} hasServices={data.hasServices} />}
         </LoadState>
       )}
     </Screen>

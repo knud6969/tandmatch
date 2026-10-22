@@ -92,3 +92,9 @@ export const SEND_BLOCK_TEXT: Record<SendBlock, string> = {
   contacted: "Du har allerede kontaktet en af klinikkerne med sagen. Gå tilbage og vælg en anden.",
   unavailable: "En af klinikkerne kan ikke kontaktes. Kun verificerede klinikker kan modtage henvendelser via TandMatch.",
 };
+
+// "Vælg klinik" er slået fra for verificerede klinikker uden pris på alle sagens behandlinger (13.4a). Uden valgte
+// behandlinger (`hasServices` falsk) er der intet at mangle.
+export const NO_PRICE_FOR_SELECTION_TEXT = "Klinikken har ikke pris på alle dine behandlinger";
+export const lacksPriceForSelection = (clinic: { priceForSelection: unknown }, hasServices: boolean) =>
+  hasServices && clinic.priceForSelection === null;

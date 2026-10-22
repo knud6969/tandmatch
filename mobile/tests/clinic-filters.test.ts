@@ -1,5 +1,6 @@
 import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
-import { activeFilterCount, buildClinicsQuery, canSortBy, DEFAULT_FILTERS, toggleService } from "~/utils/clinic-filters";
+import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
+import { lacksPriceForSelection } from "~/utils/lead-selection";
 
 // Sikrer, at filtrene giver samme forespørgsel som weben, og at meningsløse parametre udelades.
 describe("buildClinicsQuery", () => {
@@ -18,7 +19,7 @@ describe("buildClinicsQuery", () => {
 
   it("sender behandlinger, akut og sortering", () => {
     const q = buildClinicsQuery({ ...DEFAULT_FILTERS, serviceSlugs: ["undersoegelse", "fyldning"], emergency: true, sort: "price" });
-    expect(q).toBe("services=undersoegelse%2Cfyldning&emergency=true&sort=price");
+    expect(q).toBe("services=undersoegelse%2Cfyldning&emergency=true&onlyOffering=true&sort=price");
   });
 
   it("udelader sortering, der ikke giver mening", () => {
@@ -56,5 +57,36 @@ describe("hjælpere", () => {
   it("tæller aktive filtre", () => {
     expect(activeFilterCount(DEFAULT_FILTERS)).toBe(0);
     expect(activeFilterCount({ ...DEFAULT_FILTERS, postalCode: "2100", emergency: true, sort: "rating", serviceSlugs: ["a"] })).toBe(4);
+  });
+});
+
+// 9.9: kun true slår filteret til, og kun med valgte behandlinger (uden dem giver serveren 400).
+describe("onlyOffering (13.4a)", () => {
+  const sag = { ...DEFAULT_FILTERS, serviceSlugs: ["fast_bojle"], postalCode: "2100" };
+
+  it("sendes med sagens behandlinger og postnummer", () => {
+    expect(buildClinicsQuery(sag)).toBe("services=fast_bojle&postalCode=2100&maxDistanceKm=50&onlyOffering=true");
+  });
+
+  it("sendes aldrig uden behandlinger", () => {
+    expect(buildClinicsQuery({ ...DEFAULT_FILTERS, postalCode: "2100" })).not.toContain("onlyOffering");
+  });
+
+  it("'Vis også andre klinikker' giver samme kald uden onlyOffering", () => {
+    const q = buildClinicsQuery(showOtherClinics(sag));
+    expect(q).toBe("services=fast_bojle&postalCode=2100&maxDistanceKm=50");
+  });
+
+  it("'Øg afstanden' giver 100 km og kun når der er udgangspunkt og plads til mere", () => {
+    expect(canWidenDistance(DEFAULT_FILTERS)).toBe(false);
+    expect(canWidenDistance(sag)).toBe(true);
+    expect(buildClinicsQuery(widenDistance(sag))).toContain("maxDistanceKm=100");
+    expect(canWidenDistance(widenDistance(sag))).toBe(false);
+  });
+
+  it("'Vælg klinik' slås fra uden pris på valget, men kun når der er valgte behandlinger", () => {
+    expect(lacksPriceForSelection({ priceForSelection: null }, true)).toBe(true);
+    expect(lacksPriceForSelection({ priceForSelection: { min: 1, max: 2 } }, true)).toBe(false);
+    expect(lacksPriceForSelection({ priceForSelection: null }, false)).toBe(false);
   });
 });

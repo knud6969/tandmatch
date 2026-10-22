@@ -97,7 +97,7 @@ Fanerne: **Forside**, **Klinikker**, **Mine sager**, **Konto**.
 
 Reglerne fra weben gælder uændret i appen: AI'ens foreløbige vurdering vises altid med mærkatet, akut-blokken vises uafhængigt af AI'en, priser vises kun fra klinikkernes prislister, rækkefølgen er serverens, og kontaktoplysninger sendes kun ved booking. Faste tekster og labels hentes fra `lib/<domæne>/constants/` (fx `CONSENT_TEXTS`, `LEAD_STATUS_LABEL`, `CASE_TIMEFRAME_LABEL`, `EMERGENCY_REFERRAL_TEXT`, `CHAT_NOT_SHARED_TEXT`); appen skriver ikke sine egne versioner af dem.
 
-### 13.4a "Se klinikker der kan hjælpe" (trin 9.9) [IKKE BYGGET]
+### 13.4a "Se klinikker der kan hjælpe" (trin 9.9) [BYGGET]
 
 Kontrakten mellem sagen og oversigten:
 
@@ -132,7 +132,7 @@ Fjernet 2026-10-22 (12.3 punkt 38 besluttet): `/start`, `/akut`, `/opret/patient
 - **Server:** Next.js på brugerens Mac, `npm run build && npm start -- -H 0.0.0.0` (eller `npm run dev -- -H 0.0.0.0` under udvikling), så telefonen kan nå den på LAN. `.env.local` som i 2.3.
 - **App:** `cd mobile && npx expo start`. iPhone: samme wifi som Mac'en, scan QR-koden med Kamera-appen, åbn i Expo Go, og tillad "Lokalt netværk". `EXPO_PUBLIC_API_URL=http://<Mac'ens LAN-IP>:3000` i `mobile/.env`. Simulator: `http://localhost:3000`, tryk `i` i Expo-terminalen.
 - **Database:** iPhone-demo mod det fælles Supabase-projekt (billed-URL'er virker); udvikling i simulatoren kan bruge lokal Supabase (12.3 punkt 40).
-- **Forløb i demoen:** patienten i appen på iPhone, klinikken i browseren på Mac'en (`http://localhost:3000/klinik`): patient sender lead → klinik accepterer → patient booker → (seedet) anmeldelse; akutvejen live. Booking og sagens status i appen kræver trin 10.1-10.2; indtil da vises accepten kun på klinik-weben.
+- **Forløb i demoen:** patienten i appen på iPhone, klinikken i browseren på Mac'en (`http://localhost:3000/klinik`): patient sender lead → klinik accepterer → patient booker → (seedet) anmeldelse; akutvejen live. Sagens status og booking i appen findes fra trin 10.1-10.2 (Mine sager, sagsskærmen, Book tid og Mine bookinger).
 - **Før demoen:** opdatér Expo Go på iPhonen; tjek at Mac'ens firewall tillader port 3000 og 8081; prøvekørsler kan ramme IP-grænserne på 10 pr. time (login, signup, anonym session, billeder; 2.4), så vent en time eller ryd `rate_limits` i SQL-editoren (brugeren).
 - **Demodata:** `scripts/seed-demo.ts` som i arbejdsplanens 7.13; patient-login fra seed-loggen. Fra trin 9.11 har de verificerede demoklinikker forskellige profiler, så filteret i 13.4a kan ses virke (tabellen nedenfor).
 

@@ -58,3 +58,11 @@ export const websiteLabel = (href: string) => href.replace(/^https?:\/\//i, "").
 
 // tel:-link med kun cifre og plus.
 export const phoneHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
+
+// Klokkeslæt og dag i dansk tid til bookingen: "09:15", "man. 26. okt." og "2026-10-26" (nøgle til gruppering).
+const timeOnly = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: CLINIC_TIME_ZONE });
+const dayLabel = new Intl.DateTimeFormat("da-DK", { weekday: "short", day: "numeric", month: "short", timeZone: CLINIC_TIME_ZONE });
+const dayKeyFormat = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: CLINIC_TIME_ZONE });
+export const formatTime = (iso: string) => timeOnly.format(new Date(iso));
+export const formatDayLabel = (iso: string) => dayLabel.format(new Date(iso));
+export const dayKey = (iso: string) => dayKeyFormat.format(new Date(iso));
