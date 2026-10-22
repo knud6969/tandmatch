@@ -4,7 +4,7 @@ import "server-only";
 // chat, bekræftede ydelser og billeder og gemmer resultatet.
 
 import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
 import type { ModelImage } from "@/features/cases/ai/aiChatService";
 import { runSummaryGuard, type SummaryGuardResult } from "@/features/cases/ai/guard";

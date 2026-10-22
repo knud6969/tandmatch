@@ -13,7 +13,7 @@ import { CaseServicesRepository } from "@/features/cases/caseServicesRepository"
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { LeadsRepository } from "@/models/leadsRepository";
-import { ServicesRepository } from "@/models/servicesRepository";
+import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 
 type PatchCaseInput = z.infer<typeof patchCaseSchema>;

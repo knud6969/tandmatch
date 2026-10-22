@@ -1,4 +1,4 @@
-import type { ClinicSummaryDto } from "@/lib/types/clinics";
+import type { ClinicSummaryDto } from "@/lib/clinics/types/clinics";
 import type { Role } from "@/lib/common/types/common";
 
 export type TermsStatusDto = {

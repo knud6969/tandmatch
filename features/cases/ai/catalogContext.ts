@@ -2,8 +2,8 @@
 // Bygges af kataloget fra databasen ved hvert kald (services/ai kender ikke databasen: kalderen
 // henter ServiceGroupDto[]). Ingen priser og ingen klinikker. Ren fil uden server-imports.
 
-import { SERVICE_CATEGORY_LABEL } from "@/lib/constants/services";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import { SERVICE_CATEGORY_LABEL } from "@/lib/clinics/constants/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { escapeForPrompt } from "./promptFormat";
 
 // Kataloget skrevet som data til prompten. Kategorien er kun en overskrift: AI'en foreslår behandlings-slugs.

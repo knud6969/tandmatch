@@ -7,14 +7,14 @@ import { BOOKING_STATUS_LABEL, CLINIC_BOOKINGS_DEFAULT_PAST_DAYS, BOOKING_HORIZO
 import type { ClinicBookingDto } from "@/lib/types/bookings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { NotVerifiedNote } from "@/views/components/clinic/not-verified-note";
+import { NotVerifiedNote } from "@/features/clinics/components/not-verified-note";
 import { Card } from "@/components/ui/card";
 import { cx } from "@/components/ui/cx";
 import { LoadState } from "@/components/ui/load-state";
 import { StatusMessage } from "@/components/ui/status-message";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { BOOKING_STATUS_TONE } from "@/views/utils/booking-status";
-import { clinicLeadHref } from "@/views/utils/clinic-links";
+import { clinicLeadHref } from "@/features/clinics/utils/clinic-links";
 import { formatDay, formatShortDateTime, formatTime } from "@/platform/ui-utils/format";
 import { groupByDay } from "@/platform/ui-utils/group-by-day";
 import { phoneHref } from "@/platform/ui-utils/links";

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/constants/clinics";
-import type { OpeningHoursDto } from "@/lib/types/clinics";
+import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/clinics/constants/clinics";
+import type { OpeningHoursDto } from "@/lib/clinics/types/clinics";
 import { colors, fontSize, spacing } from "~/theme";
 import { formatClock } from "~/utils/format";
 

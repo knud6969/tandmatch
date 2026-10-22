@@ -6,7 +6,7 @@ import "server-only";
 
 import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/cases/constants/ai-texts";
 import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
 import { runChatGuard, type ChatGuardResult } from "@/features/cases/ai/guard";
 import type { ModelMessage, ModelPart, StructuredModelClient } from "@/features/cases/ai/modelClient";

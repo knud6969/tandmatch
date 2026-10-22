@@ -1,8 +1,8 @@
-import { servicesQuerySchema } from "@/lib/schemas/services";
+import { servicesQuerySchema } from "@/lib/clinics/schemas/services";
 import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
 import { getSession } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { ServicesController } from "@/controllers/servicesController";
+import { ServicesController } from "@/features/clinics/servicesController";
 
 // Ydelseskataloget er offentligt (architecture 10.4).
 export const GET = withApi(async (req) => {

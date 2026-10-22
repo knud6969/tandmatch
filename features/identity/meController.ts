@@ -4,7 +4,7 @@ import { anonymousExpiresAt } from "@/lib/identity/constants/sessions";
 import type { MeDto } from "@/lib/identity/types/auth";
 import type { Session } from "@/platform/middleware/session";
 import { PatientsRepository } from "@/features/identity/patientsRepository";
-import { ClinicsRepository } from "@/models/clinicsRepository";
+import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 
 // Den indloggede bruger: rolle og visningsnavn (architecture 10.2). For en klinik følger id, navn og status.
 export type MeDeps = { patients: PatientsRepository; clinics: ClinicsRepository };

@@ -12,7 +12,7 @@ import { CasesRepository } from "@/features/cases/casesRepository";
 import { ChatRepository } from "@/features/cases/chatRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { ServicesRepository } from "@/models/servicesRepository";
+import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { isAiUpstreamError } from "@/features/cases/ai/errors";
 import { AiSummaryService } from "@/features/cases/ai/aiSummaryService";
 import { createAiClient } from "@/features/cases/ai/openai";

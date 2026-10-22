@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { SlotDto } from "@/lib/types/clinics";
+import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { cx } from "@/components/ui/cx";
 import { formatDay, formatTime } from "@/platform/ui-utils/format";
 import { groupByDay } from "@/platform/ui-utils/group-by-day";

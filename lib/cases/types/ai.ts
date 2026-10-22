@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import type { aiImageObservationSchema, aiSummarySchema } from "@/lib/cases/constants/ai-schemas";
 import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
-import type { ServiceDto } from "@/lib/types/services";
+import type { ServiceDto } from "@/lib/clinics/types/services";
 
 // Delte AI-typer (architecture 7.4, 10.6). Skemaerne er strict: ingen felter for pris eller klinikker.
 // MDR-TILPASNING: feltet preliminaryAssessment fjernes eller tvinges til null i services/ai/rules.ts (architecture 7.8).

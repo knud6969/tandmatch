@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.
 vi.mock("server-only", () => ({}));
 
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { AiChatService } from "@/features/cases/ai/aiChatService";
 import { AiSummaryService } from "@/features/cases/ai/aiSummaryService";
 import { AiTimeoutError } from "@/features/cases/ai/errors";

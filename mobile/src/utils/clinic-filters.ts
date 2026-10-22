@@ -1,6 +1,6 @@
-import { DEFAULT_MAX_DISTANCE_KM, MAX_SELECTED_SERVICES } from "@/lib/constants/clinics";
-import { postalCodeSchema } from "@/lib/schemas/clinics";
-import type { ClinicSort } from "@/lib/types/clinics";
+import { DEFAULT_MAX_DISTANCE_KM, MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
+import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
+import type { ClinicSort } from "@/lib/clinics/types/clinics";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). Positionen gemmes kun i skærmens tilstand.
 export type DirectoryFilters = {

@@ -9,7 +9,7 @@ import type { AuthResult } from "@/features/identity/authRepository";
 import type { TermsPayload } from "@/platform/middleware/termsCookie";
 import { AuthRepository } from "@/features/identity/authRepository";
 import { PatientsRepository } from "@/features/identity/patientsRepository";
-import { ClinicsRepository } from "@/models/clinicsRepository";
+import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { ProfilesRepository } from "@/features/identity/profilesRepository";
 import { TermsRepository } from "@/features/identity/termsRepository";
 

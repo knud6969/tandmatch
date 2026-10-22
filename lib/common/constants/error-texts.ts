@@ -1,4 +1,4 @@
-import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
+import { MAX_DENTISTS_PER_CLINIC, MAX_PORTFOLIO_ITEMS_PER_CLINIC, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/clinics/constants/clinics";
 import { MAX_BOOKINGS_PER_LEAD, NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
 import {
   CHAT_MAX_USER_MESSAGES_PER_CONVERSATION,

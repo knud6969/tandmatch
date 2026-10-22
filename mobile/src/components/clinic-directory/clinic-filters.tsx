@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { CLINIC_SORTS, CLINIC_SORT_LABEL } from "@/lib/constants/clinics";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import { CLINIC_SORTS, CLINIC_SORT_LABEL } from "@/lib/clinics/constants/clinics";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { Button, Checkbox, CheckboxText, Chip, StatusMessage, TextField } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { canSortBy, hasOrigin, isPostalCode, type DirectoryFilters } from "~/utils/clinic-filters";

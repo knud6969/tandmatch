@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from "react-native";
-import type { ClinicListItemDto } from "@/lib/types/clinics";
+import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Button } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
 import { toggleClinic, useSelection } from "~/utils/lead-selection";

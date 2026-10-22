@@ -1,4 +1,4 @@
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { apiRequest } from "./client";
 
 // Kataloget: aktive kategorier med behandlinger (architecture 10.4).

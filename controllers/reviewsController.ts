@@ -7,7 +7,7 @@ import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleIte
 import { alreadyReplied, notFound } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
-import { ClinicsRepository } from "@/models/clinicsRepository";
+import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { LeadsRepository } from "@/models/leadsRepository";
 import { ReviewsRepository } from "@/models/reviewsRepository";
 

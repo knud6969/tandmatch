@@ -1,10 +1,10 @@
 "use client";
 
-import { ClinicOverview } from "@/views/components/clinic/clinic-overview";
+import { ClinicOverview } from "@/features/clinics/components/clinic-overview";
 import { LeadInbox } from "@/views/components/clinic/lead-inbox";
-import { VerificationBanner } from "@/views/components/clinic/verification-banner";
+import { VerificationBanner } from "@/features/clinics/components/verification-banner";
 import { LoadState } from "@/components/ui/load-state";
-import { loadClinic } from "@/views/utils/clinic-loaders";
+import { loadClinic } from "@/features/clinics/utils/clinic-loaders";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 // Klinikkens forside: verificeringsbanneret øverst (kun ved "registered"), derefter indbakken og opsætningen. Klinikken hentes

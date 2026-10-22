@@ -1,7 +1,7 @@
 import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MAX_SELECTED_SERVICES } from "@/lib/constants/clinics";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { Button, Checkbox, CheckboxText } from "~/components/ui";
 import { colors, fontSize, spacing } from "~/theme";
 

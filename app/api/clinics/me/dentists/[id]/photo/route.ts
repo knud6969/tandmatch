@@ -3,7 +3,7 @@ import { imageFileReader, jsonResponse, noContent, parseId, rejectLargeImage, wi
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { ClinicDentistsController } from "@/controllers/clinicDentistsController";
+import { ClinicDentistsController } from "@/features/clinics/clinicDentistsController";
 
 type Ctx = { params: Promise<{ id: string }> };
 

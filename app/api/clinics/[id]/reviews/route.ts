@@ -1,7 +1,7 @@
 import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
 import { getSession } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { ClinicDirectoryController } from "@/controllers/clinicDirectoryController";
+import { ClinicDirectoryController } from "@/features/clinics/clinicDirectoryController";
 
 type Ctx = { params: Promise<{ id: string }> };
 

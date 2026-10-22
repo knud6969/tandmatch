@@ -1,4 +1,4 @@
-import type { ClinicListItemDto } from "@/lib/types/clinics";
+import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 
 // Kortindstillinger (OpenStreetMap med Leaflet, architecture 6.6). Ingen API-nøgle. Fliserne hentes direkte af browseren
 // fra OSM's offentlige fliseserver (kræver `img-src https://tile.openstreetmap.org` i CSP, next.config.ts).

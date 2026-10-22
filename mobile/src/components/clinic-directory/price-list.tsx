@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { ClinicPriceDto } from "@/lib/types/clinics";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ClinicPriceDto } from "@/lib/clinics/types/clinics";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "~/utils/clinic-texts";
 import { formatPriceRange } from "~/utils/format";

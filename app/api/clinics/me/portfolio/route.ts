@@ -1,10 +1,10 @@
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
-import { createPortfolioItemSchema } from "@/lib/schemas/clinics";
+import { createPortfolioItemSchema } from "@/lib/clinics/schemas/clinics";
 import { jsonResponse, readImageForm, rejectLargeImage, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { PortfolioController } from "@/controllers/portfolioController";
+import { PortfolioController } from "@/features/clinics/portfolioController";
 
 // Porteføljebillede (architecture 9.5, 10.8). Uden afkrydset samtykkebekræftelse giver felt-valideringen 400, før
 // billedet behandles.

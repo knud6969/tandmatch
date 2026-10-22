@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
-import { postalCodeSchema } from "@/lib/schemas/clinics";
+import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import type { CaseDto } from "@/lib/cases/types/cases";
 import { Button, StatusMessage, TextField } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";

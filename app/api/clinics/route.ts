@@ -1,8 +1,8 @@
-import { clinicsQuerySchema } from "@/lib/schemas/clinics";
+import { clinicsQuerySchema } from "@/lib/clinics/schemas/clinics";
 import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
 import { getSession } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { ClinicDirectoryController } from "@/controllers/clinicDirectoryController";
+import { ClinicDirectoryController } from "@/features/clinics/clinicDirectoryController";
 
 const QUERY_KEYS = ["ids", "services", "postalCode", "lat", "lng", "maxDistanceKm", "maxPrice", "minStars", "emergency", "contactableOnly", "sort"];
 

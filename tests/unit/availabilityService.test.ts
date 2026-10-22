@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BOOKING_HORIZON_DAYS, FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
-import { AvailabilityService, type OpeningWindow } from "@/services/availabilityService";
+import { AvailabilityService, type OpeningWindow } from "@/features/clinics/availabilityService";
 
 // Onsdag 14. oktober 2026, 10:00 lokal tid (sommertid, UTC+2).
 const NOW = new Date("2026-10-14T08:00:00Z");

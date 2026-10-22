@@ -9,7 +9,7 @@ import {
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
 } from "@/lib/cases/constants/ai-texts";
-import type { ServiceGroupDto } from "@/lib/types/services";
+import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
 import { AiInvalidOutputError, AiTimeoutError } from "@/features/cases/ai/errors";
 import {

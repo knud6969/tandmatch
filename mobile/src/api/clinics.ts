@@ -1,4 +1,4 @@
-import type { ClinicListDto, ClinicProfileDto } from "@/lib/types/clinics";
+import type { ClinicListDto, ClinicProfileDto } from "@/lib/clinics/types/clinics";
 import type { PublicReviewsDto } from "@/lib/types/reviews";
 import { apiRequest } from "./client";
 

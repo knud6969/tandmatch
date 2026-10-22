@@ -1,6 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
-import type { ClinicListItemDto } from "@/lib/types/clinics";
+import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { BASIC_CLINIC_FACTS_TEXT, BASIC_CLINIC_LABEL, NO_REVIEWS_TEXT, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";

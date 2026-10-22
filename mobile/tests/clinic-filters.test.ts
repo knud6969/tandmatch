@@ -1,4 +1,4 @@
-import { MAX_SELECTED_SERVICES } from "@/lib/constants/clinics";
+import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
 import { activeFilterCount, buildClinicsQuery, canSortBy, DEFAULT_FILTERS, toggleService } from "~/utils/clinic-filters";
 
 // Sikrer, at filtrene giver samme forespørgsel som weben, og at meningsløse parametre udelades.

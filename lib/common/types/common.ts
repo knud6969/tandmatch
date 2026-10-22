@@ -1,4 +1,4 @@
-import type { TRUSTPILOT_ENTERED_BY } from "@/lib/constants/clinics";
+import type { TRUSTPILOT_ENTERED_BY } from "@/lib/clinics/constants/clinics";
 import type { CONSENT_TYPES } from "@/lib/identity/constants/consents";
 import type { ROLES } from "@/lib/identity/constants/roles";
 

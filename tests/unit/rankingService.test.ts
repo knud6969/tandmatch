@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CLINIC_SORTS } from "@/lib/constants/clinics";
-import type { ClinicListItemDto, ClinicPriceDto } from "@/lib/types/clinics";
-import { RankingService } from "@/services/rankingService";
+import { CLINIC_SORTS } from "@/lib/clinics/constants/clinics";
+import type { ClinicListItemDto, ClinicPriceDto } from "@/lib/clinics/types/clinics";
+import { RankingService } from "@/features/clinics/rankingService";
 
 const NOW = new Date("2026-10-14T08:00:00Z");
 const ranking = new RankingService(() => NOW);

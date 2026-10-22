@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { firstNameSchema } from "@/lib/identity/schemas/auth";
-import { postalCodeSchema } from "@/lib/schemas/clinics";
+import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 
 export const patchPatientSchema = z

@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthRepository } from "@/features/identity/authRepository";
 import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { CleanupRepository } from "@/platform/cleanupRepository";
-import { PublicMediaStorage } from "@/models/publicMediaStorage";
+import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 
 // Sletter alt for én bruger: billedmapperne pr. sag og auth-brugeren (klinikker: filer i public-media og auth-brugeren). Rækker slettes via cascade
 // (architecture 7.7, 9.4). Billedstien er {case_id}/{image_id}.jpg (ikke {patient_id}/...), så mapperne

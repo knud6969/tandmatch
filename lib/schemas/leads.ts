@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAX_PRICE_DKK } from "@/lib/constants/clinics";
+import { MAX_PRICE_DKK } from "@/lib/clinics/constants/clinics";
 import {
   EMERGENCY_DESCRIPTION_MAX,
   EMERGENCY_DESCRIPTION_MIN,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { contactNameSchema } from "@/lib/schemas/bookings";
-import { postalCodeSchema } from "@/lib/schemas/clinics";
+import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 
 // Afsendelse af en sag til 1-3 klinikker (architecture 10.5). Loftet på aktive og samlede leads tjekkes i databasen.

@@ -8,7 +8,7 @@ import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeTex
 import { FilterChips } from "@/components/ui/filter-chips";
 import { LoadState } from "@/components/ui/load-state";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { clinicLeadHref } from "@/views/utils/clinic-links";
+import { clinicLeadHref } from "@/features/clinics/utils/clinic-links";
 import { formatDateTime } from "@/platform/ui-utils/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 

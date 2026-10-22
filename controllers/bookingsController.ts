@@ -9,16 +9,16 @@ import {
 import { DAY_MS } from "@/lib/common/domain/time";
 import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
-import type { SlotDto } from "@/lib/types/clinics";
+import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { AvailabilityRepository } from "@/models/availabilityRepository";
+import { AvailabilityRepository } from "@/features/clinics/availabilityRepository";
 import { BookingsRepository } from "@/models/bookingsRepository";
-import { ClinicDirectoryRepository } from "@/models/clinicDirectoryRepository";
-import { ClinicsRepository } from "@/models/clinicsRepository";
+import { ClinicDirectoryRepository } from "@/features/clinics/clinicDirectoryRepository";
+import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { LeadsRepository } from "@/models/leadsRepository";
-import { ServicesRepository } from "@/models/servicesRepository";
-import { AvailabilityService } from "@/services/availabilityService";
+import { ServicesRepository } from "@/features/clinics/servicesRepository";
+import { AvailabilityService } from "@/features/clinics/availabilityService";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type LeadAvailabilityQuery = z.infer<typeof leadAvailabilityQuerySchema>;

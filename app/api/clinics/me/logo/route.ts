@@ -3,7 +3,7 @@ import { imageFileReader, jsonResponse, noContent, rejectLargeImage, withApi } f
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
-import { ClinicsController } from "@/controllers/clinicsController";
+import { ClinicsController } from "@/features/clinics/clinicsController";
 
 // Logo i den offentlige bucket (architecture 9.5, 10.8). Filen læses først efter ejertjekket.
 export const POST = withApi(async (req) => {
