@@ -1,56 +1,58 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Badge, Button } from "~/components/ui";
-import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { Button } from "~/components/ui";
+import { colors, iconSize, MIN_TOUCH, spacing, type } from "~/theme";
 
 type Props = {
-  // Åbner chatten (/start). Uden `onDescribe` vises indgangen som "Kommer snart".
+  // Åbner chatten (/start). Uden `onDescribe` er knappen deaktiveret og mærket "Kommer snart".
   onDescribe?: () => void;
   onFindClinic: () => void;
   onEmergency: () => void;
 };
 
-// Forsidens tre indgange (architecture 13.4): "Beskriv dit problem", "Find en klinik" og "Jeg har ondt".
-// Chatindgangen er størst og står øverst, så den fanger opmærksomheden først; akutvejen er altid ét tryk væk.
+// Række med titel, evt. lille tekst og pil. Hele rækken er trykfladen.
+function EntryRow({ title, text, onPress }: { title: string; text?: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text ? `${title}. ${text}` : title}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <View style={styles.rowText}>
+        <Text style={type.label}>{title}</Text>
+        {text ? <Text style={type.caption}>{text}</Text> : null}
+      </View>
+      <Ionicons name="chevron-forward" size={iconSize.sm} color={colors.inkMuted} />
+    </Pressable>
+  );
+}
+
+// Forsidens tre indgange (architecture 13.4, 13.9): én primær knap, "Beskriv dit problem", og to rolige rækker med pil.
+// Akutvejen er altid ét tryk væk og har 112-teksten under sig.
 export function HomeEntries({ onDescribe, onFindClinic, onEmergency }: Props) {
   return (
     <View style={styles.wrap}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Beskriv dit problem eller upload et billede"
-        accessibilityHint={onDescribe ? undefined : "Kommer snart"}
-        accessibilityState={{ disabled: !onDescribe }}
+      <Button
+        label={onDescribe ? "Beskriv dit problem" : "Beskriv dit problem (kommer snart)"}
+        accessibilityLabel={onDescribe ? "Beskriv dit problem eller upload et billede" : "Beskriv dit problem. Kommer snart"}
         disabled={!onDescribe}
-        onPress={onDescribe}
-        style={({ pressed }) => [styles.chat, !onDescribe && styles.chatOff, pressed && { opacity: 0.9 }]}
-      >
-        <Text style={styles.chatTitle}>Beskriv dit problem eller upload et billede</Text>
-        <Text style={styles.chatText}>AI hjælper dig med at sætte ord på det. Klinikken vurderer endeligt.</Text>
-        {onDescribe ? <Text style={styles.start}>Start</Text> : <Badge label="Kommer snart" />}
-      </Pressable>
-      <Button label="Find en klinik" onPress={onFindClinic} />
-      <Button label="Jeg har ondt" variant="secondary" onPress={onEmergency} />
+        onPress={onDescribe ?? (() => undefined)}
+      />
+      <View style={styles.list}>
+        <EntryRow title="Find en klinik" onPress={onFindClinic} />
+        <View style={styles.divider} />
+        <EntryRow title="Jeg har ondt" text="Klinikker med ledig akuttid. Ved livstruende symptomer ring 112." onPress={onEmergency} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  chat: {
-    minHeight: MIN_TOUCH,
-    gap: spacing.sm,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.brand200,
-    backgroundColor: colors.surface,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  chatOff: { opacity: 0.85 },
-  chatTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
-  chatText: { fontSize: fontSize.sm, color: colors.inkMuted },
-  start: { alignSelf: "flex-start", backgroundColor: colors.brand600, color: colors.onBrand, fontWeight: "700", fontSize: fontSize.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radius.pill, overflow: "hidden" },
+  wrap: { gap: spacing.xl },
+  list: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line },
+  divider: { height: 1, backgroundColor: colors.line },
+  row: { minHeight: MIN_TOUCH + spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.md },
+  rowText: { flex: 1, gap: spacing.xs },
+  pressed: { opacity: 0.6 },
 });

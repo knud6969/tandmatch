@@ -35,3 +35,18 @@ export const MIN_TOUCH = 44;
 
 // Skriftstørrelser; brødtekst er mindst 16 for læsbarhed på mobil.
 export const fontSize = { sm: 14, md: 16, lg: 18, xl: 22, xxl: 28 } as const;
+
+// Fælles typografi (13.9): rolig, med tydeligt hierarki. Skærme og komponenter bruger disse i stedet for egne størrelser.
+export const type = {
+  wordmark: { fontSize: fontSize.lg, fontWeight: "700", letterSpacing: -0.2, color: colors.brand700 },
+  display: { fontSize: 30, lineHeight: 36, fontWeight: "700", letterSpacing: -0.5, color: colors.ink },
+  title: { fontSize: fontSize.lg, lineHeight: 24, fontWeight: "600", color: colors.ink },
+  body: { fontSize: fontSize.md, lineHeight: 24, fontWeight: "400", color: colors.inkMuted },
+  label: { fontSize: fontSize.md, lineHeight: 22, fontWeight: "600", color: colors.ink },
+  caption: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: "400", color: colors.inkMuted },
+  eyebrow: { fontSize: 12, lineHeight: 16, fontWeight: "600", letterSpacing: 0.6, color: colors.inkMuted },
+} as const;
+
+// Størrelser til ikoner og runde knapper.
+export const iconSize = { sm: 18, md: 22 } as const;
+export const SEND_BUTTON = 44;

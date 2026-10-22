@@ -146,11 +146,11 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
       {!generating && !showField && trimmed !== "" ? (
         <>
           <Button label={CASE_FLOW_TEXTS.summaryApprove} loading={approve.pending} onPress={() => void approve.run(trimmed)} />
-          <Button label={CASE_FLOW_TEXTS.summaryEdit} variant="secondary" onPress={() => setEditing(true)} />
+          <Button label={CASE_FLOW_TEXTS.summaryEdit} variant="text" onPress={() => setEditing(true)} />
         </>
       ) : null}
       {!generating && !answered && !noMoreDrafts && (trimmed !== "" || attempt !== null) ? (
-        <Button label={CASE_FLOW_TEXTS.summaryRegenerate} variant="secondary" onPress={() => void generate()} />
+        <Button label={CASE_FLOW_TEXTS.summaryRegenerate} variant="text" onPress={() => void generate()} />
       ) : null}
     </FlowCard>
   );
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
   summary: { fontSize: fontSize.md, lineHeight: 24, color: colors.ink, backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: spacing.md },
-  clinicSees: { fontSize: fontSize.sm, fontWeight: "700", color: colors.brand800 },
+  clinicSees: { fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
   field: { gap: spacing.sm },
   label: { fontSize: fontSize.md, fontWeight: "600", color: colors.ink },
   input: {

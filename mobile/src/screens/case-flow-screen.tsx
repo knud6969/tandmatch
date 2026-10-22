@@ -8,6 +8,7 @@ import { getCase } from "~/api/cases";
 import { getConsents, grantConsent } from "~/api/consents";
 import { getServiceGroups } from "~/api/services";
 import { useSession } from "~/auth/session-context";
+import { FlowProgress } from "~/components/case/flow-progress";
 import { ChatPanel } from "~/components/chat/chat-panel";
 import { PostalCodeCard } from "~/components/case/postal-code-card";
 import { ReadyCard } from "~/components/case/ready-card";
@@ -150,12 +151,14 @@ export function CaseFlowScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Forlad samtalen" onPress={leave} style={styles.close} hitSlop={8}>
-            <Text style={styles.closeText}>‹ Luk</Text>
+            <Text style={styles.closeText}>Luk</Text>
           </Pressable>
           <Text accessibilityRole="header" style={styles.title}>
             Beskriv dit problem
           </Text>
+          <View style={styles.close} />
         </View>
+        {dto && dto.status === "draft" ? <FlowProgress step={stepOf(dto)} /> : null}
         {body}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -172,9 +175,9 @@ const styles = StyleSheet.create({
   cards: { gap: spacing.md },
   safe: { flex: 1, backgroundColor: colors.canvas },
   flex: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.line },
-  close: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, justifyContent: "center" },
-  closeText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.lg },
+  close: { minHeight: MIN_TOUCH, minWidth: 56, justifyContent: "center" },
+  closeText: { fontSize: fontSize.md, fontWeight: "500", color: colors.brand700 },
   title: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
   content: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1 },
 });

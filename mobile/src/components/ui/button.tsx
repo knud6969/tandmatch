@@ -4,13 +4,13 @@ import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 type Props = {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "text";
   disabled?: boolean;
   loading?: boolean;
   accessibilityLabel?: string;
 };
 
-// Fælles knap. Primær er udfyldt, sekundær er omrids. Under indlæsning er den deaktiveret, så der ikke trykkes to gange.
+// Fælles knap. Primær er udfyldt, sekundær er omrids, tekstknap er uden ramme til mindre vigtige handlinger. Under indlæsning er den deaktiveret, så der ikke trykkes to gange.
 export function Button({ label, onPress, variant = "primary", disabled = false, loading = false, accessibilityLabel }: Props) {
   const inactive = disabled || loading;
   const primary = variant === "primary";
@@ -23,7 +23,7 @@ export function Button({ label, onPress, variant = "primary", disabled = false, 
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        primary ? styles.primary : styles.secondary,
+        primary ? styles.primary : variant === "text" ? styles.text : styles.secondary,
         inactive && styles.inactive,
         pressed && styles.pressed,
       ]}
@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: colors.brand600 },
   secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.brand600 },
+  text: { backgroundColor: "transparent" },
   inactive: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
   label: { fontSize: fontSize.md, fontWeight: "600" },

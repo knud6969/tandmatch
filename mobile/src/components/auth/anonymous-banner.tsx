@@ -1,26 +1,26 @@
-import { StyleSheet, Text, View } from "react-native";
-import { Button } from "~/components/ui";
-import { colors, fontSize, radius, spacing } from "~/theme";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, MIN_TOUCH, spacing, type } from "~/theme";
 import { formatDateTime } from "~/utils/format";
 
 type Props = { expiresAt: string | null; onCreateAccount: () => void };
 
-// Banner for en anonym session: samtalen er en kladde, der forsvinder, medmindre den gemmes på en konto.
+// Tynd linje for en anonym session: samtalen er en kladde, der forsvinder, medmindre den gemmes på en konto.
 export function AnonymousBanner({ expiresAt, onCreateAccount }: Props) {
   return (
-    <View style={styles.box} accessibilityRole="summary">
-      <Text style={styles.title}>Du bruger TandMatch uden konto</Text>
-      <Text style={styles.text}>
-        Din samtale og dine billeder gemmes kun midlertidigt
-        {expiresAt ? ` og slettes ${formatDateTime(expiresAt)}` : ""}. Opret en konto for at beholde dem og kontakte klinikker.
+    <View style={styles.bar} accessibilityRole="summary">
+      <Text style={[type.caption, styles.text]}>
+        Du bruger TandMatch uden konto{expiresAt ? `. Din samtale slettes ${formatDateTime(expiresAt)}` : ""}.
       </Text>
-      <Button label="Opret konto" onPress={onCreateAccount} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Opret konto" onPress={onCreateAccount} style={styles.action} hitSlop={4}>
+        <Text style={styles.actionText}>Opret konto</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { backgroundColor: colors.warningBg, borderColor: colors.warningLine, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg, gap: spacing.sm },
-  title: { fontSize: fontSize.md, fontWeight: "700", color: colors.warningInk },
-  text: { fontSize: fontSize.md, color: colors.warningInk },
+  bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: spacing.md },
+  text: { flex: 1 },
+  action: { minHeight: MIN_TOUCH, justifyContent: "center" },
+  actionText: { fontSize: 14, fontWeight: "600", color: colors.brand700 },
 });
