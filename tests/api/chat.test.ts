@@ -140,15 +140,15 @@ describe("chat: guard og fejl", () => {
     for (const m of state.body.messages) assert.deepEqual(m.quickReplies, []);
   });
 
-  it("akutte symptomer giver emergency uden forslag", async () => {
+  // Akut-henvisning i chatten er midlertidigt slået fra (emergencyReferralInChat i services/ai/rules.ts, brugerens
+  // beslutning 2026-10-19). Akut-reglen med henvisning er dækket af tests/ai med indstillingen slået til.
+  it("akutte symptomer viser ingen akut-henvisning i chatten, mens indstillingen er slået fra", async () => {
     const p = await anonymous();
     const r = await say(p, "Jeg har stærke smerter og feber, og min blegning gør ondt");
     assert.equal(r.status, 201);
-    assert.equal(r.body.emergency, true);
-    assert.equal(r.body.assistantMessage.emergency, true);
-    assert.deepEqual(r.body.assistantMessage.suggestedServices, []);
-    assert.deepEqual(r.body.assistantMessage.quickReplies, []);
-    assert.equal(r.body.readyForSummary, false);
+    assert.equal(r.body.emergency, false);
+    assert.equal(r.body.assistantMessage.emergency, false);
+    assert.doesNotMatch(r.body.assistantMessage.content, /112|1813/);
   });
 
   it("foreløbig vurdering er formuleret foreløbigt", async () => {
