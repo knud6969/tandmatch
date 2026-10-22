@@ -303,6 +303,21 @@ describe("GET /api/clinics: filtre og sorteringer", () => {
     assert.equal((await noServices.get("/api/clinics?maxPrice=500")).status, 400);
   });
 
+  it("onlyOffering=true viser kun verificerede klinikker med pris på alle valgte behandlinger", async () => {
+    const r = await list(`?services=${EMERGENCY.slug}&onlyOffering=true`);
+    assert.ok(find(r.clinics, clinicA.clinicId));
+    assert.equal(find(r.clinics, clinicB.clinicId), undefined); // verificeret, men uden pris på akutbehandlingen
+    assert.equal(find(r.clinics, importedId), undefined); // basisklinik
+    assert.ok(r.clinics.every((x) => x.priceForSelection !== null));
+    assert.ok(r.criteria.includes("Kun klinikker med pris på alle valgte behandlinger"));
+    const both = await list(`?services=${EXAM.slug},${OTHER.slug}&onlyOffering=true`);
+    assert.ok(find(both.clinics, clinicA.clinicId) && find(both.clinics, clinicB.clinicId));
+    const off = await list(`?services=${EMERGENCY.slug}&onlyOffering=false`);
+    assert.ok(find(off.clinics, clinicB.clinicId));
+    const noServices = await newClientWithTerms();
+    assert.equal((await noServices.get("/api/clinics?onlyOffering=true")).status, 400);
+  });
+
   it("sorterer efter første ledige tid; klinikker uden står sidst", async () => {
     const r = await list(`?services=${EXAM.slug}&sort=first_available`);
     const ids = r.clinics.map((x) => x.id);

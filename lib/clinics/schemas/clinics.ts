@@ -299,12 +299,16 @@ export const clinicsQuerySchema = z
     minStars: queryNumber(1, 5, "Antal stjerner skal være mellem 1 og 5.").optional(),
     emergency: queryBoolean.optional(),
     contactableOnly: queryBoolean.optional(),
+    onlyOffering: queryBoolean.optional(),
     sort: z.preprocess(emptyQueryAsUndefined, z.enum(CLINIC_SORTS, { message: "Ukendt sortering." })).optional(),
   })
   .strict()
   .refine((query) => (query.lat === undefined) === (query.lng === undefined), { message: "Angiv både lat og lng." })
   .refine((query) => query.maxPrice === undefined || (query.services?.length ?? 0) > 0, {
     message: "Vælg mindst én behandling for at filtrere på pris.",
+  })
+  .refine((query) => query.onlyOffering !== true || (query.services?.length ?? 0) > 0, {
+    message: "Vælg mindst én behandling for kun at se klinikker, der tilbyder dem.",
   });
 
 export const clinicProfileQuerySchema = z.object({ services: servicesParamSchema.optional() }).strict();
