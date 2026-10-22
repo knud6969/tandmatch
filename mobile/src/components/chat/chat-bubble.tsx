@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row" },
   rowMine: { justifyContent: "flex-end" },
   rowTheirs: { justifyContent: "flex-start" },
-  bubble: { maxWidth: "88%", borderRadius: 20, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  bubble: { maxWidth: "88%", borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   mine: { backgroundColor: colors.brand600, borderBottomRightRadius: radius.sm },
   theirs: { backgroundColor: colors.surfaceMuted, borderBottomLeftRadius: radius.sm },
   text: { fontSize: fontSize.md, lineHeight: 22, color: colors.ink },

@@ -6,7 +6,7 @@ import { CaseListItem } from "~/components/case/case-list-item";
 import { Button, Card, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
-import { colors, fontSize } from "~/theme";
+import { type } from "~/theme";
 import { caseRoute } from "~/utils/case-view";
 
 // Sagerne for en patient med session; hentes igen, når fanen får fokus.
@@ -58,7 +58,7 @@ export function CasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
-  heading: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
-  body: { fontSize: fontSize.md, color: colors.inkMuted },
+  title: type.screenTitle,
+  heading: type.heading,
+  body: type.body,
 });

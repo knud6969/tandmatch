@@ -6,8 +6,9 @@ import { LeadRow } from "~/components/case/lead-row";
 import { BackLink, Badge, Button, Card, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
-import { colors, fontSize, spacing } from "~/theme";
-import { CASE_STATUS_TEXT } from "~/utils/case-view";
+import { spacing, type } from "~/theme";
+import { CASE_STATUS_LABEL } from "@/lib/cases/constants/cases";
+import { caseTitle } from "~/utils/case-view";
 import { formatDate } from "~/utils/format";
 
 // Sagsskærmen: sagens behandlinger og hvert lead med klinikkens svar (architecture 13.4). Hentes igen ved fokus.
@@ -28,9 +29,9 @@ export function CaseScreen() {
           <>
             <View style={styles.head}>
               <Text accessibilityRole="header" style={styles.title}>
-                {caseDto.services.length > 0 ? caseDto.services.map((s) => s.name).join(", ") : "Din sag"}
+                {caseTitle({ serviceNames: caseDto.services.map((s) => s.name), isEmergency: caseDto.isEmergency })}
               </Text>
-              <Badge label={CASE_STATUS_TEXT[caseDto.status]} tone="info" />
+              <Badge label={CASE_STATUS_LABEL[caseDto.status]} tone="info" />
               {caseDto.submittedAt ? <Text style={styles.muted}>Sendt {formatDate(caseDto.submittedAt)}</Text> : null}
             </View>
             {leads.length === 0 ? (
@@ -57,6 +58,6 @@ export function CaseScreen() {
 
 const styles = StyleSheet.create({
   head: { gap: spacing.sm },
-  title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
-  muted: { fontSize: fontSize.sm, color: colors.inkMuted },
+  title: type.screenTitle,
+  muted: type.caption,
 });

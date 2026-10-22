@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import type { CaseListItemDto } from "@/lib/cases/types/cases";
 import { Badge } from "~/components/ui";
-import { colors, fontSize, radius, spacing } from "~/theme";
+import { colors, radius, spacing, type } from "~/theme";
 import { caseStatusLine, caseTitle, leadTone } from "~/utils/case-view";
 import { formatDateTime } from "~/utils/format";
 
@@ -35,9 +35,9 @@ export function CaseListItem({ item, onPress }: { item: CaseListItemDto; onPress
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, backgroundColor: colors.surface },
   pressed: { opacity: 0.9 },
-  title: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
-  muted: { fontSize: fontSize.sm, color: colors.inkMuted },
+  title: type.heading,
+  muted: type.caption,
   lead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-  leadName: { flex: 1, fontSize: fontSize.md, color: colors.ink },
-  booking: { fontSize: fontSize.sm, fontWeight: "600", color: colors.brand700 },
+  leadName: { ...type.body, flex: 1, color: colors.ink },
+  booking: { ...type.caption, fontWeight: "600", color: colors.brand700 },
 });

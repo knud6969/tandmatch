@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  sender: { fontSize: 12, lineHeight: 16, fontWeight: "600", color: colors.inkMuted, letterSpacing: 0.4 },
+  sender: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: "600", color: colors.inkMuted, letterSpacing: 0.4 },
   title: { fontSize: fontSize.lg, lineHeight: 24, fontWeight: "600", color: colors.ink },
   folded: {
     flexDirection: "row",

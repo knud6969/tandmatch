@@ -24,6 +24,7 @@ import {
   canWidenDistance,
   DEFAULT_FILTERS,
   filtersOnOffering,
+  sameServices,
   serviceNames,
   showOtherClinics,
   toggleService,
@@ -55,6 +56,8 @@ export function ClinicDirectoryScreen() {
   // Fra sagsflowets "Se klinikker der kan hjælpe": filtrer på sagens bekræftede behandlinger og postnummer og lad patienten vælge klinikker (8.8a).
   const caseId = params.sag;
   const [appliedCase, setAppliedCase] = useState<string | null>(null);
+  // Sagens egne behandlinger, uafhængigt af filteret: "Vælg" afgøres af dem og først, når sagen er indlæst.
+  const [caseSlugs, setCaseSlugs] = useState<string[] | null>(null);
   useEffect(() => {
     if (!caseId || appliedCase === caseId) return;
     let cancelled = false;
@@ -62,6 +65,7 @@ export function ClinicDirectoryScreen() {
       .then(([dto, leads]) => {
         if (cancelled) return;
         setAppliedCase(caseId);
+        setCaseSlugs(dto.services.map((service) => service.slug));
         setLimits(
           caseId,
           remainingLeadSlots(dto.leadCount, dto.totalLeadCount),
@@ -106,6 +110,8 @@ export function ClinicDirectoryScreen() {
   const count = activeFilterCount(filters);
   const list = clinics.data;
   const hasServices = filters.serviceSlugs.length > 0;
+  // Klinikkens pris i listen gælder filterets behandlinger; den gælder kun sagen, når filteret stadig er sagens.
+  const priceMatchesCase = caseSlugs !== null && sameServices(filters.serviceSlugs, caseSlugs);
   const onlyOffering = filtersOnOffering(filters);
   const names = new Map((catalog.data ?? []).flatMap((g) => g.services.map((s) => [s.slug, s.name] as const)));
 
@@ -148,7 +154,7 @@ export function ClinicDirectoryScreen() {
           <Button label="Prøv igen" variant="secondary" onPress={clinics.reload} />
         </>
       ) : null}
-      {hasServices ? <OfferingNotice names={serviceNames(filters.serviceSlugs, names)} onlyOffering={onlyOffering} /> : null}
+      {hasServices ? <OfferingNotice names={serviceNames(filters.serviceSlugs, names)} onlyOffering={onlyOffering} caseMode={Boolean(caseId)} /> : null}
       {list ? <CriteriaBox criteria={list.criteria} /> : null}
       {list ? (
         <Text style={styles.count} accessibilityLiveRegion="polite">
@@ -176,7 +182,17 @@ export function ClinicDirectoryScreen() {
               emergency={filters.emergency}
               onPress={() => router.push({ pathname: "/klinik/[clinicId]", params: caseId ? { clinicId: item.id, sag: caseId } : { clinicId: item.id } })}
             />
-            {caseId ? <SelectButton caseId={caseId} clinic={item} hasServices={hasServices} /> : null}
+            {caseId ? (
+              caseSlugs === null ? (
+                <Button label="Vælg klinik" disabled accessibilityLabel={`Vælg ${item.name}. Henter din sag`} onPress={() => undefined} />
+              ) : (
+                <SelectButton
+                  caseId={caseId}
+                  clinic={priceMatchesCase ? item : { ...item, priceForSelection: null }}
+                  hasServices={caseSlugs.length > 0}
+                />
+              )
+            ) : null}
           </View>
         )}
         ListFooterComponent={

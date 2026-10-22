@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, MIN_TOUCH, spacing, type } from "~/theme";
+import { colors, fontSize, MIN_TOUCH, spacing, type } from "~/theme";
 import { formatDateTime } from "~/utils/format";
 
 type Props = { expiresAt: string | null; onCreateAccount: () => void };
@@ -22,5 +22,5 @@ const styles = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: spacing.md },
   text: { flex: 1 },
   action: { minHeight: MIN_TOUCH, justifyContent: "center" },
-  actionText: { fontSize: 14, fontWeight: "600", color: colors.brand700 },
+  actionText: { fontSize: fontSize.sm, fontWeight: "600", color: colors.brand700 },
 });

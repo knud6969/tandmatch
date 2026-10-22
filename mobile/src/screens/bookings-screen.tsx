@@ -5,7 +5,7 @@ import { BookingCard } from "~/components/booking/booking-card";
 import { BackLink, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
-import { colors, fontSize } from "~/theme";
+import { type } from "~/theme";
 import { splitBookings } from "~/utils/booking-form";
 
 // Patientens bookinger, kommende og tidligere (architecture 13.4).
@@ -44,7 +44,7 @@ export function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
-  heading: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
-  muted: { fontSize: fontSize.md, color: colors.inkMuted },
+  title: type.screenTitle,
+  heading: type.heading,
+  muted: type.body,
 });

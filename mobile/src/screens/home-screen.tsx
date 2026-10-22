@@ -4,7 +4,7 @@ import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { HomeEntries } from "~/components/clinic-directory/home-entries";
 import { Screen } from "~/components/ui";
-import { colors, spacing, type } from "~/theme";
+import { colors, fontSize, spacing, type } from "~/theme";
 
 // Tre korte trin (13.9): nummer, titel og én sætning.
 const STEPS = [
@@ -57,6 +57,6 @@ const styles = StyleSheet.create({
   intro: { gap: spacing.md },
   steps: { gap: spacing.lg },
   step: { flexDirection: "row", gap: spacing.lg, alignItems: "flex-start" },
-  number: { width: 24, fontSize: 18, lineHeight: 22, fontWeight: "600", color: colors.brand600 },
+  number: { width: 24, fontSize: fontSize.lg, lineHeight: 22, fontWeight: "600", color: colors.brand600 },
   stepText: { flex: 1, gap: 2 },
 });

@@ -79,9 +79,13 @@ export function toggleService(filters: DirectoryFilters, slug: string): Director
   return { ...filters, serviceSlugs, sort: filters.sort === "price" && serviceSlugs.length === 0 ? null : filters.sort };
 }
 
-// Antal aktive filtre (til knappen "Filtre").
+// Samme behandlinger i samme mængde, uanset rækkefølge.
+export const sameServices = (a: string[], b: string[]) => a.length === b.length && a.every((slug) => b.includes(slug));
+
+// Antal aktive filtre (til knappen "Filtre"). "Kun klinikker med pris" er slået til fra start, så det tæller, når det er slået fra.
 export function activeFilterCount(filters: DirectoryFilters): number {
   return (
-    (filters.serviceSlugs.length > 0 ? 1 : 0) + (hasOrigin(filters) ? 1 : 0) + (filters.emergency ? 1 : 0) + (filters.sort ? 1 : 0)
+    (filters.serviceSlugs.length > 0 ? 1 : 0) + (hasOrigin(filters) ? 1 : 0) + (filters.emergency ? 1 : 0) + (filters.sort ? 1 : 0) +
+    (!filters.onlyOffering ? 1 : 0)
   );
 }

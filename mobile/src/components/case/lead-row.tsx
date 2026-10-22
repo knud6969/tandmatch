@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
+import { BOOKING_STATUS_LABEL } from "@/lib/booking/constants/bookings";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import { Badge, Button, Card } from "~/components/ui";
-import { colors, fontSize, spacing } from "~/theme";
-import { bookingStatusText, canBookLead, declineText, leadTone } from "~/utils/case-view";
+import { colors, spacing, type } from "~/theme";
+import { canBookLead, declineText, leadTone } from "~/utils/case-view";
 import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "~/utils/clinic-texts";
 import { formatDateTime, formatPriceRange } from "~/utils/format";
 
@@ -53,7 +54,7 @@ export function LeadRow({ lead, onBook }: { lead: PatientLeadDto; onBook: () => 
       {lead.booking ? (
         <View style={styles.fact}>
           <Text style={styles.label}>
-            Booking: {bookingStatusText(lead.booking.status).toLowerCase()} · {lead.booking.service.name}
+            Booking: {BOOKING_STATUS_LABEL[lead.booking.status].toLowerCase()} · {lead.booking.service.name}
           </Text>
           <Text style={styles.body}>{formatDateTime(lead.booking.startsAt)}</Text>
         </View>
@@ -67,10 +68,10 @@ export function LeadRow({ lead, onBook }: { lead: PatientLeadDto; onBook: () => 
 const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: spacing.md },
   headText: { flex: 1 },
-  name: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
-  muted: { fontSize: fontSize.sm, color: colors.inkMuted },
-  body: { fontSize: fontSize.md, color: colors.ink },
+  name: type.heading,
+  muted: type.caption,
+  body: { ...type.body, color: colors.ink },
   strong: { fontWeight: "700" },
-  label: { fontSize: fontSize.sm, fontWeight: "700", color: colors.ink },
-  fact: { gap: 2 },
+  label: { ...type.caption, fontWeight: "700", color: colors.ink },
+  fact: { gap: spacing.xs },
 });

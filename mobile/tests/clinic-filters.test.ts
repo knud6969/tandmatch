@@ -1,5 +1,5 @@
 import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
-import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
+import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, sameServices, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
 import { lacksPriceForSelection } from "~/utils/lead-selection";
 
 // Sikrer, at filtrene giver samme forespørgsel som weben, og at meningsløse parametre udelades.
@@ -88,5 +88,17 @@ describe("onlyOffering (13.4a)", () => {
     expect(lacksPriceForSelection({ priceForSelection: null }, true)).toBe(true);
     expect(lacksPriceForSelection({ priceForSelection: { min: 1, max: 2 } }, true)).toBe(false);
     expect(lacksPriceForSelection({ priceForSelection: null }, false)).toBe(false);
+  });
+});
+
+describe("sagens behandlinger og filtre", () => {
+  it("tæller 'kun klinikker med pris' slået fra som et ændret filter", () => {
+    expect(activeFilterCount({ ...DEFAULT_FILTERS, onlyOffering: false })).toBe(1);
+  });
+
+  it("sameServices sammenligner uden hensyn til rækkefølge", () => {
+    expect(sameServices(["a", "b"], ["b", "a"])).toBe(true);
+    expect(sameServices(["a"], ["a", "b"])).toBe(false);
+    expect(sameServices([], ["a"])).toBe(false);
   });
 });

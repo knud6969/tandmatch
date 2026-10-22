@@ -12,17 +12,19 @@ import { BookingCard } from "~/components/booking/booking-card";
 import { SlotPicker } from "~/components/booking/slot-picker";
 import { BackLink, Button, Chip, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
-import { colors, fontSize, spacing } from "~/theme";
+import { colors, spacing, type } from "~/theme";
 import { bookingFailure, groupSlotsByDay, parseBooking, type BookingField } from "~/utils/booking-form";
 import { canBookLead } from "~/utils/case-view";
 import type { FieldErrors } from "~/utils/field-errors";
+
+const LEAD_NOT_FOUND_TEXT = "Henvendelsen findes ikke på denne sag.";
 
 type Loaded = { caseDto: CaseDto; lead: PatientLeadDto; name: string; phone: string };
 
 async function loadBookingData(caseId: string, leadId: string): Promise<Loaded> {
   const [caseDto, leads, me] = await Promise.all([getCase(caseId), listCaseLeads(caseId), getPatientMe().catch(() => null)]);
   const lead = leads.find((l) => l.id === leadId);
-  if (!lead) throw new Error("not found");
+  if (!lead) throw new Error(LEAD_NOT_FOUND_TEXT);
   return { caseDto, lead, name: me?.firstName ?? "", phone: me?.phone ?? "" };
 }
 
@@ -139,11 +141,11 @@ export function BookScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
+  title: type.screenTitle,
   group: { gap: spacing.sm },
-  label: { fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
+  label: { ...type.caption, fontWeight: "600", color: colors.ink },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  body: { fontSize: fontSize.md, color: colors.ink },
-  muted: { fontSize: fontSize.sm, color: colors.inkMuted },
-  error: { fontSize: fontSize.sm, color: colors.dangerInk },
+  body: { ...type.body, color: colors.ink },
+  muted: type.caption,
+  error: { ...type.caption, color: colors.dangerInk },
 });
