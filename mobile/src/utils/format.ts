@@ -1,6 +1,6 @@
 // Formatering af datoer, beløb og afstande til dansk visning i appen. Alle tidspunkter vises i dansk tid.
 // KOPI af de rene dele af views/utils/format.ts; flyttes til lib/ (architecture 13.2: rene hjælpere deles).
-import { CLINIC_TIME_ZONE } from "@/lib/constants/bookings";
+import { CLINIC_TIME_ZONE } from "@/lib/booking/constants/bookings";
 
 // Formattere oprettes én gang; Intl er dyrt at konstruere.
 const krFormat = new Intl.NumberFormat("da-DK");

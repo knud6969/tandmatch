@@ -1,6 +1,6 @@
-import { BookingsController } from "@/controllers/bookingsController";
+import { BookingsController } from "@/features/booking/bookingsController";
 import { BOOKING_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
-import { bookSlotSchema } from "@/lib/schemas/bookings";
+import { bookSlotSchema } from "@/lib/booking/schemas/bookings";
 import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireAccount, requireRole } from "@/platform/middleware/session";

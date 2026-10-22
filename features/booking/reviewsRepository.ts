@@ -1,7 +1,7 @@
 import "server-only";
 import type { z } from "zod";
 import { toClinicMonth } from "@/lib/common/domain/time";
-import type { createReviewSchema } from "@/lib/schemas/reviews";
+import type { createReviewSchema } from "@/lib/booking/schemas/reviews";
 import type {
   ClinicReviewDto,
   ModerationStatus,
@@ -11,7 +11,7 @@ import type {
   ReviewCreatedDto,
   ReviewExportDto,
   ReviewStats,
-} from "@/lib/types/reviews";
+} from "@/lib/booking/types/reviews";
 import type { ApiError } from "@/platform/middleware/http";
 import { alreadyReplied, alreadyReviewed, notFound, reviewNotAllowed } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";

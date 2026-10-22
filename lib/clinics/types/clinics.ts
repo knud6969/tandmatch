@@ -1,6 +1,6 @@
 import type { CLINIC_SORTS, CLINIC_STATUSES, CLINIC_TIERS, WEEKDAYS } from "@/lib/clinics/constants/clinics";
 import type { PriceRange, TrustpilotInfo } from "@/lib/common/types/common";
-import type { ReviewStats } from "@/lib/types/reviews";
+import type { ReviewStats } from "@/lib/booking/types/reviews";
 
 export type ClinicStatus = (typeof CLINIC_STATUSES)[number];
 export type ClinicTier = (typeof CLINIC_TIERS)[number];

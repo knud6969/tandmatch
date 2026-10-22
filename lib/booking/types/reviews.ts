@@ -1,5 +1,5 @@
 import type { PriceRange } from "@/lib/common/types/common";
-import type { MODERATION_STATUSES, PRICE_ACCURACY_VALUES } from "@/lib/constants/reviews";
+import type { MODERATION_STATUSES, PRICE_ACCURACY_VALUES } from "@/lib/booking/constants/reviews";
 
 // Anmeldelsesstatistik (architecture 8.3, 10.1). Anmeldelserne selv står nedenfor.
 export type ReviewStats = {

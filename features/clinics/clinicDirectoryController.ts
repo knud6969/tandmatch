@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { DEFAULT_MAX_DISTANCE_KM } from "@/lib/clinics/constants/clinics";
-import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/clinics/constants/services";
 import type { availabilityQuerySchema, clinicProfileQuerySchema, clinicsQuerySchema } from "@/lib/clinics/schemas/clinics";
 import type {
@@ -11,7 +11,7 @@ import type {
   ClinicProfileDto,
   SlotDto,
 } from "@/lib/clinics/types/clinics";
-import type { PublicReviewsDto, ReviewStats } from "@/lib/types/reviews";
+import type { PublicReviewsDto, ReviewStats } from "@/lib/booking/types/reviews";
 import type { ServiceDto } from "@/lib/clinics/types/services";
 import type { BusyInterval } from "@/lib/clinics/types/clinics";
 import { ApiError, notFound } from "@/platform/middleware/http";
@@ -22,7 +22,7 @@ import {
   type PublicClinicProfileRecord,
   type PublicClinicRecord,
 } from "@/features/clinics/clinicDirectoryRepository";
-import { ReviewsRepository } from "@/models/reviewsRepository";
+import { ReviewsRepository } from "@/features/booking/reviewsRepository";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { AvailabilityService } from "@/features/clinics/availabilityService";
 import { type LatLng, RankingService } from "@/features/clinics/rankingService";

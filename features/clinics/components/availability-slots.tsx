@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
+import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/booking/constants/bookings";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/clinics/constants/services";
 import type { ClinicPriceDto, SlotDto } from "@/lib/clinics/types/clinics";
 import { LoadState } from "@/components/ui/load-state";

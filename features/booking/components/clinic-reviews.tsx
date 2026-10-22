@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
-import { MODERATION_LABEL, REVIEW_REPLY_MAX_CHARS } from "@/lib/constants/reviews";
-import { replyReviewSchema } from "@/lib/schemas/reviews";
-import type { ClinicReviewDto } from "@/lib/types/reviews";
-import { ReviewDetails } from "@/views/components/reviews/review-details";
+import { NO_SHOW_GRACE_HOURS } from "@/lib/booking/constants/bookings";
+import { MODERATION_LABEL, REVIEW_REPLY_MAX_CHARS } from "@/lib/booking/constants/reviews";
+import { replyReviewSchema } from "@/lib/booking/schemas/reviews";
+import type { ClinicReviewDto } from "@/lib/booking/types/reviews";
+import { ReviewDetails } from "@/features/booking/components/review-details";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadState } from "@/components/ui/load-state";
@@ -13,7 +13,7 @@ import { NotVerifiedNote } from "@/features/clinics/components/not-verified-note
 import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { MODERATION_TONE } from "@/views/utils/review-status";
+import { MODERATION_TONE } from "@/features/booking/utils/review-status";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { useLoad } from "@/platform/ui-utils/use-load";
 

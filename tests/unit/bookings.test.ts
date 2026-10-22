@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCancel, canMarkNoShow, canReview, graceEndsAt, pickLeadBooking } from "@/lib/domain/bookings";
+import { canCancel, canMarkNoShow, canReview, graceEndsAt, pickLeadBooking } from "@/lib/booking/domain/bookings";
 
 const HOUR = 3_600_000;
 const now = new Date("2026-10-20T12:00:00Z");

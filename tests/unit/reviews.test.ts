@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { priceEstimate } from "@/lib/domain/reviews";
+import { priceEstimate } from "@/lib/booking/domain/reviews";
 import { toClinicDate, toClinicMonth } from "@/lib/common/domain/time";
-import { createReviewSchema, replyReviewSchema } from "@/lib/schemas/reviews";
+import { createReviewSchema, replyReviewSchema } from "@/lib/booking/schemas/reviews";
 
 const bookingId = "6f1c3a52-0c0e-4a64-9d3f-2f4f6c1d9b11";
 const valid = { bookingId, stars: 4, text: "Rolig og grundig behandling hos klinikken.", priceAccuracy: "as_quoted" } as const;

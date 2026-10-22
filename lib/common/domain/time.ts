@@ -1,4 +1,4 @@
-import { CLINIC_TIME_ZONE } from "@/lib/constants/bookings";
+import { CLINIC_TIME_ZONE } from "@/lib/booking/constants/bookings";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 

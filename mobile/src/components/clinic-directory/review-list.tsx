@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { MIN_REVIEWS_FOR_PRICE_ACCURACY, PRICE_ACCURACY_LABEL } from "@/lib/constants/reviews";
-import type { PublicReviewDto, PublicReviewsDto } from "@/lib/types/reviews";
+import { MIN_REVIEWS_FOR_PRICE_ACCURACY, PRICE_ACCURACY_LABEL } from "@/lib/booking/constants/reviews";
+import type { PublicReviewDto, PublicReviewsDto } from "@/lib/booking/types/reviews";
 import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { formatKr, formatMonth, formatPercent } from "~/utils/format";

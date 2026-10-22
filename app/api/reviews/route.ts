@@ -1,5 +1,5 @@
-import { ReviewsController } from "@/controllers/reviewsController";
-import { createReviewSchema } from "@/lib/schemas/reviews";
+import { ReviewsController } from "@/features/booking/reviewsController";
+import { createReviewSchema } from "@/lib/booking/schemas/reviews";
 import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

@@ -1,5 +1,5 @@
-import { BookingsController } from "@/controllers/bookingsController";
-import { bookingsQuerySchema } from "@/lib/schemas/bookings";
+import { BookingsController } from "@/features/booking/bookingsController";
+import { bookingsQuerySchema } from "@/lib/booking/schemas/bookings";
 import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

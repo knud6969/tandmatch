@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClinicReviews } from "@/views/components/clinic/clinic-reviews";
+import { ClinicReviews } from "@/features/booking/components/clinic-reviews";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 

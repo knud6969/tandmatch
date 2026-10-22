@@ -5,15 +5,15 @@ import {
   BOOKING_HORIZON_DAYS,
   CLINIC_BOOKINGS_DEFAULT_PAST_DAYS,
   MAX_BOOKINGS_RANGE_DAYS,
-} from "@/lib/constants/bookings";
+} from "@/lib/booking/constants/bookings";
 import { DAY_MS } from "@/lib/common/domain/time";
-import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/schemas/bookings";
-import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
+import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/booking/schemas/bookings";
+import type { ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/features/clinics/availabilityRepository";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { ClinicDirectoryRepository } from "@/features/clinics/clinicDirectoryRepository";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { LeadsRepository } from "@/features/leads/leadsRepository";

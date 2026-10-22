@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
-import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/clinics/types/clinics";
 import { Alert } from "@/components/ui/alert";
 import { LinkButton } from "@/components/ui/button";

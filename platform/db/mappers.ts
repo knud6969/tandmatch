@@ -1,5 +1,5 @@
-import { canCancel, canMarkNoShow } from "@/lib/domain/bookings";
-import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
+import { canCancel, canMarkNoShow } from "@/lib/booking/domain/bookings";
+import type { BookingStatus, ClinicBookingDto } from "@/lib/booking/types/bookings";
 import type { TrustpilotInfo } from "@/lib/common/types/common";
 
 // Trustpilot-kolonnerne som de står på clinics og i public_*-funktionerne (architecture 4.3, 8.4). Delt af

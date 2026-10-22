@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MODERATION_LABEL } from "@/lib/constants/reviews";
+import { MODERATION_LABEL } from "@/lib/booking/constants/reviews";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 import { toClinicBookingDto, type ClinicBookingFields } from "@/platform/db/mappers";
 

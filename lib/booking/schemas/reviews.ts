@@ -6,7 +6,7 @@ import {
   REVIEW_TEXT_MAX_CHARS,
   REVIEW_TEXT_MIN_CHARS,
   REVIEW_TRANSPARENCY_COMMENT_MAX_CHARS,
-} from "@/lib/constants/reviews";
+} from "@/lib/booking/constants/reviews";
 
 // POST /api/reviews (architecture 8.2, 10.13). Klinikken udledes af bookingen på serveren og kan ikke angives.
 export const createReviewSchema = z

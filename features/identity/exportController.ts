@@ -2,12 +2,12 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PatientExportDto } from "@/lib/identity/types/patients";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { ChatRepository } from "@/features/cases/chatRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { LeadsRepository } from "@/features/leads/leadsRepository";
-import { ReviewsRepository } from "@/models/reviewsRepository";
+import { ReviewsRepository } from "@/features/booking/reviewsRepository";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type ExportDeps = { cases: CasesRepository; consents: ConsentsRepository; chat: ChatRepository; leads: LeadsRepository; bookings: BookingsRepository; reviews: ReviewsRepository };

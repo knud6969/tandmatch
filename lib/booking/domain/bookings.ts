@@ -1,5 +1,5 @@
-import { NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
-import type { BookingStatus } from "@/lib/types/bookings";
+import { NO_SHOW_GRACE_HOURS } from "@/lib/booking/constants/bookings";
+import type { BookingStatus } from "@/lib/booking/types/bookings";
 
 // Regler for, hvad en booking kan bruges til lige nu (architecture 4.2, 10.10). Statussen er altid den effektive fra
 // databasen. Reglerne spejler cancel_booking(), mark_booking_no_show() og effective_booking_status(); databasen er vogteren,

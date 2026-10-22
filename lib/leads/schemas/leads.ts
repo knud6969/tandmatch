@@ -9,7 +9,7 @@ import {
   LEAD_STATUSES,
 } from "@/lib/leads/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
-import { contactNameSchema } from "@/lib/schemas/bookings";
+import { contactNameSchema } from "@/lib/booking/schemas/bookings";
 import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 

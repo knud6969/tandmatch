@@ -1,4 +1,4 @@
-import type { BOOKING_STATUSES } from "@/lib/constants/bookings";
+import type { BOOKING_STATUSES } from "@/lib/booking/constants/bookings";
 
 // Bookinger (architecture 4.3, 10.10).
 export type BookingStatus = (typeof BOOKING_STATUSES)[number]; // altid effektiv status (4.2)

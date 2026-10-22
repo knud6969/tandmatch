@@ -1,9 +1,9 @@
 import "server-only";
 import type { z } from "zod";
-import type { BOOKING_ACTORS } from "@/lib/constants/bookings";
-import { canCancel, canReview, pickLeadBooking } from "@/lib/domain/bookings";
-import type { bookSlotSchema } from "@/lib/schemas/bookings";
-import type { BookingExportDto, ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
+import type { BOOKING_ACTORS } from "@/lib/booking/constants/bookings";
+import { canCancel, canReview, pickLeadBooking } from "@/lib/booking/domain/bookings";
+import type { bookSlotSchema } from "@/lib/booking/schemas/bookings";
+import type { BookingExportDto, ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import {
   ACCOUNT_REQUIRED_MESSAGES,
   accountRequired,

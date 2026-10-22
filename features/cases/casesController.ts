@@ -6,7 +6,7 @@ import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/cases/schemas
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/cases/types/cases";
 import { notDraft } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
 import { CaseServicesRepository } from "@/features/cases/caseServicesRepository";

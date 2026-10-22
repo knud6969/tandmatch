@@ -6,7 +6,7 @@ import {
   MIN_BOOKING_NOTICE_MIN,
   MIN_EMERGENCY_NOTICE_MIN,
   SLOT_STEP_MINUTES,
-} from "@/lib/constants/bookings";
+} from "@/lib/booking/constants/bookings";
 import { DAY_MS } from "@/lib/common/domain/time";
 import type { BusyInterval, OpeningHoursDto, SlotDto } from "@/lib/clinics/types/clinics";
 

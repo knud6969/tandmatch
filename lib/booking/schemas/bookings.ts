@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTACT_NAME_MAX_CHARS, CONTACT_NAME_MIN_CHARS } from "@/lib/constants/bookings";
+import { CONTACT_NAME_MAX_CHARS, CONTACT_NAME_MIN_CHARS } from "@/lib/booking/constants/bookings";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 
 const isoDateTime = z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." });

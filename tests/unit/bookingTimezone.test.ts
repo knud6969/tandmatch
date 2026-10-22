@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCancel, canMarkNoShow, canReview, graceEndsAt } from "@/lib/domain/bookings";
+import { canCancel, canMarkNoShow, canReview, graceEndsAt } from "@/lib/booking/domain/bookings";
 import { toClinicDate, toClinicMonth } from "@/lib/common/domain/time";
 import { formatDay, formatTime } from "@/platform/ui-utils/format";
 

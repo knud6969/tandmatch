@@ -10,7 +10,7 @@ import type {
   PatientLeadDto,
 } from "@/lib/leads/types/leads";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";

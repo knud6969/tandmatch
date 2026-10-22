@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClinicCalendar } from "@/views/components/clinic/calendar";
+import { ClinicCalendar } from "@/features/booking/components/calendar";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 

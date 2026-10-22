@@ -1,7 +1,7 @@
 import { Image, Linking, StyleSheet, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/clinics/types/clinics";
 import { getClinic, getClinicReviews } from "~/api/clinics";
 import { SelectButton } from "~/components/leads/select-button";

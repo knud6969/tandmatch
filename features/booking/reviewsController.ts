@@ -2,14 +2,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { toClinicDate } from "@/lib/common/domain/time";
-import type { createReviewSchema, replyReviewSchema } from "@/lib/schemas/reviews";
-import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleItemDto } from "@/lib/types/reviews";
+import type { createReviewSchema, replyReviewSchema } from "@/lib/booking/schemas/reviews";
+import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleItemDto } from "@/lib/booking/types/reviews";
 import { alreadyReplied, notFound } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { LeadsRepository } from "@/features/leads/leadsRepository";
-import { ReviewsRepository } from "@/models/reviewsRepository";
+import { ReviewsRepository } from "@/features/booking/reviewsRepository";
 
 type CreateReviewInput = z.infer<typeof createReviewSchema>;
 type ReplyInput = z.infer<typeof replyReviewSchema>;

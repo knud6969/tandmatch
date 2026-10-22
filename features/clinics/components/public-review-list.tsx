@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { MIN_REVIEWS_FOR_PRICE_ACCURACY } from "@/lib/constants/reviews";
-import type { PublicReviewDto, PublicReviewsDto } from "@/lib/types/reviews";
+import { MIN_REVIEWS_FOR_PRICE_ACCURACY } from "@/lib/booking/constants/reviews";
+import type { PublicReviewDto, PublicReviewsDto } from "@/lib/booking/types/reviews";
 import { LoadState } from "@/components/ui/load-state";
-import { ReviewDetails, ReviewReply } from "@/views/components/reviews/review-details";
+import { ReviewDetails, ReviewReply } from "@/features/booking/components/review-details";
 import { StarRating } from "@/features/clinics/components/star-rating";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { formatPercent } from "@/platform/ui-utils/format";

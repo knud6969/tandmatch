@@ -1,5 +1,5 @@
 import type { ClinicListDto, ClinicProfileDto } from "@/lib/clinics/types/clinics";
-import type { PublicReviewsDto } from "@/lib/types/reviews";
+import type { PublicReviewsDto } from "@/lib/booking/types/reviews";
 import { apiRequest } from "./client";
 
 // `query` bygges af buildClinicsQuery() i ~/utils/clinic-filters (samme nøgler som architecture 10.7).

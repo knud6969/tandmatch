@@ -1,5 +1,5 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
+import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";

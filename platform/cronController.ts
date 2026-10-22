@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { CLEANUP_BATCH_SIZE } from "@/lib/common/constants/limits";
 import { ANONYMOUS_SESSION_HOURS } from "@/lib/identity/constants/sessions";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { BookingsRepository } from "@/models/bookingsRepository";
+import { BookingsRepository } from "@/features/booking/bookingsRepository";
 import { CleanupRepository } from "@/platform/cleanupRepository";
 import { AccountDeletionService } from "@/features/identity/accountDeletionService";
 

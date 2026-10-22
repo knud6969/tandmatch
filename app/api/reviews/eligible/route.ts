@@ -1,4 +1,4 @@
-import { ReviewsController } from "@/controllers/reviewsController";
+import { ReviewsController } from "@/features/booking/reviewsController";
 import { jsonResponse, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

@@ -1,5 +1,5 @@
 // Formatering af datoer, beløb og afstande til dansk visning. Alle tidspunkter vises i dansk tid.
-import { CLINIC_TIME_ZONE as TIME_ZONE } from "@/lib/constants/bookings";
+import { CLINIC_TIME_ZONE as TIME_ZONE } from "@/lib/booking/constants/bookings";
 
 const dateFormat = new Intl.DateTimeFormat("da-DK", { dateStyle: "long", timeZone: TIME_ZONE });
 const dateTimeFormat = new Intl.DateTimeFormat("da-DK", {
