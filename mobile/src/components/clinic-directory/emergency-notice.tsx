@@ -1,5 +1,5 @@
 import { Linking, StyleSheet, Text, View } from "react-native";
-import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/constants/ai-texts";
+import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/cases/constants/ai-texts";
 import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_NUMBER } from "@/lib/constants/emergency";
 import { Button } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";

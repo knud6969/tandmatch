@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { IMAGE_DESCRIPTION_MAX_CHARS } from "@/lib/common/constants/limits";
-import { buildsOnAiDraft, imageDescription } from "@/lib/domain/summary";
-import type { AiSummary } from "@/lib/types/ai";
+import { buildsOnAiDraft, imageDescription } from "@/lib/cases/domain/summary";
+import type { AiSummary } from "@/lib/cases/types/ai";
 
 const draft: AiSummary = {
   summaryText: "Patienten ønsker blegning af gule tænder i overmunden",

@@ -1,4 +1,4 @@
-import type { ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
+import type { ChatStateDto, ChatTurnResponse } from "@/lib/cases/types/ai";
 import { apiRequest } from "./client";
 
 // AI-chatten (architecture 10.6).

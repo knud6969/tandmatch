@@ -1,6 +1,6 @@
-import { ChatController } from "@/controllers/chatController";
+import { ChatController } from "@/features/cases/chatController";
 import { CHAT_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
-import { chatMessageSchema } from "@/lib/schemas/chat";
+import { chatMessageSchema } from "@/lib/cases/schemas/chat";
 import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireRole } from "@/platform/middleware/session";

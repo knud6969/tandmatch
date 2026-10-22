@@ -4,16 +4,16 @@ import "server-only";
 // controlleren giver historik, katalog og billeder og gemmer resultatet.
 // Hverken priser, klinikdata, navne eller id'er sendes: kun katalog, maskeret patienttekst og billeder (base64).
 
-import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/constants/ai-texts";
+import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/cases/constants/ai-texts";
 import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext";
-import { runChatGuard, type ChatGuardResult } from "@/services/ai/guard";
-import type { ModelMessage, ModelPart, StructuredModelClient } from "@/services/ai/modelClient";
-import { buildChatMessages, type HistoryMessage } from "@/services/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/services/ai/prompts/chat.v4";
-import { AI_RULES, type AiRules } from "@/services/ai/rules";
-import { CHAT_SCHEMA_NAME, CHAT_TURN_JSON_SCHEMA } from "@/services/ai/schemas";
+import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
+import { runChatGuard, type ChatGuardResult } from "@/features/cases/ai/guard";
+import type { ModelMessage, ModelPart, StructuredModelClient } from "@/features/cases/ai/modelClient";
+import { buildChatMessages, type HistoryMessage } from "@/features/cases/ai/promptFormat";
+import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/features/cases/ai/prompts/chat.v4";
+import { AI_RULES, type AiRules } from "@/features/cases/ai/rules";
+import { CHAT_SCHEMA_NAME, CHAT_TURN_JSON_SCHEMA } from "@/features/cases/ai/schemas";
 
 const CHAT_MAX_OUTPUT_TOKENS = 800;
 

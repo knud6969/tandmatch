@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { getChat, sendChatMessage } from "~/api/chat";
-import type { AiChatMessageDto } from "@/lib/types/ai";
+import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { isChatLimitCode } from "~/utils/case-cards";
 import { runChatTurn, type TurnOutcome } from "~/utils/chat-turn";
 import { useLoad } from "./use-load";

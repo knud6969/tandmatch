@@ -1,4 +1,4 @@
-import type { AiChatMessageDto } from "@/lib/types/ai";
+import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { cardModes, flowStepForApp, quickRepliesOf, visibleQuickReplies } from "~/utils/case-cards";
 
 const msg = (over: object = {}) =>

@@ -1,4 +1,4 @@
-import { CasesController } from "@/controllers/casesController";
+import { CasesController } from "@/features/cases/casesController";
 import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

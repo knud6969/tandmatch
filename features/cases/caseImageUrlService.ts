@@ -2,8 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SIGNED_URL_TTL_SECONDS } from "@/lib/common/constants/limits";
 import type { ImageDto } from "@/lib/common/types/common";
-import type { CaseImageRecord } from "@/models/caseImagesRepository";
-import { CaseImageStorage } from "@/models/caseImageStorage";
+import type { CaseImageRecord } from "@/features/cases/caseImagesRepository";
+import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 
 // Gør billedrækker til ImageDto med korte, signerede URL'er (architecture 9.2). Kalderen har allerede læst rækkerne
 // med patientens JWT (RLS), så kun ejerens billeder når hertil. Service role-klienten oprettes først, når der er noget

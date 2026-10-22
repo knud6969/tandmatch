@@ -1,8 +1,8 @@
 import { CHAT_LOW_MESSAGES_WARNING, MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
-import { nextCaseFlowStep } from "@/lib/domain/case-flow";
-import type { AiChatMessageDto, ChatStateDto } from "@/lib/types/ai";
-import type { CaseDto, CaseFlowStep } from "@/lib/types/cases";
-import type { SummaryResponse } from "@/lib/types/ai";
+import { nextCaseFlowStep } from "@/lib/cases/domain/case-flow";
+import type { AiChatMessageDto, ChatStateDto } from "@/lib/cases/types/ai";
+import type { CaseDto, CaseFlowStep } from "@/lib/cases/types/cases";
+import type { SummaryResponse } from "@/lib/cases/types/ai";
 import { errorCodeOf } from "./chat-turn";
 
 // Ren logik bag svar-kortene i chatten (architecture 7.9). Ingen React og intet netværk, så den kan testes direkte.

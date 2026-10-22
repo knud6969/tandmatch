@@ -1,5 +1,5 @@
-import { CasesController } from "@/controllers/casesController";
-import { putCaseServicesSchema } from "@/lib/schemas/cases";
+import { CasesController } from "@/features/cases/casesController";
+import { putCaseServicesSchema } from "@/lib/cases/schemas/cases";
 import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { CASE_FLOW_TEXTS } from "@/lib/constants/case-flow";
-import { CASE_TIMEFRAME_LABEL, CASE_TIMEFRAMES } from "@/lib/constants/cases";
-import type { CaseDto, CaseTimeframe } from "@/lib/types/cases";
+import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
+import { CASE_TIMEFRAME_LABEL, CASE_TIMEFRAMES } from "@/lib/cases/constants/cases";
+import type { CaseDto, CaseTimeframe } from "@/lib/cases/types/cases";
 import { Chip, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import type { CaseActions } from "~/hooks/use-case-actions";

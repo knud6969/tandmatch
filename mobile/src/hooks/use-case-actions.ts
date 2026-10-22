@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { CaseTimeframe } from "@/lib/types/cases";
+import type { CaseTimeframe } from "@/lib/cases/types/cases";
 import { approveSummary, confirmServices, createSummary, updateCase } from "~/api/cases";
 import { getPatientMe } from "~/api/patients";
 import { summaryAttemptFromError, summaryAttemptFromResponse, toServiceInputs, type SummaryAttempt } from "~/utils/case-cards";

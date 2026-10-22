@@ -1,6 +1,6 @@
-import { SummaryController } from "@/controllers/summaryController";
+import { SummaryController } from "@/features/cases/summaryController";
 import { SUMMARY_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
-import { approveSummarySchema, generateSummarySchema } from "@/lib/schemas/chat";
+import { approveSummarySchema, generateSummarySchema } from "@/lib/cases/schemas/chat";
 import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireRole } from "@/platform/middleware/session";

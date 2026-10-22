@@ -5,12 +5,12 @@ import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/consta
 import type { ImageDto } from "@/lib/common/types/common";
 import { ApiError } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { CaseImageStorage } from "@/models/caseImageStorage";
-import { CaseImagesRepository } from "@/models/caseImagesRepository";
-import { CasesRepository } from "@/models/casesRepository";
+import { CaseImageStorage } from "@/features/cases/caseImageStorage";
+import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
+import { CasesRepository } from "@/features/cases/casesRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { CaseImageUrlService } from "@/services/caseImageUrlService";
+import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).

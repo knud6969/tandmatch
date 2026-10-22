@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from "react-native";
-import { CASE_FLOW_TEXTS } from "@/lib/constants/case-flow";
+import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
 import { Button } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
 import { FlowCard } from "./flow-card";

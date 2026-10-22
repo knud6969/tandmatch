@@ -5,14 +5,14 @@ import "server-only";
 
 import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext";
-import type { ModelImage } from "@/services/ai/aiChatService";
-import { runSummaryGuard, type SummaryGuardResult } from "@/services/ai/guard";
-import type { ModelPart, StructuredModelClient } from "@/services/ai/modelClient";
-import { buildTranscript, formatConfirmedServices, type HistoryMessage } from "@/services/ai/promptFormat";
-import { buildSummarySystemPrompt, SUMMARY_PROMPT_VERSION } from "@/services/ai/prompts/summary.v2";
-import { AI_RULES, type AiRules } from "@/services/ai/rules";
-import { SUMMARY_JSON_SCHEMA, SUMMARY_SCHEMA_NAME } from "@/services/ai/schemas";
+import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
+import type { ModelImage } from "@/features/cases/ai/aiChatService";
+import { runSummaryGuard, type SummaryGuardResult } from "@/features/cases/ai/guard";
+import type { ModelPart, StructuredModelClient } from "@/features/cases/ai/modelClient";
+import { buildTranscript, formatConfirmedServices, type HistoryMessage } from "@/features/cases/ai/promptFormat";
+import { buildSummarySystemPrompt, SUMMARY_PROMPT_VERSION } from "@/features/cases/ai/prompts/summary.v2";
+import { AI_RULES, type AiRules } from "@/features/cases/ai/rules";
+import { SUMMARY_JSON_SCHEMA, SUMMARY_SCHEMA_NAME } from "@/features/cases/ai/schemas";
 
 const SUMMARY_MAX_OUTPUT_TOKENS = 1200;
 

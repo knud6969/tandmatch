@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthRepository } from "@/features/identity/authRepository";
-import { CaseImageStorage } from "@/models/caseImageStorage";
+import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { CleanupRepository } from "@/platform/cleanupRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 

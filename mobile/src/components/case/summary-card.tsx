@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, TextInput, View } from "react-native";
-import { CASE_FLOW_TEXTS } from "@/lib/constants/case-flow";
-import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/constants/ai-texts";
+import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
+import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/cases/constants/ai-texts";
 import { SUMMARY_MAX_CHARS } from "@/lib/common/constants/limits";
-import type { CaseDto } from "@/lib/types/cases";
+import type { CaseDto } from "@/lib/cases/types/cases";
 import { Badge, Button, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import type { CaseActions } from "~/hooks/use-case-actions";

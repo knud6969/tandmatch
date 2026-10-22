@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
-import type { CaseDto } from "@/lib/types/cases";
+import type { CaseDto } from "@/lib/cases/types/cases";
 import { getCase } from "~/api/cases";
 import { getConsents, grantConsent } from "~/api/consents";
 import { getServiceGroups } from "~/api/services";

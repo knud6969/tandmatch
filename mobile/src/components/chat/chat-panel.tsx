@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/constants/ai-texts";
+import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/common/constants/limits";
-import type { AiChatMessageDto } from "@/lib/types/ai";
+import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { LoadState, StatusMessage } from "~/components/ui";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";

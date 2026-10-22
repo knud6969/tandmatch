@@ -1,5 +1,5 @@
-import { aiSummarySchema } from "@/lib/constants/ai-schemas";
-import type { AiSummary } from "@/lib/types/ai";
+import { aiSummarySchema } from "@/lib/cases/constants/ai-schemas";
+import type { AiSummary } from "@/lib/cases/types/ai";
 
 // Det gemte AI-udkast (cases.ai_summary, jsonb) parses med det fælles skema (lib/constants/ai-schemas.ts, architecture
 // 2.1.1: jsonb-kolonner parses med zod). Billedreferencen er case_images.id. Ugyldigt indhold behandles som `null`.

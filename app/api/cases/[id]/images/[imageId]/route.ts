@@ -1,4 +1,4 @@
-import { CaseImagesController } from "@/controllers/caseImagesController";
+import { CaseImagesController } from "@/features/cases/caseImagesController";
 import { noContent, parseId, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

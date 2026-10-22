@@ -1,24 +1,24 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { CHAT_UNAVAILABLE_TEXT } from "@/lib/constants/ai-texts";
+import { CHAT_UNAVAILABLE_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "@/lib/common/constants/limits";
-import type { chatMessageSchema } from "@/lib/schemas/chat";
-import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/types/ai";
+import type { chatMessageSchema } from "@/lib/cases/schemas/chat";
+import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/cases/types/ai";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
 import { AI_CONSENT_REQUIRED_MESSAGE, ApiError, aiUnavailable } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { CaseImagesRepository } from "@/models/caseImagesRepository";
-import { CasesRepository } from "@/models/casesRepository";
-import { ChatRepository, type ReservedTurn } from "@/models/chatRepository";
+import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
+import { CasesRepository } from "@/features/cases/casesRepository";
+import { ChatRepository, type ReservedTurn } from "@/features/cases/chatRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
-import { AiChatService } from "@/services/ai/aiChatService";
-import { maskPii } from "@/services/ai/pii";
-import { createAiClient } from "@/services/ai/openai";
-import { AI_RULES } from "@/services/ai/rules";
-import { AiImageService } from "@/services/aiImageService";
+import { AiChatService } from "@/features/cases/ai/aiChatService";
+import { maskPii } from "@/features/cases/ai/pii";
+import { createAiClient } from "@/features/cases/ai/openai";
+import { AI_RULES } from "@/features/cases/ai/rules";
+import { AiImageService } from "@/features/cases/aiImageService";
 
 type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 

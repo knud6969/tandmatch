@@ -1,5 +1,5 @@
 import "server-only";
-import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/types/ai";
+import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { ApiError, aiConsentRequired, chatLimit, notDraft, notFound } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Database, Tables } from "@/platform/db/database.types";

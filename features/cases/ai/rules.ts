@@ -2,7 +2,7 @@
 // Ren fil uden server-imports. Services får reglerne i constructoren, så de kan strammes uden at
 // røre controllers, routes eller UI.
 
-import type { OutOfScopeTopic } from "@/lib/types/ai";
+import type { OutOfScopeTopic } from "@/lib/cases/types/ai";
 
 export type AiRules = {
   version: string; // gemmes på samtalen og sagen for sporbarhed

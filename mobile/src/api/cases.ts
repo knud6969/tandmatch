@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { patchCaseSchema } from "@/lib/schemas/cases";
-import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
-import type { CaseDto, CaseListItemDto } from "@/lib/types/cases";
+import type { patchCaseSchema } from "@/lib/cases/schemas/cases";
+import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/cases/types/ai";
+import type { CaseDto, CaseListItemDto } from "@/lib/cases/types/cases";
 import { apiRequest } from "./client";
 
 // Sager (architecture 10.5).

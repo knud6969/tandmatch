@@ -8,8 +8,8 @@ import {
   CHAT_BLOCKED_TEXT,
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
-} from "@/lib/constants/ai-texts";
-import type { AiImageObservation, AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/types/ai";
+} from "@/lib/cases/constants/ai-texts";
+import type { AiImageObservation, AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./errors";
 import {
   DEFAULT_CATEGORIES,

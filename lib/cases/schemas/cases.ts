@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CASE_TIMEFRAMES } from "@/lib/constants/cases";
+import { CASE_TIMEFRAMES } from "@/lib/cases/constants/cases";
 import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import { postalCodeSchema } from "@/lib/schemas/clinics";
 

@@ -1,5 +1,5 @@
-import type { ChatStateDto } from "@/lib/types/ai";
-import type { CaseDto, CaseFlowStep } from "@/lib/types/cases";
+import type { ChatStateDto } from "@/lib/cases/types/ai";
+import type { CaseDto, CaseFlowStep } from "@/lib/cases/types/cases";
 
 // Hvilket kort i samtaleflowet der er aktuelt (architecture 7.9). Første regel, der passer. Ren funktion.
 // Er trinnet "ready", afgør `canSend` på sagen, om knappen eller en forklaring vises.

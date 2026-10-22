@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { AI_BOUNDARY_TEXT } from "@/lib/constants/ai-texts";
-import { START_STEPS } from "@/lib/constants/start";
+import { AI_BOUNDARY_TEXT } from "@/lib/cases/constants/ai-texts";
+import { START_STEPS } from "@/lib/cases/constants/start";
 import { startAnonymousSession } from "~/api/auth";
 import { createCase, listCases } from "~/api/cases";
 import { useSession } from "~/auth/session-context";

@@ -11,12 +11,12 @@ import type {
 } from "@/lib/types/leads";
 import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
-import { CasesRepository } from "@/models/casesRepository";
+import { CasesRepository } from "@/features/cases/casesRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { LeadsRepository } from "@/models/leadsRepository";
-import { CaseImageUrlService } from "@/services/caseImageUrlService";
+import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 
 type SendLeadsInput = z.infer<typeof sendLeadsSchema>;
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;

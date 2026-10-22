@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { CASE_FLOW_TEXTS } from "@/lib/constants/case-flow";
+import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
 import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/constants/services";
-import type { CaseDto } from "@/lib/types/cases";
+import type { CaseDto } from "@/lib/cases/types/cases";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
 import { Button, Chip, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";

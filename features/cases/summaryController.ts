@@ -1,24 +1,24 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type { approveSummarySchema } from "@/lib/schemas/chat";
-import { buildsOnAiDraft, imageDescription } from "@/lib/domain/summary";
-import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/types/ai";
+import type { approveSummarySchema } from "@/lib/cases/schemas/chat";
+import { buildsOnAiDraft, imageDescription } from "@/lib/cases/domain/summary";
+import type { ApproveSummaryResponse, SummaryResponse } from "@/lib/cases/types/ai";
 import { ApiError, aiUnavailable } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { CaseImagesRepository } from "@/models/caseImagesRepository";
-import { CaseServicesRepository } from "@/models/caseServicesRepository";
-import { CasesRepository } from "@/models/casesRepository";
-import { ChatRepository } from "@/models/chatRepository";
+import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
+import { CaseServicesRepository } from "@/features/cases/caseServicesRepository";
+import { CasesRepository } from "@/features/cases/casesRepository";
+import { ChatRepository } from "@/features/cases/chatRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
-import { isAiUpstreamError } from "@/services/ai/errors";
-import { AiSummaryService } from "@/services/ai/aiSummaryService";
-import { createAiClient } from "@/services/ai/openai";
-import { AI_RULES } from "@/services/ai/rules";
-import { AiImageService } from "@/services/aiImageService";
-import { SummaryRepository } from "@/models/summaryRepository";
+import { isAiUpstreamError } from "@/features/cases/ai/errors";
+import { AiSummaryService } from "@/features/cases/ai/aiSummaryService";
+import { createAiClient } from "@/features/cases/ai/openai";
+import { AI_RULES } from "@/features/cases/ai/rules";
+import { AiImageService } from "@/features/cases/aiImageService";
+import { SummaryRepository } from "@/features/cases/summaryRepository";
 
 type ApproveInput = z.infer<typeof approveSummarySchema>;
 

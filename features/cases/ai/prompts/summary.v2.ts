@@ -3,7 +3,7 @@
 // Ren fil uden server-imports. Ingen priser og ingen klinikdata.
 // MDR-TILPASNING: opsummeringen er allerede kun beskrivende. Ved strictMdrMode skærpes billedreglen.
 
-import type { AiRules } from "@/services/ai/rules";
+import type { AiRules } from "@/features/cases/ai/rules";
 
 export const SUMMARY_PROMPT_VERSION = "summary.v2";
 

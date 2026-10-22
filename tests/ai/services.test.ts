@@ -4,16 +4,16 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { AiChatService } from "@/services/ai/aiChatService";
-import { AiSummaryService } from "@/services/ai/aiSummaryService";
-import { AiTimeoutError } from "@/services/ai/errors";
-import { FakeAiClient } from "@/services/ai/fakeAiClient";
-import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/services/ai/rules";
+import { AiChatService } from "@/features/cases/ai/aiChatService";
+import { AiSummaryService } from "@/features/cases/ai/aiSummaryService";
+import { AiTimeoutError } from "@/features/cases/ai/errors";
+import { FakeAiClient } from "@/features/cases/ai/fakeAiClient";
+import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/features/cases/ai/rules";
 // Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
 // akut-reglen fortsat er dækket; tilstanden "slået fra" testes eksplicit.
 const AI_RULES: AiRules = Object.freeze({ ...PRODUCTION_RULES, emergencyReferralInChat: true });
 const MDR_STRICT_RULES: AiRules = Object.freeze({ ...PRODUCTION_MDR_RULES, emergencyReferralInChat: true });
-import { CHAT_SCHEMA_NAME, SUMMARY_SCHEMA_NAME } from "@/services/ai/schemas";
+import { CHAT_SCHEMA_NAME, SUMMARY_SCHEMA_NAME } from "@/features/cases/ai/schemas";
 
 const GROUPS: ServiceGroupDto[] = [
   {

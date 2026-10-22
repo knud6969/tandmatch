@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { OUT_OF_SCOPE_NOTICES, PRELIMINARY_ASSESSMENT_LABEL } from "@/lib/constants/ai-texts";
-import type { AiChatMessageDto } from "@/lib/types/ai";
+import { OUT_OF_SCOPE_NOTICES, PRELIMINARY_ASSESSMENT_LABEL } from "@/lib/cases/constants/ai-texts";
+import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Badge, StatusMessage } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 

@@ -1,6 +1,6 @@
 import { LEAD_ACTIVE_STATUSES } from "@/lib/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE, MAX_TOTAL_LEADS_PER_CASE } from "@/lib/common/constants/limits";
-import type { CaseRecordDto } from "@/lib/types/cases";
+import type { CaseRecordDto } from "@/lib/cases/types/cases";
 import type { LeadStatus } from "@/lib/types/leads";
 
 // Tæller leadet med i de højst 3 aktive pr. sag? (Spejler is_lead_active_status() i databasen.)

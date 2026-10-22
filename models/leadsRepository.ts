@@ -9,7 +9,7 @@ import {
 } from "@/lib/common/constants/limits";
 import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/schemas/leads";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
-import type { CaseTimeframe } from "@/lib/types/cases";
+import type { CaseTimeframe } from "@/lib/cases/types/cases";
 import type { PriceRange } from "@/lib/common/types/common";
 import type {
   ClinicLeadDetailDto,

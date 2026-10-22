@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { CASE_FLOW_TEXTS } from "@/lib/constants/case-flow";
+import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
 // Svar-kortene i chatten er fra "TandMatch", ikke fra AI'en (architecture 7.9): eget afsendernavn, blå kant og intet AI-mærkat.

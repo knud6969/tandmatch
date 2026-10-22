@@ -5,7 +5,7 @@ import { CONSENT_TEXTS } from "@/lib/identity/constants/consents";
 import { LEAD_STATUS_LABEL } from "@/lib/constants/leads";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import { remainingLeadSlots } from "@/lib/domain/leads";
-import type { CaseDto } from "@/lib/types/cases";
+import type { CaseDto } from "@/lib/cases/types/cases";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
 import type { PatientLeadDto } from "@/lib/types/leads";
 import { convertAnonymous } from "~/api/auth";

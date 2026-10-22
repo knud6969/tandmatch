@@ -5,7 +5,7 @@ import type { ConsentType } from "@/lib/common/types/common";
 import type { ConsentDto, GrantedConsentDto, WithdrawResultDto } from "@/lib/identity/types/consents";
 import { ApiError } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { CaseImageStorage } from "@/models/caseImageStorage";
+import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { AccountDeletionService } from "@/features/identity/accountDeletionService";

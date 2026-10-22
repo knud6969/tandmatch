@@ -1,4 +1,4 @@
-import { CaseImagesController } from "@/controllers/caseImagesController";
+import { CaseImagesController } from "@/features/cases/caseImagesController";
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
 import { imageFileReader, jsonResponse, parseId, rejectLargeImage, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";

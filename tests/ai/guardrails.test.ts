@@ -1,17 +1,17 @@
 // AI-guardrails (architecture 7.5, række 9). Ingen kald til OpenAI: modellen er en falsk klient,
 // der returnerer forudbestemte svar. Testene dækker guard, filter, skemaer, prompts, regler og katalogkontekst.
 import { describe, expect, it, vi } from "vitest";
-import { AiChatService } from "@/services/ai/aiChatService";
-import { FakeAiClient } from "@/services/ai/fakeAiClient";
-import { OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
+import { AiChatService } from "@/features/cases/ai/aiChatService";
+import { FakeAiClient } from "@/features/cases/ai/fakeAiClient";
+import { OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
 import {
   CHAT_BLOCKED_TEXT,
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
-} from "@/lib/constants/ai-texts";
+} from "@/lib/cases/constants/ai-texts";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext";
-import { AiInvalidOutputError, AiTimeoutError } from "@/services/ai/errors";
+import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogContext";
+import { AiInvalidOutputError, AiTimeoutError } from "@/features/cases/ai/errors";
 import {
   REPLY_CATEGORIES,
   containsAmount,
@@ -19,13 +19,13 @@ import {
   detectOutOfScopeTopics,
   findForbiddenCategories,
   isPhrasedAsPreliminary,
-} from "@/services/ai/forbiddenTerms";
-import { runChatGuard, runSummaryGuard, type ModelCall } from "@/services/ai/guard";
-import { maskPii, PII_MASK } from "@/services/ai/pii";
-import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/services/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/services/ai/prompts/chat.v4";
-import { buildSummarySystemPrompt } from "@/services/ai/prompts/summary.v2";
-import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/services/ai/rules";
+} from "@/features/cases/ai/forbiddenTerms";
+import { runChatGuard, runSummaryGuard, type ModelCall } from "@/features/cases/ai/guard";
+import { maskPii, PII_MASK } from "@/features/cases/ai/pii";
+import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/features/cases/ai/promptFormat";
+import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/features/cases/ai/prompts/chat.v4";
+import { buildSummarySystemPrompt } from "@/features/cases/ai/prompts/summary.v2";
+import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/features/cases/ai/rules";
 // Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
 // akut-reglen fortsat er dækket; tilstanden "slået fra" testes eksplicit.
 const AI_RULES: AiRules = Object.freeze({ ...PRODUCTION_RULES, emergencyReferralInChat: true });
@@ -35,7 +35,7 @@ import {
   chatTurnSchema,
   SUMMARY_JSON_SCHEMA,
   summaryModelSchema,
-} from "@/services/ai/schemas";
+} from "@/features/cases/ai/schemas";
 
 // server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.
 vi.mock("server-only", () => ({}));
@@ -1012,7 +1012,7 @@ describe("regression M1: PII-maskering af navn og adresse", () => {
 
 describe("regression B6/B10: værdimængder og faste tekster", () => {
   it("OUT_OF_SCOPE_TOPICS, IMAGE_VIEWS og IMAGE_QUALITIES er as const-arrays, som skemaerne bruger", async () => {
-    const { IMAGE_QUALITIES, IMAGE_VIEWS, CONVERSATION_STATUSES } = await import("@/lib/constants/ai");
+    const { IMAGE_QUALITIES, IMAGE_VIEWS, CONVERSATION_STATUSES } = await import("@/lib/cases/constants/ai");
     expect(CONVERSATION_STATUSES).toEqual(["active", "closed"]);
     expect(CHAT_TURN_JSON_SCHEMA.properties.outOfScopeTopics.items.enum).toEqual([...OUT_OF_SCOPE_TOPICS]);
     expect(SUMMARY_JSON_SCHEMA.properties.images.items.properties.view.enum).toEqual([...IMAGE_VIEWS]);
@@ -1020,13 +1020,13 @@ describe("regression B6/B10: værdimængder og faste tekster", () => {
   });
 
   it("loftet for foreslåede ydelser følger loftet for bekræftede ydelser", async () => {
-    const { MAX_SUGGESTED_SERVICES } = await import("@/services/ai/schemas");
+    const { MAX_SUGGESTED_SERVICES } = await import("@/features/cases/ai/schemas");
     const { MAX_CONFIRMED_SERVICES_PER_CASE } = await import("@/lib/common/constants/limits");
     expect(MAX_SUGGESTED_SERVICES).toBe(MAX_CONFIRMED_SERVICES_PER_CASE);
   });
 
   it("velkomst og mærkat ligger som faste tekster", async () => {
-    const texts = await import("@/lib/constants/ai-texts");
+    const texts = await import("@/lib/cases/constants/ai-texts");
     expect(texts.CHAT_WELCOME_TEXT).toMatch(/kan ikke stille diagnoser/);
     expect(texts.PRELIMINARY_ASSESSMENT_LABEL).toMatch(/endelige vurdering/);
     expect(texts.CHAT_PII_WARNING_TEXT).toMatch(/navn/);
@@ -1044,7 +1044,7 @@ describe("regression B6/B10: værdimængder og faste tekster", () => {
 
 describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", () => {
   async function liveTurn(userMessage: string) {
-    const { OpenAiClient } = await import("@/services/ai/openai");
+    const { OpenAiClient } = await import("@/features/cases/ai/openai");
     return new AiChatService(new OpenAiClient()).sendTurn({ history: [], userMessage, catalog: GROUPS, images: [] });
   }
 
@@ -1230,7 +1230,7 @@ describe("regression runde 2: klinikomtale", () => {
     ]) {
       expect(findForbiddenCategories(text, REPLY).length).toBeGreaterThan(0);
     }
-    const texts = await import("@/lib/constants/ai-texts");
+    const texts = await import("@/lib/cases/constants/ai-texts");
     expect(texts.OUT_OF_SCOPE_NOTICES.price).toMatch(/kan klinikken præcisere prisen/);
     expect(texts.OUT_OF_SCOPE_NOTICES.clinic_recommendation).toMatch(/Anmeldelser.*oversigten/);
   });
@@ -1319,7 +1319,7 @@ describe("regression runde 2: PII", () => {
 
 describe("regression runde 2: typer og fælles skema", () => {
   it("lib/constants/ai-schemas.ts deler form med modelskemaet", async () => {
-    const { aiSummarySchema, aiImageObservationSchema } = await import("@/lib/constants/ai-schemas");
+    const { aiSummarySchema, aiImageObservationSchema } = await import("@/lib/cases/constants/ai-schemas");
     const img = { imageRef: "7f9e0d5e-0000-4000-8000-000000000001", view: "front", visibleArea: "x", observations: [], quality: "ok" };
     expect(aiImageObservationSchema.safeParse(img).success).toBe(true);
     const summary = { summaryText: "x", patientWishes: [], patientReportedHistory: [], suggestedServices: [], images: [img], outOfScopeTopics: [] };

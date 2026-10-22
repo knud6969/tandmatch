@@ -4,7 +4,7 @@
 // MDR-TILPASNING: afsnittene om vurdering og forklaring styres af allowPreliminaryAssessment og
 // allowTreatmentExplanation. Stramning kræver en ny prompt-version her.
 
-import type { AiRules } from "@/services/ai/rules";
+import type { AiRules } from "@/features/cases/ai/rules";
 
 export const CHAT_PROMPT_VERSION = "chat.v4";
 

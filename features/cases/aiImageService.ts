@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CaseImageRecord } from "@/models/caseImagesRepository";
-import { CaseImageStorage } from "@/models/caseImageStorage";
+import type { CaseImageRecord } from "@/features/cases/caseImagesRepository";
+import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 // Max kant på billeder, der sendes til AI'en (architecture 7.2).

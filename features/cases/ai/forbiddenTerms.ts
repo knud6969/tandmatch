@@ -4,8 +4,8 @@
 //
 // JS' \b og \w kender ikke æ, ø og å, så ordgrænser er lookarounds med \p{L}.
 
-import { OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
-import type { OutOfScopeTopic } from "@/lib/types/ai";
+import { OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
+import type { OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { AI_RULES } from "./rules";
 
 export type ForbiddenCategory =

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { nextCaseFlowStep } from "@/lib/domain/case-flow";
-import type { AiChatMessageDto } from "@/lib/types/ai";
+import { nextCaseFlowStep } from "@/lib/cases/domain/case-flow";
+import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 
 type CaseArg = Parameters<typeof nextCaseFlowStep>[0];
 type ChatArg = Parameters<typeof nextCaseFlowStep>[1];
