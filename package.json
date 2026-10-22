@@ -1,0 +1,43 @@
+{
+  "name": "tandmatch",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "gen:types": "supabase gen types typescript --local > platform/db/database.types.ts",
+    "test:rls": "bash tests/rls/run.sh",
+    "test:api": "bash tests/api/run.sh",
+    "seed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/seed-demo.ts",
+    "unseed:demo": "node --experimental-default-type=module --env-file=.env.test.local scripts/unseed-demo.ts",
+    "test:unit": "vitest run",
+    "test:e2e": "bash tests/e2e/run.sh"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "leaflet": "^1.9.4",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-leaflet": "^5.0.0",
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.4"
+  }
+}

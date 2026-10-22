@@ -1,0 +1,21 @@
+import { putOpeningHoursSchema } from "@/lib/clinics/schemas/clinics";
+import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { ClinicsController } from "@/features/clinics/clinicsController";
+
+export const GET = withApi(async () => {
+  const gate = await requireTerms();
+  const session = await requireRole("clinic", { ctx: gate });
+  const { supabase } = gate;
+  return jsonResponse({ hours: await new ClinicsController(supabase, session).listOpeningHours() });
+});
+
+// Erstatter alle åbningstider.
+export const PUT = withApi(async (req) => {
+  const gate = await requireTerms();
+  const session = await requireRole("clinic", { ctx: gate });
+  const input = await readJson(req, putOpeningHoursSchema);
+  const { supabase } = gate;
+  return jsonResponse({ hours: await new ClinicsController(supabase, session).putOpeningHours(input) });
+});

@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/*
+ * TandMatch designsystem. Alle farver, skrifter, radier, skygger og afstande defineres her, og kun her.
+ * Komponenter bruger kun disse tokens (fx bg-brand-600, text-ink, rounded-card, shadow-card), aldrig rå farver.
+ * Udtryk: Airbnb-agtigt i tandlægefarver. Hvid baggrund, blå som primærfarve, luft og bløde hjørner.
+ * Kontrast (WCAG AA): ink 16:1 og ink-muted 7:1 på hvid; hvid tekst på brand-600 ca. 5.2:1 og på brand-700 ca. 6.7:1;
+ * brand-700 tekst på hvid ca. 6.7:1; feltkanter (field-border) mindst 3:1 mod hvid; status-tekst mindst 4.5:1 på sin flade.
+ */
+@theme {
+  /* Typografi */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+
+  /* Primær: blå. 600 = knapper og links på lys flade, 700 = hover/tekst, 50-200 = lyse flader. */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-on-brand: #ffffff;
+
+  /* Flader, tekst og kanter (neutrale gråtoner med et strejf af blå) */
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f8fb;
+  --color-ink: #162033;
+  --color-ink-muted: #4a5568;
+  --color-line: #e2e8f0;
+  --color-field-border: #718096;
+
+  /* Statusfarver: info, advarsel (fx pladsholder, afventer verifikation), fejl, succes */
+  --color-info-bg: #eef4fc;
+  --color-info-line: #a5c3e8;
+  --color-info-ink: #1e3f6b;
+  --color-warning-bg: #fff6e0;
+  --color-warning-line: #e0b050;
+  --color-warning-ink: #5c3600;
+  --color-danger-bg: #fdf1f0;
+  --color-danger-line: #d9776d;
+  --color-danger-ink: #8a1c14;
+  --color-success-bg: #edf8f1;
+  --color-success-line: #8fcaa6;
+  --color-success-ink: #155c33;
+
+  /* Bløde hjørner */
+  --radius-control: 0.75rem; /* knapper og felter */
+  --radius-card: 1.25rem; /* kort og paneler */
+  --radius-pill: 9999px; /* chips, badges og søgefelt */
+
+  /* Skygger */
+  --shadow-card: 0 1px 2px rgb(22 32 51 / 0.06), 0 4px 16px rgb(22 32 51 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(22 32 51 / 0.08), 0 8px 28px rgb(22 32 51 / 0.12);
+
+  /* Afstande og sidebredder */
+  --spacing-page-x: 1rem; /* sidemargen på mobil (sm og op: 1.5rem via Container/Header) */
+  --container-narrow: 36rem;
+  --container-wide: 72rem;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  /* Synlig fokusring til tastaturnavigation (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 3px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+/*
+ * Kortet (Leaflet, architecture 6.6). Leaflets egen stylesheet ligger uden for lagene og vinder over Tailwind-klasser, så
+ * popup'en rettes her, så den følger temaet: skrift, linkfarve og afstande.
+ */
+.leaflet-container {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-ink);
+}
+.leaflet-container a:not(.leaflet-control-zoom-in, .leaflet-control-zoom-out) {
+  color: var(--color-brand-700);
+}
+.leaflet-container a.map-popup-link.map-popup-link {
+  color: var(--color-on-brand);
+}
+.leaflet-container .leaflet-popup-content {
+  margin: 1rem;
+}
+.leaflet-container .leaflet-popup-content p {
+  margin: 0;
+}
+.leaflet-container .leaflet-popup-content-wrapper {
+  border-radius: var(--radius-card);
+}
+.leaflet-container .leaflet-control-attribution {
+  font-size: 0.75rem;
+  color: var(--color-ink);
+}

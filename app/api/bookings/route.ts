@@ -1,0 +1,13 @@
+import { BookingsController } from "@/features/booking/bookingsController";
+import { bookingsQuerySchema } from "@/lib/booking/schemas/bookings";
+import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
+
+// Patientens egne bookinger, eller klinikkens kalender (?from=&to=, kun verificerede klinikker) (architecture 10.10).
+export const GET = withApi(async (req) => {
+  const gate = await requireTerms();
+  const session = await requireRole(["patient", "clinic"], { ctx: gate });
+  const query = readQuery(req, bookingsQuerySchema, ["from", "to"]);
+  return jsonResponse({ bookings: await new BookingsController(gate.supabase, session).list(query) });
+});

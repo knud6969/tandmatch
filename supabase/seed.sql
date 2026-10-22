@@ -1,0 +1,3 @@
+-- Referencedata, som ikke kræver auth-brugere (architecture 2.2). Køres automatisk af `supabase db reset`, efter migrationerne.
+-- Postnumrene indsættes af migrationen 20261028000400_postal_codes_dk.sql (alle danske postnumre fra GeoNames),
+-- ikke her. Filen har ingen anden referencedata i dag.

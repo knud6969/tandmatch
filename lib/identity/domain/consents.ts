@@ -1,0 +1,8 @@
+import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
+import type { ConsentType } from "@/lib/common/types/common";
+import type { ConsentDto } from "@/lib/identity/types/consents";
+
+// Har patienten et aktivt samtykke i den gældende tekstversion? (architecture 4.3). Delt af web og patient-appen.
+export function hasCurrentConsent(consents: ConsentDto[], type: ConsentType): boolean {
+  return consents.some((c) => c.type === type && c.withdrawnAt === null && c.textVersion === CONSENT_TEXT_VERSIONS[type]);
+}
