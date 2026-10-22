@@ -7,7 +7,7 @@ import { useSession } from "@/features/identity/ui";
 import { Button, LinkButton } from "@/components/ui/button";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { AreaTabs } from "@/components/ui/area-tabs";
-import { AREA_NAV, AREA_NAV_PARENT } from "@/lib/common/navigation/areas";
+import { AREA_NAV } from "@/lib/common/navigation/areas";
 import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/common/navigation/entries";
 
 // Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
@@ -20,8 +20,8 @@ export function SiteHeader() {
   const me = state.status === "ready" ? state.me : null;
   // Kun klinikker har et område på weben; patienter bruger appen (architecture 13.6).
   const areaNav = me && me.role === "clinic" ? AREA_NAV[me.role] : [];
-  // Den længste matchende sti er aktiv, så fx /patient/sag/... markerer "Mine sager".
-  const navPath = AREA_NAV_PARENT[pathname] ?? pathname;
+  // Den længste matchende sti er aktiv, så fx /klinik/lead/... markerer "Henvendelser".
+  const navPath = pathname;
   const activeHref = areaNav
     .map((item) => item.href)
     .filter((href) => navPath === href || navPath.startsWith(`${href}/`))

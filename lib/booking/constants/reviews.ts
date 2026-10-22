@@ -10,7 +10,7 @@ export const PRICE_ACCURACY_LABEL = {
 
 export const MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 
-// Moderationsstatus for anmeldelser og svar på dansk (architecture 8.5). Tonerne ligger i views/utils/review-status.ts.
+// Moderationsstatus for anmeldelser og svar på dansk (architecture 8.5). Tonerne ligger i features/booking/utils/review-status.ts.
 export const MODERATION_LABEL = {
   pending: "Afventer godkendelse",
   approved: "Offentliggjort",

@@ -48,7 +48,7 @@ type BookingExportRow = Pick<
   | "completed_at"
 > & { cancelled_by: (typeof BOOKING_ACTORS)[number] | null };
 
-// Fejl fra book_slot() (architecture 5.3, 10.10). Teksterne står i middleware/http.ts.
+// Fejl fra book_slot() (architecture 5.3, 10.10). Teksterne står i platform/middleware/http.ts.
 const BOOK_ERRORS = (): Record<string, ApiError> => ({
   ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.bookSlot),
   NOT_FOUND: notFound(),

@@ -105,7 +105,7 @@ features/<domæne>/         ét domæne: identity, cases, clinics, leads, bookin
   ui.ts                    klientsikre komponenter, som andre domæners UI må importere
   __tests__/               unit-tests; __tests__/api/ har API-testene
   README.md                domænets afsnit af arkitekturen
-platform/                  tværgående: middleware/, db/, base/, cron, billedbehandling, ui-utils/ (api-client, use-load m.fl.)
+platform/                  tværgående: platform/middleware/, db/, base/, cron, billedbehandling, ui-utils/ (api-client, use-load m.fl.)
 components/ui/             delte UI-komponenter og layout (header, footer, faner)
 lib/<domæne>/<art>/        delt med appen: types, schemas, constants, domain; lib/common/ for fælles ting og navigation
 mobile/                    patient-appen (Expo); importerer kun @/lib fra roden
@@ -136,7 +136,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 | `cases` | sager, AI-chat, opsummering, sagsbilleder, AI-reglerne | `/api/cases/*` |
 | `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/api/clinics/*`, `/api/services` |
 | `leads` | leads, klinikkens indbakke og lead-kort, beskeder, akutvejen | `/klinik`, `/klinik/lead/*`, `/api/leads/*`, `/api/emergency-leads` |
-| `booking` | bookinger, kalender, anmeldelser, svar, moderation | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*`, `/api/cron/*` |
+| `booking` | bookinger, kalender, anmeldelser, svar, moderation | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
 | `site` | forsiden og informationssiderne | `/`, `/om-os`, `/kontakt`, `/privatliv`, `/saadan-*`, `/for-klinikker` |
 
 ### 2.6 Sådan bygger du en ny funktion

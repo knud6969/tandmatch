@@ -3,7 +3,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 // Grænser mellem domæner og lag (docs/oprydning-features.md, trin 4). Type-imports er tilladt overalt; de forsvinder ved kompilering.
-// ESLint bruger kun én no-restricted-imports pr. fil, så filgrupperne nedenfor overlapper ikke. Mønstrene er regulære udtryk,
+// ESLint bruger kun den sidste no-restricted-imports, der matcher en fil, så hver gruppe indeholder alle regler for sine filer. Mønstrene er regulære udtryk,
 // fordi gitignore-mønstre ikke kan undtage en undermappe (fx ui.ts) fra en udelukket mappe.
 function layer(files, regexes, message, ignores = []) {
   return {
@@ -26,32 +26,54 @@ function layer(files, regexes, message, ignores = []) {
 
 const DOMAINS = ["identity", "cases", "clinics", "leads", "booking", "site"];
 
-// Ren kode uden I/O (testes direkte og starter ikke med import "server-only").
-const PURE_FILES = [
-  "features/cases/ai/{rules,errors,forbiddenTerms,guard,pii,promptFormat,schemas,catalogContext}.ts",
-  "features/cases/ai/prompts/**/*.ts",
-  "features/clinics/rankingService.ts",
-  "features/clinics/availabilityService.ts",
-];
+// Ren kode uden I/O pr. domæne (testes direkte og starter ikke med import "server-only").
+const PURE = {
+  cases: ["features/cases/ai/{rules,errors,forbiddenTerms,guard,pii,promptFormat,schemas,catalogContext}.ts", "features/cases/ai/prompts/**/*.ts"],
+  clinics: ["features/clinics/rankingService.ts", "features/clinics/availabilityService.ts"],
+};
+
 const UI_FILES = (d) => [`features/${d}/{components,pages,utils}/**/*.{ts,tsx}`, `features/${d}/ui.ts`];
 const TESTS = ["features/*/__tests__/**", "platform/__tests__/**"];
+const CONTROLLERS = (d) => [`features/${d}/*Controller.ts`];
+const REPOSITORIES = (d) => [`features/${d}/*{Repository,Storage}.ts`];
 
 // Andre domæners interne filer (alt andet end deres index.ts og ui.ts).
 const otherDomainInternals = (d) => `^@/features/(?!${d}(?:/|$))[a-z]+/(?!ui$).+$`;
 // Andre domæners index.ts (serverkode) eller interne filer; kun ui.ts er tilladt.
 const otherDomainsExceptUi = (d) => `^@/features/(?!${d}(?:/|$))[a-z]+(?:/(?!ui$).*)?$`;
-const ownServerCode = (d) => `^@/features/${d}/(?:ai/.*|[^/]*(?:Repository|Storage|Controller|Service))$`;
-const SERVER_ONLY = "^(?:@/platform/(?:db|base|middleware)/|@/platform/[^/]*(?:Repository|cronController)$|@supabase/)";
+// Domænets egen serverkode, både med @/-sti og relativt (fx i ui.ts).
+const ownServerCode = (d) => `^(?:@/features/${d}/|\./)(?:ai/.*|[^/]*(?:Repository|Storage|Controller|Service))$`;
+const SERVER_ONLY =
+  "^(?:@/platform/(?:db|base|middleware)/|@/platform/[^/]*(?:Repository|cronController|imageProcessingService)$|@supabase/)";
 const ANY_FEATURE_EXCEPT_UI = "^@/features/[a-z]+(?:/(?!ui$).*)?$";
+const ANY_CONTROLLER = "^(?:\\./|@/features/[a-z]+/)[^/]*Controller$";
+const ANY_SERVICE = "^(?:\\./|@/features/[a-z]+/)[^/]*Service$";
+const DOMAIN_BASE = (d) => [otherDomainInternals(d), "^@/features/[a-z]+/ui$", "^@/components/", "^@/app/"];
+const DOMAIN_MSG = (d) => `features/${d} må bruge platform/, lib/ og andre domæners index.ts, aldrig deres interne filer eller UI.`;
 
 const domainRules = DOMAINS.flatMap((d) => [
-  // Serverkode i domænet: controllers, repositories, services og ai/.
+  // Controllers: forretningsregler. Controllere kalder ikke hinanden (delt logik hører i en service).
+  layer(CONTROLLERS(d), [...DOMAIN_BASE(d), ANY_CONTROLLER], `${DOMAIN_MSG(d)} Controllere kalder ikke hinanden.`),
+  // Repositories: eneste sted, der kalder Supabase; de kender hverken controllere eller services.
+  layer(REPOSITORIES(d), [...DOMAIN_BASE(d), ANY_CONTROLLER, ANY_SERVICE], `${DOMAIN_MSG(d)} Repositories kender ikke controllere eller services.`),
+  // Øvrig serverkode i domænet: services, ai/ og index.ts.
   layer(
     [`features/${d}/**/*.ts`],
-    [otherDomainInternals(d), "^@/features/[a-z]+/ui$", "^@/components/", "^@/app/"],
-    `Serverkode i features/${d} må bruge platform/, lib/ og andre domæners index.ts, aldrig deres interne filer eller UI.`,
-    [...UI_FILES(d), ...TESTS, ...PURE_FILES],
+    [...DOMAIN_BASE(d), ANY_CONTROLLER],
+    `${DOMAIN_MSG(d)} Services kalder ikke controllere.`,
+    [...UI_FILES(d), ...TESTS, ...(PURE[d] ?? []), ...CONTROLLERS(d), ...REPOSITORIES(d), `features/${d}/index.ts`],
   ),
+  layer([`features/${d}/index.ts`], [...DOMAIN_BASE(d)], DOMAIN_MSG(d)),
+  // Ren kode: domænegrænserne gælder, og derudover ingen repositories, Supabase eller netværksklienter.
+  ...(PURE[d]
+    ? [
+        layer(
+          PURE[d],
+          [...DOMAIN_BASE(d), "^@/features/[a-z]+$", "^(?:\\./|\\.\\./|@/features/[a-z]+/)[^/]*(?:Repository|Storage|Controller)$", SERVER_ONLY, "^openai$", "^sharp$"],
+          "Ren kode (ai-reglerne, rankingService, availabilityService) må ikke importere andre domæner, repositories, Supabase eller netværksklienter.",
+        ),
+      ]
+    : []),
   // UI i domænet: kun klientsikre ting. Data hentes via /api med platform/ui-utils/api-client.
   layer(
     UI_FILES(d),
@@ -63,23 +85,24 @@ const domainRules = DOMAINS.flatMap((d) => [
 
 const layerRules = [
   ...domainRules,
-  // Ren kode (architecture 2.1): ingen I/O, så ingen repositories, Supabase eller netværksklienter.
-  layer(
-    PURE_FILES,
-    ["^@/features/[a-z]+/[^/]*(?:Repository|Storage|Controller)$", SERVER_ONLY, "^openai$", "^sharp$"],
-    "Ren kode (ai-reglerne, rankingService, availabilityService) må ikke importere repositories, Supabase eller netværksklienter.",
-  ),
-  // Sider og layouts i app/ videresender til features/<domæne>/pages og bruger kun platform/middleware til områdevagter.
+  // Sider og layouts i app/ videresender til features/<domæne>/pages (eller ui.ts) og bruger kun platform/middleware til vagter.
   layer(
     ["app/**/*.{ts,tsx}"],
-    ["^@/features/[a-z]+/[^/]*(?:Repository|Storage|Controller|Service)$"],
-    "Sider og layouts i app/ videresender til features/<domæne>/pages.",
+    ["^@/features/[a-z]+(?:/(?!pages/|ui$).*)?$", "^@/platform/(?:db|base)/", "^@/platform/[^/]*(?:Repository|cronController|imageProcessingService)$", "^@supabase/"],
+    "Sider og layouts i app/ videresender til features/<domæne>/pages eller ui.ts og bruger kun platform/middleware til vagter.",
     ["app/api/**"],
   ),
   // Routes kalder én controller. Kun klientfabrikken må hentes fra platform/db.
   layer(
     ["app/api/**/*.ts"],
-    ["^@/features/[a-z]+/(?:[^/]*(?:Repository|Storage|Service)|components/.*|pages/.*)$", "^@/platform/db/(?!supabase$)", "^@supabase/"],
+    [
+      "^@/features/[a-z]+$",
+      "^@/features/[a-z]+/(?:ai/.*|ui|[^/]*(?:Repository|Storage|Service)|components/.*|pages/.*|utils/.*)$",
+      "^@/platform/db/(?!supabase$)",
+      "^@/platform/base/",
+      "^@/platform/[^/]*(?:Repository|imageProcessingService)$",
+      "^@supabase/",
+    ],
     "Routes kalder én controller og bruger platform/middleware. Supabase kaldes kun i repositories.",
   ),
   // platform/ er tværgående og kender ingen domæner (undtagen cron og session-/vilkårsvagten, se nedenfor).
@@ -87,7 +110,13 @@ const layerRules = [
     ["platform/**/*.{ts,tsx}"],
     ["^@/features/", "^@/app/", "^@/components/"],
     "platform/ er tværgående og må ikke importere domæner, app/ eller UI-komponenter.",
-    [...TESTS, "platform/cronController.ts", "platform/middleware/{session,termsGate}.ts", "platform/ui-utils/**"],
+    [...TESTS, "platform/cronController.ts", "platform/middleware/{session,termsGate}.ts", "platform/ui-utils/**", "platform/base/**"],
+  ),
+  // Basisklasserne kender ikke konkrete klasser (arv går kun nedad).
+  layer(
+    ["platform/base/**/*.ts"],
+    ["^@/features/", "^@/app/", "^@/components/", "^@/platform/(?!db/|middleware/http$)"],
+    "platform/base/ må kun bruge platform/db, lib/ og ApiError og kender ikke de konkrete klasser.",
   ),
   layer(
     ["platform/ui-utils/**/*.{ts,tsx}"],

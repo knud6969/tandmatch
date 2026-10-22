@@ -46,8 +46,8 @@ Lagene, mappestrukturen og grænserne mellem domænerne står i oversigten (`doc
 
 **Rækker fra databasen valideres ikke med zod (besluttet):**
 - Repositories stoler på databasens typer. Typerne genereres med `supabase gen types typescript --local` til `platform/db/database.types.ts`, og `BaseRepository` er generisk over tabellens rækketype. `toDto(row)` mapper typet række til DTO uden runtime-validering.
-- **Undtagelse:** `jsonb`-kolonner (fx `cases.ai_summary`) har typen `Json` i de genererede typer og parses med zod-skemaet fra `lib/schemas/` eller `features/cases/ai/schemas.ts`, når de læses. Ugyldigt indhold behandles som `null` og logges uden indhold.
-- zod bruges ellers kun på input til API'et (`lib/schemas/`) og på AI-output (7.4). `ProfilesRepository` følger samme mønster som de øvrige repositories.
+- **Undtagelse:** `jsonb`-kolonner (fx `cases.ai_summary`) har typen `Json` i de genererede typer og parses med zod-skemaet fra `lib/<domæne>/schemas/` eller `features/cases/ai/schemas.ts`, når de læses. Ugyldigt indhold behandles som `null` og logges uden indhold.
+- zod bruges ellers kun på input til API'et (`lib/<domæne>/schemas/`) og på AI-output (7.4). `ProfilesRepository` følger samme mønster som de øvrige repositories.
 
 **Ingen tilstand på tværs af requests.** Instanser oprettes pr. request og kasseres bagefter. Der må ikke være modul-singletons med en Supabase-klient, en session eller brugerdata, og ingen statiske felter med muterbar tilstand. Uforanderlig konfiguration (konstanter, `AI_RULES`, en OpenAI-klient uden brugerdata) må deles.
 
@@ -57,10 +57,10 @@ Lagene, mappestrukturen og grænserne mellem domænerne står i oversigten (`doc
 - Ejertjek: `ClinicsRepository.requireOwnId(ownerId)` returnerer klinikkens id eller kaster 404. Én metode, ingen kopier i controllerne.
 - Billeder: feltet `images = deps.images ?? new ImageProcessingService()`.
 - Service role: feltet `admin = deps.admin ?? lazyAdminClient()` (ovenfor).
-- Delt ren logik ligger i `lib/domain/` (fx `attachPortfolio()`), delt logik med I/O i en service.
+- Delt ren logik ligger i `lib/<domæne>/domain/` (fx `attachPortfolio()`), delt logik med I/O i en service.
 Opstår der senere reel gentagelse i flere end tre controllere, beskrives en basisklasse her først (`platform/base/`).
 
-**Fælles hjælpere i `BaseRepository`:** al databaseadgang går gennem de beskyttede hjælpere (`run`, `rpc`, `count`), så `mapDbError` altid bruges. Repositories laver ikke egne forespørgsler uden om dem. Typealiaser i et repository eksporteres kun, hvis de bruges uden for filen; delte typer udledes af zod-skemaerne i `lib/schemas/` (fx `NewClinicPrice = z.infer<typeof clinicPriceSchema>`).
+**Fælles hjælpere i `BaseRepository`:** al databaseadgang går gennem de beskyttede hjælpere (`run`, `rpc`, `count`), så `mapDbError` altid bruges. Repositories laver ikke egne forespørgsler uden om dem. Typealiaser i et repository eksporteres kun, hvis de bruges uden for filen; delte typer udledes af zod-skemaerne i `lib/<domæne>/schemas/` (fx `NewClinicPrice = z.infer<typeof clinicPriceSchema>`).
 
 Importreglerne og lagdelingen i 2.1 er uændrede, og ESLint håndhæver dem fortsat.
 
@@ -185,7 +185,7 @@ price_accuracy       = 'as_quoted' | 'slightly_higher' | 'much_higher'   -- ja /
 moderation_status    = 'pending' | 'approved' | 'rejected'
 ```
 
-Danske visningsnavne står i `lib/constants/<domæne>.ts`.
+Danske visningsnavne står i `lib/<domæne>/constants/<navn>.ts`.
 
 **Livscyklusser** (håndhæves af triggers og funktionerne i 5.3, aldrig af klienten):
 - `case_status`: `draft → submitted` (første lead sendt; indhold låses); `draft | submitted → closed` (patienten lukker med `close_case()`). Kun `draft` kan redigeres. En lukket sag kan ikke få nye leads; patienten kan altid starte en ny sag.
@@ -418,7 +418,7 @@ API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cook
 
 Status: bygget i trin 1 er `/opret/klinik`, `/klinik` (opsætningsoversigt; fra 5.3 også lead-indbakken, se 6.3), `/klinik/profil`, `/klinik/prisliste` (med kategorier, 1.9), `/klinik/aabningstider` og `/klinik/tandlaeger`, samt kernens sider (vilkår, login, `/opret`, `/opret/patient`). Bygget i trin 2 (`a3f8d47b`, `ea70980b`): `/`, informationssiderne, `/klinikker` og `/klinikker/[clinicId]`. Bygget i trin 3 (3.4): `/start` og `/start/[caseId]`. Bygget i trin 4: `/start/[caseId]/send`, `/patient` og `/patient/sag/[caseId]`. Bygget i trin 5 (5.3): lead-indbakken på `/klinik` og `/klinik/lead/[leadId]`. Bygget i trin 6: `/patient/sag/[caseId]/book/[leadId]`, `/patient/bookinger`, `/patient/anmeldelser`, `/patient/anmeld/[bookingId]`, `/klinik/kalender` og `/klinik/anmeldelser`. Bygget i trin 7: `/akut` (7.4), `/patient/konto` og `/patient/samtykker` (7.7). Admin (6.4) bygges ikke i demoen.
 
-**Patientsiderne på weben er sat på pause (beslutning 2026-10-19, 13.6):** `/start`, `/start/[caseId]`, `/start/[caseId]/send`, `/akut` og alle `/patient/*` (6.1-6.2) bliver stående og skal blive ved med at virke (deres e2e-tests køres stadig som regressionstest af API'et), men de får ingen nye funktioner og ingen UI-rettelser. Patientrejsen bygges i appen (13.4). Undtagelse: når en tekst flyttes til en konstant i `lib/`, erstattes den hårdkodede tekst på websiden med konstanten (ingen anden ændring). Klinikkens sider (6.3), login og signup for klinikker, forsiden, informationssiderne og den offentlige klinikoversigt og -profil udvikles videre på weben efter behov.
+**Patientsiderne på weben er fjernet (2026-10-22, 13.6):** `/start`, `/start/[caseId]`, `/start/[caseId]/send`, `/akut`, `/opret/patient` og alle `/patient/*` findes ikke længere. Patientrejsen er i appen (13.4).
 
 Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og 1280 px. Design: hvid og blå, farverne i Tailwind-temaet.
 
@@ -431,9 +431,8 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 
 ### 6.5 Beskyttelse af sider
 
-- `proxy.ts`: (0) `/api/*` passerer, (1) vilkårs-gate for sider (2.5), (2) opfrisker session, (3) grov redirect: `/patient/*`, `/klinik/*`, `/admin/*` uden session → `/login`.
-- **Områdevagt:** `/patient` og `/klinik` har et server-layout, der kalder `guardArea(role, area)`: ikke logget ind → `/login?naeste=…`, anonym patient → `/opret/patient`, forkert rolle → eget område (`AREA_HOME[role]` i `lib/common/navigation/areas.ts`).
-- **Sagsvagt:** `/start/[caseId]` (inkl. `/send`) har eget layout med `guardCaseFlow()` (patient, anonym tilladt), fordi anonyme ikke kommer ind i `/patient`.
+- `proxy.ts`: (0) `/api/*` passerer, (1) vilkårs-gate for sider (2.5), (2) opfrisker session, (3) grov redirect: `/klinik/*`, `/admin/*` uden session → `/login`.
+- **Områdevagt:** `/klinik` har et server-layout, der kalder `guardArea(role, area)` (`platform/middleware/areaGuard.ts`): ikke logget ind → `/login?naeste=…`, anonym eller forkert rolle → forsiden (klinikker til `/klinik`). Patienter har intet område på weben (`AREA_HOME.patient = "/"`).
 - Ingen klientside rollevagt. Navigation viser links ud fra rollen, men adgang afgøres af layout-vagten og API/RLS. Siderne henter alle data via API'et.
 
 ## 9. Billeder og storage
@@ -449,7 +448,7 @@ Status: begge buckets oprettes af migrationssættet (trin 0). Upload til `public
 
 ## 10. API-kontrakter
 
-Typer i `lib/types/<domæne>.ts`, zod-skemaer i `lib/schemas/<domæne>.ts`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
+Typer i `lib/<domæne>/types/`, zod-skemaer i `lib/<domæne>/schemas/`. "Rolle" angiver hvem routen er for; alle andre får 403/404.
 
 **Status:** 10.2 og 10.3 har en Status-kolonne pr. route (kernen er bygget i trin 0, klinik-signup og `clinic` på `/api/me` i trin 1). 10.4 (katalog) og 10.8 (egen klinik) er bygget i trin 1 og 1.9. 10.7 (offentlig klinikoversigt og profil) og den offentlige del af 10.13 (`GET /api/clinics/{id}/reviews`) er bygget i trin 2. 10.5 og 10.6 er bygget i trin 3, leads i 10.5 i trin 4. 10.9 og 10.12 er bygget i trin 5. 10.10 (6.1) og 10.13 (6.2) er bygget; 10.11 er bygget i 7.3; 10.14 er [IKKE BYGGET]. Typerne i 10.1 findes for de bygget dele (roller, samtykker); resten oprettes med deres trin.
 

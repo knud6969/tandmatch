@@ -37,7 +37,7 @@ export async function setTermsCookie(payload: TermsPayload): Promise<void> {
 
 // Uden session er en gyldig cookie garanteret (terms er ikke null). Med session kan den mangle,
 // hvis accepten allerede ligger i terms_acceptances.
-// `supabase` er requestens ene klient (middleware/session.ts, AuthContext): routen giver den videre til
+// `supabase` er requestens ene klient (platform/middleware/session.ts, AuthContext): routen giver den videre til
 // requireRole() og controlleren.
 export type TermsGate = Pick<AuthContext, "supabase" | "transport" | "accessToken"> & (
   | { userId: null; terms: TermsPayload }

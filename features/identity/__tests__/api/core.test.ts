@@ -87,7 +87,7 @@ describe("vilkårs-gate", () => {
 
   it("sider (ikke API) redirecter til /vilkaar/accepter uden accept; /vilkaar er åben", async () => {
     const c = new TestClient();
-    const r = await c.get("/start");
+    const r = await c.get("/klinikker");
     assert.equal(r.status, 307);
     assert.match(r.headers.get("location") ?? "", /\/vilkaar\/accepter\?naeste=/);
   });

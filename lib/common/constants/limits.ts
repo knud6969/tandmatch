@@ -15,7 +15,7 @@ export const AI_TIMEOUT_MS = 30_000;
 export const SUMMARY_MAX_CHARS = 1500;
 // (SQL) case_images.ai_description: billedbeskrivelsen afkortes til dette, før den gemmes.
 export const IMAGE_DESCRIPTION_MAX_CHARS = 500;
-// Andelen af patientens ord, der skal findes i AI-udkastet, for at teksten regnes som bygget på det (lib/domain/summary.ts).
+// Andelen af patientens ord, der skal findes i AI-udkastet, for at teksten regnes som bygget på det (lib/cases/domain/summary.ts).
 export const AI_DRAFT_MIN_SHARED_WORDS = 0.5;
 export const MAX_SUMMARIES_PER_CASE = 5;
 export const MAX_SUMMARIES_PER_PATIENT_PER_DAY = 20;
@@ -46,7 +46,7 @@ export const MESSAGE_MAX_CHARS = 2000;
 export const MESSAGE_MAX_PER_DAY = 200;
 
 // Mindst så mange cifre i et telefonnummer. Databasens check (6-20 tilladte tegn) er løsere; TypeScript er strengere
-// (security trin 6, L2), så "(((((("-lignende værdier ikke kan gemmes. Bruges af lib/schemas/phone.ts.
+// (security trin 6, L2), så "(((((("-lignende værdier ikke kan gemmes. Bruges af lib/common/schemas/phone.ts.
 export const MIN_PHONE_DIGITS = 8;
 
 // Appen viser "Du har N beskeder tilbage", når så få eller færre er tilbage i samtalen (architecture 7.9).

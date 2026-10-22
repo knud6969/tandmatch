@@ -22,7 +22,7 @@ Du er tester på TandMatch. Læs CLAUDE.md, `docs/architecture.md` og README.md 
    - Klinikken kan først se patientens navn og kontaktoplysninger, når leadet er accepteret og en tid er booket
    - Importerede klinikker (uden konto) vises i oversigten, men kan ikke modtage leads
    - Kortet viser de samme verificerede klinikker som listen og følger filtrene
-   - AI'en nævner aldrig priser, anbefaler aldrig en bestemt klinik og henviser akutte symptomer til en akut tid (se `tests/ai/`)
+   - AI'en nævner aldrig priser, anbefaler aldrig en bestemt klinik og henviser akutte symptomer til en akut tid (se `features/cases/__tests__/ai/`)
    - Ingen horisontal scroll og ingen overlappende elementer på 390 px
 4. Enhedstests af ren logik (fx rangering af klinikker, beregning af ledige tider, prisnøjagtighed, validering af AI-output).
 5. **Testmiljø:** kør altid mod en lokal Supabase (`supabase start`, kræver Docker), aldrig mod det fælles Supabase-projekt.

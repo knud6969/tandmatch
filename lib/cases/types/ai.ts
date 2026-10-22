@@ -4,13 +4,13 @@ import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_
 import type { ServiceDto } from "@/lib/clinics/types/services";
 
 // Delte AI-typer (architecture 7.4, 10.6). Skemaerne er strict: ingen felter for pris eller klinikker.
-// MDR-TILPASNING: feltet preliminaryAssessment fjernes eller tvinges til null i services/ai/rules.ts (architecture 7.8).
+// MDR-TILPASNING: feltet preliminaryAssessment fjernes eller tvinges til null i features/cases/ai/rules.ts (architecture 7.8).
 export type OutOfScopeTopic = (typeof OUT_OF_SCOPE_TOPICS)[number];
 export type ImageView = (typeof IMAGE_VIEWS)[number];
 export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 
-// Udledt af de fælles skemaer i lib/constants/ai-schemas.ts (imageRef = case_images.id på serveren).
+// Udledt af de fælles skemaer i lib/cases/constants/ai-schemas.ts (imageRef = case_images.id på serveren).
 export type AiImageObservation = z.infer<typeof aiImageObservationSchema>;
 
 // Opsummering (udkast til klinikken). Indeholder ikke den foreløbige vurdering. Patienten godkender altid.

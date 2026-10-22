@@ -25,7 +25,7 @@ function toMobileSession(session: AuthSession | null | undefined): MobileSession
   };
 }
 
-// Supabase Auth. Sessionen sættes som cookie af server-klienten (models/db/supabase.ts).
+// Supabase Auth. Sessionen sættes som cookie af server-klienten (platform/db/supabase.ts).
 // Fejl fra Supabase oversættes her til ApiError med danske beskeder uden interne detaljer.
 // Klienten er brugerens (RLS/JWT); kun deleteUser() kræver admin-klienten (architecture 2.3 f).
 export class AuthRepository extends BaseRepository {

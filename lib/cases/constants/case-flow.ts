@@ -1,5 +1,5 @@
-// Sagsflowet som én samtale i appen (architecture 7.9). Trinnene afgøres af nextCaseFlowStep() i lib/domain/case-flow.ts.
-// Typen CaseFlowStep udledes herfra i lib/types/cases.ts. Kortene er fra "TandMatch", ikke fra AI'en.
+// Sagsflowet som én samtale i appen (architecture 7.9). Trinnene afgøres af nextCaseFlowStep() i lib/cases/domain/case-flow.ts.
+// Typen CaseFlowStep udledes herfra i lib/cases/types/cases.ts. Kortene er fra "TandMatch", ikke fra AI'en.
 export const CASE_FLOW_STEPS = ["submitted", "emergency", "chat", "services", "timeframe", "postal_code", "summary", "ready"] as const;
 
 export const CASE_FLOW_TEXTS = {

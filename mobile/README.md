@@ -10,7 +10,7 @@ Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten).
 
 ### 6.2 Patientflade (`/patient`, rolle `patient`, permanent konto) – flyttet til appen
 
-Siderne nedenfor findes og virker, men udvikles ikke videre; patientens flade er appen (13.4). Tabellen beskriver dem, som de er.
+Siderne nedenfor er fjernet fra weben 2026-10-22 (13.6). Tabellen bevares som reference for appens tilsvarende skærme (13.4).
 
 | Route | Indhold |
 |---|---|
@@ -43,10 +43,10 @@ Mappetræet står i 2.2. Lagene i appen (håndhæves af `mobile/eslint.config.mj
 | Routing | `mobile/app/` | Expo Router-filer. `_layout.tsx` (rod) har `SessionProvider` og vilkårsvagten; `(tabs)/_layout.tsx` har fanerne. Hver rutefil re-eksporterer en skærm fra `src/screens/`; ingen logik | `~/screens/*`, `~/auth/*` (kun layouts) |
 | Skærm | `mobile/src/screens/` | Én skærm pr. fil (`case-flow-screen.tsx`). Henter data via `~/api/*` med `useLoad`/`useAction`, sender data til komponenter som props | `~/components/*`, `~/api/*`, `~/hooks/*`, `~/utils/*`, `~/auth/*`, `~/theme`, `@/lib/{types,schemas,constants,domain}/*` |
 | Komponent | `mobile/src/components/` | UI. `ui/` er generiske byggeklodser uden API-kald; domænemapper (`case/`, `chat/`, `clinic-directory/` …) får data og handlinger som props | `~/components/*`, `~/hooks/*`, `~/utils/*`, `~/theme`, `@/lib/…` (ikke `~/api/*`) |
-| API | `mobile/src/api/` | `client.ts` er **eneste sted med `fetch`** (base-URL, headers, JSON, fejl, tokenfornyelse, 13.3). Én fil pr. ressource med tynde typede funktioner (`getCase(id): Promise<CaseDto>`), som bruger DTO-typerne fra `lib/types/` | `~/auth/tokens`, `@/lib/…` |
+| API | `mobile/src/api/` | `client.ts` er **eneste sted med `fetch`** (base-URL, headers, JSON, fejl, tokenfornyelse, 13.3). Én fil pr. ressource med tynde typede funktioner (`getCase(id): Promise<CaseDto>`), som bruger DTO-typerne fra `lib/<domæne>/types/` | `~/auth/tokens`, `@/lib/…` |
 | Auth | `mobile/src/auth/` | `tokens.ts` (SecureStore), `terms.ts` (vilkårstoken), `session-context.tsx` (`SessionProvider`, `useSession()`: hvem er logget ind, rolle, anonym) | `~/api/*` (kun `session-context.tsx`), `@/lib/…` |
 | Hjælpere | `mobile/src/hooks/`, `mobile/src/utils/` | Generiske hooks og React Native-hjælpere (billedforberedelse, position, formatering, der kræver React Native). Rene hjælpere, som weben også har, flyttes til `lib/` (2.1) | `@/lib/…`, Expo-pakker |
-| Delt | `lib/` (repoets rod) | Som i 2.1. Appen bruger **ikke** `lib/navigation/` (webstier) | `lib/`, `zod` |
+| Delt | `lib/` (repoets rod) | Som i 2.1. Appen bruger **ikke** `lib/common/navigation/` (webstier) | `lib/`, `zod` |
 
 Navngivning: `kebab-case` for filer som i `features/<domæne>/{components,pages,utils}` (`clinic-card.tsx`), komponenter i PascalCase. Ruter på dansk uden æøå som på weben (`/klinikker`, `/sag/[caseId]`).
 
@@ -55,7 +55,7 @@ Navngivning: `kebab-case` for filer som i `features/<domæne>/{components,pages,
 - `mobile/metro.config.js`: `getDefaultConfig(__dirname)` med `watchFolders: [path.resolve(__dirname, "../lib")]` og `resolver.nodeModulesPaths: [path.resolve(__dirname, "node_modules")]`, så `zod` i `lib/` findes i `mobile/node_modules` (Metro ser kun filer i projektet og `watchFolders`, så rodens `node_modules` bruges ikke).
 - `mobile/jest.config.js` (preset `jest-expo`) har samme aliaser i `moduleNameMapper`.
 - Roden ignorerer appen: `tsconfig.json` får `"exclude": ["node_modules", "mobile"]`, `eslint.config.mjs` får `mobile/**` i `globalIgnores`, og Vitest kører ikke `mobile/`. Rodens ESLint-regel for `lib/` forbyder imports af andet end `lib/` og `zod` (2.1).
-- Appen importerer aldrig fra repositories (`features/<domæne>/*Repository.ts`), `features/<domæne>/*Controller.ts`, `features/<domæne>/*Service.ts`, `platform/middleware/`, `features/<domæne>/{components,pages,utils}` eller `app/` i roden, heller ikke typer. Mangler appen en type, flyttes den til `lib/types/`.
+- Appen importerer aldrig fra repositories (`features/<domæne>/*Repository.ts`), `features/<domæne>/*Controller.ts`, `features/<domæne>/*Service.ts`, `platform/middleware/`, `features/<domæne>/{components,pages,utils}` eller `app/` i roden, heller ikke typer. Mangler appen en type, flyttes den til `lib/<domæne>/types/`.
 
 ### 13.3 Auth, vilkår og API-klient
 
@@ -95,7 +95,7 @@ Fanerne: **Forside**, **Klinikker**, **Mine sager**, **Konto**.
 | Akut | `/akut` | `GET /api/services`, `GET /api/clinics?emergency=true…`, `GET /api/clinics/{id}/availability`, login/signup, `POST /api/consents`, `POST /api/emergency-leads` | `/akut` | P1: samme tre trin som 6.1, teksterne fra `lib/leads/constants/emergency.ts`; `tel:`-links til 112 og 1813 |
 | Konto | `(tabs)/konto` | `GET/PATCH /api/patients/me`, `POST /api/auth/logout` | `/patient/konto` | P1: profil og log ud. P2: samtykker med tilbagetrækning (`GET /api/consents`, `POST /api/consents/{id}/withdraw`), slet konto (`DELETE /api/patients/me`, `deleteAccountSchema`). Efter: dataeksport som fil |
 
-Reglerne fra weben gælder uændret i appen: AI'ens foreløbige vurdering vises altid med mærkatet, akut-blokken vises uafhængigt af AI'en, priser vises kun fra klinikkernes prislister, rækkefølgen er serverens, og kontaktoplysninger sendes kun ved booking. Faste tekster og labels hentes fra `lib/constants/` (fx `CONSENT_TEXTS`, `LEAD_STATUS_LABEL`, `CASE_TIMEFRAME_LABEL`, `EMERGENCY_REFERRAL_TEXT`, `CHAT_NOT_SHARED_TEXT`); appen skriver ikke sine egne versioner af dem.
+Reglerne fra weben gælder uændret i appen: AI'ens foreløbige vurdering vises altid med mærkatet, akut-blokken vises uafhængigt af AI'en, priser vises kun fra klinikkernes prislister, rækkefølgen er serverens, og kontaktoplysninger sendes kun ved booking. Faste tekster og labels hentes fra `lib/<domæne>/constants/` (fx `CONSENT_TEXTS`, `LEAD_STATUS_LABEL`, `CASE_TIMEFRAME_LABEL`, `EMERGENCY_REFERRAL_TEXT`, `CHAT_NOT_SHARED_TEXT`); appen skriver ikke sine egne versioner af dem.
 
 ### 13.5 Billeder, kort, position, links og notifikationer
 

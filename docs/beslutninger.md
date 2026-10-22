@@ -62,7 +62,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 4 | Sammenligning og leads til op til 3 klinikker | Bygget og afsluttet på `feat/omlaegning-trin-4` (sidste commit `7c6c0d0e`). Tests: RLS 41, API 188, unit 384, e2e 28 |
 | 5 | Klinikkens indbakke: accepter eller afvis | Bygget og afsluttet på `feat/omlaegning-trin-5` (sidste commit `95427c61`). Tests: RLS 44, API 207, unit 397, e2e 62 |
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | Færdigt på `feat/omlaegning-trin-6` (6.1-6.5, kontrol 6.6, rettelser 6.7a-d; sidste commit `af065eb5`). Tests: RLS 46, API 249, unit 436, e2e 108 |
-| 7 | Akutvej, demodata og finpudsning | Bygget på `feat/omlaegning-trin-7` (fra `7a81a257`): 7.1-7.10, 7.15 og 7.16; slutkontrol 7.11 (sidste commit `68ec8360`) uden kritiske eller høje fund. Rettelserne 7.12a-b (kun backend og `lib/`: migration `20261028000500`, samtykketjek ét sted, akuttekster og andre delte tekster i `lib/constants/`, ét sletteskema) er bygget; derefter demo-tjeklisten 7.13. UI-rettelserne fra slutkontrollen for patientsiderne på weben bortfalder (siderne er sat på pause, 13.6). Opgaverne står i `docs/arbejdsplan.md` |
+| 7 | Akutvej, demodata og finpudsning | Bygget på `feat/omlaegning-trin-7` (fra `7a81a257`): 7.1-7.10, 7.15 og 7.16; slutkontrol 7.11 (sidste commit `68ec8360`) uden kritiske eller høje fund. Rettelserne 7.12a-b (kun backend og `lib/`: migration `20261028000500`, samtykketjek ét sted, akuttekster og andre delte tekster i `lib/<domæne>/constants/`, ét sletteskema) er bygget; derefter demo-tjeklisten 7.13. UI-rettelserne fra slutkontrollen for patientsiderne på weben bortfalder (siderne er sat på pause, 13.6). Opgaverne står i `docs/arbejdsplan.md` |
 | 8 | Mobilapp til patienter (13) | I gang (resten [IKKE BYGGET]). Planlagt 2026-10-19 på `feat/trin-8-mobilapp` (fra trin 7 efter 7.12); afleveres ca. 2026-10-26. Backend: bearer-auth, vilkårstoken og `POST /api/auth/refresh` (8.1, bygget), delte fejltekster i `lib/` (8.2); appen i `mobile/` (8.3-8.12). Opgaverne og hvad der skal med til afleveringen står i `docs/arbejdsplan.md` |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
@@ -175,7 +175,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Bookinger starter på hele kvarterer, håndhævet i databasen (check constraint) | 4.2, 6.7 |
 | Klinikkens adgang er tidsafgrænset af `owner_since` og kræver verificeret klinik; klinikker læser beskeder kun via `clinic_lead_messages()` | 4.3, 5.1, 5.7 |
 | Patienter sletter ikke sager direkte; kladder slettes af serveren med service role | 5.4, 10.5 |
-| Konstanter, som databasen håndhæver, står både i SQL og i `lib/constants/` og ændres samtidig | 7.6 |
+| Konstanter, som databasen håndhæver, står både i SQL og i `lib/<domæne>/constants/` og ændres samtidig | 7.6 |
 | Offentligt vises kun verificerede klinikker (fuldt niveau) og importerede klinikker uden ejer (basisniveau med Trustpilot, uden egne anmeldelser). `registered` er usynlig, også efter CVR-overtagelse | 3, 5.1, 6.6, 8.4 |
 | Kontaktoplysninger kun i `bookings`, kun synlige for klinikken ved `booked`/`completed` | 4.4, 5.5 |
 | Klinikker læser kun via `clinic_*`-funktioner; offentlige klinikdata kun via `public_*` | 5.1, 5.7 |

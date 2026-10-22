@@ -45,7 +45,7 @@ export class AuthController {
     this.terms = deps.terms ?? new TermsRepository(supabase);
   }
 
-  // `mobile`: appen (X-TandMatch-Client: mobile) får tokens i svaret. Klienten har da ingen cookies (models/db/supabase.ts).
+  // `mobile`: appen (X-TandMatch-Client: mobile) får tokens i svaret. Klienten har da ingen cookies (platform/db/supabase.ts).
   async login(terms: TermsPayload | null, input: LoginInput, mobile = false): Promise<AuthResultDto> {
     const { userId, session } = await this.auth.signInWithPassword(input.email, input.password);
 
@@ -69,7 +69,7 @@ export class AuthController {
     await this.auth.signOutLocal();
   }
 
-  // Fornyer appens tokens. Et genbrugt eller ugyldigt refresh-token giver 401 (models/authRepository.ts).
+  // Fornyer appens tokens. Et genbrugt eller ugyldigt refresh-token giver 401 (features/identity/authRepository.ts).
   async refresh(refreshToken: string): Promise<MobileSessionDto> {
     return this.auth.refresh(refreshToken);
   }

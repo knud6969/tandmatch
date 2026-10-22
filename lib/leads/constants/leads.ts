@@ -1,4 +1,4 @@
-// Leads (architecture 4.2 enums lead_status og lead_decline_reason, 4.3 `leads`). Typerne udledes herfra i lib/types/leads.ts.
+// Leads (architecture 4.2 enums lead_status og lead_decline_reason, 4.3 `leads`). Typerne udledes herfra i lib/leads/types/leads.ts.
 export const LEAD_STATUSES = ["sent", "accepted", "declined", "booked", "withdrawn"] as const;
 // Leads, der tæller med i de højst 3 aktive pr. sag. Samme regel som is_lead_active_status() i databasen.
 export const LEAD_ACTIVE_STATUSES = ["sent", "accepted", "booked"] as const;

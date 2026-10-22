@@ -25,7 +25,7 @@ export const DEFAULT_FILTERS: DirectoryFilters = {
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
 export const hasOrigin = (filters: DirectoryFilters) => filters.position !== null || filters.postalCode !== "";
 
-// Forespørgslen til GET /api/clinics: samme nøgler som weben (buildClinicsQuery i views/utils/clinic-query.ts).
+// Forespørgslen til GET /api/clinics: samme nøgler som weben (buildClinicsQuery i features/clinics/utils/clinic-query.ts).
 // Afstand sendes kun med en position; sorteringen kun, når den giver mening (afstand kræver position, pris behandlinger).
 export function buildClinicsQuery(filters: DirectoryFilters): string {
   const params = new URLSearchParams();

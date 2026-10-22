@@ -4,7 +4,7 @@ import { ApiError, notFound } from "@/platform/middleware/http";
 import { mapDbError } from "@/platform/db/errors";
 
 // Svaret fra supabase-js. Klienten er utypet, så rækkernes form angives af repositoriet (TRow, fra
-// models/db/database.types.ts) og stoles på uden runtime-validering (architecture 2.1.1).
+// platform/db/database.types.ts) og stoles på uden runtime-validering (architecture 2.1.1).
 type DbResult = { data: unknown; error: { message: string } | null };
 type KnownDbErrors = Record<string, ApiError>;
 

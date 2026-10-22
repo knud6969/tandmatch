@@ -1,6 +1,6 @@
 // API-tests for trin 3.3: AI-chat og opsummering på sager (architecture 7, 10.5, 10.6).
 // Kører mod en rigtig app + lokal Supabase med den falske AI-klient (AI_FAKE_CLIENT=1, sat af run.sh). Intet kald til OpenAI.
-// Markører i beskeden styrer den falske klient: se services/ai/fakeAiClient.ts.
+// Markører i beskeden styrer den falske klient: se features/cases/ai/fakeAiClient.ts.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -140,7 +140,7 @@ describe("chat: guard og fejl", () => {
     for (const m of state.body.messages) assert.deepEqual(m.quickReplies, []);
   });
 
-  // Akut-henvisning i chatten er midlertidigt slået fra (emergencyReferralInChat i services/ai/rules.ts, brugerens
+  // Akut-henvisning i chatten er midlertidigt slået fra (emergencyReferralInChat i features/cases/ai/rules.ts, brugerens
   // beslutning 2026-10-19). Akut-reglen med henvisning er dækket af tests/ai med indstillingen slået til.
   it("akutte symptomer viser ingen akut-henvisning i chatten, mens indstillingen er slået fra", async () => {
     const p = await anonymous();

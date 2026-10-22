@@ -6,7 +6,7 @@ import { AREA_HOME } from "@/lib/common/navigation/areas";
 import type { Role } from "@/lib/common/types/common";
 
 // Server-side områdevagt (architecture 6.5). Kaldes i område-layouts før noget indhold rendres.
-// Bruger requireRole() fra middleware/session.ts og oversætter fejlkoden til en redirect.
+// Bruger requireRole() fra platform/middleware/session.ts og oversætter fejlkoden til en redirect.
 // Patienter har intet område på weben (de bruger appen, architecture 13.6) og sendes til forsiden.
 export async function guardArea(role: Role, area: string): Promise<void> {
   const ctx = await createAuthContext(); // én opslag hos Supabase Auth pr. vagt

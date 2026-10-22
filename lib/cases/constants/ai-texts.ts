@@ -7,7 +7,7 @@ import type { ImageQuality, OutOfScopeTopic } from "@/lib/cases/types/ai";
 export const CHAT_WELCOME_TEXT =
   "Hej. Beskriv med dine egne ord, hvad du oplever, eller hvad du gerne vil have lavet, fx hvor det sidder, og hvor længe du har haft det. Jeg hjælper dig med at sætte ord på det, så klinikkerne forstår dit behov. Jeg kan ikke stille diagnoser eller sige, hvad det koster.";
 
-// Fast tekst over chatten om personoplysninger (maskeringen i services/ai/pii.ts er kun et sikkerhedsnet).
+// Fast tekst over chatten om personoplysninger (maskeringen i features/cases/ai/pii.ts er kun et sikkerhedsnet).
 export const CHAT_PII_WARNING_TEXT = "Skriv ikke dit navn, din adresse eller kontaktoplysninger.";
 
 // Fast tekst over chatten.
@@ -31,7 +31,7 @@ export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
   clinic_recommendation: CLINIC_RECOMMENDATION_NOTICE_TEXT,
 };
 
-// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til EMERGENCY_HREF (/akut, lib/navigation/entries.ts).
+// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til EMERGENCY_HREF (/akut, lib/common/navigation/entries.ts).
 export const EMERGENCY_REFERRAL_TEXT =
   "Det, du beskriver, kan kræve hurtig hjælp. Tryk på “Jeg har ondt” for at se klinikker med en ledig akuttid, og søg hjælp så hurtigt som muligt.";
 

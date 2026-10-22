@@ -9,7 +9,7 @@ import {
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/common/constants/limits";
 
-// Fejltekster, der bruges både af serveren (middleware/http.ts) og klienten (lib/domain/errors.ts og appen). Teksterne står
+// Fejltekster, der bruges både af serveren (platform/middleware/http.ts) og klienten (lib/common/domain/errors.ts og appen). Teksterne står
 // kun her (architecture 2.1), så de ikke kan komme til at afvige fra hinanden.
 export const CLINIC_NOT_VERIFIED_TEXT = "Din klinik er ikke verificeret endnu, så du kan ikke modtage henvendelser.";
 export const THREAD_CLOSED_TEXT = "Samtalen er lukket, så der kan ikke skrives flere beskeder.";

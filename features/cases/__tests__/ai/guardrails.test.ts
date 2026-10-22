@@ -1036,7 +1036,7 @@ describe("regression B6/B10: værdimængder og faste tekster", () => {
 // ======================================================================================================
 // Valgfri live-kørsel mod den rigtige model. Springes over uden AI_LIVE=1 og kører aldrig i den almindelige
 // testkørsel. Kør den før demo og efter ændringer af prompts:
-//   AI_LIVE=1 OPENAI_API_KEY=... npx vitest run tests/ai/guardrails.test.ts -t "live"
+//   AI_LIVE=1 OPENAI_API_KEY=... npx vitest run features/cases/__tests__/ai/guardrails.test.ts -t "live"
 // Nøglen læses fra miljøet (aldrig fra .env.local af testen), og der sendes kun konstruerede testbeskeder uden PII.
 // Testen kontrollerer det samme som de falske tests: ingen pris, ingen klinikanbefaling, akut henvisning,
 // ingen ændring af reglerne ved "ignorer dine regler".
@@ -1318,7 +1318,7 @@ describe("regression runde 2: PII", () => {
 });
 
 describe("regression runde 2: typer og fælles skema", () => {
-  it("lib/constants/ai-schemas.ts deler form med modelskemaet", async () => {
+  it("lib/cases/constants/ai-schemas.ts deler form med modelskemaet", async () => {
     const { aiSummarySchema, aiImageObservationSchema } = await import("@/lib/cases/constants/ai-schemas");
     const img = { imageRef: "7f9e0d5e-0000-4000-8000-000000000001", view: "front", visibleArea: "x", observations: [], quality: "ok" };
     expect(aiImageObservationSchema.safeParse(img).success).toBe(true);

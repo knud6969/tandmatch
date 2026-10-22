@@ -1,5 +1,5 @@
 // Ydelseskataloget som kontekst til AI'en og som validering af foreslåede slugs (architecture 7.2).
-// Bygges af kataloget fra databasen ved hvert kald (services/ai kender ikke databasen: kalderen
+// Bygges af kataloget fra databasen ved hvert kald (features/cases/ai kender ikke databasen: kalderen
 // henter ServiceGroupDto[]). Ingen priser og ingen klinikker. Ren fil uden server-imports.
 
 import { SERVICE_CATEGORY_LABEL } from "@/lib/clinics/constants/services";

@@ -1,4 +1,4 @@
-// Beskedtråd (architecture 4.3 `messages`, 10.12). Længde og døgnloft står i lib/constants/limits.ts.
+// Beskedtråd (architecture 4.3 `messages`, 10.12). Længde og døgnloft står i lib/common/constants/limits.ts.
 // (SQL) enum message_sender_role.
 export const MESSAGE_SENDER_ROLES = ["patient", "clinic"] as const;
 

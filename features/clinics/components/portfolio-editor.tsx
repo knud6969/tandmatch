@@ -26,7 +26,7 @@ type PortfolioEditorProps = {
 };
 
 // Portefølje for én tandlæge. Et billede kan kun uploades, når klinikken bekræfter, at patienten har givet samtykke
-// til offentliggørelse (architecture 9.5). Teksten er konstanten fra lib/constants/consents.ts.
+// til offentliggørelse (architecture 9.5). Teksten er konstanten fra lib/identity/constants/consents.ts.
 export function PortfolioEditor({ dentistId, dentistName, items, groups, verified, onChange }: PortfolioEditorProps) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);

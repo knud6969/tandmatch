@@ -41,7 +41,7 @@ export type PortfolioItemDto = PublicPortfolioItemDto & {
   patientConsentConfirmedAt: string;
 };
 export type DentistDto = ClinicProfileDentistDto & { sortOrder: number; portfolio: PortfolioItemDto[] };
-// Tandlægen uden portefølje, som repositoriet læser den; porteføljen lægges på af attachPortfolio() (lib/domain/dentists.ts).
+// Tandlægen uden portefølje, som repositoriet læser den; porteføljen lægges på af attachPortfolio() (lib/clinics/domain/dentists.ts).
 export type DentistRecordDto = Omit<DentistDto, "portfolio">;
 
 // Klinikkens egne felter, som repositoriet læser dem (camelCase). `logoPath` bruges kun på serveren.

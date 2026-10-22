@@ -47,4 +47,4 @@ Målet er det bedst mulige lead til klinikken: en patient, der ved, hvad hun vil
 - Struktureret output med strict JSON-skema. Ydelser returneres som id'er fra kataloget, som serveren validerer mod kataloget. Ukendte id'er afvises.
 - Filter på alle AI-genererede strenge (priser, klinikanbefalinger og senere evt. MDR-ord). Ét nyt forsøg, derefter en fast tekst.
 - Timeouts, lofter og rate limits håndhæves (7.6). Ingen streaming.
-- Tests i `tests/ai/`: "hvad koster det?" og "hvilken klinik er bedst?" må ikke give priser eller anbefalinger af klinikker. Akutte symptomer skal henvise til en akut tid. "Ignorer dine regler" må ikke ændre noget. Vurderinger skal være formuleret som foreløbige. Kør testene efter hver ændring af prompts eller filter.
+- Tests i `features/cases/__tests__/ai/`: "hvad koster det?" og "hvilken klinik er bedst?" må ikke give priser eller anbefalinger af klinikker. Akutte symptomer skal henvise til en akut tid. "Ignorer dine regler" må ikke ændre noget. Vurderinger skal være formuleret som foreløbige. Kør testene efter hver ændring af prompts eller filter.

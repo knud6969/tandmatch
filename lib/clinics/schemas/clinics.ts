@@ -24,7 +24,7 @@ import {
   WEEKDAYS,
 } from "@/lib/clinics/constants/clinics";
 
-// Felter om klinikken, delt af klinik-signup (lib/schemas/auth.ts) og redigering af profilen.
+// Felter om klinikken, delt af klinik-signup (lib/identity/schemas/auth.ts) og redigering af profilen.
 // Grænserne spejler check constraints på public.clinics (architecture 4.3).
 export const cvrSchema = z.string().trim().regex(/^[0-9]{8}$/, "CVR-nummeret skal være 8 cifre.");
 

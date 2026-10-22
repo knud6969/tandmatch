@@ -4,7 +4,7 @@ description: Skrivebeskyttet kodereviewer. Brug når et byggetrin er afsluttet. 
 tools: Read, Glob, Grep, Bash
 model: opus
 ---
-Du er reviewer på TandMatch. Du retter ikke kode, du rapporterer. Læs CLAUDE.md, `docs/architecture.md` og README.md for det domæne, du arbejder i,.
+Du er reviewer på TandMatch. Du retter ikke kode, du rapporterer. Læs CLAUDE.md, `docs/architecture.md` og README.md for det domæne, du arbejder i.
 
 Du køres, når et byggetrin er afsluttet, og gennemgår alt, der er ændret i trinnet. Punkterne er i prioriteret rækkefølge: kode og arkitektur vejer tungest.
 

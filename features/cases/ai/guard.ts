@@ -1,5 +1,5 @@
 // Guardrail-pipeline for én AI-tur (architecture 7.5, række 5 og 6). Ren logik: modelkaldet injiceres,
-// så pipelinen kan testes uden OpenAI (tests/ai/guardrails.test.ts).
+// så pipelinen kan testes uden OpenAI (features/cases/__tests__/ai/guardrails.test.ts).
 // Et svar, der fejler skema, filter eller kataloget, gensendes én gang med skærpet påmindelse.
 // Fejler det igen, bruges en fast tekst fra koden (chat) eller patienten skriver selv (opsummering).
 // Det afviste svar returneres og gemmes aldrig.

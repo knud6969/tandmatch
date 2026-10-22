@@ -7,7 +7,7 @@ import { HomeEntries } from "~/components/clinic-directory/home-entries";
 import { Card, Screen } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 
-// Samme fire trin som forsiden på weben (views/pages/page.tsx).
+// Samme fire trin som forsiden på weben (features/site/pages/page.tsx).
 const STEPS = [
   { title: "Beskriv problemet", text: "Skriv med dine egne ord eller upload et billede. AI hjælper dig med at sætte ord på det." },
   { title: "Sammenlign klinikker", text: "Se priser fra klinikkens prisliste, anmeldelser og første ledige tid side om side." },

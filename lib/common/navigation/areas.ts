@@ -2,21 +2,16 @@ import type { Role } from "@/lib/common/types/common";
 
 export type NavItem = { href: string; label: string };
 
-// Startside for hvert område. Bruges efter login og ved forkert rolle.
+// Startside for hvert område. Bruges efter login og ved forkert rolle. Patienter har intet område på weben (de bruger appen).
 export const AREA_HOME: Record<Role, string> = {
-  patient: "/patient",
+  patient: "/",
   clinic: "/klinik",
   admin: "/",
 };
 
-// Navigation pr. rolle (områdenavigation i headeren). Admin er tom, til siderne findes.
+// Navigation pr. rolle (områdenavigation i headeren). Patient og admin er tomme: patienter bruger appen, og admin har ingen sider.
 export const AREA_NAV: Record<Role, NavItem[]> = {
-  patient: [
-    { href: "/patient", label: "Mine sager" },
-    { href: "/patient/bookinger", label: "Bookinger" },
-    { href: "/patient/anmeldelser", label: "Anmeldelser" },
-    { href: "/patient/konto", label: "Konto" },
-  ],
+  patient: [],
   clinic: [
     { href: "/klinik", label: "Henvendelser" },
     { href: "/klinik/kalender", label: "Kalender" },
@@ -27,9 +22,4 @@ export const AREA_NAV: Record<Role, NavItem[]> = {
     { href: "/klinik/tandlaeger", label: "Tandlæger" },
   ],
   admin: [],
-};
-
-// Sider, der hører under et andet navigationspunkt (samtykkesiden nås fra kontosiden, architecture 6.2).
-export const AREA_NAV_PARENT: Record<string, string> = {
-  "/patient/samtykker": "/patient/konto",
 };

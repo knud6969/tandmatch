@@ -2,7 +2,7 @@
 // Ren funktion uden server-imports, så den kan testes direkte.
 // Maskeret tekst bliver aldrig længere end originalen (en kort personoplysning erstattes af lige så mange stjerner),
 // så beskedloftet på 1000 tegn ikke rammes efter AI-kaldet.
-// Maskeringen er et sikkerhedsnet: UI beder patienten om ikke at skrive personoplysninger (lib/constants/ai-texts.ts).
+// Maskeringen er et sikkerhedsnet: UI beder patienten om ikke at skrive personoplysninger (lib/cases/constants/ai-texts.ts).
 
 export const PII_MASK = "[fjernet]";
 

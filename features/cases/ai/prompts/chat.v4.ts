@@ -1,5 +1,5 @@
 // Systemprompt til chatten (v4: styrende samtale med hurtigsvar, snævrere akut-definition) (architecture 7.2, 7.3). Versioneret: ændres prompten, hæves versionen,
-// og tests/ai/ køres. Bygges af reglerne i rules.ts, så den kan strammes uden at ændre koden udenom.
+// og features/cases/__tests__/ai/ køres. Bygges af reglerne i rules.ts, så den kan strammes uden at ændre koden udenom.
 // Ren fil uden server-imports. Ingen priser og ingen klinikdata indgår, kun kataloget.
 // MDR-TILPASNING: afsnittene om vurdering og forklaring styres af allowPreliminaryAssessment og
 // allowTreatmentExplanation. Stramning kræver en ny prompt-version her.

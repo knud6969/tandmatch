@@ -112,7 +112,7 @@ AI-assistenten har to opgaver med samme regler:
 
 Patienter med konto starter med `POST /api/cases` + `POST /api/consents (ai_processing)`. De kan også springe AI'en over: vælge ydelser selv og skrive opsummeringen selv.
 
-Rækkefølgen ovenfor er **webens** trinflow (`/start/[caseId]`, sat på pause, 13.6). I **appen** bruges de samme routes, men uden separate trin: alt foregår i én samtale, hvor AI'en spørger ind, og hvor appen viser faste svar-kort i chatten for ydelser, tidsrum, postnummer og opsummering (7.9).
+Rækkefølgen ovenfor var **webens** trinflow (`/start/[caseId]`, fjernet fra weben 2026-10-22, 13.6). I **appen** bruges de samme routes, men uden separate trin: alt foregår i én samtale, hvor AI'en spørger ind, og hvor appen viser faste svar-kort i chatten for ydelser, tidsrum, postnummer og opsummering (7.9).
 
 **Klinikken ser kun** `summary_text`, som patienten har godkendt, de bekræftede ydelser og billeder med godkendte beskrivelser. Chatten, AI'ens forslag og den foreløbige vurdering deles aldrig.
 
@@ -249,9 +249,9 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 
 Lofterne tælles i databasen (triggers og funktionerne i 5.3). Konstanterne står i `lib/common/constants/limits.ts`.
 
-**Konstanter, der findes både i SQL og i `lib/constants/`.** Databasen håndhæver dem; TypeScript spejler dem til UI og beregning. De ændres altid begge steder i samme commit:
+**Konstanter, der findes både i SQL og i `lib/<domæne>/constants/`.** Databasen håndhæver dem; TypeScript spejler dem til UI og beregning. De ændres altid begge steder i samme commit:
 
-| Regel | Værdi | `lib/constants/` | Håndhæves i SQL af |
+| Regel | Værdi | `lib/<domæne>/constants/` | Håndhæves i SQL af |
 |---|---|---|---|
 | Højst bookinger i alt pr. lead (også aflyste, men ikke aflyst af klinikken fra migration `20261028000100`) | 5 | `bookings.ts`: `MAX_BOOKINGS_PER_LEAD` | `book_slot()` (`BOOKING_LIMIT`) |
 | Mindst antal cifre i et telefonnummer | 8 | `limits.ts`: `MIN_PHONE_DIGITS` | `is_valid_phone()` i check constraints, `book_slot()` og `send_emergency_lead()` (bygget i 7.1, migration `20261028000100`; `send_emergency_lead()` bygget i 7.3) |
@@ -319,7 +319,7 @@ I appen er hele sagen **én chatskærm** (`/sag/[caseId]/flow`). Der er ingen se
 | Trin (`CaseFlowStep`) | Aktuelt når (første regel, der passer) | Kortet | API |
 |---|---|---|---|
 | `submitted` | `status !== "draft"` | Chatten er skrivebeskyttet; link til sagen (`/sag/[caseId]`) | – |
-| `emergency` | seneste assistentbesked har `emergency` | Ingen kort. Akut-blokken med `EMERGENCY_REFERRAL_TEXT` og knap til `/akut` (som i dag). Patienten kan skrive videre. At blokken vises for ofte, er [ÅBEN] 12.3 punkt 43 (8.11e-f, P2) | – |
+| `emergency` | seneste assistentbesked har `emergency` | Appen ignorerer flaget for kortene (brugerens beslutning 2026-10-19, `flowStepForApp()` i `mobile/src/utils/case-cards.ts`), og akut-henvisning i chatten er slået fra (`emergencyReferralInChat: false`, 7.9). Patienten kan skrive videre | – |
 | `chat` | ingen bekræftede ydelser, og hverken `readyForSummary` eller lukket samtale | Intet kort. Inputfelt og billedknap; AI'en spørger ind | `POST /api/cases/{id}/chat` |
 | `services` | ingen bekræftede ydelser, og `readyForSummary` er sand eller samtalen er `closed` | "Passer disse behandlinger?" med AI'ens forslag (`CaseDto.suggestedServices`) som chips. Alle er valgt fra start og kan fravælges. Desuden "Jeg er ikke sikker" (→ `EXAMINATION_SERVICE_SLUG`) og "Vælg selv" (et ark med kataloget grupperet efter kategori fra `GET /api/services`; højst `MAX_CONFIRMED_SERVICES_PER_CASE`). Knappen "Bekræft" sender valget. Er der ingen forslag (lukket samtale), vises kun "Jeg er ikke sikker" og "Vælg selv". Patienten kan også skrive videre i stedet for at trykke | `PUT /api/cases/{id}/services` (`suggestedByAi` = valgt blandt forslagene) |
 | `timeframe` | `preferredTimeframe` er `null` | "Hvornår vil du gerne i gang?" med chips fra `CASE_TIMEFRAME_LABEL` | `PATCH /api/cases/{id}` `{ preferredTimeframe }` |
