@@ -8,7 +8,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { TextField } from "@/components/ui/text-field";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { IMAGE_ACCEPT } from "@/platform/ui-utils/prepare-image";
-import { uploadImage } from "@/platform/ui-utils/upload-image";
+import { uploadImage } from "@/features/clinics/utils/upload-image";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { PORTFOLIO_CAPTION_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { PORTFOLIO_CONSENT_TEXT, PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";

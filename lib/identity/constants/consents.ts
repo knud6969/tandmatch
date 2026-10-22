@@ -32,18 +32,6 @@ export const CONSENT_TYPE_LABEL: Record<ConsentType, string> = {
   health_data_sharing: "Deling af din sag med de klinikker, du vælger",
 };
 
-// Konsekvens af at trække samtykket tilbage, vist i bekræftelsen (architecture 5.3, 7.7).
-export const CONSENT_WITHDRAW_CONSEQUENCE: Record<ConsentType, string> = {
-  ai_processing:
-    "Er du anonym, slettes hele din session, inklusive din kladde og dine billeder, med det samme. " +
-    "Har du en konto, bliver din aktive AI-samtale i stedet lukket, og du kan stadig skrive din beskrivelse selv.",
-  image_upload:
-    "Dine uploadede billeder bliver slettet, også på sager, du allerede har sendt. Klinikkerne mister dermed adgangen til billederne.",
-  health_data_sharing:
-    "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og klinikkerne mister adgangen til din sag. " +
-    "Bookede tider består; du kan aflyse dem under Bookinger. Du skal give samtykke igen, før du kan kontakte nye klinikker.",
-};
-
 // Klinikkens bekræftelse ved upload af porteføljebillede (architecture 9.5). Gemmes på portfolio_items
 // (patient_consent_confirmed_at og consent_text_version), ikke i consents, fordi det ikke er patientens samtykke
 // i platformen, men klinikkens erklæring som dataansvarlig. Juridisk gennemgang mangler [ÅBEN, 12.3].

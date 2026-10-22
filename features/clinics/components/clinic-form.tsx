@@ -14,7 +14,7 @@ import { VerificationBanner } from "@/features/clinics/components/verification-b
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadClinic } from "@/features/clinics/utils/clinic-loaders";
 import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
-import { useSaveState } from "@/platform/ui-utils/use-save-state";
+import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { CLINIC_DESCRIPTION_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { patchClinicSchema } from "@/lib/clinics/schemas/clinics";
 import type { OwnClinicDto } from "@/lib/clinics/types/clinics";

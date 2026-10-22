@@ -9,7 +9,7 @@ import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { TierBadge } from "@/features/clinics/components/tier-badge";
 import { ClinicFacts, ClinicWhere } from "@/features/clinics/components/clinic-facts";
 import { clinicProfileHref } from "@/features/clinics/utils/clinic-query";
-import { DENMARK_CENTER, DENMARK_ZOOM, MAP_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, mapPoints } from "@/platform/ui-utils/map";
+import { DENMARK_CENTER, DENMARK_ZOOM, MAP_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, mapPoints } from "@/features/clinics/utils/map";
 
 // Markørerne er HTML med Tailwind-klasser fra temaet (ingen rå farver). Verificeret: stor, udfyldt blå med hak.
 // Basis: lille, hvid med grå kant og prik. Den fremhævede markør (hover på kort i listen) får en ring.

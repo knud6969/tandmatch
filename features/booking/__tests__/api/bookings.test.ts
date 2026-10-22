@@ -221,7 +221,12 @@ describe("booking af et accepteret lead", () => {
     const k = await clinic();
     const first = await acceptedLead(k);
     const second = await acceptedLead(k);
-    const slot = await firstSlot(first.p, first.leadId);
+    // Vælg en tid, hvor der også er en ledig tid 15 minutter senere, så overlap-tjekket ikke falder uden for åbningstiden
+    // (ellers fejler testen sent på dagen med SLOT_UNAVAILABLE i stedet for SLOT_TAKEN).
+    const all = (await first.p.c.get(`/api/leads/${first.leadId}/availability?serviceId=${first.p.serviceId}`)).body.slots as { startsAt: string; endsAt: string }[];
+    const starts = new Set(all.map((s) => Date.parse(s.startsAt)));
+    const slot = all.find((s) => starts.has(Date.parse(s.startsAt) + 15 * MINUTE));
+    assert.ok(slot, "der skal være to ledige tider i træk");
     assert.equal((await first.p.c.post(`/api/leads/${first.leadId}/booking`, bookBody(first.p, slot.startsAt))).status, 201);
     const free = await second.p.c.get(`/api/leads/${second.leadId}/availability?serviceId=${second.p.serviceId}`);
     assert.ok(!free.body.slots.some((s: { startsAt: string }) => s.startsAt === slot.startsAt), "den bookede tid er optaget");
@@ -362,7 +367,7 @@ describe("loft og grænser på booking (6.7a)", () => {
   it("den 6. booking på samme lead afvises med 409 BOOKING_LIMIT, også efter aflysninger", async () => {
     const k = await clinic();
     const { p, leadId } = await acceptedLead(k);
-    const slots = (await p.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).body.slots as { startsAt: string }[];
+    const slots = (await p.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).body.slots as { startsAt: string; endsAt: string }[];
     assert.ok(slots.length >= 6);
     for (let i = 0; i < 5; i++) {
       const booked = await p.c.post(`/api/leads/${leadId}/booking`, bookBody(p, slots[i * 2].startsAt));

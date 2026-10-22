@@ -11,7 +11,7 @@ import { LoadState } from "@/components/ui/load-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { useLoad } from "@/platform/ui-utils/use-load";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { useSaveState } from "@/platform/ui-utils/use-save-state";
+import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/clinics/constants/clinics";
 import { putOpeningHoursSchema } from "@/lib/clinics/schemas/clinics";
 import type { OpeningHoursDto } from "@/lib/clinics/types/clinics";
