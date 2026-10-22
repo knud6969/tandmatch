@@ -258,19 +258,68 @@ type PriceBase = { slug: string; min: number; max: number };
 const PRICE_BASE: PriceBase[] = [
   { slug: 'undersoegelse', min: 395, max: 595 },
   { slug: 'tandrensning', min: 495, max: 795 },
-  { slug: 'fyldning', min: 695, max: 1295 },
   { slug: 'roentgen', min: 195, max: 395 },
+  { slug: 'fluorbehandling', min: 195, max: 345 },
+  { slug: 'fissurforsegling', min: 245, max: 445 },
+  { slug: 'fyldning', min: 695, max: 1295 },
+  { slug: 'stor_fyldning', min: 1095, max: 1895 },
+  { slug: 'udskiftning_fyldning', min: 795, max: 1395 },
+  { slug: 'reparation_knaekket_tand', min: 795, max: 1495 },
   { slug: 'rodbehandling', min: 2495, max: 4495 },
+  { slug: 'rodbehandling_kindtand', min: 3495, max: 5995 },
   { slug: 'krone', min: 4995, max: 7995 },
+  { slug: 'bro', min: 9995, max: 16995 },
+  { slug: 'indlaeg', min: 3495, max: 5995 },
+  { slug: 'implantat_samtale', min: 295, max: 595 },
+  { slug: 'implantat', min: 9995, max: 14995 },
+  { slug: 'krone_paa_implantat', min: 5495, max: 8495 },
+  { slug: 'knogleopbygning', min: 3995, max: 7995 },
+  { slug: 'helprotese', min: 7995, max: 12995 },
+  { slug: 'delprotese', min: 5995, max: 9995 },
+  { slug: 'protese_tilpasning', min: 495, max: 995 },
+  { slug: 'protese_reparation', min: 795, max: 1595 },
+  { slug: 'tandkoedsundersoegelse', min: 495, max: 795 },
+  { slug: 'dybderensning', min: 995, max: 1895 },
   { slug: 'tandudtraekning', min: 795, max: 1795 },
+  { slug: 'visdomstand', min: 1495, max: 3495 },
+  { slug: 'kirurgisk_udtraekning', min: 1795, max: 3995 },
+  { slug: 'tandkoedskorrektion', min: 1995, max: 3995 },
+  { slug: 'tandregulering_konsultation', min: 295, max: 595 },
+  { slug: 'fast_bojle', min: 17995, max: 29995 },
+  { slug: 'tandreguleringsskinner', min: 14995, max: 27995 },
+  { slug: 'retainer', min: 995, max: 1795 },
   { slug: 'blegning', min: 1995, max: 3495 },
   { slug: 'facing', min: 3995, max: 6995 },
   { slug: 'diastema', min: 1495, max: 3495 },
-  { slug: 'retainer', min: 995, max: 1795 },
-  { slug: 'tandregulering_konsultation', min: 295, max: 595 },
+  { slug: 'kosmetisk_opbygning', min: 1295, max: 2495 },
+  { slug: 'boerneundersoegelse', min: 295, max: 495 },
+  { slug: 'fyldning_maelketand', min: 495, max: 895 },
+  { slug: 'tilvaenning_tandlaege', min: 295, max: 495 },
+  { slug: 'bidskinne', min: 2495, max: 4495 },
+  { slug: 'angst_samtale', min: 295, max: 595 },
+  { slug: 'behandling_ekstra_tid', min: 995, max: 1995 },
+  { slug: 'beroligende_medicin', min: 695, max: 1495 },
   { slug: 'akut_konsultation', min: 695, max: 1195 },
   { slug: 'akut_smertebehandling', min: 995, max: 1895 },
+  { slug: 'akut_knaekket_tand', min: 895, max: 1595 },
+  { slug: 'akut_haevelse', min: 895, max: 1695 },
 ];
+
+// Hvad hver verificeret klinik tilbyder (trin 9.11, mobile/README.md 13.8): kun de slugs får en pris og dermed
+// "tilbydes" (features/clinics/README.md 4.3). Kategorierne (clinic_service_groups) udledes af disse slugs.
+const OFFERS: Record<string, string[]> = {
+  v0: ['undersoegelse', 'tandrensning', 'roentgen', 'tandregulering_konsultation', 'fast_bojle', 'tandreguleringsskinner', 'retainer', 'blegning', 'facing', 'diastema', 'akut_konsultation', 'akut_smertebehandling'],
+  v1: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'rodbehandling', 'krone', 'tandudtraekning', 'blegning', 'facing', 'akut_konsultation', 'akut_smertebehandling'],
+  v2: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'rodbehandling', 'krone', 'tandudtraekning', 'helprotese', 'delprotese', 'protese_tilpasning'],
+  v3: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'stor_fyldning', 'rodbehandling', 'krone', 'bro', 'tandudtraekning', 'blegning', 'facing'],
+  v4: ['undersoegelse', 'tandrensning', 'roentgen', 'fluorbehandling', 'fyldning', 'stor_fyldning', 'udskiftning_fyldning', 'reparation_knaekket_tand', 'rodbehandling', 'rodbehandling_kindtand', 'krone', 'tandudtraekning', 'tandkoedsundersoegelse', 'dybderensning', 'bidskinne', 'akut_konsultation', 'akut_smertebehandling', 'akut_knaekket_tand', 'akut_haevelse'],
+  v5: ['undersoegelse', 'tandrensning', 'fluorbehandling', 'fissurforsegling', 'fyldning', 'boerneundersoegelse', 'fyldning_maelketand', 'tilvaenning_tandlaege', 'angst_samtale', 'behandling_ekstra_tid', 'beroligende_medicin'],
+  v6: ['undersoegelse', 'tandrensning', 'roentgen', 'implantat_samtale', 'implantat', 'krone_paa_implantat', 'knogleopbygning', 'tandudtraekning', 'visdomstand', 'kirurgisk_udtraekning', 'tandkoedskorrektion', 'krone', 'bro', 'helprotese', 'delprotese', 'protese_tilpasning', 'protese_reparation'],
+  v7: ['undersoegelse', 'tandrensning', 'blegning', 'facing', 'diastema', 'kosmetisk_opbygning', 'tandregulering_konsultation', 'tandreguleringsskinner', 'retainer', 'krone', 'indlaeg'],
+};
+
+// Standardvarigheder, læst fra kataloget (services.default_duration_min) når seedet starter.
+const catalogDurations = new Map<string, number>();
 
 // Fiktive kontaktdata: telefonnumre er på formen +45 00 00 xx xx (danske numre starter aldrig med 0), og CVR-numrene
 // består IKKE modulus 11-kontrollen, så de aldrig kan svare til en rigtig virksomhed.
@@ -303,7 +352,7 @@ type VerifiedSpec = {
 
 const VERIFIED: VerifiedSpec[] = [
   { key: 'v0', cvr: '90001001', name: 'Demo Tandklinik Nørrebro', address: 'Demovej 10', postalCode: '2200', city: 'København N', phone: '+45 00 00 10 01',
-    email: 'klinik-v0@demo.tandmatch.test', description: 'Fiktiv demoklinik i København med fokus på kosmetisk tandpleje og akuttider.', factor: 1.15, saturday: false, emergencyWindow: true, hue: 200,
+    email: 'klinik-v0@demo.tandmatch.test', description: 'Fiktiv demoklinik i København med fokus på tandregulering, kosmetisk tandpleje og akuttider.', factor: 1.15, saturday: false, emergencyWindow: true, hue: 200,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v0.dk', score: 4.5, count: 120 },
     dentists: [
       { name: 'Anne Demosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge. Arbejder med kosmetiske behandlinger.' },
@@ -330,27 +379,27 @@ const VERIFIED: VerifiedSpec[] = [
       { name: 'Peter Pladsholder', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v4', cvr: '90001005', name: 'Demo Tandklinik Østerbro', address: 'Skitseallé 50', postalCode: '2100', city: 'København Ø', phone: '+45 00 00 10 05',
-    email: 'klinik-v4@demo.tandmatch.test', description: 'Fiktiv demoklinik på Østerbro med akuttider alle ugens dage.', factor: 1.05, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 180,
+    email: 'klinik-v4@demo.tandmatch.test', description: 'Fiktiv demoklinik på Østerbro med almen tandpleje og akuttider alle ugens dage.', factor: 1.05, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 180,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v4.dk', score: 4.6, count: 98 },
     dentists: [
       { name: 'Freja Østerbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Oliver Akutsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v5', cvr: '90001006', name: 'Demo Tandlægerne Vesterbro', address: 'Modelgade 60', postalCode: '1500', city: 'København V', phone: '+45 00 00 10 06',
-    email: 'klinik-v5@demo.tandmatch.test', description: 'Fiktiv demoklinik på Vesterbro med akuttider alle ugens dage.', factor: 0.95, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 330,
+    email: 'klinik-v5@demo.tandmatch.test', description: 'Fiktiv demoklinik på Vesterbro med fokus på børn, familie og tandlægeskræk.', factor: 0.95, saturday: false, emergencyWindow: false, hue: 330,
     dentists: [
       { name: 'Ida Vesterbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Noah Prøvesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v6', cvr: '90001007', name: 'Demo Tandcenter Amager', address: 'Eksempelstræde 70', postalCode: '2300', city: 'København S', phone: '+45 00 00 10 07',
-    email: 'klinik-v6@demo.tandmatch.test', description: 'Fiktiv demoklinik på Amager med åbent om lørdagen.', factor: 0.85, saturday: true, emergencyWindow: false, hue: 100,
+    email: 'klinik-v6@demo.tandmatch.test', description: 'Fiktiv demoklinik på Amager med fokus på implantater, kirurgi og proteser. Åbent om lørdagen.', factor: 0.85, saturday: true, emergencyWindow: false, hue: 100,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v6.dk', score: 4.0, count: 45 },
     dentists: [
       { name: 'Hannah Amagersen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Victor Skitsesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v7', cvr: '90001008', name: 'Demo Tandklinik Hellerup', address: 'Fiktivvej 80', postalCode: '2900', city: 'Hellerup', phone: '+45 00 00 10 08',
-    email: 'klinik-v7@demo.tandmatch.test', description: 'Fiktiv demoklinik i Hellerup med fokus på kosmetisk tandpleje.', factor: 1.25, saturday: false, emergencyWindow: false, hue: 260,
+    email: 'klinik-v7@demo.tandmatch.test', description: 'Fiktiv demoklinik i Hellerup med fokus på kosmetisk tandpleje og tandregulering med skinner.', factor: 1.25, saturday: false, emergencyWindow: false, hue: 260,
     dentists: [
       { name: 'Sebastian Hellerupsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Alma Demosen', title: 'Specialtandlæge i protetik', bio: 'Fiktiv specialtandlæge til demoformål.' },
@@ -428,10 +477,11 @@ async function seed(config: Config): Promise<void> {
   const cleaned = await cleanupDemo(admin, false);
   log(`  slettet: ${cleaned.users} brugere, ${cleaned.clinics} klinikker, ${cleaned.files} filer`);
 
-  const serviceRows = must(await admin.from('services').select('id, slug, group_id'), 'services') as { id: string; slug: string; group_id: string }[];
+  const serviceRows = must(await admin.from('services').select('id, slug, group_id, default_duration_min'), 'services') as { id: string; slug: string; group_id: string; default_duration_min: number }[];
+  for (const row of serviceRows) catalogDurations.set(row.slug, row.default_duration_min);
   const serviceId = new Map(serviceRows.map((s) => [s.slug, s.id]));
-  // Kategorierne bag prislisten: klinikken skal have valgt dem, før en pris kan gemmes (clinic_prices_guard).
-  const priceGroupIds = [...new Set(PRICE_BASE.map((p) => serviceRows.find((s) => s.slug === p.slug)?.group_id).filter((id): id is string => !!id))];
+  // Kategorierne bag en klinikkens prisliste: klinikken skal have valgt dem, før en pris kan gemmes (clinic_prices_guard).
+  const groupIdsFor = (slugs: string[]): string[] => [...new Set(slugs.map((slug) => serviceRows.find((s) => s.slug === slug)?.group_id).filter((id): id is string => !!id))];
   const sid = (slug: string): string => {
     const id = serviceId.get(slug);
     if (!id) throw new Error(`Ydelse mangler i kataloget: ${slug}`);
@@ -488,12 +538,15 @@ async function seed(config: Config): Promise<void> {
         : {}),
     }).eq('id', clinicId), 'opdater klinik');
 
-    mustOk(await admin.from('clinic_service_groups').insert(priceGroupIds.map((groupId) => ({ clinic_id: clinicId, group_id: groupId }))), 'valgte kategorier');
-    mustOk(await admin.from('clinic_prices').insert(PRICE_BASE.map((p) => ({
+    const offers = OFFERS[spec.key];
+    if (!offers) throw new Error(`OFFERS mangler for ${spec.key}`);
+    const offeredPrices = offers.map((slug) => PRICE_BASE.find((p) => p.slug === slug) ?? fail(`Basispris mangler: ${slug}`));
+    mustOk(await admin.from('clinic_service_groups').insert(groupIdsFor(offers).map((groupId) => ({ clinic_id: clinicId, group_id: groupId }))), 'valgte kategorier');
+    mustOk(await admin.from('clinic_prices').insert(offeredPrices.map((p) => ({
       clinic_id: clinicId, service_id: sid(p.slug),
       price_min: Math.round((p.min * spec.factor) / 5) * 5 - 5,
       price_max: Math.round((p.max * spec.factor) / 5) * 5 - 5,
-      duration_min: serviceRows.length ? defaultDuration(p.slug) : 30,
+      duration_min: defaultDuration(p.slug),
       note: p.slug === 'undersoegelse' ? 'Inkl. 2 røntgenbilleder' : null,
     }))), 'prisliste');
 
@@ -545,7 +598,7 @@ async function seed(config: Config): Promise<void> {
     mustOk(await admin.rpc('admin_set_clinic_status', { p_clinic_id: clinicId, p_status: 'verified' }), 'verificér klinik');
     clinics.push({ spec, clinicId, userId, client: await signIn(config, spec.email, password) });
   }
-  const [v0, v1, v2, v3, v4, v5] = clinics;
+  const [v0, v1, v2, v3, v4, v5, , v7] = clinics;
 
   // --- Patienter og samtykker ---------------------------------------------------------------------------
   log('Opretter patienter og samtykker ...');
@@ -593,7 +646,21 @@ async function seed(config: Config): Promise<void> {
     return row.id;
   }
 
+  // Hvert seedet lead skal gå til en klinik, der tilbyder alle sagens behandlinger (pris i prislisten, 4.3).
+  async function assertOffering(caseId: string, clinicIds: string[]): Promise<void> {
+    const wanted = (must(await admin.from('case_services').select('service_id').eq('case_id', caseId), 'sagens ydelser') as { service_id: string }[]).map((r) => r.service_id);
+    for (const clinicId of clinicIds) {
+      const priced = new Set((must(await admin.from('clinic_prices').select('service_id').eq('clinic_id', clinicId), 'priser') as { service_id: string }[]).map((r) => r.service_id));
+      const missing = wanted.filter((id) => !priced.has(id));
+      if (missing.length > 0) {
+        const slugs = missing.map((id) => serviceRows.find((r) => r.id === id)?.slug ?? id).join(', ');
+        throw new Error(`Seedet vil sende et lead til en klinik uden pris på: ${slugs} (sag ${caseId}, klinik ${clinicId}).`);
+      }
+    }
+  }
+
   async function sendLeads(patient: PatientHandle, caseId: string, clinicIds: string[]): Promise<Map<string, string>> {
+    await assertOffering(caseId, clinicIds);
     mustOk(await patient.client.rpc('send_leads', { p_case_id: caseId, p_clinic_ids: clinicIds }), 'send_leads');
     const leads = must(await admin.from('leads').select('id, clinic_id').eq('case_id', caseId), 'leads') as { id: string; clinic_id: string }[];
     return new Map(leads.map((l) => [l.clinic_id, l.id]));
@@ -635,16 +702,16 @@ async function seed(config: Config): Promise<void> {
     patient: p0, services: ['blegning', 'facing'], timeframe: 'within_2_weeks', images: 2,
     summary: 'Jeg ønsker at få lysere tænder og undersøge muligheden for facing på de øverste fortænder. Ingen smerter.',
   }, true);
-  const mainLeads = await sendLeads(p0, mainCase, [v0.clinicId, v1.clinicId, v2.clinicId]);
+  const mainLeads = await sendLeads(p0, mainCase, [v0.clinicId, v1.clinicId, v7.clinicId]);
   const leadV0 = mainLeads.get(v0.clinicId) as string;
   const leadV1 = mainLeads.get(v1.clinicId) as string;
-  const leadV2 = mainLeads.get(v2.clinicId) as string;
+  const leadV7 = mainLeads.get(v7.clinicId) as string;
 
   mustOk(await p0.client.from('messages').insert({ lead_id: leadV0, sender_id: p0.userId, body: 'Hej, kan I sige noget om, hvor lang tid blegning tager?' }), 'besked fra patient');
   mustOk(await v0.client.from('messages').insert({ lead_id: leadV0, sender_id: v0.userId, body: 'Hej Mette. En blegningsbehandling tager ca. en time. Vi gennemgår det ved konsultationen.' }), 'besked fra klinik');
   await accept(v0, leadV0, 'Vi kan hjælpe med begge dele. Kom gerne forbi.', [2300, 3600]);
   mustOk(await v1.client.rpc('clinic_decide_lead', { p_lead_id: leadV1, p_decision: 'decline', p_decline_reason: 'no_capacity', p_decline_note: 'Vi har ikke kapacitet de næste uger.' }), 'afvis lead');
-  mustOk(await p0.client.rpc('withdraw_lead', { p_lead_id: leadV2 }), 'træk lead tilbage');
+  mustOk(await p0.client.rpc('withdraw_lead', { p_lead_id: leadV7 }), 'træk lead tilbage');
   await sendLeads(p0, mainCase, [v3.clinicId]); // nyt, ubesvaret lead efter tilbagetrækning
 
   const upcoming = nextWeekday(3);
@@ -670,7 +737,9 @@ async function seed(config: Config): Promise<void> {
     for (const patient of [p0, p1, p2]) {
       for (const [i, clinic] of historyClinics.entries()) {
         const k = i + dayOffset;
-        const slug = historyServices[(patient.index + k) % historyServices.length];
+        // Kun behandlinger, klinikken selv tilbyder.
+        const clinicServices = historyServices.filter((candidate) => OFFERS[clinic.spec.key]?.includes(candidate));
+        const slug = clinicServices[(patient.index + k) % clinicServices.length];
         const caseId = await createCase({
           patient, services: [slug], timeframe: 'flexible', summary: `Jeg ønsker ${slug === 'blegning' ? 'blegning' : slug === 'tandrensning' ? 'tandrensning' : 'en undersøgelse'}.`,
         }, true);
@@ -758,21 +827,21 @@ async function seed(config: Config): Promise<void> {
   log(`  Patienter:  patient1..patient5${DEMO_EMAIL_SUFFIX}`);
   log(`  Klinikker:  klinik-v0..klinik-v7${DEMO_EMAIL_SUFFIX} (verificerede), klinik-registreret${DEMO_EMAIL_SUFFIX}`);
   log('  Demo-rejser:');
-  log('    patient1 (Mette, 2200): hovedforløb med billeder, beskedtråd, accepteret lead med kommende booking, afvist og tilbagetrukket lead.');
+  log('    patient1 (Mette, 2200): hovedforløb med billeder, beskedtråd, accepteret lead (v0) med kommende booking, afvist (v1) og tilbagetrukket (v7) lead, ubesvaret hos v3.');
   log('    patient2 (Jonas, 8000): accepteret lead uden booking og et ubesvaret lead.');
   log('    patient3 (Sofie, 5000): booking der lige er slut (kan ikke anmeldes endnu).');
   log('    patient4 (Emil, 2100): akutvejen: en reserveret akuttid hos v0 (udløber efter 30 minutter) og en booket akuttid hos v4; desuden en udeblivelse.');
   log('    patient5 (Laura, 9000): kladde uden leads.');
-  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 og v5 har akuttider alle ugens dage.');
+  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 har akuttider alle ugens dage. Profiler: v0 regulering/kosmetik, v4 almen+akut, v5 børn, v6 implantater, v7 kosmetik+skinner.');
 }
 
-// Standardvarigheder fra supabase/migrations/…_services_catalog.sql (bruges til prislistens varighed og forhistorik).
+// Standardvarighed fra kataloget (bruges til prislistens varighed og forhistorik).
 function defaultDuration(slug: string): number {
-  const durations: Record<string, number> = {
-    undersoegelse: 30, tandrensning: 45, fyldning: 45, roentgen: 15, rodbehandling: 90, krone: 60, tandudtraekning: 45,
-    blegning: 60, facing: 90, diastema: 60, retainer: 30, tandregulering_konsultation: 45, akut_konsultation: 30, akut_smertebehandling: 45,
-  };
-  return durations[slug] ?? 30;
+  return catalogDurations.get(slug) ?? 30;
+}
+
+function fail(message: string): never {
+  throw new Error(message);
 }
 
 async function main(): Promise<void> {
