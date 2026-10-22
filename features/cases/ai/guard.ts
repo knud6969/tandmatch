@@ -87,9 +87,11 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   // 7.9a regel 3: gyldige forslag fra det sidste forsøg, hvis kun teksten (reply eller vurdering) blev afvist.
   // Slugs er data fra kataloget og ikke fri tekst, så forslagene kan bevares, mens den afviste tekst aldrig bruges.
   let textOnlyBlockedSuggestions: string[] | null = null;
+  let lastModelEmergency = false;
 
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
     textOnlyBlockedSuggestions = null;
+    lastModelEmergency = false;
     let raw: unknown;
     try {
       raw = await callModel(attempt > 1 ? CHAT_RETRY_REMINDER : null);
@@ -103,6 +105,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     const parsed = chatTurnSchema.safeParse(raw);
     if (!parsed.success) continue;
     const turn = parsed.data;
+    lastModelEmergency = turn.emergency && hasStrongEmergencyWord(maskedUserMessage);
 
     // MDR-TILPASNING: slår rules.allowPreliminaryAssessment vurdering fra, tvinges feltet til null.
     const assessment = rules.allowPreliminaryAssessment ? turn.preliminaryAssessment : null;
@@ -170,7 +173,8 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   }
 
   // Fast tekst fra koden. Det afviste svar bruges ikke.
-  const showEmergency = detected.emergency && rules.emergencyReferralInChat;
+  // Også modellens akut-markering fra sidste forsøg tæller, når patientens tekst har et stærkt akut-ord (8.11e).
+  const showEmergency = (detected.emergency || lastModelEmergency) && rules.emergencyReferralInChat;
   if (textOnlyBlockedSuggestions !== null && !showEmergency) {
     return {
       maskedUserMessage,

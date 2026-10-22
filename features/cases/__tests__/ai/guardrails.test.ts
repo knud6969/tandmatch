@@ -1052,7 +1052,7 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
   it("mild tandpine er ikke akut og giver hurtigsvar", async () => {
     for (const msg of ["Hej jeg har ondt i min tand", "Jeg vil have blegning"]) {
       const out = await liveTurn(msg);
-      console.log("LIVE", msg, JSON.stringify({ reply: out.reply, q: out.quickReplies, em: out.emergency, svc: out.suggestedServices, rdy: out.readyForSummary }));
+      if (process.env.AI_LIVE_DEBUG === "1") console.log("LIVE", msg, JSON.stringify({ reply: out.reply, q: out.quickReplies, em: out.emergency, svc: out.suggestedServices, rdy: out.readyForSummary }));
       expect(out.emergency).toBe(false);
     }
   }, 60000);
@@ -1068,7 +1068,7 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     let suggested: string[] = [];
     for (let i = 0; i < 4 && suggested.length === 0; i++) {
       const out = await service.sendTurn({ history, userMessage: message, catalog: GROUPS, images: [] });
-      console.log("LIVE v5", i + 1, JSON.stringify({ reply: out.reply, q: out.quickReplies, svc: out.suggestedServices, rdy: out.readyForSummary, blocked: out.blocked }));
+      if (process.env.AI_LIVE_DEBUG === "1") console.log("LIVE v5", i + 1, JSON.stringify({ reply: out.reply, q: out.quickReplies, svc: out.suggestedServices, rdy: out.readyForSummary, blocked: out.blocked }));
       history.push({ role: "user", content: message }, { role: "assistant", content: out.reply });
       suggested = out.suggestedServices;
       if (suggested.length > 0) {
@@ -1234,6 +1234,10 @@ describe("regression runde 2: klinikomtale", () => {
     "SmileDental er populær.",
     "Mange roser Tandlægehuset.",
     "Den mest populære klinik i området",
+    "Du bør gå til den nærmeste klinik.",
+    "Du skal nok vælge den billigste klinik.",
+    "Vælg den nærmeste klinik.",
+    "Gå til den bedste tandlæge i nærheden.",
   ])("blokeres: %s", (text) => {
     expect(findForbiddenCategories(text, REPLY)).toContain("clinic_recommendation");
   });
@@ -1241,6 +1245,9 @@ describe("regression runde 2: klinikomtale", () => {
   it.each([
     "Du kan finde klinikker i oversigten.",
     "Tandlægen vurderer, hvad der passer.",
+    "Klinikken laver den endelige vurdering.",
+    "Du kan selv vælge klinikker i oversigten.",
+    "Du bør gå til en tandlæge, hvis det bliver værre.",
     "TandMatch hjælper dig med at beskrive det.",
     "Tandlægehuset er et sted, hvor man går til tandlæge.".replace("Tandlægehuset", "Et tandlægehus"),
   ])("tillades: %s", (text) => {
@@ -1544,6 +1551,15 @@ describe("8.11e: akut-markering", () => {
     const r = await chat(msg, fakeModel(turn()));
     expect(r.emergency).toBe(true);
     expect(r.readyForSummary).toBe(false);
+  });
+  it("modellens akut-flag bevares, når svaret afvises, og reglen er slået til (Security L1)", async () => {
+    const msg = "Mit ansigt svulmer op";
+    const bad = fakeModel(turn({ emergency: true, reply: "Det koster 500 kr.", readyForSummary: true, suggestedServices: ["undersoegelse"] }));
+    const r = await chat(msg, bad);
+    expect(r.emergency).toBe(true);
+    expect(r.suggestedServices).toEqual([]);
+    expect(r.blocked).toBe(false);
+    expect(r.reply).not.toMatch(/500/);
   });
   it("modellens flag accepteres, når patientens tekst har et stærkt tegn", async () => {
     const r = await chat("Mit ansigt svulmer op", fakeModel(turn({ emergency: true, reply: "Søg en akut tid." })));
