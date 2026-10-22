@@ -9,7 +9,6 @@ import { Alert } from "@/views/components/ui/alert";
 import { LinkButton } from "@/views/components/ui/button";
 import { ICONS } from "@/views/components/ui/icons";
 import { LoadState } from "@/views/components/ui/load-state";
-import { ProfileChoice } from "@/views/components/clinic-directory/profile-choice";
 import { AvailabilitySlots } from "@/views/components/clinic-directory/availability-slots";
 import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-loader";
 import { ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
@@ -23,7 +22,6 @@ import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { TrustpilotBlock } from "@/views/components/clinic-directory/trustpilot-block";
 import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
 import { directoryHref } from "@/views/utils/clinic-query";
-import { isUuid } from "@/views/utils/ids";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import { formatShortDateTime } from "@/views/utils/format";
 import { phoneHref, safeWebsiteHref, websiteLabel } from "@/views/utils/links";
@@ -57,7 +55,6 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
   const { data, loading, error, reload } = useLoad(loader);
   const catalog = useLoad(loadServiceGroups);
   const searchParams = useSearchParams();
-  const caseId = isUuid(searchParams.get("sag")) ? searchParams.get("sag") : null;
   // Oversigtens filtre ligger i profilens adresse og bevares på tilbagelinket.
   const backHref = directoryHref(searchParams.toString());
 
@@ -111,11 +108,6 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
                 <span className="text-ink-muted">{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
               )}
             </p>
-          )}
-          {full && caseId && clinic.canReceiveLeads && (
-            <div className="mt-1 max-w-md">
-              <ProfileChoice caseId={caseId} clinic={{ id: clinic.id, name: clinic.name }} />
-            </div>
           )}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             {clinic.phone && (

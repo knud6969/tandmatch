@@ -8,7 +8,7 @@ import { safeInternalPath } from "@/lib/navigation/paths";
 // Sider der altid er tilgængelige uden vilkårs-accept (architecture 2.5, 6.1).
 const TERMS_EXEMPT_PREFIXES = ["/vilkaar", "/privatliv"];
 // Områder der kræver login (grov redirect; rollen tjekkes i layouts og API).
-const LOGIN_REQUIRED_PREFIXES = ["/patient", "/klinik", "/admin"];
+const LOGIN_REQUIRED_PREFIXES = ["/klinik", "/admin"];
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);

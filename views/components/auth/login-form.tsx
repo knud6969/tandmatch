@@ -45,7 +45,7 @@ export function LoginForm({ naeste, onDone }: LoginFormProps) {
         await onDone();
         return;
       }
-      router.replace(safeInternalPath(naeste ?? undefined) ?? AREA_HOME[user.role]);
+      router.replace(safeInternalPath(naeste ?? undefined) ?? (user.role === "clinic" ? AREA_HOME.clinic : "/"));
       router.refresh();
     } catch (error) {
       setErrors({ fields: {}, general: apiErrorMessage(error) });

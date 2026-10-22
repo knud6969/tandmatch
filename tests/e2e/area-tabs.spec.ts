@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cleanup, expectNoHorizontalScroll, patientWithCase, verifiedClinic } from "./helpers/inbox";
+import { cleanup, expectNoHorizontalScroll, verifiedClinic } from "./helpers/inbox";
 
 // Fanerne på mobil (arbejdsplan 7.8, architecture 6.3): den aktive fane er synlig uden manuel rulning, og fade vises i
 // venstre kant, når listen er rullet. Kører i 390 og 1280 px.
@@ -32,21 +32,6 @@ test.describe("områdefaner", () => {
       await expectNoHorizontalScroll(page);
     } finally {
       await cleanup(null, [clinic]);
-    }
-  });
-
-  test("patientens aktive fane er synlig", async ({ browser }, testInfo) => {
-    const patient = await patientWithCase(browser, testInfo);
-    const page = patient.page;
-    const width = page.viewportSize()!.width;
-    try {
-      await page.goto("/patient/konto");
-      const tab = page.getByRole("navigation", { name: "Områdenavigation" }).getByRole("link", { name: "Konto", exact: true });
-      await expect(tab).toBeInViewport({ ratio: 1 });
-      await expectNoHorizontalScroll(page);
-      await page.screenshot({ path: `test-results/faner-patient-${width}.png`, clip: { x: 0, y: 0, width, height: 220 } });
-    } finally {
-      await cleanup(patient, []);
     }
   });
 });

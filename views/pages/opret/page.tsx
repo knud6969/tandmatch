@@ -10,18 +10,9 @@ export default function OpretPage() {
   return (
     <Container>
       <PageIntro title="Opret konto">
-        <p>Vælg, hvordan du vil bruge TandMatch.</p>
+        <p>Websiden er til klinikker. Patienter bruger TandMatch-appen.</p>
       </PageIntro>
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-ink">Jeg er patient</h2>
-          <p className="text-base leading-relaxed text-ink-muted">
-            Du kan beskrive dit tandproblem og sende din sag til klinikker.
-          </p>
-          <LinkButton href="/opret/patient" fullWidth className="mt-auto">
-            Opret patientkonto
-          </LinkButton>
-        </Card>
         <Card className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold text-ink">Jeg repræsenterer en klinik</h2>
           <p className="text-base leading-relaxed text-ink-muted">

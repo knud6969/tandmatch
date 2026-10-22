@@ -157,18 +157,9 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page.getByTestId("besked")).toHaveCount(1);
       await expect(x.page.getByTestId("besked")).toContainText("Har du været til tandlæge det seneste år?");
 
-      // Patienten ser en ulæst besked fra "Klinikken" og svarer.
-      await patient.page.goto(`/patient/sag/${patient.caseId}`);
-      await expect(patient.page.getByTestId("ulaeste")).toHaveText("1 ulæst");
-      await patient.page.getByRole("button", { name: /^Beskeder/ }).click();
-      await expect(patient.page.getByTestId("besked")).toHaveCount(1);
-      await expect(patient.page.getByTestId("besked")).toContainText("Klinikken");
-      await expect(patient.page.getByTestId("besked")).toContainText("Har du været til tandlæge det seneste år?");
-      await patient.page.getByLabel("Skriv en besked").fill("Ja, for et halvt år siden.");
-      await patient.page.getByRole("button", { name: "Send besked" }).click();
-      await expect(patient.page.getByTestId("besked")).toHaveCount(2);
-      await expectNoHorizontalScroll(patient.page);
-      await patient.page.screenshot({ path: `test-results/sag-beskeder-${patient.page.viewportSize()!.width}.png`, fullPage: true });
+      // Patienten svarer (via API'et, som appen bruger; patientsiderne er flyttet til appen, architecture 13.6).
+      const reply = await patient.page.request.post(`/api/leads/${leadId}/messages`, { data: { body: "Ja, for et halvt år siden." } });
+      expect(reply.status(), await reply.text()).toBe(201);
 
       // Klinikkens åbne tråd henter svaret af sig selv (polling hvert 15. sekund).
       await expect(x.page.getByTestId("besked")).toHaveCount(2, { timeout: 30_000 });
@@ -186,13 +177,10 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page.getByTestId("dit-svar")).toContainText("700–1.100 kr.");
       await expect(x.page.getByTestId("kontakt-skjult")).toBeVisible();
 
-      // Patienten ser status, kommentar og klinikkens pris.
-      await patient.page.goto(`/patient/sag/${patient.caseId}`);
-      const lead = patient.page.getByTestId("lead");
-      await expect(lead).toContainText("Accepteret");
-      await expect(lead).toContainText("700–1.100 kr.");
-      await expect(lead).toContainText("Vi kan klare det på én time");
-      await expectNoHorizontalScroll(patient.page);
+      // Patienten får status, kommentar og klinikkens pris (API'et, som appen bruger).
+      const leads = await (await patient.page.request.get(`/api/cases/${patient.caseId}/leads`)).text();
+      expect(leads).toContain('"accepted"');
+      expect(leads).toContain("Vi kan klare det på én time");
 
       // Leadet er nu besvaret i indbakken.
       await x.page.goto("/klinik");
@@ -241,7 +229,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
     }
   });
 
-  test("afvisning med årsag og note vises for patienten, og tråden er lukket", async ({ browser }, testInfo) => {
+  test("afvisning med årsag og note når patienten, og tråden er lukket", async ({ browser }, testInfo) => {
     const x = await verifiedClinic(browser, testInfo, "x");
     const patient = await patientWithCase(browser, testInfo);
     try {
@@ -262,15 +250,12 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page.getByTestId("traad-lukket")).toBeVisible();
       await expect(x.page.getByLabel("Skriv en besked")).toHaveCount(0);
 
-      await patient.page.goto(`/patient/sag/${patient.caseId}`);
-      const lead = patient.page.getByTestId("lead");
-      await expect(lead).toContainText("Afvist");
-      await expect(lead).toContainText("Behandlingen kræver henvisning");
-      await expect(lead.getByTestId("afvisning")).toContainText("Kontakt din læge for en henvisning.");
-      await patient.page.getByRole("button", { name: /^Beskeder/ }).click();
-      await expect(patient.page.getByTestId("traad-lukket")).toBeVisible();
-      await expect(patient.page.getByLabel("Skriv en besked")).toHaveCount(0);
-      await expectNoHorizontalScroll(patient.page);
+      // Patienten får afvisningen med årsag og note, og tråden er lukket (API'et, som appen bruger).
+      const leads = await (await patient.page.request.get(`/api/cases/${patient.caseId}/leads`)).text();
+      expect(leads).toContain('"declined"');
+      expect(leads).toContain("Kontakt din læge for en henvisning.");
+      const closed = await patient.page.request.post(`/api/leads/${leadId}/messages`, { data: { body: "Hej" } });
+      expect(closed.status()).toBe(409);
 
       // Allerede besvaret: en ny beslutning afvises.
       const again = await x.page.request.post(`/api/leads/${leadId}/decision`, { data: { decision: "accept" } });

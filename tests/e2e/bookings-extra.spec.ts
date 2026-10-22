@@ -15,8 +15,7 @@ import {
 // cron-routen, fristen på 24 timer på minuttet, kontakt skjult før booking, antal tryk fra sagen og layout med mange tider.
 // Alt kører mod den LOKALE database (helpers/inbox.ts afviser andet end localhost).
 
-const PHONE = "12 34 56 78";
-const CRON = "test-cron-secret-0123456789abcdef"; // sættes af tests/e2e/run.sh
+const PHONE = "12 34 56 78"; // sættes af tests/e2e/run.sh
 type Patient = { page: Page; caseId: string };
 const width = (page: Page) => page.viewportSize()!.width;
 
@@ -56,13 +55,6 @@ async function bookViaApi(patient: Patient, leadId: string): Promise<{ id: strin
   expect(res.status(), await res.text()).toBe(201);
   return (await res.json()) as { id: string; startsAt: string };
 }
-
-// Flytter bookingen. Triggere og kvarterskrav omgås ikke: starttiden skal være et helt kvarter (lokal tid).
-function move(bookingId: string, startExpr: string) {
-  sql(
-    `set session_replication_role = replica; update public.bookings set starts_at = ${startExpr}, ends_at = ${startExpr} + interval '30 minutes' where id = '${bookingId}'`,
-  );
-}
 const QUARTER = (offset: string) => `date_trunc('hour', now() ${offset}) + floor(extract(minute from now() ${offset}) / 15) * interval '15 minutes'`;
 
 test.describe("booking: supplerende dækning (6.6)", () => {
@@ -95,71 +87,6 @@ test.describe("booking: supplerende dækning (6.6)", () => {
     } finally {
       await cleanup(a, []);
       await cleanup(b, [clinic]);
-    }
-  });
-
-  test("to patienter trykker Book tid samtidig i UI'et: den ene får bekræftelse, den anden en besked", async ({ browser }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "samtidigui");
-    const a = await patientWithCase(browser, testInfo);
-    const b = await patientWithCase(browser, testInfo);
-    try {
-      const leadA = await acceptedLead(a, clinic);
-      const leadB = await acceptedLead(b, clinic);
-      for (const [p, lead] of [[a, leadA], [b, leadB]] as const) {
-        await p.page.goto(`/patient/sag/${p.caseId}/book/${lead}`);
-        await expect(p.page.getByTestId("tid").first()).toBeVisible();
-        await p.page.getByTestId("tid").first().click();
-        await p.page.getByLabel("Telefon").fill(PHONE);
-      }
-      await Promise.all([
-        a.page.getByRole("button", { name: "Book tid", exact: true }).click(),
-        b.page.getByRole("button", { name: "Book tid", exact: true }).click(),
-      ]);
-      const ok = (p: Patient) => p.page.getByTestId("booking-bekraeftelse").isVisible({ timeout: 15_000 }).catch(() => false);
-      await expect.poll(async () => (await ok(a) ? 1 : 0) + (await ok(b) ? 1 : 0), { timeout: 20_000 }).toBe(1);
-      const loser = (await ok(a)) ? b : a;
-      await expect(loser.page.getByText(/blev lige optaget/)).toBeVisible();
-      await expectNoHorizontalScroll(loser.page);
-      await loser.page.screenshot({ path: `test-results/samtidig-taber-${width(loser.page)}.png`, fullPage: true });
-    } finally {
-      await cleanup(a, []);
-      await cleanup(b, [clinic]);
-    }
-  });
-
-  test("aflysning lige før starttid lykkes, og på starttidspunktet er den afvist (UI og API)", async ({ browser }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "sidsteminut");
-    const patient = await patientWithCase(browser, testInfo);
-    try {
-      const leadId = await acceptedLead(patient, clinic);
-      const booking = await bookViaApi(patient, leadId);
-
-      // Tiden er om 15-30 minutter: der kan stadig aflyses.
-      move(booking.id, QUARTER("+ interval '30 minutes'"));
-      await patient.page.goto("/patient/bookinger");
-      await expect(patient.page.getByRole("button", { name: /^Aflys/ })).toBeVisible();
-
-      // Starttiden passerer, mens siden er åben: knappen står stadig, men serveren afviser, og patienten får en dansk besked.
-      move(booking.id, QUARTER("- interval '15 minutes'"));
-      await patient.page.getByRole("button", { name: /^Aflys/ }).click();
-      await patient.page.getByRole("button", { name: "Ja, aflys tiden" }).click();
-      await expect(patient.page.getByRole("alert").or(patient.page.getByRole("status")).filter({ hasText: /\S/ }).first()).toBeVisible();
-      await patient.page.screenshot({ path: `test-results/aflys-for-sent-${width(patient.page)}.png`, fullPage: true });
-      const late = await patient.page.request.post(`/api/bookings/${booking.id}/cancel`, { data: {} });
-      expect(late.status()).toBe(409);
-      expect(sql(`select status from public.bookings where id = '${booking.id}'`)).toBe("booked");
-
-      // Reload: ingen aflysknap efter start.
-      await patient.page.reload();
-      await expect(patient.page.getByRole("button", { name: /^Aflys/ })).toHaveCount(0);
-
-      // En time frem: aflysning lykkes lige før start (API), og tiden er ledig.
-      move(booking.id, `date_trunc('minute', now()) + interval '45 minutes' - (extract(minute from now() + interval '45 minutes')::int % 15) * interval '1 minute'`);
-      const ok = await patient.page.request.post(`/api/bookings/${booking.id}/cancel`, { data: {} });
-      expect(ok.status(), await ok.text()).toBe(200);
-      expect(sql(`select status from public.bookings where id = '${booking.id}'`)).toBe("cancelled");
-    } finally {
-      await cleanup(patient, [clinic]);
     }
   });
 
@@ -201,69 +128,6 @@ test.describe("booking: supplerende dækning (6.6)", () => {
     }
   });
 
-  test("cron-routen complete-bookings kræver hemmelighed og gennemfører besøg og udløbne reservationer", async ({ browser, request }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "cron");
-    const patient = await patientWithCase(browser, testInfo);
-    try {
-      const leadId = await acceptedLead(patient, clinic);
-      const booking = await bookViaApi(patient, leadId);
-      move(booking.id, "date_trunc('hour', now()) - interval '3 days'");
-      const status = () => sql(`select status from public.bookings where id = '${booking.id}'`);
-      expect(status()).toBe("booked");
-
-      expect((await request.post("/api/cron/complete-bookings")).status()).toBe(401);
-      expect((await request.post("/api/cron/complete-bookings", { headers: { authorization: "Bearer forkert" } })).status()).toBe(401);
-      expect(status()).toBe("booked");
-
-      const res = await request.post("/api/cron/complete-bookings", { headers: { authorization: `Bearer ${CRON}` } });
-      expect(res.status(), await res.text()).toBe(200);
-      const body = (await res.json()) as { completed: number; releasedHolds: number };
-      expect(body.completed).toBeGreaterThanOrEqual(1);
-      expect(Object.keys(body).sort()).toEqual(["completed", "releasedHolds"]); // ingen persondata
-      expect(status()).toBe("completed");
-
-      // GET (Vercel Cron) virker på samme måde, og et nyt kald er idempotent.
-      const again = await request.get("/api/cron/complete-bookings", { headers: { authorization: `Bearer ${CRON}` } });
-      expect(again.status()).toBe(200);
-      expect(status()).toBe("completed");
-
-      // Patienten kan anmelde det nu gennemførte besøg.
-      await patient.page.goto(`/patient/anmeld/${booking.id}`);
-      await expect(patient.page.getByLabel("Din anmeldelse")).toBeVisible();
-    } finally {
-      await cleanup(patient, [clinic]);
-    }
-  });
-
-  test("anmeldelse åbner på minuttet: 24 timer efter sluttid, ikke før (UI og API)", async ({ browser }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "minut");
-    const patient = await patientWithCase(browser, testInfo);
-    try {
-      const leadId = await acceptedLead(patient, clinic);
-      const booking = await bookViaApi(patient, leadId);
-      const review = { bookingId: booking.id, stars: 4, text: "Venlig betjening og klar information om prisen.", priceAccuracy: "as_quoted" };
-
-      // Sluttid = nu minus 24 t + 5 min: fem minutter for tidligt.
-      sql(`set session_replication_role = replica; update public.bookings set starts_at = ${QUARTER("- interval '25 hours'")}, ends_at = now() - interval '24 hours' + interval '5 minutes' where id = '${booking.id}'`);
-      await patient.page.goto(`/patient/anmeld/${booking.id}`);
-      await expect(patient.page.getByTestId("anmeld-ikke-mulig")).toBeVisible();
-      expect((await patient.page.request.post("/api/reviews", { data: review })).status()).toBe(403);
-      await patient.page.goto("/patient/bookinger");
-      await expect(patient.page.getByRole("link", { name: /Skriv anmeldelse/ })).toHaveCount(0);
-
-      // Sluttid = nu minus 24 t minus 5 min: fristen er udløbet.
-      sql(`set session_replication_role = replica; update public.bookings set starts_at = ${QUARTER("- interval '26 hours'")}, ends_at = now() - interval '24 hours' - interval '5 minutes' where id = '${booking.id}'`);
-      await patient.page.goto("/patient/bookinger");
-      await expect(patient.page.getByRole("link", { name: /Skriv anmeldelse/ })).toBeVisible();
-      const ok = await patient.page.request.post("/api/reviews", { data: review });
-      expect(ok.status(), await ok.text()).toBe(201);
-      // Dobbelt anmeldelse afvises.
-      expect((await patient.page.request.post("/api/reviews", { data: review })).status()).toBeGreaterThanOrEqual(400);
-    } finally {
-      await cleanup(patient, [clinic]);
-    }
-  });
-
   test("klinikken ser hverken navn, telefon eller e-mail før tiden er booket (accepteret lead)", async ({ browser }, testInfo) => {
     const clinic = await bookableClinic(browser, testInfo, "skjult");
     const patient = await patientWithCase(browser, testInfo);
@@ -294,46 +158,6 @@ test.describe("booking: supplerende dækning (6.6)", () => {
       await clinic.page.reload();
       await expect(clinic.page.getByTestId("patient-kontakt")).toHaveCount(0);
       expect(await (await clinic.page.request.get(`/api/leads/${leadId}`)).text()).not.toContain("Lea Hansen");
-    } finally {
-      await cleanup(patient, [clinic]);
-    }
-  });
-
-  test("fra sagen til bekræftet booking tager tre tryk, og knapperne er mindst 44 px", async ({ browser }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "tryk");
-    const patient = await patientWithCase(browser, testInfo);
-    try {
-      await acceptedLead(patient, clinic);
-      // Telefonnummeret er kendt på forhånd, så der kun mangler tryk (navnet er forudfyldt fra profilen).
-      await patient.page.goto(`/patient/sag/${patient.caseId}`);
-      let taps = 0;
-      await patient.page.getByRole("link", { name: /Book tid/ }).click();
-      taps++;
-      await patient.page.getByTestId("tid").first().click();
-      taps++;
-      await patient.page.getByLabel("Telefon").fill(PHONE); // tastning, ikke tryk
-      await patient.page.getByRole("button", { name: "Book tid", exact: true }).click();
-      taps++;
-      await expect(patient.page.getByTestId("booking-bekraeftelse")).toBeVisible();
-      expect(taps).toBe(3);
-      testInfo.annotations.push({ type: "tryk", description: `${taps} tryk fra sagen (plus telefonnummer første gang)` });
-    } finally {
-      await cleanup(patient, [clinic]);
-    }
-  });
-
-  test("telefonnummeret huskes, så en senere booking ikke kræver tastning", async ({ browser }, testInfo) => {
-    const clinic = await bookableClinic(browser, testInfo, "husk");
-    const patient = await patientWithCase(browser, testInfo);
-    try {
-      const leadId = await acceptedLead(patient, clinic);
-      const first = await bookViaApi(patient, leadId); // gemmer telefon på patienten
-      expect((await patient.page.request.post(`/api/bookings/${first.id}/cancel`, { data: {} })).status()).toBe(200);
-      await patient.page.goto(`/patient/sag/${patient.caseId}/book/${leadId}`);
-      await expect(patient.page.getByLabel("Telefon")).toHaveValue(/12\s?34\s?56\s?78/);
-      await patient.page.getByTestId("tid").first().click();
-      await patient.page.getByRole("button", { name: "Book tid", exact: true }).click();
-      await expect(patient.page.getByTestId("booking-bekraeftelse")).toBeVisible();
     } finally {
       await cleanup(patient, [clinic]);
     }

@@ -15,7 +15,6 @@ type ClinicCardProps = {
   onHover?: (id: string | null) => void;
   // Med ?sag= kan patienten vælge klinikken til sammenligning og afsendelse (kun verificerede).
   // `contacted`: sagen er allerede sendt til klinikken, så den kan ikke vælges igen.
-  compare?: { selected: boolean; selectable: boolean; disabled: boolean; contacted: boolean; onToggle: () => void } | null;
   // Med ?sag= fører kortet til profilen med sagen med, så valget bevares.
   profileHref?: string;
   // Egen handling nederst på kortet (fx "Vælg tid" på /akut).
@@ -24,7 +23,7 @@ type ClinicCardProps = {
 
 // Klinikkort i Airbnb-stil. Verificerede klinikker har billede/logo, blå kant og mærket "Verificeret"; basisklinikker er
 // dæmpede, uden billede, og siger tydeligt, at de ikke er på TandMatch endnu. Hele kortet er et link til profilen.
-export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, compare, profileHref, action }: ClinicCardProps) {
+export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, profileHref, action }: ClinicCardProps) {
   const full = clinic.tier === "full";
   return (
     <li
@@ -68,30 +67,6 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
 
       {action && <div className="relative z-10 border-t border-line p-4">{action}</div>}
 
-      {compare && clinic.canReceiveLeads && compare.contacted && (
-        <p className="relative z-10 flex min-h-12 items-center border-t border-line bg-surface-muted px-4 text-base font-semibold text-ink-muted">
-          Du har allerede kontaktet klinikken
-        </p>
-      )}
-      {compare && clinic.canReceiveLeads && compare.selectable && !compare.contacted && (
-        <label
-          className={cx(
-            "relative z-10 flex min-h-12 cursor-pointer items-center gap-3 border-t px-4 text-base font-semibold",
-            compare.selected ? "border-brand-200 bg-brand-50 text-brand-800" : "border-line text-ink",
-            compare.disabled && !compare.selected && "cursor-not-allowed opacity-60",
-          )}
-        >
-          <input
-            type="checkbox"
-            className="size-5 accent-brand-600"
-            checked={compare.selected}
-            disabled={compare.disabled && !compare.selected}
-            onChange={compare.onToggle}
-          />
-          Vælg til kontakt
-          <span className="sr-only">: {clinic.name}</span>
-        </label>
-      )}
     </li>
   );
 }

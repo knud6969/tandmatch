@@ -8,7 +8,7 @@ import { Button, LinkButton } from "@/views/components/ui/button";
 import { apiRequest } from "@/views/utils/api-client";
 import { AreaTabs } from "@/views/components/layout/area-tabs";
 import { AREA_NAV, AREA_NAV_PARENT } from "@/lib/navigation/areas";
-import { CHAT_HREF, DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
+import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
 
 // Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
 export function SiteHeader() {
@@ -18,8 +18,8 @@ export function SiteHeader() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const me = state.status === "ready" ? state.me : null;
-  // Anonyme patienter har ingen områdenavigation: områderne kræver konto (architecture 6.5).
-  const areaNav = me && !me.isAnonymous ? AREA_NAV[me.role] : [];
+  // Kun klinikker har et område på weben; patienter bruger appen (architecture 13.6).
+  const areaNav = me && me.role === "clinic" ? AREA_NAV[me.role] : [];
   // Den længste matchende sti er aktiv, så fx /patient/sag/... markerer "Mine sager".
   const navPath = AREA_NAV_PARENT[pathname] ?? pathname;
   const activeHref = areaNav
@@ -40,7 +40,7 @@ export function SiteHeader() {
     setLoggingOut(false);
   }
 
-  // Patientindgangene (chat og klinikoversigt) vises for alle undtagen klinikker og administratorer, når rollen er kendt.
+  // Klinikoversigten vises for alle undtagen klinikker og administratorer, når rollen er kendt.
   const showPatientEntries = state.status === "ready" && me?.role !== "clinic" && me?.role !== "admin";
 
   const greeting = me
@@ -61,18 +61,6 @@ export function SiteHeader() {
         >
           TandMatch
         </Link>
-
-        {showPatientEntries && (
-          <Link
-            href={CHAT_HREF}
-            className="hidden min-h-12 flex-1 items-center justify-between gap-3 rounded-pill border border-line bg-surface py-1.5 pr-1.5 pl-5 text-base text-ink-muted no-underline shadow-card transition-shadow hover:shadow-raised md:ml-6 md:flex md:max-w-md"
-          >
-            <span className="truncate">Beskriv dit problem eller upload et billede</span>
-            <span className="rounded-pill bg-brand-600 px-4 py-2 text-sm font-semibold text-on-brand">
-              Beskriv
-            </span>
-          </Link>
-        )}
 
         <div className="flex min-h-11 items-center gap-1 sm:gap-2">
           {showPatientEntries && DIRECTORY_READY && (
@@ -106,20 +94,6 @@ export function SiteHeader() {
           )}
         </div>
       </div>
-
-      {showPatientEntries && (
-        <div className="border-t border-line px-4 py-3 md:hidden">
-          <Link
-            href={CHAT_HREF}
-            className="flex min-h-12 items-center justify-between gap-3 rounded-pill border border-line bg-surface py-1.5 pr-1.5 pl-5 text-base text-ink-muted no-underline shadow-card"
-          >
-            <span className="truncate">Beskriv dit problem</span>
-            <span className="rounded-pill bg-brand-600 px-4 py-2 text-sm font-semibold text-on-brand">
-              Start
-            </span>
-          </Link>
-        </div>
-      )}
 
       {areaNav.length > 0 && <AreaTabs items={areaNav} activeHref={activeHref} />}
     </header>
