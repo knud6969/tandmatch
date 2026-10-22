@@ -120,7 +120,7 @@ Rækkefølgen ovenfor var **webens** trinflow (`/start/[caseId]`, fjernet fra we
 
 | | Chat (`AiChatService.sendTurn`, `features/cases/ai/aiChatService.ts`) | Opsummering (`AiSummaryService.generate`, `features/cases/ai/aiSummaryService.ts`) |
 |---|---|---|
-| System-besked | Fast, versioneret `prompts/chat.v2.ts`, bygget af reglerne i `rules.ts`. Afløses af `prompts/chat.v3.ts` (7.9; [IKKE BYGGET], 8.6c); `chat.v2.ts` slettes i samme commit | `prompts/summary.v2.ts` (uændret) |
+| System-besked | Fast, versioneret `prompts/chat.v4.ts`, bygget af reglerne i `rules.ts`. Afløses af `prompts/chat.v5.ts` (7.9a; [IKKE BYGGET], trin 9.4); `chat.v4.ts` slettes i samme commit | `prompts/summary.v2.ts` (uændret) |
 | Katalog | Aktive behandlinger grupperet efter kategori: kategoriens navn og for hver behandling `slug`, navn, type og kort beskrivelse (`catalogContext.ts`, bygget fra databasen ved hvert kald, så ændringer i kataloget slår igennem uden kodeændring). **Ingen priser, ingen klinikker**. AI'en foreslår kun behandlings-slugs, ikke kategorier | Samme |
 | Kontekst | Seneste 20 beskeder; sagens billeder (low detail) | Hele chatten (max 30 brugerbeskeder), bekræftede ydelser, billeder |
 | Billeder | Re-encodet server-side (EXIF fjernet), max 1024 px, base64. Aldrig signerede URL'er | Samme |
@@ -303,7 +303,7 @@ Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste
 
 ### 7.9 Sagsflowet som én samtale (patient-appen)
 
-Status: [IKKE BYGGET], trin 8 (8.6b-8.6i og 8.7 i `docs/arbejdsplan.md`). Besluttet af brugeren 2026-10-19 efter test af appens chat. Gælder kun appen; webens trinflow (`/start/[caseId]`, 7.1) er uændret og bruger samme API (13.6).
+Status: bygget i trin 8 (8.6b-8.6i, 8.11e). Billeder i chatten (8.7) er [IKKE BYGGET]. Reglerne for, hvornår behandlingskortet vises, er ændret i 7.9a og bygges i trin 9 (9.1-9.6) [IKKE BYGGET]; hvor tabellen nedenfor og 7.9a er uenige, gælder 7.9a. Besluttet af brugeren 2026-10-19 efter test af appens chat. Gælder kun appen; weben har ikke længere patientsider (13.6).
 
 I appen er hele sagen **én chatskærm** (`/sag/[caseId]/flow`). Der er ingen separate trin eller formularskærme. AI'en spørger ind frem og tilbage, indtil den kan foreslå ydelser og evt. give en foreløbig vurdering. Det, sagen kræver før afsendelse (`canSendCase()`, `send_leads()`: mindst én bekræftet ydelse, tidsrum, postnummer, godkendt opsummering), indsamler appen med **faste svar-kort i chatten**.
 
@@ -320,8 +320,8 @@ I appen er hele sagen **én chatskærm** (`/sag/[caseId]/flow`). Der er ingen se
 |---|---|---|---|
 | `submitted` | `status !== "draft"` | Chatten er skrivebeskyttet; link til sagen (`/sag/[caseId]`) | – |
 | `emergency` | seneste assistentbesked har `emergency` | Appen ignorerer flaget for kortene (brugerens beslutning 2026-10-19, `flowStepForApp()` i `mobile/src/utils/case-cards.ts`), og akut-henvisning i chatten er slået fra (`emergencyReferralInChat: false`, 7.9). Patienten kan skrive videre | – |
-| `chat` | ingen bekræftede ydelser, og hverken `readyForSummary` eller lukket samtale | Intet kort. Inputfelt og billedknap; AI'en spørger ind | `POST /api/cases/{id}/chat` |
-| `services` | ingen bekræftede ydelser, og `readyForSummary` er sand eller samtalen er `closed` | "Passer disse behandlinger?" med AI'ens forslag (`CaseDto.suggestedServices`) som chips. Alle er valgt fra start og kan fravælges. Desuden "Jeg er ikke sikker" (→ `EXAMINATION_SERVICE_SLUG`) og "Vælg selv" (et ark med kataloget grupperet efter kategori fra `GET /api/services`; højst `MAX_CONFIRMED_SERVICES_PER_CASE`). Knappen "Bekræft" sender valget. Er der ingen forslag (lukket samtale), vises kun "Jeg er ikke sikker" og "Vælg selv". Patienten kan også skrive videre i stedet for at trykke | `PUT /api/cases/{id}/services` (`suggestedByAi` = valgt blandt forslagene) |
+| `chat` | ingen bekræftede ydelser, og ingen af betingelserne for `services` (fra trin 9: se 7.9a) | Intet kort. Inputfelt og billedknap; AI'en spørger ind | `POST /api/cases/{id}/chat` |
+| `services` | ingen bekræftede ydelser, og `readyForSummary` er sand eller samtalen er `closed` (fra trin 9 desuden: `suggestedServices` er ikke tom, eller patienten har sendt mindst `SERVICE_CARD_AFTER_USER_MESSAGES` beskeder; 7.9a) | "Passer disse behandlinger?" med AI'ens forslag (`CaseDto.suggestedServices`) som chips. Alle er valgt fra start og kan fravælges. Desuden "Jeg er ikke sikker" (→ `EXAMINATION_SERVICE_SLUG`) og "Vælg selv" (et ark med kataloget grupperet efter kategori fra `GET /api/services`; højst `MAX_CONFIRMED_SERVICES_PER_CASE`). Knappen "Bekræft" sender valget. Er der ingen forslag (lukket samtale), vises kun "Jeg er ikke sikker" og "Vælg selv". Patienten kan også skrive videre i stedet for at trykke | `PUT /api/cases/{id}/services` (`suggestedByAi` = valgt blandt forslagene) |
 | `timeframe` | `preferredTimeframe` er `null` | "Hvornår vil du gerne i gang?" med chips fra `CASE_TIMEFRAME_LABEL` | `PATCH /api/cases/{id}` `{ preferredTimeframe }` |
 | `postal_code` | `postalCode` er `null` | "Hvor vil du helst gå til tandlæge? Skriv postnummeret." Felt med `postalCodeSchema`, forudfyldt fra `GET /api/patients/me` for patienter med konto | `PATCH /api/cases/{id}` `{ postalCode }` |
 | `summary` | `summaryApprovedAt` er `null` | Opsummeringskortet (se nedenfor) | `POST`/`PUT /api/cases/{id}/summary` |
@@ -365,6 +365,34 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 **Hurtigsvar** (bygget, 8.6g-h; 8.6i er appen): `quickReplies` (7.4) vises som chips under den nyeste AI-besked. Et tryk sender teksten som patientens besked. Hurtigsvarene er kun med i `ChatTurnResponse` og forsvinder ved genindlæsning; det er acceptabelt, fordi de kun er en genvej.
 
 **Weben** (13.6): fortsætter med trinflowet og skal ikke ændres. Ændringerne er bagudkompatible: `readyForSummary` er stadig et boolesk felt, `quickReplies` er et ekstra felt, som weben ignorerer, og ingen route ændres. Webens e2e-tests skal stadig bestå med den falske klient.
+
+### 7.9a Kortene skal altid komme frem (trin 9) [IKKE BYGGET]
+
+Brugerens oplevelse (2026-10-19 og 2026-10-22): "man chatter bare, uden der sker noget". Samtalen skal afgrænse problemet med ét spørgsmål ad gangen og hurtigsvar, og derefter **altid** føre videre til kortene: behandlinger → tidsrum → postnummer → opsummering → "Se klinikker der kan hjælpe". Patienten kan altid skrive selv i stedet for at trykke, eller ud over at trykke.
+
+**Hvorfor kortene ikke kom frem.** Behandlingskortet afhang af ét enkelt flag fra modellen i den seneste tur. Det fejler på fem måder:
+
+1. **Flaget gælder kun den seneste tur.** `ChatController.getState()` sætter `readyForSummary` ud fra den seneste assistentbesked, og `useChat` i appen overskriver `ready` ved hver tur. Har AI'en foreslået behandlinger, og skriver patienten derefter en besked mere (fx "tak" eller et spørgsmål til behandlingen), svarer modellen typisk med `readyForSummary = false`, og kortet forsvinder igen. Forslagene selv er derimod "klæbende": `CasesRepository.findConversationInfo()` bruger det seneste svar **med** forslag. De to felter er altså uenige.
+2. **Forslag uden flag giver intet kort.** `nextCaseFlowStep()` ser kun på `readyForSummary`. Lægger modellen slugs i `suggestedServices` uden at sætte flaget (det sker, når den både foreslår og spørger videre), vises intet kort, selv om `CaseDto.suggestedServices` har forslagene.
+3. **Forslagsturen er den, der oftest blokeres.** Prompten (`chat.v4.ts`) beder AI'en om i samme svar at skrive, at patienten "kan bekræfte behandlingerne nedenfor og derefter se klinikker". Netop de formuleringer rammer filtrene i `forbiddenTerms.ts`: fx "behandlingerne er bekræftet" (`action_claim`), "vælge klinikker" og "se klinikker i nærheden" (`clinic_recommendation`), og behandlingsnavne med diagnoseord ("rodbehandling", "tandsten") i sætninger som "det kan være en rodbehandling" (`assessment`). Fejler begge forsøg, erstatter guarden hele svaret med `CHAT_BLOCKED_TEXT`, og forslagene og flaget går tabt, selv om slugs er data fra kataloget og ikke fri tekst.
+4. **Ingen øvre grænse for spørgsmål.** Prompten lister syv ting at spørge ind til (hvad, hvor, hvor længe, type, hævelse, tidligere behandling, hvad er vigtigst), ét ad gangen, og "stil dog ikke flere spørgsmål end nødvendigt". I praksis kan det blive syv eller flere ture uden kort, og intet i koden sikrer, at samtalen nogensinde går videre.
+5. **Testene dækker det ikke.** Den falske klient (`fakeAiClient.ts`) svarer altid med samme spørgsmål, medmindre teksten indeholder et nøgleord ("blegning", "undersøgelse"). Der er ingen test, der kører en almindelig samtale igennem til kortene.
+
+(Akut er ikke årsagen: `flowStepForApp()` ignorerer `emergency`, og med `emergencyReferralInChat = false` gemmes `emergency` altid som `false`.)
+
+**Reglerne fra trin 9.** Princippet er uændret: AI'en sætter ingen felter på sagen, og patienten bekræfter selv. Ændringen er, at kortet ikke længere afhænger af ét flag i én tur.
+
+| # | Regel | Hvor |
+|---|---|---|
+| 1 | `nextCaseFlowStep()` giver `services`, når der ingen bekræftede ydelser er, og mindst én af disse gælder: `readyForSummary`, samtalen er `closed`, **`caseDto.suggestedServices` er ikke tom**, eller **patienten har sendt mindst `SERVICE_CARD_AFTER_USER_MESSAGES` (6) beskeder** (talt i `chatState.messages` med `role === "user"`). Funktionen får `suggestedServices` med i sit `Pick`. Uden forslag viser kortet som i dag "Jeg er ikke sikker" og "Vælg selv" | `lib/cases/domain/case-flow.ts`, konstanten i `lib/cases/constants/case-flow.ts` |
+| 2 | `ChatStateDto.readyForSummary` er **klæbende**: `true`, hvis en assistentbesked i samtalen har `ready_for_summary` (ikke kun den seneste). `useChat` i appen holder `ready` sand, når den først er sand. Ingen migration | `features/cases/chatController.ts`, `mobile/src/hooks/use-chat.ts` |
+| 3 | **Forslag går ikke tabt i guarden.** Fejler begge forsøg kun på teksten (`reply` eller `preliminaryAssessment`), men det sidste forsøg var gyldigt efter skemaet, alle slugs findes i kataloget, og det havde `readyForSummary = true` med forslag, så returnerer guarden den faste tekst `SUGGESTION_FALLBACK_TEXT` (`lib/cases/constants/ai-texts.ts`: "Ud fra det, du har fortalt, kan behandlingerne nedenfor være relevante. Du vælger selv, og klinikken laver den endelige vurdering.") med forslagene, `readyForSummary = true`, `preliminaryAssessment = null`, `quickReplies = []` og `blocked = true` (sporbarhed). Den afviste tekst bruges aldrig. Gælder ikke ved akut, når `emergencyReferralInChat` er slået til | `features/cases/ai/guard.ts` |
+| 4 | **Prompt `chat.v5.ts`, regler `rules-v5`:** højst tre opklarende spørgsmål, før AI'en foreslår (straks, hvis patienten er klar); hvert spørgsmål har 2-4 hurtigsvar, og et af dem må være "Ved ikke". I forslagsturen skriver AI'en kun én til to sætninger om, hvad behandlingerne går ud på, og nævner **hverken klinikker, bekræftelse eller næste skridt** (det gør TandMatch-kortet med faste tekster). Har AI'en først foreslået, gentager den forslagene og `readyForSummary = true` i de følgende ture, medmindre patienten beskriver et nyt problem. `chat.v4.ts` slettes i samme commit, og `AI_RULES.version` hæves til `rules-v5` (og `MDR_STRICT_RULES.version` tilsvarende) | `features/cases/ai/prompts/chat.v5.ts`, `features/cases/ai/rules.ts` |
+| 5 | **Hurtigsvar** vises under AI'ens seneste besked, når den har nogen, også når behandlingskortet er åbent (guarden giver i forvejen `[]` i forslagsturen). Kortene under hurtigsvarene står uændret | `mobile/src/utils/case-cards.ts` (`visibleQuickReplies`) |
+| 6 | **Falsk klient som en rigtig samtale:** uden nøgleord stiller den op til tre spørgsmål med hurtigsvar og foreslår derefter `undersoegelse` med `readyForSummary = true` (tæller patientens beskeder i historikken). Nye markører: `test_suggest_not_ready` (forslag uden flag) og `test_blocked_suggestion` (gyldige forslag, men en pris i `reply` i begge forsøg). Eksisterende markører og tests består | `features/cases/ai/fakeAiClient.ts` |
+| 7 | **Rejse-test mod den falske klient:** `features/cases/__tests__/api/case-flow-journey.test.ts` kører hele sagen gennem API'et som appen (bearer, `X-TandMatch-Client: mobile`) og beregner trinnet med `nextCaseFlowStep()` efter hvert kald: anonym session → tre almindelige beskeder → `services` med forslaget `undersoegelse` → én besked mere → stadig `services` → `PUT /services` → `timeframe` → `PATCH` → `postal_code` → `PATCH` → `summary` → `POST`/`PUT /summary` → `ready` → konto (`/convert`) → `canSend`. Desuden: seks beskeder uden forslag giver `services` uden forslag; `test_suggest_not_ready` giver `services`; `test_blocked_suggestion` giver `SUGGESTION_FALLBACK_TEXT` og `services`. Til sidst `GET /api/clinics?services=…&onlyOffering=true` med sagens behandlinger (10.7) | testen |
+
+Reglerne i 7.3 gælder uændret: ingen priser, ingen klinikanbefaling, foreløbig vurdering kun i `preliminaryAssessment` med forbehold, og patienten bekræfter selv. Ændring 3 og 4 rører AI-reglerne, så security-agenten kører efter dem (`docs/security.md`).
 
 ---
 
@@ -485,7 +513,7 @@ export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage
 };
 ```
 
-Appens samtaleflow (7.9) bruger routes og DTO'er uændret; kun `quickReplies` er nyt (P2). Fra 8.6c kan `readyForSummary` kun være `true`, når samme svar har forslag (7.4).
+Appens samtaleflow (7.9) bruger routes og DTO'er uændret; kun `quickReplies` er nyt (P2). Fra 8.6c kan `readyForSummary` kun være `true`, når samme svar har forslag (7.4). Fra trin 9.2 er `ChatStateDto.readyForSummary` `true`, hvis **en** assistentbesked i samtalen har haft flaget (klæbende, 7.9a regel 2); `ChatTurnResponse.readyForSummary` gælder stadig kun turen.
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
