@@ -11,7 +11,7 @@ import { buildCatalogContext, catalogSlugs } from "@/features/cases/ai/catalogCo
 import { runChatGuard, type ChatGuardResult } from "@/features/cases/ai/guard";
 import type { ModelMessage, ModelPart, StructuredModelClient } from "@/features/cases/ai/modelClient";
 import { buildChatMessages, type HistoryMessage } from "@/features/cases/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/features/cases/ai/prompts/chat.v4";
+import { buildChatSystemPrompt, CHAT_PROMPT_VERSION } from "@/features/cases/ai/prompts/chat.v5";
 import { AI_RULES, type AiRules } from "@/features/cases/ai/rules";
 import { CHAT_SCHEMA_NAME, CHAT_TURN_JSON_SCHEMA } from "@/features/cases/ai/schemas";
 
@@ -29,8 +29,8 @@ export type ChatTurnInput = {
 
 export type ChatTurnOutput = ChatGuardResult & {
   model: string;
-  promptVersion: string; // fx "chat.v4"
-  rulesVersion: string; // fx "rules-v4"
+  promptVersion: string; // fx "chat.v5"
+  rulesVersion: string; // fx "rules-v5"
 };
 
 export class AiChatService {

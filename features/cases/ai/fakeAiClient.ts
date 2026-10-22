@@ -37,7 +37,17 @@ function lastPatientText(params: StructuredCallParams): string {
   return raw.replace(/<\/?patient_input>/g, "").trim().toLowerCase();
 }
 
-const QUESTION = "Hvor længe har du haft det?";
+// Almindelig samtale uden nøgleord (7.9a regel 6): to spørgsmål med hurtigsvar, derefter forslag (som en rigtig AI under chat.v5).
+const FAKE_QUESTIONS: readonly { reply: string; quickReplies: string[] }[] = [
+  { reply: "Hvor i munden sidder det?", quickReplies: ["Foran", "Bagtil", "Øverst", "Nederst"] },
+  { reply: "Hvor længe har du haft det?", quickReplies: ["Et par dage", "Over en uge", "Over en måned", "Ved ikke"] },
+];
+const QUESTION = FAKE_QUESTIONS[1].reply;
+
+// Antal patientbeskeder i konteksten (den nye besked er med).
+function userMessageCount(params: StructuredCallParams): number {
+  return params.messages.filter((m) => m.role === "user").length;
+}
 
 // Markører i patientens besked (kun i tests):
 //   test_price        svar med pris (filteret skal blokere)
@@ -47,6 +57,9 @@ const QUESTION = "Hvor længe har du haft det?";
 //   blegning / hvidere  foreslår blegning (klar til opsummering)
 //   karies            foreløbig, ikke-bindende vurdering
 //   undersøgelse      foreslår undersoegelse
+//   test_suggest_not_ready   forslag, men readyForSummary = false
+//   test_blocked_suggestion  gyldigt forslag, men en pris i reply i begge forsøg (guarden bruger SUGGESTION_FALLBACK_TEXT)
+//   (ingen markør)    spørgsmål 1 og 2 med hurtigsvar, fra den tredje patientbesked forslaget undersoegelse
 function fakeChat(params: StructuredCallParams) {
   const text = lastPatientText(params);
   const turn = {
@@ -63,6 +76,12 @@ function fakeChat(params: StructuredCallParams) {
   if (text.includes("test_price")) return { ...turn, reply: "Det koster ca. 2.500 kr." };
   if (text.includes("test_bad_quick")) return { ...turn, quickReplies: ["Ja", "Til 2.500 kr.", "Nej"] };
   if (text.includes("test_emergency_flag")) return { ...turn, reply: "Søg en akut tid.", emergency: true };
+  if (text.includes("test_suggest_not_ready")) {
+    return { ...turn, reply: "Så kan en undersøgelse passe godt. Har du noget at tilføje?", suggestedServices: ["undersoegelse"], readyForSummary: false };
+  }
+  if (text.includes("test_blocked_suggestion")) {
+    return { ...turn, reply: "Det koster ca. 2.500 kr.", suggestedServices: ["undersoegelse"], readyForSummary: true, quickReplies: [] };
+  }
   if (text.includes("test_unknown_slug")) return { ...turn, suggestedServices: ["findes_ikke"] };
   if (text.includes("karies")) {
     return {
@@ -90,7 +109,15 @@ function fakeChat(params: StructuredCallParams) {
       quickReplies: [],
     };
   }
-  return turn;
+  const asked = userMessageCount(params);
+  if (asked <= FAKE_QUESTIONS.length) return { ...turn, ...FAKE_QUESTIONS[asked - 1] };
+  return {
+    ...turn,
+    reply: "Ud fra det, du fortæller, kan en undersøgelse være en god start. Klinikken laver den endelige vurdering.",
+    suggestedServices: ["undersoegelse"],
+    readyForSummary: true,
+    quickReplies: [],
+  };
 }
 
 // Opsummeringen genfortæller patientens tekst. Markøren test_dark giver et billede med dårlig kvalitet.

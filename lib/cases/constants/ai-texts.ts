@@ -43,6 +43,10 @@ export const LIFE_THREATENING_REFERRAL_TEXT =
 export const CHAT_BLOCKED_TEXT =
   "Det kan jeg desværre ikke hjælpe med her. Prøv at formulere det anderledes, eller skriv din beskrivelse selv.";
 
+// Fast tekst når kun AI-teksten blev afvist, men forslagene fra kataloget er gyldige (architecture 7.9a regel 3).
+export const SUGGESTION_FALLBACK_TEXT =
+  "Ud fra det, du har fortalt, kan behandlingerne nedenfor være relevante. Du vælger selv, og klinikken laver den endelige vurdering.";
+
 export const CHAT_NOT_SHARED_TEXT =
   "Samtalen deles ikke med klinikker. Det er den opsummering, du godkender, der sendes.";
 

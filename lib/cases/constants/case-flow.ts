@@ -21,3 +21,6 @@ export const CASE_FLOW_TEXTS = {
   readySeeClinics: "Se klinikker der kan hjælpe",
   answeredEdit: "Ret",
 } as const;
+
+// Efter så mange patientbeskeder vises behandlingskortet, også uden forslag (architecture 7.9a regel 1).
+export const SERVICE_CARD_AFTER_USER_MESSAGES = 6;

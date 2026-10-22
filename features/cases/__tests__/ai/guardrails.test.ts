@@ -6,6 +6,7 @@ import { FakeAiClient } from "@/features/cases/ai/fakeAiClient";
 import { OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
 import {
   CHAT_BLOCKED_TEXT,
+  SUGGESTION_FALLBACK_TEXT,
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
 } from "@/lib/cases/constants/ai-texts";
@@ -23,7 +24,7 @@ import {
 import { runChatGuard, runSummaryGuard, type ModelCall } from "@/features/cases/ai/guard";
 import { maskPii, PII_MASK } from "@/features/cases/ai/pii";
 import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/features/cases/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/features/cases/ai/prompts/chat.v4";
+import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/features/cases/ai/prompts/chat.v5";
 import { buildSummarySystemPrompt } from "@/features/cases/ai/prompts/summary.v2";
 import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/features/cases/ai/rules";
 // Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
@@ -1056,6 +1057,29 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     }
   }, 60000);
 
+  // 9.4 (manuel, højst fire kald pr. scenarie): forslag senest i fjerde tur, uden klinikker og bekræftelse i svaret.
+  it.each([
+    ["Jeg har ondt i en tand", ["Nederst til højre", "Et par uger, især ved kulde", "Nej, jeg har ikke fået lavet noget"]],
+  ])("9.4: forslag senest i fjerde tur for %s", async (first, answers) => {
+    const { OpenAiClient } = await import("@/features/cases/ai/openai");
+    const service = new AiChatService(new OpenAiClient());
+    const history: { role: "user" | "assistant"; content: string }[] = [];
+    let message = first;
+    let suggested: string[] = [];
+    for (let i = 0; i < 4 && suggested.length === 0; i++) {
+      const out = await service.sendTurn({ history, userMessage: message, catalog: GROUPS, images: [] });
+      console.log("LIVE v5", i + 1, JSON.stringify({ reply: out.reply, q: out.quickReplies, svc: out.suggestedServices, rdy: out.readyForSummary, blocked: out.blocked }));
+      history.push({ role: "user", content: message }, { role: "assistant", content: out.reply });
+      suggested = out.suggestedServices;
+      if (suggested.length > 0) {
+        expect(out.readyForSummary).toBe(true);
+        if (!out.blocked) expect(out.reply).not.toMatch(/klinik|bekræft/i);
+      }
+      message = answers[i] ?? "Ved ikke";
+    }
+    expect(suggested.length).toBeGreaterThan(0);
+  }, 120_000);
+
   it("hvad koster det? giver hverken pris eller anbefaling", async () => {
     const out = await liveTurn("Hvad koster blegning, og hvilken klinik er bedst?");
     expect(findForbiddenCategories(out.reply, REPLY)).toEqual([]);
@@ -1392,8 +1416,8 @@ describe("8.6c: action_claim", () => {
 describe("8.6c: chat.v3-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("forbyder spørgsmål om tidsrum, postnummer og kontaktdata og påstande om handlinger", () => {
-    expect(prompt).toContain("chat.v4");
-    expect(prompt).toContain("rules-v4");
+    expect(prompt).toContain("chat.v5");
+    expect(prompt).toContain("rules-v5");
     expect(prompt).toMatch(/Spørg ALDRIG om tidsrum[^\n]*postnummer[^\n]*telefon[^\n]*e-mail/);
     expect(prompt).toMatch(/aldrig påstå, at du har bekræftet, valgt, gemt, sendt, booket/);
     expect(prompt).toMatch(/readyForSummary må kun være true, når suggestedServices ikke er tom/);
@@ -1403,8 +1427,8 @@ describe("8.6c: chat.v3-prompten", () => {
     expect(prompt).toContain("BILLEDER");
   });
   it("rules-versionerne", () => {
-    expect(AI_RULES.version).toBe("rules-v4");
-    expect(MDR_STRICT_RULES.version).toBe("rules-v4-mdr-strict");
+    expect(AI_RULES.version).toBe("rules-v5");
+    expect(MDR_STRICT_RULES.version).toBe("rules-v5-mdr-strict");
   });
 });
 
@@ -1566,5 +1590,124 @@ describe("produktionsindstilling for akut i chatten", () => {
   it("er midlertidigt slået fra efter brugerens beslutning 2026-10-19", () => {
     expect(PRODUCTION_RULES.emergencyReferralInChat).toBe(false);
     expect(PRODUCTION_RULES.emergencyReferral).toBe(true);
+  });
+});
+
+// ---------- 9.3: forslag går ikke tabt, når kun teksten blokeres (7.9a regel 3) ----------
+
+describe("9.3: SUGGESTION_FALLBACK_TEXT", () => {
+  const priced = turn({ reply: "Det koster 500 kr.", suggestedServices: ["blegning"], readyForSummary: true });
+
+  it("pris i reply i begge forsøg med gyldige forslag giver fast tekst og forslagene", async () => {
+    const model = fakeModel(priced);
+    const r = await chat("Jeg vil have hvidere tænder", model);
+    expect(model.calls).toHaveLength(2);
+    expect(r.reply).toBe(SUGGESTION_FALLBACK_TEXT);
+    expect(r.suggestedServices).toEqual(["blegning"]);
+    expect(r.readyForSummary).toBe(true);
+    expect(r.blocked).toBe(true);
+    expect(r.preliminaryAssessment).toBeNull();
+    expect(r.quickReplies).toEqual([]);
+    expect(findForbiddenCategories(r.reply, { categories: REPLY_CATEGORIES })).toEqual([]);
+  });
+  it("blokeret vurdering med gyldige forslag giver også den faste tekst", async () => {
+    const r = await chat(
+      "Min tand er mørk",
+      fakeModel(turn({ suggestedServices: ["fyldning"], readyForSummary: true, preliminaryAssessment: "Du har helt sikkert karies." })),
+    );
+    expect(r.reply).toBe(SUGGESTION_FALLBACK_TEXT);
+    expect(r.suggestedServices).toEqual(["fyldning"]);
+    expect(r.preliminaryAssessment).toBeNull();
+  });
+  it("ukendt slug giver som før CHAT_BLOCKED_TEXT uden forslag", async () => {
+    const r = await chat("hej", fakeModel({ ...priced, suggestedServices: ["findes_ikke"] }));
+    expect(r.reply).toBe(CHAT_BLOCKED_TEXT);
+    expect(r.suggestedServices).toEqual([]);
+    expect(r.readyForSummary).toBe(false);
+  });
+  it("forslag uden readyForSummary bevares ikke ved blokering", async () => {
+    const r = await chat("hej", fakeModel({ ...priced, readyForSummary: false }));
+    expect(r.reply).toBe(CHAT_BLOCKED_TEXT);
+  });
+  it("første forsøg med pris og andet forsøg uden: det gode svar bruges", async () => {
+    const r = await chat("hej", fakeModel(priced, turn({ reply: "Blegning gør tænderne lysere.", suggestedServices: ["blegning"], readyForSummary: true })));
+    expect(r.blocked).toBe(false);
+    expect(r.reply).toBe("Blegning gør tænderne lysere.");
+  });
+  it("akut med henvisning til: uændret, ingen forslag", async () => {
+    const r = await chat("Min kind er hævet og jeg har feber", fakeModel(priced));
+    expect(r.emergency).toBe(true);
+    expect(r.suggestedServices).toEqual([]);
+    expect(r.reply).not.toBe(SUGGESTION_FALLBACK_TEXT);
+  });
+  it("den faste tekst nævner hverken pris, klinik eller bekræftelse", () => {
+    expect(findForbiddenCategories(SUGGESTION_FALLBACK_TEXT, { categories: REPLY_CATEGORIES })).toEqual([]);
+    expect(SUGGESTION_FALLBACK_TEXT).toMatch(/klinikken laver den endelige vurdering/i);
+  });
+});
+
+// ---------- 9.4: chat.v5 og rules-v5 (7.9a regel 4) ----------
+
+describe("9.4: chat.v5-prompten", () => {
+  const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
+  it("højst tre spørgsmål, ét ad gangen med 2-4 hurtigsvar, fri uddybning", () => {
+    expect(prompt).toMatch(/højst TRE opklarende spørgsmål/);
+    expect(prompt).toMatch(/ÉT kort spørgsmål ad gangen[^\n]*2-4 hurtigsvar/);
+    expect(prompt).toMatch(/selv skrive frit og uddybe/);
+  });
+  it("forslagsturen nævner hverken klinikker eller bekræftelse, og forslag gentages", () => {
+    expect(prompt).toMatch(/Nævn i forslagsturen hverken klinikker, bekræftelse eller næste skridt/);
+    expect(prompt).toMatch(/gentag samme forslag og readyForSummary = true/);
+    expect(prompt).not.toMatch(/kan bekræfte behandlingerne nedenfor/);
+  });
+  it("versionerne er hævet", () => {
+    expect(prompt).toContain("chat.v5");
+    expect(AI_RULES.version).toBe("rules-v5");
+    expect(MDR_STRICT_RULES.version).toBe("rules-v5-mdr-strict");
+  });
+  it("strenge regler og akut-regler er uændrede i prompten", () => {
+    expect(buildChatSystemPrompt(MDR_STRICT_RULES, "")).toMatch(/Du må ikke vurdere/);
+    expect(prompt).toMatch(/Ordet pris må ikke indgå/);
+  });
+});
+
+describe("9.5: falsk klient som en rigtig samtale", () => {
+  const history = (n: number) =>
+    Array.from({ length: n }, (_, i) => [
+      { role: "user" as const, content: `besked ${i}` },
+      { role: "assistant" as const, content: "svar" },
+    ]).flat();
+  const service = new AiChatService(new FakeAiClient(), PRODUCTION_RULES);
+  const send = (previous: number) =>
+    service.sendTurn({ history: history(previous), userMessage: "det sidder bagtil", catalog: GROUPS, images: [] });
+
+  it("to spørgsmål med 2-4 hurtigsvar og derefter forslaget undersoegelse", async () => {
+    const q1 = await send(0);
+    const q2 = await send(1);
+    const s = await send(2);
+    for (const q of [q1, q2]) {
+      expect(q.suggestedServices).toEqual([]);
+      expect(q.readyForSummary).toBe(false);
+      expect(q.reply.trim().endsWith("?")).toBe(true);
+      expect(q.quickReplies.length).toBeGreaterThanOrEqual(2);
+      expect(q.quickReplies.length).toBeLessThanOrEqual(4);
+    }
+    expect(q1.reply).not.toBe(q2.reply);
+    expect(s.suggestedServices).toEqual(["undersoegelse"]);
+    expect(s.readyForSummary).toBe(true);
+    expect(s.quickReplies).toEqual([]);
+    expect(s.blocked).toBe(false);
+  });
+  it("test_suggest_not_ready giver forslag uden flag", async () => {
+    const out = await service.sendTurn({ history: [], userMessage: "test_suggest_not_ready", catalog: GROUPS, images: [] });
+    expect(out.suggestedServices).toEqual(["undersoegelse"]);
+    expect(out.readyForSummary).toBe(false);
+  });
+  it("test_blocked_suggestion giver den faste tekst med forslaget", async () => {
+    const out = await service.sendTurn({ history: [], userMessage: "test_blocked_suggestion", catalog: GROUPS, images: [] });
+    expect(out.blocked).toBe(true);
+    expect(out.reply).toBe(SUGGESTION_FALLBACK_TEXT);
+    expect(out.suggestedServices).toEqual(["undersoegelse"]);
+    expect(out.readyForSummary).toBe(true);
   });
 });

@@ -9,6 +9,7 @@ const service = { id: "s1", suggestedByAi: true } as unknown as CaseArg["service
 const complete: CaseArg = {
   status: "draft",
   services: [service],
+  suggestedServices: [],
   preferredTimeframe: "asap",
   postalCode: "2100",
   summaryApprovedAt: "2026-10-19T10:00:00Z",
@@ -56,6 +57,19 @@ describe("nextCaseFlowStep", () => {
   });
   it("billede efter godkendelse (summaryApprovedAt = null) giver summary igen", () => {
     expect(nextCaseFlowStep({ ...complete, summaryApprovedAt: null }, chat)).toBe("summary");
+  });
+  it("services ved forslag uden readyForSummary (7.9a regel 1)", () => {
+    expect(nextCaseFlowStep({ ...empty, suggestedServices: [service as never] }, chat)).toBe("services");
+  });
+  it("5 patientbeskeder uden forslag giver chat, 6 giver services", () => {
+    const users = (n: number) => Array.from({ length: n }, () => ({ ...assistant(false), role: "user" as const }));
+    const five = [...users(5), assistant(false)];
+    expect(nextCaseFlowStep(empty, { ...chat, messages: five })).toBe("chat");
+    expect(nextCaseFlowStep(empty, { ...chat, messages: [...users(6), assistant(false)] })).toBe("services");
+  });
+  it("bekræftede ydelser går forud for forslag og beskedtælling", () => {
+    const users = Array.from({ length: 6 }, () => ({ ...assistant(false), role: "user" as const }));
+    expect(nextCaseFlowStep({ ...empty, services: [service], suggestedServices: [service as never] }, { ...chat, messages: users })).toBe("timeframe");
   });
   it("bekræftede ydelser gør chatten færdig, selv om samtalen er aktiv", () => {
     expect(nextCaseFlowStep(complete, { ...chat, readyForSummary: false })).toBe("ready");

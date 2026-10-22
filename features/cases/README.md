@@ -120,7 +120,7 @@ Rækkefølgen ovenfor var **webens** trinflow (`/start/[caseId]`, fjernet fra we
 
 | | Chat (`AiChatService.sendTurn`, `features/cases/ai/aiChatService.ts`) | Opsummering (`AiSummaryService.generate`, `features/cases/ai/aiSummaryService.ts`) |
 |---|---|---|
-| System-besked | Fast, versioneret `prompts/chat.v4.ts`, bygget af reglerne i `rules.ts`. Afløses af `prompts/chat.v5.ts` (7.9a; [IKKE BYGGET], trin 9.4); `chat.v4.ts` slettes i samme commit | `prompts/summary.v2.ts` (uændret) |
+| System-besked | Fast, versioneret `prompts/chat.v5.ts` (7.9a, trin 9.4), bygget af reglerne i `rules.ts` | `prompts/summary.v2.ts` (uændret) |
 | Katalog | Aktive behandlinger grupperet efter kategori: kategoriens navn og for hver behandling `slug`, navn, type og kort beskrivelse (`catalogContext.ts`, bygget fra databasen ved hvert kald, så ændringer i kataloget slår igennem uden kodeændring). **Ingen priser, ingen klinikker**. AI'en foreslår kun behandlings-slugs, ikke kategorier | Samme |
 | Kontekst | Seneste 20 beskeder; sagens billeder (low detail) | Hele chatten (max 30 brugerbeskeder), bekræftede ydelser, billeder |
 | Billeder | Re-encodet server-side (EXIF fjernet), max 1024 px, base64. Aldrig signerede URL'er | Samme |
@@ -366,7 +366,7 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 
 **Weben** (13.6): fortsætter med trinflowet og skal ikke ændres. Ændringerne er bagudkompatible: `readyForSummary` er stadig et boolesk felt, `quickReplies` er et ekstra felt, som weben ignorerer, og ingen route ændres. Webens e2e-tests skal stadig bestå med den falske klient.
 
-### 7.9a Kortene skal altid komme frem (trin 9) [IKKE BYGGET]
+### 7.9a Kortene skal altid komme frem (trin 9) [bygget i 9.1-9.5; appen 9.6a mangler]
 
 Brugerens oplevelse (2026-10-19 og 2026-10-22): "man chatter bare, uden der sker noget". Samtalen skal afgrænse problemet med ét spørgsmål ad gangen og hurtigsvar, og derefter **altid** føre videre til kortene: behandlinger → tidsrum → postnummer → opsummering → "Se klinikker der kan hjælpe". Patienten kan altid skrive selv i stedet for at trykke, eller ud over at trykke.
 

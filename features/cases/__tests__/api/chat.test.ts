@@ -71,6 +71,16 @@ describe("chat: anonym og samtykke", () => {
     assert.deepEqual(c.body.services, []);
   });
 
+  it("readyForSummary i GET /chat er klæbende: en senere tur uden flag fjerner det ikke (7.9a regel 2)", async () => {
+    const p = await anonymous();
+    const first = await say(p, "Jeg vil gerne have blegning");
+    assert.equal(first.body.readyForSummary, true);
+    const later = await say(p, "test_suggest_not_ready");
+    assert.equal(later.body.readyForSummary, false, "turens eget flag er uændret");
+    const state = await p.c.get(`/api/cases/${p.caseId}/chat`);
+    assert.equal(state.body.readyForSummary, true);
+  });
+
   it("kræver aktivt ai_processing-samtykke", async () => {
     const p = await accountWithoutConsent();
     const denied = await say(p, "Hej");
