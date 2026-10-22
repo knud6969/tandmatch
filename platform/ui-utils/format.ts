@@ -78,7 +78,6 @@ const shortDateTimeFormat = new Intl.DateTimeFormat("da-DK", {
 });
 const dayFormat = new Intl.DateTimeFormat("da-DK", { weekday: "long", day: "numeric", month: "long", timeZone: TIME_ZONE });
 const timeFormat = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE });
-const dayMonthFormat = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "long", timeZone: TIME_ZONE });
 
 // "tir. 14. okt., 09.15" til kompakte kort.
 export function formatShortDateTime(iso: string): string {
@@ -91,11 +90,6 @@ export function formatDay(iso: string): string {
 }
 export function formatTime(iso: string): string {
   return timeFormat.format(new Date(iso));
-}
-
-// "15. oktober" (uden ugedag), til tidsrum.
-export function formatDayMonth(value: Date | string): string {
-  return dayMonthFormat.format(new Date(value));
 }
 
 // Klokkeslæt fra databasen ("08:00:00") som "08:00".

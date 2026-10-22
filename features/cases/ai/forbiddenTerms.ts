@@ -319,12 +319,6 @@ export function detectEmergency(text: string): EmergencyDetection {
   return { emergency: emergency || lifeThreatening, lifeThreatening };
 }
 
-// Ord og tal i en tekst (små bogstaver). Bruges til at se, om en tekst kun består af patientens egne ord.
-export function wordsOf(text: string, minLength = 2): string[] {
-  const matches = text.toLowerCase().match(/[\p{L}\d]+(?:[.,][\d]+)*/gu) ?? [];
-  return [...new Set(matches.filter((w) => w.length >= minLength))];
-}
-
 // 8.11e: et akut-flag fra modellen alene (uden at detectEmergency fandt noget) accepteres kun, hvis patientens tekst
 // har et stærkt ord. Almindelig tandpine ("ondt i min tand") er ikke akut og må ikke flages af modellen alene.
 const STRONG_EMERGENCY_WORD = rx(
