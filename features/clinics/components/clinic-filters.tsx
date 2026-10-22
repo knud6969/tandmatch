@@ -10,7 +10,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { TextField } from "@/components/ui/text-field";
 import { hasOrigin, isPostalCode, type DirectoryFilters } from "@/features/clinics/utils/clinic-query";
 import { parseWholeKr } from "@/platform/ui-utils/format";
-import { usePosition } from "@/platform/ui-utils/use-position";
+import { usePosition } from "@/features/clinics/utils/use-position";
 
 const DISTANCES = [5, 10, 25, 50, 100] as const;
 const STAR_OPTIONS = [

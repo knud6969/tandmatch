@@ -302,5 +302,13 @@
   "tests/unit/reviews.test.ts": "features/booking/__tests__/reviews.test.ts",
   "tests/unit/summary.test.ts": "features/cases/__tests__/summary.test.ts",
   "tests/unit/time.test.ts": "platform/__tests__/time.test.ts"
+ },
+ "cleanup": {
+  "platform/ui-utils/map.ts": "features/clinics/utils/map.ts",
+  "platform/ui-utils/use-position.ts": "features/clinics/utils/use-position.ts",
+  "platform/ui-utils/ids.ts": "features/clinics/utils/ids.ts",
+  "platform/ui-utils/upload-image.ts": "features/clinics/utils/upload-image.ts",
+  "platform/ui-utils/use-save-state.ts": "features/clinics/utils/use-save-state.ts",
+  "features/clinics/utils/clinic-links.ts": "features/leads/utils/clinic-links.ts"
  }
 }

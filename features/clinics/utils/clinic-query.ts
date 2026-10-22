@@ -1,7 +1,7 @@
 import { CLINIC_SORTS, DEFAULT_MAX_DISTANCE_KM } from "@/lib/clinics/constants/clinics";
 import { postalCodeSchema, servicesParamSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicSort } from "@/lib/clinics/types/clinics";
-import { isUuid } from "@/platform/ui-utils/ids";
+import { isUuid } from "@/features/clinics/utils/ids";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). De spejles i URL'en (2.8, B16), så genindlæsning, profil
 // og tilbage samt deling bevarer dem.

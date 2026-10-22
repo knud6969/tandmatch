@@ -13,7 +13,7 @@ import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadServiceGroups } from "@/features/clinics/utils/clinic-loaders";
 import { parseWholeKr } from "@/platform/ui-utils/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
-import { useSaveState } from "@/platform/ui-utils/use-save-state";
+import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { PRICE_NOTE_MAX_CHARS, SERVICE_DURATION_MAX_MINUTES, SERVICE_DURATION_MIN_MINUTES } from "@/lib/clinics/constants/clinics";
 import { putPricesSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicPriceDto } from "@/lib/clinics/types/clinics";

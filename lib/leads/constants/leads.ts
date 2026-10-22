@@ -26,11 +26,6 @@ export const LEAD_DECLINE_REASON_LABEL = {
   clinic_left: "Klinikken er ikke længere på TandMatch",
 } as const satisfies Record<(typeof LEAD_DECLINE_REASONS)[number], string>;
 
-// Vises i stedet for navnet, når klinikken ikke længere er på TandMatch. Ens i sagslisten og på sagen.
-export const REMOVED_CLINIC_LABEL = "Klinikken er ikke længere på TandMatch";
-// Teksten under prisen på leadkortet, når klinikken har præciseret prisen efter at have set sagen.
-export const QUOTED_PRICE_LABEL = "Klinikkens pris efter at have set din sag";
-
 // Klinikkens indbakke (architecture 6.3): statusnavne set fra klinikken og filtrene, nye først.
 export const CLINIC_LEAD_STATUS_LABEL = {
   sent: "Venter på dit svar",
