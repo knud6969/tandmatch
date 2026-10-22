@@ -13,7 +13,7 @@ import {
   newClientWithTerms,
   randomCvr,
   uniqueEmail,
-} from "./helpers.ts";
+} from "../../../../tests/api/helpers.ts";
 
 const admin = adminClient();
 const createdUserIds = new Set<string>();

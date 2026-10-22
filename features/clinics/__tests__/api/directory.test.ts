@@ -4,7 +4,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { PASSWORD, TestClient, adminClient, newClientWithTerms, randomCvr, uniqueEmail } from "./helpers.ts";
+import { PASSWORD, TestClient, adminClient, newClientWithTerms, randomCvr, uniqueEmail } from "../../../../tests/api/helpers.ts";
 
 const admin = adminClient();
 const createdUserIds = new Set<string>();

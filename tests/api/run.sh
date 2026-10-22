@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kører API-testene (tests/api/*.test.ts) mod en lokal app og den LOKALE Supabase.
+# Kører API-testene (features/*/__tests__/api/*.test.ts) mod en lokal app og den LOKALE Supabase.
 # Forudsætter: Docker + `supabase start` (og gerne `supabase db reset` for ren database) og .env.test.local.
 # Starter selv `next dev` på TEST_PORT (standard 3101) med miljø fra .env.test.local og midlertidige hemmeligheder
 # (skrives ikke til .env.local). Rører aldrig .env.local og kører aldrig mod andet end localhost.
@@ -38,7 +38,7 @@ for _ in $(seq 1 90); do
   sleep 1
 done
 
-node --test --test-reporter=spec --test-concurrency=1 tests/api/*.test.ts
+node --test --test-reporter=spec --test-concurrency=1 features/*/__tests__/api/*.test.ts
 STATUS=$?
 [ $STATUS -ne 0 ] && echo "Serverlog: $LOG" >&2
 exit $STATUS

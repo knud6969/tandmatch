@@ -1,7 +1,7 @@
 // Acceptkriterier for demodata (arbejdsplan 7.9): kører kun, når `npm run seed:demo` er kørt (ellers springes over).
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { adminClient, newClientWithTerms } from "./helpers.ts";
+import { adminClient, newClientWithTerms } from "../../../../tests/api/helpers.ts";
 
 type Listed = { name: string; tier: string; canReceiveLeads: boolean; reviewStats: { priceAccuracyPct: number | null } | null };
 

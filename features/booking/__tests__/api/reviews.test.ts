@@ -12,7 +12,7 @@ import {
   newClientWithTerms,
   randomCvr,
   uniqueEmail,
-} from "./helpers.ts";
+} from "../../../../tests/api/helpers.ts";
 
 // Samme localhost-vagt som run.sh: service role-klienten bruges kun mod lokal Supabase.
 assert.match(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", /^http:\/\/(127\.0\.0\.1|localhost):/, "kun lokal Supabase");

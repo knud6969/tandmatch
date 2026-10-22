@@ -1,7 +1,7 @@
 // API-test for 7.15: postnumre fra GeoNames. Alle danske postnumre, fx 2730 (Herlev), skal kunne bruges som udgangspunkt.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { newClientWithTerms } from "./helpers.ts";
+import { newClientWithTerms } from "../../../../tests/api/helpers.ts";
 
 describe("GET /api/clinics med postnummer fra GeoNames", () => {
   it("giver 200 for 2730 (Herlev), 3790, 6000 og 9990", async () => {

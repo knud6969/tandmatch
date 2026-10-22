@@ -2,7 +2,7 @@
 // Kører mod en rigtig app + lokal Supabase (run.sh afviser alt andet end localhost). Alt er fiktivt og ryddes til sidst.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { PASSWORD, SHARING_CONSENT_VERSION, TestClient, adminClient, newClientWithTerms, randomCvr, uniqueEmail } from "./helpers.ts";
+import { PASSWORD, SHARING_CONSENT_VERSION, TestClient, adminClient, newClientWithTerms, randomCvr, uniqueEmail } from "../../../../tests/api/helpers.ts";
 
 assert.match(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", /^http:\/\/(127\.0\.0\.1|localhost):/, "kun lokal Supabase");
 
