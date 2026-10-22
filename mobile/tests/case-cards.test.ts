@@ -1,7 +1,7 @@
 import { saveTermsToken } from "~/auth/tokens";
 import { approveSummary, confirmServices, createSummary, updateCase } from "~/api/cases";
 import { nextCaseFlowStep } from "@/lib/domain/case-flow";
-import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import type { SummaryResponse } from "@/lib/types/ai";
 import {
   cardModes,

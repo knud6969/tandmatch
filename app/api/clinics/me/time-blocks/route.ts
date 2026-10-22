@@ -1,7 +1,7 @@
 import { createTimeBlockSchema, timeBlocksQuerySchema } from "@/lib/schemas/clinics";
-import { jsonResponse, readJson, readQuery, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, readJson, readQuery, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { ClinicsController } from "@/controllers/clinicsController";
 
 export const GET = withApi(async (req) => {

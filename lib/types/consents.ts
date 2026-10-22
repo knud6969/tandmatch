@@ -1,4 +1,4 @@
-import type { ConsentType } from "@/lib/types/common";
+import type { ConsentType } from "@/lib/common/types/common";
 
 export type GrantedConsentDto = { id: string; type: ConsentType; grantedAt: string };
 

@@ -7,16 +7,16 @@ import type { ClinicLeadDetailDto } from "@/lib/types/leads";
 import { LeadBadges, leadAreaText, leadDistanceText, leadTimeText } from "@/views/components/clinic/lead-facts";
 import { LeadDecision } from "@/views/components/clinic/lead-decision";
 import { MessageThread } from "@/views/components/messages/message-thread";
-import { Alert } from "@/views/components/ui/alert";
-import { Badge } from "@/views/components/ui/badge";
-import { Card } from "@/views/components/ui/card";
-import { CommentQuote } from "@/views/components/ui/comment-quote";
-import { DefinitionList, type DefinitionItem } from "@/views/components/ui/definition-list";
-import { LoadState } from "@/views/components/ui/load-state";
-import { PriceWithSource } from "@/views/components/ui/price-with-source";
-import { apiRequest } from "@/views/utils/api-client";
-import { formatDateTime, formatShortDateTime } from "@/views/utils/format";
-import { useLoad } from "@/views/utils/use-load";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { CommentQuote } from "@/components/ui/comment-quote";
+import { DefinitionList, type DefinitionItem } from "@/components/ui/definition-list";
+import { LoadState } from "@/components/ui/load-state";
+import { PriceWithSource } from "@/components/ui/price-with-source";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { formatDateTime, formatShortDateTime } from "@/platform/ui-utils/format";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 function BackLink() {
   return (

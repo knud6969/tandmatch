@@ -5,7 +5,7 @@ import "server-only";
 // Hverken priser, klinikdata, navne eller id'er sendes: kun katalog, maskeret patienttekst og billeder (base64).
 
 import { LIFE_THREATENING_REFERRAL_TEXT } from "@/lib/constants/ai-texts";
-import { AI_TIMEOUT_MS } from "@/lib/constants/limits";
+import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
 import type { ServiceGroupDto } from "@/lib/types/services";
 import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext";
 import { runChatGuard, type ChatGuardResult } from "@/services/ai/guard";

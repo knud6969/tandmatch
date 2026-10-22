@@ -1,7 +1,7 @@
 // Faste tekster i klinikoversigten og profilen. KOPIER af tekster, der i dag står i views/ (PRICE_SOURCE i
 // price-with-source.tsx, tier-badge.tsx, clinic-facts.tsx, trustpilot-block.tsx, public-review-list.tsx).
 // De skal flyttes til lib/constants/ og importeres af både weben og appen (rapporteret i 8.4).
-import type { TrustpilotInfo } from "@/lib/types/common";
+import type { TrustpilotInfo } from "@/lib/common/types/common";
 
 export const PRICE_SOURCE = "ifølge klinikkens prisliste";
 export const VERIFIED_CLINIC_LABEL = "Verificeret klinik";

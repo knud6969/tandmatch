@@ -1,8 +1,8 @@
 import "server-only";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/types/ai";
-import { ApiError, aiConsentRequired, chatLimit, notDraft, notFound } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database, Tables } from "@/models/db/database.types";
+import { ApiError, aiConsentRequired, chatLimit, notDraft, notFound } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database, Tables } from "@/platform/db/database.types";
 
 type ConversationRow = Pick<
   Tables<"ai_conversations">,

@@ -4,13 +4,13 @@ import type { z } from "zod";
 import { attachPortfolio } from "@/lib/domain/dentists";
 import type { createDentistSchema, patchDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistDto } from "@/lib/types/clinics";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
-import { lazyAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/models/portfolioRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
-import { ImageProcessingService } from "@/services/imageProcessingService";
+import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 type CreateDentistInput = z.infer<typeof createDentistSchema>;
 type PatchDentistInput = z.infer<typeof patchDentistSchema>;

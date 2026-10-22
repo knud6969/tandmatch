@@ -1,4 +1,4 @@
-import { Alert } from "@/views/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 
 // Kort tekst på kalender og anmeldelser, så længe klinikken ikke er verificeret (architecture 6.3). Ikke en fejl.
 // Kaldet sender hele første sætning, så grammatikken ligger hos kalderen.

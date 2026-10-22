@@ -2,8 +2,8 @@ import "server-only";
 import type { z } from "zod";
 import type { patchPatientSchema } from "@/lib/schemas/patients";
 import type { PatientMeDto } from "@/lib/types/patients";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type PatientRow = Pick<Tables<"patients">, "first_name" | "postal_code" | "phone">;
 

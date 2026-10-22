@@ -1,4 +1,4 @@
-import { GENERIC_ERROR_TEXT } from "@/lib/constants/error-texts";
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import type { ChatTurnResponse } from "@/lib/types/ai";
 
 // Ren chatlogik uden React og uden netværk (architecture 10.6): hvad en tur gav, og hvad skærmen skal gøre bagefter.

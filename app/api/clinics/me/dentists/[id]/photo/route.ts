@@ -1,8 +1,8 @@
-import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/constants/limits";
-import { imageFileReader, jsonResponse, noContent, parseId, rejectLargeImage, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
+import { imageFileReader, jsonResponse, noContent, parseId, rejectLargeImage, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { ClinicDentistsController } from "@/controllers/clinicDentistsController";
 
 type Ctx = { params: Promise<{ id: string }> };

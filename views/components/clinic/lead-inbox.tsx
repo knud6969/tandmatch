@@ -5,12 +5,12 @@ import { useState } from "react";
 import { CLINIC_LEAD_STATUS_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
 import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/types/leads";
 import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/views/components/clinic/lead-facts";
-import { FilterChips } from "@/views/components/ui/filter-chips";
-import { LoadState } from "@/views/components/ui/load-state";
-import { apiRequest } from "@/views/utils/api-client";
+import { FilterChips } from "@/components/ui/filter-chips";
+import { LoadState } from "@/components/ui/load-state";
+import { apiRequest } from "@/platform/ui-utils/api-client";
 import { clinicLeadHref } from "@/views/utils/clinic-links";
-import { formatDateTime } from "@/views/utils/format";
-import { useLoad } from "@/views/utils/use-load";
+import { formatDateTime } from "@/platform/ui-utils/format";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 type Filter = LeadStatus | "all";
 

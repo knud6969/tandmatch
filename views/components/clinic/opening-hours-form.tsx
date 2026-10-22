@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
-import { Card } from "@/views/components/ui/card";
-import { CheckboxField } from "@/views/components/ui/checkbox-field";
-import { cx } from "@/views/components/ui/cx";
-import { TextField } from "@/views/components/ui/text-field";
-import { LoadState } from "@/views/components/ui/load-state";
-import { SaveBar } from "@/views/components/ui/save-bar";
-import { useLoad } from "@/views/utils/use-load";
-import { apiRequest } from "@/views/utils/api-client";
-import { useSaveState } from "@/views/utils/use-save-state";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { cx } from "@/components/ui/cx";
+import { TextField } from "@/components/ui/text-field";
+import { LoadState } from "@/components/ui/load-state";
+import { SaveBar } from "@/components/ui/save-bar";
+import { useLoad } from "@/platform/ui-utils/use-load";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { useSaveState } from "@/platform/ui-utils/use-save-state";
 import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/constants/clinics";
 import { putOpeningHoursSchema } from "@/lib/schemas/clinics";
 import type { OpeningHoursDto } from "@/lib/types/clinics";

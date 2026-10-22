@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { TrustpilotInfo } from "@/lib/types/common";
+import type { TrustpilotInfo } from "@/lib/common/types/common";
 import { Button } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
 import { formatDate, formatOneDecimal } from "~/utils/format";

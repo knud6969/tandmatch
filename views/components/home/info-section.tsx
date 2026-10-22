@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Alert } from "@/views/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 
 export function PrototypeNote({ children }: { children: ReactNode }) {
   return (

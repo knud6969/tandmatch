@@ -1,6 +1,6 @@
 import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/types/services";
 import { Button, Checkbox, CheckboxText, LoadState } from "~/components/ui";
 import { colors, fontSize, spacing } from "~/theme";

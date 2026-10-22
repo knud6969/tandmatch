@@ -4,14 +4,14 @@ import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import type { createPortfolioItemSchema, patchPortfolioItemSchema } from "@/lib/schemas/clinics";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
-import { lazyAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/models/portfolioRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 import { ServicesRepository } from "@/models/servicesRepository";
-import { ImageProcessingService } from "@/services/imageProcessingService";
+import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 // Felterne fra multipart-formen. Skemaet har allerede sikret bekræftelsen og tekstversionen (architecture 9.5).
 type CreatePortfolioInput = z.infer<typeof createPortfolioItemSchema>;

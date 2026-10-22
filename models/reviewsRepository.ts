@@ -1,6 +1,6 @@
 import "server-only";
 import type { z } from "zod";
-import { toClinicMonth } from "@/lib/domain/time";
+import { toClinicMonth } from "@/lib/common/domain/time";
 import type { createReviewSchema } from "@/lib/schemas/reviews";
 import type {
   ClinicReviewDto,
@@ -12,11 +12,11 @@ import type {
   ReviewExportDto,
   ReviewStats,
 } from "@/lib/types/reviews";
-import type { ApiError } from "@/middleware/http";
-import { alreadyReplied, alreadyReviewed, notFound, reviewNotAllowed } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database } from "@/models/db/database.types";
-import { iso, type WithNulls } from "@/models/db/mappers";
+import type { ApiError } from "@/platform/middleware/http";
+import { alreadyReplied, alreadyReviewed, notFound, reviewNotAllowed } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database } from "@/platform/db/database.types";
+import { iso, type WithNulls } from "@/platform/db/mappers";
 
 type CreateReviewInput = z.infer<typeof createReviewSchema>;
 type Functions = Database["public"]["Functions"];

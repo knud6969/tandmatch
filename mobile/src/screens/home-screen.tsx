@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { HomeEntries } from "~/components/clinic-directory/home-entries";

@@ -1,9 +1,9 @@
 "use client";
 
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (

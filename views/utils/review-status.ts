@@ -1,4 +1,4 @@
-import type { BadgeTone } from "@/views/components/ui/badge";
+import type { BadgeTone } from "@/components/ui/badge";
 import type { ModerationStatus } from "@/lib/types/reviews";
 
 // Teksterne (MODERATION_LABEL) står i lib/constants/reviews.ts; her ligger kun tonerne.

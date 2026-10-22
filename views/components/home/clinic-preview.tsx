@@ -1,4 +1,4 @@
-import { ICONS } from "@/views/components/ui/icons";
+import { ICONS } from "@/components/ui/icons";
 
 // Illustrativt klinikkort (eksempel, ikke en rigtig klinik). Farveflade med ikon i stedet for foto.
 export function ClinicPreview({ name, area, tone }: { name: string; area: string; tone: "a" | "b" | "c" }) {

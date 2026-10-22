@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeInternalPath } from "@/lib/navigation/paths";
+import { safeInternalPath } from "@/lib/common/navigation/paths";
 
 describe("safeInternalPath", () => {
   it("accepterer interne stier", () => {

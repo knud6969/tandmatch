@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { PRICE_ACCURACY_LABEL } from "@/lib/constants/reviews";
 import type { PublicReviewDto } from "@/lib/types/reviews";
 import { Stars } from "@/views/components/clinic-directory/star-rating";
-import { Badge } from "@/views/components/ui/badge";
-import { formatKr, formatMonth } from "@/views/utils/format";
+import { Badge } from "@/components/ui/badge";
+import { formatKr, formatMonth } from "@/platform/ui-utils/format";
 
 // Indholdet i en anmeldelse (stjerner, tekst, prisnøjagtighed og gennemsigtighed). Genbruges af patientens og klinikkens visning.
 export function ReviewDetails({ review, badge }: { review: PublicReviewDto; badge?: ReactNode }) {

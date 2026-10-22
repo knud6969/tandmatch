@@ -6,12 +6,12 @@ import {
   CLINIC_BOOKINGS_DEFAULT_PAST_DAYS,
   MAX_BOOKINGS_RANGE_DAYS,
 } from "@/lib/constants/bookings";
-import { DAY_MS } from "@/lib/domain/time";
+import { DAY_MS } from "@/lib/common/domain/time";
 import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
 import type { SlotDto } from "@/lib/types/clinics";
-import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/models/availabilityRepository";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { ClinicDirectoryRepository } from "@/models/clinicDirectoryRepository";

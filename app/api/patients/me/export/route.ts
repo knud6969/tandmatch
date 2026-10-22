@@ -1,6 +1,6 @@
-import { requireTerms } from "@/middleware/termsGate";
-import { requireRole } from "@/middleware/session";
-import { jsonResponse, withApi } from "@/middleware/http";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { requireRole } from "@/platform/middleware/session";
+import { jsonResponse, withApi } from "@/platform/middleware/http";
 import { ExportController } from "@/controllers/exportController";
 
 // Dataeksport for egen konto (GDPR). Også for anonyme, så en patient kan se sin kladde før kontooprettelse.

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { EXTERNAL_LINK_REL } from "@/views/utils/links";
-import { cx } from "@/views/components/ui/cx";
+import { EXTERNAL_LINK_REL } from "@/platform/ui-utils/links";
+import { cx } from "@/components/ui/cx";
 
 // Link til en ekstern side (klinikkens website, Trustpilot). Åbner i ny fane og følges ikke af søgemaskiner.
 export function ExternalLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {

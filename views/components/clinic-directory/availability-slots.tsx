@@ -4,11 +4,11 @@ import { useCallback, useState } from "react";
 import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/constants/bookings";
 import { EXAMINATION_SERVICE_SLUG } from "@/lib/constants/services";
 import type { ClinicPriceDto, SlotDto } from "@/lib/types/clinics";
-import { LoadState } from "@/views/components/ui/load-state";
-import { SlotDays } from "@/views/components/ui/slot-days";
-import { SelectField } from "@/views/components/ui/select-field";
-import { apiRequest } from "@/views/utils/api-client";
-import { useLoad } from "@/views/utils/use-load";
+import { LoadState } from "@/components/ui/load-state";
+import { SlotDays } from "@/components/ui/slot-days";
+import { SelectField } from "@/components/ui/select-field";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 const DAYS_SHOWN = 5;
 

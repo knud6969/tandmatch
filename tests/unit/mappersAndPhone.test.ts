@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MODERATION_LABEL } from "@/lib/constants/reviews";
-import { phoneSchema } from "@/lib/schemas/phone";
-import { toClinicBookingDto, type ClinicBookingFields } from "@/models/db/mappers";
+import { phoneSchema } from "@/lib/common/schemas/phone";
+import { toClinicBookingDto, type ClinicBookingFields } from "@/platform/db/mappers";
 
 const NOW = new Date("2026-10-20T12:00:00Z");
 const fields = (status: ClinicBookingFields["status"]): ClinicBookingFields => ({

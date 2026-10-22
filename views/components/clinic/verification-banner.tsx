@@ -1,4 +1,4 @@
-import { Alert } from "@/views/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import type { ClinicStatus } from "@/lib/types/clinics";
 
 // Forklarer, at en ny klinik først modtager henvendelser, når TandMatch har verificeret den (architecture 6.3). Vises kun ved

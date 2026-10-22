@@ -1,6 +1,6 @@
-import { LinkButton } from "@/views/components/ui/button";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { LinkButton } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 
 export default function NotFound() {
   return (

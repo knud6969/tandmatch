@@ -1,6 +1,6 @@
 import "server-only";
-import { BaseStorage } from "@/models/base/baseStorage";
-import { getSupabaseConfig } from "@/models/db/config";
+import { BaseStorage } from "@/platform/base/baseStorage";
+import { getSupabaseConfig } from "@/platform/db/config";
 
 const BUCKET = "public-media";
 

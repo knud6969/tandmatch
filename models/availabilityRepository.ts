@@ -2,9 +2,9 @@ import "server-only";
 import { MAX_OPENING_HOUR_WINDOWS, MAX_TIME_BLOCKS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { NewOpeningHours, NewTimeBlock } from "@/lib/schemas/clinics";
 import type { BusyInterval, OpeningHoursDto, TimeBlockDto, Weekday } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at" | "is_emergency">;
 type TimeBlockRow = Pick<Tables<"clinic_time_blocks">, "id" | "starts_at" | "ends_at" | "note">;

@@ -1,6 +1,6 @@
-import { jsonResponse, withApi } from "@/middleware/http";
-import { createAuthContext, getSession } from "@/middleware/session";
-import { readCurrentTerms } from "@/middleware/termsGate";
+import { jsonResponse, withApi } from "@/platform/middleware/http";
+import { createAuthContext, getSession } from "@/platform/middleware/session";
+import { readCurrentTerms } from "@/platform/middleware/termsGate";
 import { TermsController } from "@/controllers/termsController";
 
 // Undtaget fra vilkårs-gaten. Sessionen hentes kun, hvis cookien ikke allerede viser en gyldig accept.

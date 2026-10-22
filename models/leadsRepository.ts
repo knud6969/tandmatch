@@ -6,11 +6,11 @@ import {
   MAX_ACTIVE_LEADS_PER_CASE,
   MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
-} from "@/lib/constants/limits";
+} from "@/lib/common/constants/limits";
 import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/schemas/leads";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/types/cases";
-import type { PriceRange } from "@/lib/types/common";
+import type { PriceRange } from "@/lib/common/types/common";
 import type {
   ClinicLeadDetailDto,
   ClinicLeadListItemDto,
@@ -28,10 +28,10 @@ import {
   notFound,
   slotTaken,
   slotUnavailable,
-} from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
-import { toClinicBookingDto } from "@/models/db/mappers";
+} from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
+import { toClinicBookingDto } from "@/platform/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;

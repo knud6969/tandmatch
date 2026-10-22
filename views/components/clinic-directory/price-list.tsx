@@ -1,6 +1,6 @@
 import type { ClinicPriceDto } from "@/lib/types/clinics";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { formatPriceRange } from "@/views/utils/format";
+import { formatPriceRange } from "@/platform/ui-utils/format";
 
 // Klinikkens prisliste grupperet efter kategori. Rækkefølgen følger kataloget; ukendte behandlinger samles til sidst.
 export function PriceList({ prices, groups }: { prices: ClinicPriceDto[]; groups: ServiceGroupDto[] | null }) {

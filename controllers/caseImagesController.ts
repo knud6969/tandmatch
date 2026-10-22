@@ -1,17 +1,17 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/constants/limits";
-import type { ImageDto } from "@/lib/types/common";
-import { ApiError } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
+import type { ImageDto } from "@/lib/common/types/common";
+import { ApiError } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ConsentsRepository } from "@/models/consentsRepository";
-import { lazyAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";
-import { ImageProcessingService } from "@/services/imageProcessingService";
+import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type CaseImagesDeps = {

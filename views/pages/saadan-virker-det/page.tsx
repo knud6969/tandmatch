@@ -1,8 +1,8 @@
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import type { Metadata } from "next";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
-import { AiDisclaimer } from "@/views/components/ui/disclaimer";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
+import { AiDisclaimer } from "@/components/ui/disclaimer";
 import { InfoSection } from "@/views/components/home/info-section";
 
 export const metadata: Metadata = { title: "Sådan virker det" };

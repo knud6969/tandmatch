@@ -1,4 +1,4 @@
-import { Badge } from "@/views/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 // Niveaumærkat (architecture 6.6): verificeret klinik (fuldt niveau) eller klinik, der endnu ikke er på TandMatch (basis).
 export function TierBadge({ tier }: { tier: "basic" | "full" }) {

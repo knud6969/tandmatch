@@ -17,10 +17,10 @@ import {
   slotTaken,
   slotUnavailable,
   ApiError,
-} from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database, Tables } from "@/models/db/database.types";
-import { iso, isoOrNull, toClinicBookingDto, type WithNulls } from "@/models/db/mappers";
+} from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database, Tables } from "@/platform/db/database.types";
+import { iso, isoOrNull, toClinicBookingDto, type WithNulls } from "@/platform/db/mappers";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type Functions = Database["public"]["Functions"];

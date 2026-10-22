@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
-import { LinkButton } from "@/views/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
+import { LinkButton } from "@/components/ui/button";
 import { InfoSection, PrototypeNote } from "@/views/components/home/info-section";
 
 export const metadata: Metadata = { title: "For klinikker" };

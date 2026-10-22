@@ -3,14 +3,14 @@
 import { useState, type FormEvent } from "react";
 import { EMERGENCY_FILTER_HOURS, MAX_SELECTED_SERVICES } from "@/lib/constants/clinics";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import { Button } from "@/views/components/ui/button";
-import { CheckboxField } from "@/views/components/ui/checkbox-field";
-import { cx } from "@/views/components/ui/cx";
-import { SelectField } from "@/views/components/ui/select-field";
-import { TextField } from "@/views/components/ui/text-field";
+import { Button } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { cx } from "@/components/ui/cx";
+import { SelectField } from "@/components/ui/select-field";
+import { TextField } from "@/components/ui/text-field";
 import { hasOrigin, isPostalCode, type DirectoryFilters } from "@/views/utils/clinic-query";
-import { parseWholeKr } from "@/views/utils/format";
-import { usePosition } from "@/views/utils/use-position";
+import { parseWholeKr } from "@/platform/ui-utils/format";
+import { usePosition } from "@/platform/ui-utils/use-position";
 
 const DISTANCES = [5, 10, 25, 50, 100] as const;
 const STAR_OPTIONS = [

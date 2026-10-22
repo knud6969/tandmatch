@@ -1,4 +1,4 @@
-import { apiErrorText } from "@/lib/domain/errors";
+import { apiErrorText } from "@/lib/common/domain/errors";
 import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE, TERMS_TOKEN_HEADER } from "@/lib/constants/sessions";
 import type { MobileSessionDto } from "@/lib/types/auth";
 import { clearSession, clearTermsToken, getSession, getTermsToken, notifyAuthChange, saveSession } from "~/auth/tokens";

@@ -1,5 +1,5 @@
-import { noContent, withApi } from "@/middleware/http";
-import { createSupabaseRequestClient } from "@/models/db/supabase";
+import { noContent, withApi } from "@/platform/middleware/http";
+import { createSupabaseRequestClient } from "@/platform/db/supabase";
 import { AuthController } from "@/controllers/authController";
 
 // Logout kræver ikke vilkårs-accept: at afslutte en session må aldrig blokeres af gaten, og routen

@@ -3,9 +3,9 @@ import type { z } from "zod";
 import { MAX_DENTISTS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { createDentistSchema, patchDentistSchema } from "@/lib/schemas/clinics";
 import type { DentistRecordDto } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 type NewDentist = z.infer<typeof createDentistSchema>;

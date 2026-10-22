@@ -1,4 +1,4 @@
-import { CHAT_LOW_MESSAGES_WARNING, MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { CHAT_LOW_MESSAGES_WARNING, MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import { nextCaseFlowStep } from "@/lib/domain/case-flow";
 import type { AiChatMessageDto, ChatStateDto } from "@/lib/types/ai";
 import type { CaseDto, CaseFlowStep } from "@/lib/types/cases";

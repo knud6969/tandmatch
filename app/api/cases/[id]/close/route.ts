@@ -1,7 +1,7 @@
 import { CasesController } from "@/controllers/casesController";
-import { jsonResponse, parseId, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

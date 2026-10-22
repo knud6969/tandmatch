@@ -1,8 +1,8 @@
 import { termsAcceptSchema } from "@/lib/schemas/terms";
-import { NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { signTermsPayload } from "@/middleware/termsCookie";
-import { setTermsCookie } from "@/middleware/termsGate";
-import { createSupabaseRequestClient, isMobileClient } from "@/models/db/supabase";
+import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { signTermsPayload } from "@/platform/middleware/termsCookie";
+import { setTermsCookie } from "@/platform/middleware/termsGate";
+import { createSupabaseRequestClient, isMobileClient } from "@/platform/db/supabase";
 import { TermsController } from "@/controllers/termsController";
 
 // Undtaget fra vilkårs-gaten. Accepten gemmes i databasen (hvis der er en session) og i en signeret cookie.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MESSAGE_MAX_CHARS } from "@/lib/constants/limits";
+import { MESSAGE_MAX_CHARS } from "@/lib/common/constants/limits";
 
 // POST /api/leads/{id}/messages (architecture 10.12). Samme grænse som check-constraintet på messages.body.
 export const sendMessageSchema = z

@@ -6,7 +6,7 @@ import {
   cvrSchema,
   postalCodeSchema,
 } from "@/lib/schemas/clinics";
-import { phoneSchema } from "@/lib/schemas/phone";
+import { phoneSchema } from "@/lib/common/schemas/phone";
 
 export const emailSchema = z
   .string()

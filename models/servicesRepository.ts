@@ -1,8 +1,8 @@
 import "server-only";
 import type { ServiceCategory, ServiceDto, ServiceGroupDto } from "@/lib/types/services";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type GroupRow = Pick<Tables<"service_groups">, "id" | "slug" | "name" | "description" | "sort_order" | "is_active">;
 type ServiceRow = Pick<

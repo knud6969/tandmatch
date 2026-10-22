@@ -1,4 +1,4 @@
-import type { ConsentType } from "@/lib/types/common";
+import type { ConsentType } from "@/lib/common/types/common";
 
 // Samtykketekster (architecture 4.3). Vilkårs-accept er IKKE et samtykke.
 // Hver version er en streng af formen "<type>@<version>", som gemmes i consents.text_version.

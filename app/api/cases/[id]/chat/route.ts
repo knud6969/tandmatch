@@ -1,10 +1,10 @@
 import { ChatController } from "@/controllers/chatController";
-import { CHAT_IP_LIMIT_PER_HOUR } from "@/lib/constants/limits";
+import { CHAT_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { chatMessageSchema } from "@/lib/schemas/chat";
-import { jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

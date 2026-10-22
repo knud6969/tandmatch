@@ -29,7 +29,10 @@ const NOT_ROOT_LAYERS = [
   "@/middleware/*",
   "@/views/*",
   "@/app/*",
-  "@/lib/navigation/*",
+  "@/platform/*",
+  "@/features/*",
+  "@/components/*",
+  "@/lib/common/navigation/*",
 ];
 
 // Lint håndhæver lagene i appen (architecture 13.2): app/ -> screens -> components, og api/auth kun mod hinanden og lib/.

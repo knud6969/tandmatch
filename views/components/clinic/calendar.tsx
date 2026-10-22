@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toClinicDate } from "@/lib/domain/time";
+import { toClinicDate } from "@/lib/common/domain/time";
 import { BOOKING_STATUS_LABEL, CLINIC_BOOKINGS_DEFAULT_PAST_DAYS, BOOKING_HORIZON_DAYS, NO_SHOW_GRACE_HOURS } from "@/lib/constants/bookings";
 import type { ClinicBookingDto } from "@/lib/types/bookings";
-import { Badge } from "@/views/components/ui/badge";
-import { Button } from "@/views/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotVerifiedNote } from "@/views/components/clinic/not-verified-note";
-import { Card } from "@/views/components/ui/card";
-import { cx } from "@/views/components/ui/cx";
-import { LoadState } from "@/views/components/ui/load-state";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { apiRequest } from "@/views/utils/api-client";
+import { Card } from "@/components/ui/card";
+import { cx } from "@/components/ui/cx";
+import { LoadState } from "@/components/ui/load-state";
+import { StatusMessage } from "@/components/ui/status-message";
+import { apiRequest } from "@/platform/ui-utils/api-client";
 import { BOOKING_STATUS_TONE } from "@/views/utils/booking-status";
 import { clinicLeadHref } from "@/views/utils/clinic-links";
-import { formatDay, formatShortDateTime, formatTime } from "@/views/utils/format";
-import { groupByDay } from "@/views/utils/group-by-day";
-import { phoneHref } from "@/views/utils/links";
-import { useAction } from "@/views/utils/use-action";
-import { useLoad } from "@/views/utils/use-load";
+import { formatDay, formatShortDateTime, formatTime } from "@/platform/ui-utils/format";
+import { groupByDay } from "@/platform/ui-utils/group-by-day";
+import { phoneHref } from "@/platform/ui-utils/links";
+import { useAction } from "@/platform/ui-utils/use-action";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 const loadBookings = async (): Promise<ClinicBookingDto[]> =>
   (await apiRequest<{ bookings: ClinicBookingDto[] }>("/api/bookings")).bookings;

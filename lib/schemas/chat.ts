@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHAT_MAX_CHARS, SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
+import { CHAT_MAX_CHARS, SUMMARY_MAX_CHARS } from "@/lib/common/constants/limits";
 
 // Én besked fra patienten (architecture 10.6). Teksten PII-maskeres i AI-laget, før den sendes eller gemmes.
 export const chatMessageSchema = z

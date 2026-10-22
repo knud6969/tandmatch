@@ -1,8 +1,8 @@
 import { BookingsController } from "@/controllers/bookingsController";
 import { leadAvailabilityQuerySchema } from "@/lib/schemas/bookings";
-import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readQuery, withApi } from "@/middleware/http";
-import { requireAccount, requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readQuery, withApi } from "@/platform/middleware/http";
+import { requireAccount, requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

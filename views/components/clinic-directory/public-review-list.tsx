@@ -3,12 +3,12 @@
 import { useCallback } from "react";
 import { MIN_REVIEWS_FOR_PRICE_ACCURACY } from "@/lib/constants/reviews";
 import type { PublicReviewDto, PublicReviewsDto } from "@/lib/types/reviews";
-import { LoadState } from "@/views/components/ui/load-state";
+import { LoadState } from "@/components/ui/load-state";
 import { ReviewDetails, ReviewReply } from "@/views/components/reviews/review-details";
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
-import { apiRequest } from "@/views/utils/api-client";
-import { formatPercent } from "@/views/utils/format";
-import { useLoad } from "@/views/utils/use-load";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { formatPercent } from "@/platform/ui-utils/format";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 function ReviewItem({ review }: { review: PublicReviewDto }) {
   return (

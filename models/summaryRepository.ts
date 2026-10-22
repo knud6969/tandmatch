@@ -1,8 +1,8 @@
 import "server-only";
-import { SUMMARY_MAX_CHARS } from "@/lib/constants/limits";
+import { SUMMARY_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiSummary } from "@/lib/types/ai";
-import { ApiError, consentRequired, notDraft, notFound } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
+import { ApiError, consentRequired, notDraft, notFound } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
 
 const limit = (code: string, message: string) => new ApiError(429, code, message);
 

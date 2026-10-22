@@ -6,9 +6,9 @@ import {
   publicPricesJsonSchema,
 } from "@/lib/schemas/clinics";
 import type { ClinicListItemDto, ClinicPriceDto, ClinicProfileDto, OpeningHoursDto } from "@/lib/types/clinics";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database } from "@/models/db/database.types";
-import { trustpilotFromColumns, type WithNulls } from "@/models/db/mappers";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database } from "@/platform/db/database.types";
+import { trustpilotFromColumns, type WithNulls } from "@/platform/db/mappers";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 // En klinik som public_clinics()/public_clinic_profile() viser den, før controlleren har lagt afstand, anmeldelsesstatistik,

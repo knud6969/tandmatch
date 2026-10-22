@@ -1,13 +1,13 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
-import type { ConsentType } from "@/lib/types/common";
+import type { ConsentType } from "@/lib/common/types/common";
 import type { ConsentDto, GrantedConsentDto, WithdrawResultDto } from "@/lib/types/consents";
-import { ApiError } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { ApiError } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { ConsentsRepository } from "@/models/consentsRepository";
-import { lazyAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { AccountDeletionService } from "@/services/accountDeletionService";
 
 type GrantConsentInput = { type: ConsentType; textVersion: string };

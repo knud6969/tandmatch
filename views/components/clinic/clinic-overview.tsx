@@ -1,6 +1,6 @@
-import { Badge } from "@/views/components/ui/badge";
-import { Card } from "@/views/components/ui/card";
-import { LinkButton } from "@/views/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/button";
 import { CLINIC_STATUS_LABEL } from "@/lib/constants/clinics";
 import type { OwnClinicDto } from "@/lib/types/clinics";
 

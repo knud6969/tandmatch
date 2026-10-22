@@ -1,5 +1,5 @@
 import "server-only";
-import { BaseStorage } from "@/models/base/baseStorage";
+import { BaseStorage } from "@/platform/base/baseStorage";
 
 // Privat bucket med patientens mundfotos (helbredsdata). Sti: {case_id}/{image_id}.jpg (architecture 9.2).
 // Bruges kun med service role-klienten. Signerede URL'er lever kort (SIGNED_URL_TTL_SECONDS) og logges ikke.

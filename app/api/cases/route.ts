@@ -1,7 +1,7 @@
 import { CasesController } from "@/controllers/casesController";
-import { jsonResponse, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 // Sagsoversigten og oprettelse af en ny sag kræver konto. Den anonyme patients ene kladde oprettes af
 // /api/session/anonymous (architecture 10.2, 10.5).

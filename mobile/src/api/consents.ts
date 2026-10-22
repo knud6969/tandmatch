@@ -1,5 +1,5 @@
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
-import type { ConsentType } from "@/lib/types/common";
+import type { ConsentType } from "@/lib/common/types/common";
 import type { ConsentDto } from "@/lib/types/consents";
 import { apiRequest } from "./client";
 

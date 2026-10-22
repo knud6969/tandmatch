@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/views/components/ui/badge";
-import { Button, LinkButton, type ButtonVariant } from "@/views/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button, LinkButton, type ButtonVariant } from "@/components/ui/button";
 
 type EntryButtonProps = {
   href: string;

@@ -1,6 +1,6 @@
-import { ApiError, jsonResponse, withApi } from "@/middleware/http";
-import { isValidCronRequest } from "@/middleware/cron";
-import { CronController } from "@/controllers/cronController";
+import { ApiError, jsonResponse, withApi } from "@/platform/middleware/http";
+import { isValidCronRequest } from "@/platform/middleware/cron";
+import { CronController } from "@/platform/cronController";
 
 // Skriver den effektive bookingstatus ned: gennemførte tider bliver `completed`, udløbne reservationer `cancelled`
 // (architecture 5.3, 10.10). Beskyttet med CRON_SECRET i Authorization-headeren og undtaget fra vilkårs-gaten (2.5).

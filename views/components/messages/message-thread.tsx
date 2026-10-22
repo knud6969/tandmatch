@@ -1,24 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { MESSAGE_MAX_CHARS } from "@/lib/constants/limits";
+import { MESSAGE_MAX_CHARS } from "@/lib/common/constants/limits";
 import {
   CLINIC_SENDER_LABEL,
   MESSAGE_POLL_INTERVAL_MS,
   OWN_SENDER_LABEL,
   PATIENT_SENDER_LABEL,
 } from "@/lib/constants/messages";
-import { THREAD_CLOSED_TEXT } from "@/lib/constants/error-texts";
+import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
 import type { MessageDto } from "@/lib/types/messages";
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
-import { cx } from "@/views/components/ui/cx";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { TextArea } from "@/views/components/ui/text-area";
-import { apiRequest, ApiRequestError } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
-import { formatShortDateTime } from "@/views/utils/format";
-import { useAction } from "@/views/utils/use-action";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { cx } from "@/components/ui/cx";
+import { StatusMessage } from "@/components/ui/status-message";
+import { TextArea } from "@/components/ui/text-area";
+import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
+import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
+import { formatShortDateTime } from "@/platform/ui-utils/format";
+import { useAction } from "@/platform/ui-utils/use-action";
 
 type MessageThreadProps = {
   leadId: string;

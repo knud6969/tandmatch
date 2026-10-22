@@ -1,7 +1,7 @@
 import { ReviewsController } from "@/controllers/reviewsController";
-import { jsonResponse, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 // Klinikkens godkendte anmeldelser med eget svar og dets status (architecture 10.8, 10.13).
 export const GET = withApi(async () => {

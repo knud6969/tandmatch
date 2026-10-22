@@ -1,8 +1,8 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { MessageDto, MessageSenderRole } from "@/lib/types/messages";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
 
 // Besked, som patienten læser den fra tabellen (RLS: kun sagens patient har SELECT).
 type MessageRow = {

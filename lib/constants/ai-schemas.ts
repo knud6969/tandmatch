@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/constants/ai";
-import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 
 export const SLUG_PATTERN = /^[a-z0-9_]{2,60}$/;
 

@@ -3,8 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { patchPatientSchema } from "@/lib/schemas/patients";
 import type { PatientMeDto } from "@/lib/types/patients";
-import type { Session } from "@/middleware/session";
-import { lazyAdminClient } from "@/models/db/admin";
+import type { Session } from "@/platform/middleware/session";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { PatientsRepository } from "@/models/patientsRepository";
 import { AccountDeletionService } from "@/services/accountDeletionService";
 

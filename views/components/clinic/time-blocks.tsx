@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { Button } from "@/views/components/ui/button";
-import { Card } from "@/views/components/ui/card";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { TextField } from "@/views/components/ui/text-field";
-import { LoadState } from "@/views/components/ui/load-state";
-import { useLoad } from "@/views/utils/use-load";
-import { apiRequest } from "@/views/utils/api-client";
-import { useAction } from "@/views/utils/use-action";
-import { formatDateTime, fromDateTimeLocal } from "@/views/utils/format";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { StatusMessage } from "@/components/ui/status-message";
+import { TextField } from "@/components/ui/text-field";
+import { LoadState } from "@/components/ui/load-state";
+import { useLoad } from "@/platform/ui-utils/use-load";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { useAction } from "@/platform/ui-utils/use-action";
+import { formatDateTime, fromDateTimeLocal } from "@/platform/ui-utils/format";
 import { TIME_BLOCK_NOTE_MAX_CHARS } from "@/lib/constants/clinics";
 import { createTimeBlockSchema } from "@/lib/schemas/clinics";
 import type { TimeBlockDto } from "@/lib/types/clinics";

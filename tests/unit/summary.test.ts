@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IMAGE_DESCRIPTION_MAX_CHARS } from "@/lib/constants/limits";
+import { IMAGE_DESCRIPTION_MAX_CHARS } from "@/lib/common/constants/limits";
 import { buildsOnAiDraft, imageDescription } from "@/lib/domain/summary";
 import type { AiSummary } from "@/lib/types/ai";
 

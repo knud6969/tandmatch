@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Badge } from "@/views/components/ui/badge";
-import { Button } from "@/views/components/ui/button";
-import { CheckboxField } from "@/views/components/ui/checkbox-field";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import type { ServiceGroupDto } from "@/lib/types/services";
 
 type ServiceGroupPickerProps = {

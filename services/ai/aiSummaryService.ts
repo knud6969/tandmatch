@@ -3,7 +3,7 @@ import "server-only";
 // beskrivende og indeholder aldrig den foreløbige vurdering fra chatten. Kender ikke databasen: controlleren giver
 // chat, bekræftede ydelser og billeder og gemmer resultatet.
 
-import { AI_TIMEOUT_MS } from "@/lib/constants/limits";
+import { AI_TIMEOUT_MS } from "@/lib/common/constants/limits";
 import type { ServiceGroupDto } from "@/lib/types/services";
 import { buildCatalogContext, catalogSlugs } from "@/services/ai/catalogContext";
 import type { ModelImage } from "@/services/ai/aiChatService";

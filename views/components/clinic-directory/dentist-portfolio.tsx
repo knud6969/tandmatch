@@ -1,5 +1,5 @@
 import type { ClinicProfileDentistDto } from "@/lib/types/clinics";
-import { ICONS } from "@/views/components/ui/icons";
+import { ICONS } from "@/components/ui/icons";
 
 // Klinikkens tandlæger med portræt, beskrivelse og portefølje (billeder klinikken har lagt ind med patientens samtykke).
 export function DentistPortfolio({ dentists }: { dentists: ClinicProfileDentistDto[] }) {

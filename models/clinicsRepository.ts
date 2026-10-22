@@ -2,10 +2,10 @@ import "server-only";
 import type { z } from "zod";
 import type { NewClinicPrice, patchClinicSchema } from "@/lib/schemas/clinics";
 import type { ClinicPriceDto, ClinicRecordDto, ClinicStatus } from "@/lib/types/clinics";
-import { ApiError, clinicNotVerified } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
-import { trustpilotFromColumns } from "@/models/db/mappers";
+import { ApiError, clinicNotVerified } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
+import { trustpilotFromColumns } from "@/platform/db/mappers";
 
 type ClinicPatch = z.infer<typeof patchClinicSchema>;
 

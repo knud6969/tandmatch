@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { servicesQuerySchema } from "@/lib/schemas/services";
 import type { ServiceGroupDto } from "@/lib/types/services";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import { ServicesRepository } from "@/models/servicesRepository";
 
 type ServicesQuery = z.infer<typeof servicesQuerySchema>;

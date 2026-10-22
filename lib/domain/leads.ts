@@ -1,5 +1,5 @@
 import { LEAD_ACTIVE_STATUSES } from "@/lib/constants/leads";
-import { MAX_ACTIVE_LEADS_PER_CASE, MAX_TOTAL_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE, MAX_TOTAL_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import type { CaseRecordDto } from "@/lib/types/cases";
 import type { LeadStatus } from "@/lib/types/leads";
 

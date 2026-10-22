@@ -1,8 +1,8 @@
 import { ReviewsController } from "@/controllers/reviewsController";
 import { replyReviewSchema } from "@/lib/schemas/reviews";
-import { jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

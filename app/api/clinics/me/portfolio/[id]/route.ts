@@ -1,7 +1,7 @@
 import { patchPortfolioItemSchema } from "@/lib/schemas/clinics";
-import { jsonResponse, noContent, parseId, readJson, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, noContent, parseId, readJson, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { PortfolioController } from "@/controllers/portfolioController";
 
 type Ctx = { params: Promise<{ id: string }> };

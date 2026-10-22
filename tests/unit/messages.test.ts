@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import type { LeadStatus } from "@/lib/types/leads";
 
 // server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.

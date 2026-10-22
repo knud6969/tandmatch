@@ -2,7 +2,7 @@
 // Al patienttekst PII-maskeres og escapes (& først, derefter < og >), så den ikke kan åbne eller lukke et tag.
 // Patienttekst er data, aldrig instruktioner.
 
-import { CHAT_CONTEXT_MESSAGES } from "@/lib/constants/limits";
+import { CHAT_CONTEXT_MESSAGES } from "@/lib/common/constants/limits";
 import { maskPii } from "./pii";
 
 export type HistoryMessage = { role: "user" | "assistant"; content: string };

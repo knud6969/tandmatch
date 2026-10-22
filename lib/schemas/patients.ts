@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { firstNameSchema } from "@/lib/schemas/auth";
 import { postalCodeSchema } from "@/lib/schemas/clinics";
-import { phoneSchema } from "@/lib/schemas/phone";
+import { phoneSchema } from "@/lib/common/schemas/phone";
 
 export const patchPatientSchema = z
   .object({

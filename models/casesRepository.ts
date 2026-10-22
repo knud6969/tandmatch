@@ -2,9 +2,9 @@ import "server-only";
 import { parseAiSummary } from "@/lib/schemas/aiSummary";
 import type { CaseConversationInfo, CaseExportDto, CaseRecordDto } from "@/lib/types/cases";
 import type { LeadStatus } from "@/lib/types/leads";
-import { notDraft, notFound } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { notDraft, notFound } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type CaseRow = Pick<
   Tables<"cases">,

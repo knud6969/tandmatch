@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { getMe } from "@/views/utils/api-client";
+import { getMe } from "@/platform/ui-utils/api-client";
 import type { MeDto } from "@/lib/types/auth";
 
 export type SessionState =

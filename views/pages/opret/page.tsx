@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Card } from "@/views/components/ui/card";
-import { LinkButton } from "@/views/components/ui/button";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 
 export const metadata: Metadata = { title: "Opret konto" };
 

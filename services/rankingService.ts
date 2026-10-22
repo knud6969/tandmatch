@@ -1,6 +1,6 @@
 import { CLINIC_SORT_LABEL, EMERGENCY_FILTER_HOURS } from "@/lib/constants/clinics";
 import type { ClinicListItemDto, ClinicPriceDto, ClinicSort } from "@/lib/types/clinics";
-import type { PriceRange } from "@/lib/types/common";
+import type { PriceRange } from "@/lib/common/types/common";
 
 // Rangering og filtrering af klinikker efter faste, synlige kriterier (architecture 6.6). Ren kode uden I/O: ingen
 // models, ingen Supabase, ingen AI. Klinikkerne er allerede bygget som ClinicListItemDto (afstand, pris for valget og

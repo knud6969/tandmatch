@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonymousExpiresAt } from "@/lib/constants/sessions";
 import type { MeDto } from "@/lib/types/auth";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import { PatientsRepository } from "@/models/patientsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 

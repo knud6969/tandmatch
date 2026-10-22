@@ -1,6 +1,6 @@
-import { ApiError, jsonResponse, withApi } from "@/middleware/http";
-import { isValidCronRequest } from "@/middleware/cron";
-import { CronController } from "@/controllers/cronController";
+import { ApiError, jsonResponse, withApi } from "@/platform/middleware/http";
+import { isValidCronRequest } from "@/platform/middleware/cron";
+import { CronController } from "@/platform/cronController";
 
 // Sletter anonyme sessioner 48 timer efter sidste aktivitet (architecture 7.7).
 // Beskyttet med CRON_SECRET i Authorization-headeren. Ingen persondata i svar eller logs.

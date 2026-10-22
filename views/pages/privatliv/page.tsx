@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Badge } from "@/views/components/ui/badge";
-import { Card } from "@/views/components/ui/card";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 import { PRIVACY_VERSION } from "@/lib/constants/legal";
 
 export const metadata: Metadata = { title: "Privatlivspolitik" };

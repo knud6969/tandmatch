@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Alert } from "@/views/components/ui/alert";
-import { Button, LinkButton } from "@/views/components/ui/button";
-import { TextField } from "@/views/components/ui/text-field";
+import { Alert } from "@/components/ui/alert";
+import { Button, LinkButton } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/views/components/session/session-provider";
-import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
-import { fieldErrorsFrom, type FieldErrors } from "@/views/utils/field-errors";
-import { AREA_HOME } from "@/lib/navigation/areas";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { AREA_HOME } from "@/lib/common/navigation/areas";
 import { signupSchema } from "@/lib/schemas/auth";
 import type { AuthUserDto } from "@/lib/types/auth";
 

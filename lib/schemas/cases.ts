@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CASE_TIMEFRAMES } from "@/lib/constants/cases";
-import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import { postalCodeSchema } from "@/lib/schemas/clinics";
 
 // Redigering af en kladde (architecture 10.5). Tom PATCH ændrer intet.

@@ -1,7 +1,7 @@
 import "server-only";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type CaseServiceRow = Pick<Tables<"case_services">, "service_id" | "suggested_by_ai">;
 

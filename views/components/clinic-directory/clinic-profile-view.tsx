@@ -5,10 +5,10 @@ import { notFound, useSearchParams } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicProfileDto } from "@/lib/types/clinics";
-import { Alert } from "@/views/components/ui/alert";
-import { LinkButton } from "@/views/components/ui/button";
-import { ICONS } from "@/views/components/ui/icons";
-import { LoadState } from "@/views/components/ui/load-state";
+import { Alert } from "@/components/ui/alert";
+import { LinkButton } from "@/components/ui/button";
+import { ICONS } from "@/components/ui/icons";
+import { LoadState } from "@/components/ui/load-state";
 import { AvailabilitySlots } from "@/views/components/clinic-directory/availability-slots";
 import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-loader";
 import { ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
@@ -20,12 +20,12 @@ import { PublicReviewList } from "@/views/components/clinic-directory/public-rev
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
 import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { TrustpilotBlock } from "@/views/components/clinic-directory/trustpilot-block";
-import { ApiRequestError, apiRequest } from "@/views/utils/api-client";
+import { ApiRequestError, apiRequest } from "@/platform/ui-utils/api-client";
 import { directoryHref } from "@/views/utils/clinic-query";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
-import { formatShortDateTime } from "@/views/utils/format";
-import { phoneHref, safeWebsiteHref, websiteLabel } from "@/views/utils/links";
-import { useLoad } from "@/views/utils/use-load";
+import { formatShortDateTime } from "@/platform/ui-utils/format";
+import { phoneHref, safeWebsiteHref, websiteLabel } from "@/platform/ui-utils/links";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 type Result = { kind: "found"; profile: ClinicProfileDto } | { kind: "missing" };
 

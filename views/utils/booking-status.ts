@@ -1,5 +1,5 @@
 import type { BookingStatus } from "@/lib/types/bookings";
-import type { BadgeTone } from "@/views/components/ui/badge";
+import type { BadgeTone } from "@/components/ui/badge";
 
 // Badge-tonen for bookingens status. Samme for patientens og klinikkens visning.
 export const BOOKING_STATUS_TONE: Record<BookingStatus, BadgeTone> = {

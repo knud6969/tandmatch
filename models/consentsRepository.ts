@@ -1,10 +1,10 @@
 import "server-only";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
 import type { ConsentDto } from "@/lib/types/consents";
-import type { ConsentType } from "@/lib/types/common";
-import { ApiError, consentRequired, notFound, unauthenticated } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Database, Tables } from "@/models/db/database.types";
+import type { ConsentType } from "@/lib/common/types/common";
+import { ApiError, consentRequired, notFound, unauthenticated } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database, Tables } from "@/platform/db/database.types";
 
 export type NewConsent = {
   patientId: string;

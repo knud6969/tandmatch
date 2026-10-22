@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isTransientAuthError } from "@/models/db/authErrors";
-import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/models/db/config";
-import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/middleware/termsCookie";
-import { safeInternalPath } from "@/lib/navigation/paths";
+import { isTransientAuthError } from "@/platform/db/authErrors";
+import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/platform/db/config";
+import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/platform/middleware/termsCookie";
+import { safeInternalPath } from "@/lib/common/navigation/paths";
 
 // Sider der altid er tilgængelige uden vilkårs-accept (architecture 2.5, 6.1).
 const TERMS_EXEMPT_PREFIXES = ["/vilkaar", "/privatliv"];

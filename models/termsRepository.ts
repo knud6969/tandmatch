@@ -1,7 +1,7 @@
 import "server-only";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
-import type { TermsPayload } from "@/middleware/termsCookie";
-import { BaseRepository } from "@/models/base/baseRepository";
+import type { TermsPayload } from "@/platform/middleware/termsCookie";
+import { BaseRepository } from "@/platform/base/baseRepository";
 
 // Vilkårs-accept i terms_acceptances via brugerens JWT (RLS: user_id = auth.uid()).
 export class TermsRepository extends BaseRepository {

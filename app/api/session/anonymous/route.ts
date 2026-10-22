@@ -1,9 +1,9 @@
 import { anonymousSessionSchema } from "@/lib/schemas/session";
-import { NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { getSession } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
-import { isMobileClient } from "@/models/db/supabase";
+import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { getSession } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { isMobileClient } from "@/platform/db/supabase";
 import { SessionController } from "@/controllers/sessionController";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.

@@ -1,8 +1,8 @@
 import { BookingsController } from "@/controllers/bookingsController";
 import { bookingsQuerySchema } from "@/lib/schemas/bookings";
-import { jsonResponse, readQuery, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 // Patientens egne bookinger, eller klinikkens kalender (?from=&to=, kun verificerede klinikker) (architecture 10.10).
 export const GET = withApi(async (req) => {

@@ -1,4 +1,4 @@
-import { apiErrorText } from "@/lib/domain/errors";
+import { apiErrorText } from "@/lib/common/domain/errors";
 import { ApiRequestError, apiRequest } from "~/api/client";
 import { getSession, getTermsToken, saveSession, saveTermsToken } from "~/auth/tokens";
 

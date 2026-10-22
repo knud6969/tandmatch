@@ -1,5 +1,5 @@
-import type { TrustpilotInfo } from "@/lib/types/common";
-import { formatDate, formatOneDecimal } from "@/views/utils/format";
+import type { TrustpilotInfo } from "@/lib/common/types/common";
+import { formatDate, formatOneDecimal } from "@/platform/ui-utils/format";
 import { ExternalLink } from "@/views/components/clinic-directory/external-link";
 
 // Mærkat efter hvem der har indtastet tallene (architecture 8.4). Trustpilot hentes eller scrapes aldrig af TandMatch.

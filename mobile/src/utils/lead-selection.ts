@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 
 // Patientens valg af klinikker til en sag (architecture 13.4). Holdes i hukommelsen, så oversigten og profilen deler det.
 export type LeadSelection = { ids: string[]; slots: number; contacted: string[] };

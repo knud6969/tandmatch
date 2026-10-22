@@ -9,15 +9,15 @@ import {
 } from "@/lib/constants/leads";
 import { leadDecisionSchema } from "@/lib/schemas/leads";
 import type { ClinicLeadDetailDto } from "@/lib/types/leads";
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
-import { SelectField } from "@/views/components/ui/select-field";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { TextArea } from "@/views/components/ui/text-area";
-import { TextField } from "@/views/components/ui/text-field";
-import { apiRequest, ApiRequestError } from "@/views/utils/api-client";
-import { parseWholeKr } from "@/views/utils/format";
-import { useAction } from "@/views/utils/use-action";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { SelectField } from "@/components/ui/select-field";
+import { StatusMessage } from "@/components/ui/status-message";
+import { TextArea } from "@/components/ui/text-area";
+import { TextField } from "@/components/ui/text-field";
+import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
+import { parseWholeKr } from "@/platform/ui-utils/format";
+import { useAction } from "@/platform/ui-utils/use-action";
 
 type Mode = "idle" | "comment" | "decline";
 type ClinicDeclineReason = (typeof LEAD_CLINIC_DECLINE_REASONS)[number];

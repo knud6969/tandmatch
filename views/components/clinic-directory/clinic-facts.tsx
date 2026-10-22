@@ -1,7 +1,7 @@
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
-import { PRICE_SOURCE, PriceWithSource } from "@/views/components/ui/price-with-source";
-import { formatKm, formatPercent, formatShortDateTime } from "@/views/utils/format";
+import { PRICE_SOURCE, PriceWithSource } from "@/components/ui/price-with-source";
+import { formatKm, formatPercent, formatShortDateTime } from "@/platform/ui-utils/format";
 import { StarRating } from "@/views/components/clinic-directory/star-rating";
 import { TrustpilotLine } from "@/views/components/clinic-directory/trustpilot-block";
 

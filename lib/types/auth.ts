@@ -1,5 +1,5 @@
 import type { ClinicSummaryDto } from "@/lib/types/clinics";
-import type { Role } from "@/lib/types/common";
+import type { Role } from "@/lib/common/types/common";
 
 export type TermsStatusDto = {
   current: { termsVersion: string; privacyVersion: string };

@@ -1,7 +1,7 @@
 import { grantConsentSchema } from "@/lib/schemas/consents";
-import { requireTerms } from "@/middleware/termsGate";
-import { requireRole } from "@/middleware/session";
-import { jsonResponse, readJson, withApi } from "@/middleware/http";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { requireRole } from "@/platform/middleware/session";
+import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { ConsentsController } from "@/controllers/consentsController";
 
 // Samtykker (GDPR art. 9). Vilkårs-accept er IKKE et samtykke (architecture 2.5, 10.3).

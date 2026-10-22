@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SIGNED_URL_TTL_SECONDS } from "@/lib/constants/limits";
-import type { ImageDto } from "@/lib/types/common";
+import { SIGNED_URL_TTL_SECONDS } from "@/lib/common/constants/limits";
+import type { ImageDto } from "@/lib/common/types/common";
 import type { CaseImageRecord } from "@/models/caseImagesRepository";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 

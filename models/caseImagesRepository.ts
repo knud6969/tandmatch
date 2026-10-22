@@ -1,7 +1,7 @@
 import "server-only";
-import { ApiError, consentRequired } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError, consentRequired } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type ImageRow = Pick<Tables<"case_images">, "id" | "case_id" | "storage_path" | "ai_view" | "ai_quality" | "ai_description" | "bytes">;
 

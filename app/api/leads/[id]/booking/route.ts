@@ -1,10 +1,10 @@
 import { BookingsController } from "@/controllers/bookingsController";
-import { BOOKING_IP_LIMIT_PER_HOUR } from "@/lib/constants/limits";
+import { BOOKING_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { bookSlotSchema } from "@/lib/schemas/bookings";
-import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { requireAccount, requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { requireAccount, requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

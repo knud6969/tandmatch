@@ -1,4 +1,4 @@
-import { formatOneDecimal } from "@/views/utils/format";
+import { formatOneDecimal } from "@/platform/ui-utils/format";
 
 // Stjerner med tekst til skærmlæsere. De visuelle stjerner er skjult for hjælpemidler. `value` kan have decimaler.
 export function StarRating({ value, count, size = "md" }: { value: number; count?: number; size?: "md" | "lg" }) {

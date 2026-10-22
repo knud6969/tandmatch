@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canCancel, canMarkNoShow, canReview, graceEndsAt } from "@/lib/domain/bookings";
-import { toClinicDate, toClinicMonth } from "@/lib/domain/time";
-import { formatDay, formatTime } from "@/views/utils/format";
+import { toClinicDate, toClinicMonth } from "@/lib/common/domain/time";
+import { formatDay, formatTime } from "@/platform/ui-utils/format";
 
 // Tidszoner for booking (6.6): tider omkring midnat og sommertid vises og grupperes i dansk tid (Europe/Copenhagen),
 // uanset serverens tidszone. Testkørslen sætter ikke TZ, så vi tester mod faste UTC-tidspunkter.

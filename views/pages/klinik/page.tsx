@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ClinicHome } from "@/views/components/clinic/clinic-home";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 
 export const metadata: Metadata = { title: "Din klinik" };
 

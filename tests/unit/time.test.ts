@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toClinicMonth } from "@/lib/domain/time";
+import { toClinicMonth } from "@/lib/common/domain/time";
 
 describe("toClinicMonth", () => {
   it("giver november for 1. november 00.30 dansk tid (oktober i UTC)", () => {

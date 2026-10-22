@@ -4,7 +4,7 @@ import { grantConsent } from "~/api/consents";
 import { sendLeads } from "~/api/leads";
 import { ApiRequestError } from "~/api/client";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { parseClinicIds, sendBlockReason, setLimits, toggleClinic, toggleId, getSelection, clearSelection } from "~/utils/lead-selection";
 
 const mockStore = new Map<string, string>();

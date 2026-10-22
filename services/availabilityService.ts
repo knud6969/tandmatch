@@ -7,7 +7,7 @@ import {
   MIN_EMERGENCY_NOTICE_MIN,
   SLOT_STEP_MINUTES,
 } from "@/lib/constants/bookings";
-import { DAY_MS } from "@/lib/domain/time";
+import { DAY_MS } from "@/lib/common/domain/time";
 import type { BusyInterval, OpeningHoursDto, SlotDto } from "@/lib/types/clinics";
 
 // Ledige tider (architecture 6.7). Ren kode uden I/O: åbningstider og optaget tid kommer som indgangsdata fra

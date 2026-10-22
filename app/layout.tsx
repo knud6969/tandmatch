@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { SessionProvider } from "@/views/components/session/session-provider";
-import { SiteHeader } from "@/views/components/layout/site-header";
-import { SiteFooter } from "@/views/components/layout/site-footer";
+import { SiteHeader } from "@/components/ui/site-header";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 export const metadata: Metadata = {
   title: { default: "TandMatch", template: "%s · TandMatch" },

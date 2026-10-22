@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
 import { InfoSection, PrototypeNote } from "@/views/components/home/info-section";
 
 export const metadata: Metadata = { title: "Kontakt" };

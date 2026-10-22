@@ -5,16 +5,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { EMERGENCY_FILTER_HOURS } from "@/lib/constants/clinics";
 import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
 import type { ClinicListDto } from "@/lib/types/clinics";
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
-import { cx } from "@/views/components/ui/cx";
-import { FilterChips } from "@/views/components/ui/filter-chips";
-import { LoadState } from "@/views/components/ui/load-state";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { cx } from "@/components/ui/cx";
+import { FilterChips } from "@/components/ui/filter-chips";
+import { LoadState } from "@/components/ui/load-state";
 import { ClinicCard } from "@/views/components/clinic-directory/clinic-card";
 import { ClinicFilters } from "@/views/components/clinic-directory/clinic-filters";
 import { ClinicMapLazy } from "@/views/components/clinic-directory/clinic-map-loader";
 import { SortSelect } from "@/views/components/clinic-directory/sort-select";
-import { apiRequest } from "@/views/utils/api-client";
+import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadServiceGroups } from "@/views/utils/clinic-loaders";
 import {
   buildClinicsQuery,
@@ -25,7 +25,7 @@ import {
   hasOrigin,
   type DirectoryFilters,
 } from "@/views/utils/clinic-query";
-import { useLoad } from "@/views/utils/use-load";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 type Loaded = ClinicListDto & { query: string };
 type MobileView = "list" | "map";

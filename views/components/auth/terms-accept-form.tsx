@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert } from "@/views/components/ui/alert";
-import { Button } from "@/views/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@/views/components/session/session-provider";
-import { apiRequest } from "@/views/utils/api-client";
-import { apiErrorMessage } from "@/views/utils/api-errors";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
-import { safeInternalPath } from "@/lib/navigation/paths";
+import { safeInternalPath } from "@/lib/common/navigation/paths";
 import type { TermsAcceptedDto } from "@/lib/types/auth";
 
 // Vilkårs-gaten. Accepten er IKKE samtykke til helbredsdata (architecture 2.5). Ingen afkrydsninger her.

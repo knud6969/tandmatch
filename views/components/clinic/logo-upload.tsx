@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, type ChangeEvent } from "react";
-import { Button } from "@/views/components/ui/button";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { apiRequest } from "@/views/utils/api-client";
-import { IMAGE_ACCEPT } from "@/views/utils/prepare-image";
-import { uploadImage } from "@/views/utils/upload-image";
-import { useAction } from "@/views/utils/use-action";
+import { Button } from "@/components/ui/button";
+import { StatusMessage } from "@/components/ui/status-message";
+import { apiRequest } from "@/platform/ui-utils/api-client";
+import { IMAGE_ACCEPT } from "@/platform/ui-utils/prepare-image";
+import { uploadImage } from "@/platform/ui-utils/upload-image";
+import { useAction } from "@/platform/ui-utils/use-action";
 
 type LogoUploadProps = {
   logoUrl: string | null;

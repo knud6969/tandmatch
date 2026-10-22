@@ -1,7 +1,7 @@
 import { servicesQuerySchema } from "@/lib/schemas/services";
-import { jsonResponse, readQuery, withApi } from "@/middleware/http";
-import { getSession } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
+import { getSession } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { ServicesController } from "@/controllers/servicesController";
 
 // Ydelseskataloget er offentligt (architecture 10.4).

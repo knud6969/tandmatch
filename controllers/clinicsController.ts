@@ -11,17 +11,17 @@ import type {
   timeBlocksQuerySchema,
 } from "@/lib/schemas/clinics";
 import type { ClinicPriceDto, ClinicRecordDto, OpeningHoursDto, OwnClinicDto, TimeBlockDto } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { ApiError } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/models/availabilityRepository";
 import { ClinicDentistsRepository } from "@/models/clinicDentistsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
-import { lazyAdminClient } from "@/models/db/admin";
+import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/models/portfolioRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { AccountDeletionService } from "@/services/accountDeletionService";
-import { ImageProcessingService } from "@/services/imageProcessingService";
+import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 type PatchClinicInput = z.infer<typeof patchClinicSchema>;
 type PutPricesInput = z.infer<typeof putPricesSchema>;

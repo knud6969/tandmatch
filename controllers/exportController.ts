@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PatientExportDto } from "@/lib/types/patients";
-import type { Session } from "@/middleware/session";
+import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ChatRepository } from "@/models/chatRepository";

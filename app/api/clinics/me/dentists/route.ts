@@ -1,7 +1,7 @@
 import { createDentistSchema } from "@/lib/schemas/clinics";
-import { jsonResponse, readJson, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { ClinicDentistsController } from "@/controllers/clinicDentistsController";
 
 export const GET = withApi(async () => {

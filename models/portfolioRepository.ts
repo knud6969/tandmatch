@@ -3,9 +3,9 @@ import type { z } from "zod";
 import { MAX_PORTFOLIO_ITEMS_PER_CLINIC } from "@/lib/constants/clinics";
 import type { patchPortfolioItemSchema } from "@/lib/schemas/clinics";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
-import { ApiError } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import { ApiError } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 type PortfolioPatch = z.infer<typeof patchPortfolioItemSchema>;

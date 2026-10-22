@@ -1,7 +1,7 @@
 import "server-only";
-import type { Role } from "@/lib/types/common";
-import { BaseRepository } from "@/models/base/baseRepository";
-import type { Tables } from "@/models/db/database.types";
+import type { Role } from "@/lib/common/types/common";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Tables } from "@/platform/db/database.types";
 
 type ProfileRow = Pick<Tables<"profiles">, "role" | "is_anonymous" | "last_active_at">;
 

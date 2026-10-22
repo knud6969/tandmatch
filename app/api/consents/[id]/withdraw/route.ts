@@ -1,6 +1,6 @@
-import { requireTerms } from "@/middleware/termsGate";
-import { clearAuthCookies, requireRole } from "@/middleware/session";
-import { jsonResponse, parseId, withApi } from "@/middleware/http";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { clearAuthCookies, requireRole } from "@/platform/middleware/session";
+import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
 import { ConsentsController } from "@/controllers/consentsController";
 
 type Ctx = { params: Promise<{ id: string }> };

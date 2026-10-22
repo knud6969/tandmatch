@@ -8,10 +8,10 @@ import {
   LEAD_DECLINE_NOTE_MAX_CHARS,
   LEAD_STATUSES,
 } from "@/lib/constants/leads";
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { contactNameSchema } from "@/lib/schemas/bookings";
 import { postalCodeSchema } from "@/lib/schemas/clinics";
-import { phoneSchema } from "@/lib/schemas/phone";
+import { phoneSchema } from "@/lib/common/schemas/phone";
 
 // Afsendelse af en sag til 1-3 klinikker (architecture 10.5). Loftet på aktive og samlede leads tjekkes i databasen.
 export const sendLeadsSchema = z

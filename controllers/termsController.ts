@@ -4,9 +4,9 @@ import type { z } from "zod";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
 import type { termsAcceptSchema } from "@/lib/schemas/terms";
 import type { TermsStatusDto } from "@/lib/types/auth";
-import { ApiError } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
-import type { TermsPayload } from "@/middleware/termsCookie";
+import { ApiError } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
+import type { TermsPayload } from "@/platform/middleware/termsCookie";
 import { AuthRepository } from "@/models/authRepository";
 import { TermsRepository } from "@/models/termsRepository";
 

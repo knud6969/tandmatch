@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ClinicListItemDto } from "@/lib/types/clinics";
 import { clinicProfileHref } from "@/views/utils/clinic-query";
-import { cx } from "@/views/components/ui/cx";
-import { ICONS } from "@/views/components/ui/icons";
+import { cx } from "@/components/ui/cx";
+import { ICONS } from "@/components/ui/icons";
 import { TierBadge } from "@/views/components/clinic-directory/tier-badge";
 import { ClinicFacts, ClinicWhere } from "@/views/components/clinic-directory/clinic-facts";
 

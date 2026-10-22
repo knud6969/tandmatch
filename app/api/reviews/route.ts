@@ -1,8 +1,8 @@
 import { ReviewsController } from "@/controllers/reviewsController";
 import { createReviewSchema } from "@/lib/schemas/reviews";
-import { jsonResponse, readJson, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 // Patienten anmelder et gennemført besøg (architecture 10.13). 403 uden gennemført booking, 409 hvis allerede anmeldt.
 export const POST = withApi(async (req) => {

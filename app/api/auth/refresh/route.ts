@@ -1,7 +1,7 @@
 import { refreshSchema } from "@/lib/schemas/auth";
-import { ApiError, NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { createSupabaseStatelessClient, isMobileClient } from "@/models/db/supabase";
+import { ApiError, NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { createSupabaseStatelessClient, isMobileClient } from "@/platform/db/supabase";
 import { AuthController } from "@/controllers/authController";
 
 const REFRESH_LIMIT_PER_HOUR = 60;

@@ -1,13 +1,13 @@
-import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/constants/limits";
+import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import type { Metadata } from "next";
-import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/navigation/entries";
+import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/common/navigation/entries";
 import { ClinicPreview } from "@/views/components/home/clinic-preview";
 import { EntryButton } from "@/views/components/home/entry-button";
 import { FeatureCard } from "@/views/components/home/feature-card";
 import { HomeFlash } from "@/views/components/session/home-flash";
-import { AiDisclaimer } from "@/views/components/ui/disclaimer";
-import { LinkButton } from "@/views/components/ui/button";
-import { ICONS } from "@/views/components/ui/icons";
+import { AiDisclaimer } from "@/components/ui/disclaimer";
+import { LinkButton } from "@/components/ui/button";
+import { ICONS } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Find den rigtige klinik til en fair pris" };
 

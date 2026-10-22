@@ -1,8 +1,8 @@
 import { LeadsController } from "@/controllers/leadsController";
 import { withdrawLeadSchema } from "@/lib/schemas/leads";
-import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/middleware/http";
-import { requireAccount, requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
+import { requireAccount, requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 

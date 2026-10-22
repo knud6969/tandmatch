@@ -1,11 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { toClinicDate } from "@/lib/domain/time";
+import { toClinicDate } from "@/lib/common/domain/time";
 import type { createReviewSchema, replyReviewSchema } from "@/lib/schemas/reviews";
 import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleItemDto } from "@/lib/types/reviews";
-import { alreadyReplied, notFound } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { alreadyReplied, notFound } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
 import { LeadsRepository } from "@/models/leadsRepository";

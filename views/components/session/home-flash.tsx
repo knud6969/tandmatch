@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert } from "@/views/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 
 const KEY = "tm-home-flash";
 

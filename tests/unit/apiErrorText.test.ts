@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { API_ERROR_TEXTS, GENERIC_ERROR_TEXT, NEUTRAL_ERROR_TEXTS } from "@/lib/constants/error-texts";
-import { apiErrorText } from "@/lib/domain/errors";
-import { roundPosition } from "@/lib/domain/position";
+import { API_ERROR_TEXTS, GENERIC_ERROR_TEXT, NEUTRAL_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
+import { apiErrorText } from "@/lib/common/domain/errors";
+import { roundPosition } from "@/lib/common/domain/position";
 
 describe("apiErrorText", () => {
   it("giver den faste tekst for kendte koder, uanset serverens besked", () => {

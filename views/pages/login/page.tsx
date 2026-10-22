@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/views/components/auth/login-form";
-import { Card } from "@/views/components/ui/card";
-import { Container } from "@/views/components/ui/container";
-import { PageIntro } from "@/views/components/ui/page-intro";
-import { safeInternalPath } from "@/lib/navigation/paths";
+import { Card } from "@/components/ui/card";
+import { Container } from "@/components/ui/container";
+import { PageIntro } from "@/components/ui/page-intro";
+import { safeInternalPath } from "@/lib/common/navigation/paths";
 
 export const metadata: Metadata = { title: "Log ind" };
 

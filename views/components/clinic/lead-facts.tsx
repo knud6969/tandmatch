@@ -1,8 +1,8 @@
 import { CASE_TIMEFRAME_LABEL } from "@/lib/constants/cases";
 import { CLINIC_LEAD_STATUS_LABEL } from "@/lib/constants/leads";
 import type { ClinicLeadListItemDto } from "@/lib/types/leads";
-import { Badge } from "@/views/components/ui/badge";
-import { formatCount, formatKm, formatShortDateTime } from "@/views/utils/format";
+import { Badge } from "@/components/ui/badge";
+import { formatCount, formatKm, formatShortDateTime } from "@/platform/ui-utils/format";
 import { LEAD_STATUS_TONE } from "@/views/utils/lead-status";
 
 // Fælles for indbakkens rækker og lead-kortet: det klinikken skal bruge for at vurdere en henvendelse. Ingen patientidentitet.

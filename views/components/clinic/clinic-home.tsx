@@ -3,9 +3,9 @@
 import { ClinicOverview } from "@/views/components/clinic/clinic-overview";
 import { LeadInbox } from "@/views/components/clinic/lead-inbox";
 import { VerificationBanner } from "@/views/components/clinic/verification-banner";
-import { LoadState } from "@/views/components/ui/load-state";
+import { LoadState } from "@/components/ui/load-state";
 import { loadClinic } from "@/views/utils/clinic-loaders";
-import { useLoad } from "@/views/utils/use-load";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 // Klinikkens forside: verificeringsbanneret øverst (kun ved "registered"), derefter indbakken og opsætningen. Klinikken hentes
 // én gang og gives til både banner og oversigt.

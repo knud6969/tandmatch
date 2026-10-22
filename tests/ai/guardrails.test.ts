@@ -1021,7 +1021,7 @@ describe("regression B6/B10: værdimængder og faste tekster", () => {
 
   it("loftet for foreslåede ydelser følger loftet for bekræftede ydelser", async () => {
     const { MAX_SUGGESTED_SERVICES } = await import("@/services/ai/schemas");
-    const { MAX_CONFIRMED_SERVICES_PER_CASE } = await import("@/lib/constants/limits");
+    const { MAX_CONFIRMED_SERVICES_PER_CASE } = await import("@/lib/common/constants/limits");
     expect(MAX_SUGGESTED_SERVICES).toBe(MAX_CONFIRMED_SERVICES_PER_CASE);
   });
 

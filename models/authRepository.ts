@@ -1,10 +1,10 @@
 import "server-only";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 import type { MobileSessionDto } from "@/lib/types/auth";
-import { ApiError, unauthenticated } from "@/middleware/http";
-import { BaseRepository } from "@/models/base/baseRepository";
-import { isTransientAuthError } from "@/models/db/authErrors";
-import { getSupabaseConfig } from "@/models/db/config";
+import { ApiError, unauthenticated } from "@/platform/middleware/http";
+import { BaseRepository } from "@/platform/base/baseRepository";
+import { isTransientAuthError } from "@/platform/db/authErrors";
+import { getSupabaseConfig } from "@/platform/db/config";
 
 const AUTH_LOOKUP_RETRIES = 2;
 

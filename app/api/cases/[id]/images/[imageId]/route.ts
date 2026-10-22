@@ -1,7 +1,7 @@
 import { CaseImagesController } from "@/controllers/caseImagesController";
-import { noContent, parseId, withApi } from "@/middleware/http";
-import { requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { noContent, parseId, withApi } from "@/platform/middleware/http";
+import { requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string; imageId: string }> };
 

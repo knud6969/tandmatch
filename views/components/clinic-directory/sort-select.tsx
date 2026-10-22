@@ -1,6 +1,6 @@
 import { CLINIC_SORTS, CLINIC_SORT_LABEL } from "@/lib/constants/clinics";
 import type { ClinicSort } from "@/lib/types/clinics";
-import { SelectField } from "@/views/components/ui/select-field";
+import { SelectField } from "@/components/ui/select-field";
 
 type SortSelectProps = {
   value: ClinicSort;

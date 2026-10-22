@@ -14,8 +14,8 @@ import type {
 import type { PublicReviewsDto, ReviewStats } from "@/lib/types/reviews";
 import type { ServiceDto } from "@/lib/types/services";
 import type { BusyInterval } from "@/lib/types/clinics";
-import { ApiError, notFound } from "@/middleware/http";
-import type { Session } from "@/middleware/session";
+import { ApiError, notFound } from "@/platform/middleware/http";
+import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/models/availabilityRepository";
 import {
   ClinicDirectoryRepository,

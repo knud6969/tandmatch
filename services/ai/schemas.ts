@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { OUT_OF_SCOPE_TOPICS, IMAGE_QUALITIES, IMAGE_VIEWS } from "@/lib/constants/ai";
 import { aiImageObservationBase, aiSlugListSchema, aiSummaryBase, aiTopicsSchema, SLUG_PATTERN } from "@/lib/constants/ai-schemas";
-import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/constants/limits";
+import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 
 export { SLUG_PATTERN };
 export const MAX_SUGGESTED_SERVICES = MAX_CONFIRMED_SERVICES_PER_CASE;

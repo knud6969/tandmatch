@@ -1,10 +1,10 @@
 import { LeadsController } from "@/controllers/leadsController";
-import { LEADS_SEND_IP_LIMIT_PER_HOUR } from "@/lib/constants/limits";
+import { LEADS_SEND_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { emergencyLeadSchema } from "@/lib/schemas/leads";
-import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { requireAccount, requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { requireAccount, requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 
 // Akutvejen (architecture 10.11): opretter en akutsag, sender den til én klinik og reserverer tiden i ét kald.
 // Kræver konto; anonyme får ACCOUNT_REQUIRED.

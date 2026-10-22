@@ -1,5 +1,5 @@
 import * as Location from "expo-location";
-import { roundPosition } from "@/lib/domain/position";
+import { roundPosition } from "@/lib/common/domain/position";
 
 export type Position = { lat: number; lng: number };
 

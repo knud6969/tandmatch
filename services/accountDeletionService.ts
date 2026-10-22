@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthRepository } from "@/models/authRepository";
 import { CaseImageStorage } from "@/models/caseImageStorage";
-import { CleanupRepository } from "@/models/cleanupRepository";
+import { CleanupRepository } from "@/platform/cleanupRepository";
 import { PublicMediaStorage } from "@/models/publicMediaStorage";
 
 // Sletter alt for én bruger: billedmapperne pr. sag og auth-brugeren (klinikker: filer i public-media og auth-brugeren). Rækker slettes via cascade

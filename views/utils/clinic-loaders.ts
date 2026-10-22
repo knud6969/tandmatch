@@ -1,4 +1,4 @@
-import { apiRequest } from "@/views/utils/api-client";
+import { apiRequest } from "@/platform/ui-utils/api-client";
 import type { OwnClinicDto } from "@/lib/types/clinics";
 import type { ServiceGroupDto } from "@/lib/types/services";
 

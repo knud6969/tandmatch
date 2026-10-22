@@ -1,9 +1,9 @@
 import { signupSchema } from "@/lib/schemas/auth";
-import { NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { getSession } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
-import { isMobileClient } from "@/models/db/supabase";
+import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { getSession } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { isMobileClient } from "@/platform/db/supabase";
 import { AuthController } from "@/controllers/authController";
 
 export const POST = withApi(async (req) => {

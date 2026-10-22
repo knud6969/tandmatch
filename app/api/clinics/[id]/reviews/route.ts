@@ -1,6 +1,6 @@
-import { jsonResponse, parseId, withApi } from "@/middleware/http";
-import { getSession } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
+import { getSession } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { ClinicDirectoryController } from "@/controllers/clinicDirectoryController";
 
 type Ctx = { params: Promise<{ id: string }> };

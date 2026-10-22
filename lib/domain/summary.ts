@@ -1,4 +1,4 @@
-import { AI_DRAFT_MIN_SHARED_WORDS, IMAGE_DESCRIPTION_MAX_CHARS } from "@/lib/constants/limits";
+import { AI_DRAFT_MIN_SHARED_WORDS, IMAGE_DESCRIPTION_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiSummary } from "@/lib/types/ai";
 
 // Rene hjælpefunktioner til opsummeringen (architecture 10.5).

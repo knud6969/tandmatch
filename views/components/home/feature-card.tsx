@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { IconTile, type IconName } from "@/views/components/ui/icons";
+import { IconTile, type IconName } from "@/components/ui/icons";
 
 // Kort med ikon, titel og tekst. Bruges til fordele og trin.
 export function FeatureCard({ icon, title, children, step }: { icon: IconName; title: string; children: ReactNode; step?: number }) {

@@ -6,16 +6,16 @@ import { MODERATION_LABEL, REVIEW_REPLY_MAX_CHARS } from "@/lib/constants/review
 import { replyReviewSchema } from "@/lib/schemas/reviews";
 import type { ClinicReviewDto } from "@/lib/types/reviews";
 import { ReviewDetails } from "@/views/components/reviews/review-details";
-import { Badge } from "@/views/components/ui/badge";
-import { Button } from "@/views/components/ui/button";
-import { LoadState } from "@/views/components/ui/load-state";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { LoadState } from "@/components/ui/load-state";
 import { NotVerifiedNote } from "@/views/components/clinic/not-verified-note";
-import { StatusMessage } from "@/views/components/ui/status-message";
-import { TextArea } from "@/views/components/ui/text-area";
-import { apiRequest } from "@/views/utils/api-client";
+import { StatusMessage } from "@/components/ui/status-message";
+import { TextArea } from "@/components/ui/text-area";
+import { apiRequest } from "@/platform/ui-utils/api-client";
 import { MODERATION_TONE } from "@/views/utils/review-status";
-import { useAction } from "@/views/utils/use-action";
-import { useLoad } from "@/views/utils/use-load";
+import { useAction } from "@/platform/ui-utils/use-action";
+import { useLoad } from "@/platform/ui-utils/use-load";
 
 const loadReviews = async (): Promise<ClinicReviewDto[]> =>
   (await apiRequest<{ reviews: ClinicReviewDto[] }>("/api/clinics/me/reviews")).reviews;

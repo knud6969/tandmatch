@@ -1,8 +1,8 @@
 import { deleteAccountSchema } from "@/lib/schemas/auth";
 import { patchPatientSchema } from "@/lib/schemas/patients";
-import { jsonResponse, noContent, readJson, withApi } from "@/middleware/http";
-import { clearAuthCookies, requireRole } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
+import { jsonResponse, noContent, readJson, withApi } from "@/platform/middleware/http";
+import { clearAuthCookies, requireRole } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
 import { PatientsController } from "@/controllers/patientsController";
 
 export const GET = withApi(async () => {

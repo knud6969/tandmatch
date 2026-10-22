@@ -1,9 +1,9 @@
 import { convertSchema } from "@/lib/schemas/auth";
-import { NO_STORE, jsonResponse, readJson, withApi } from "@/middleware/http";
-import { enforceIpRateLimit } from "@/middleware/rateLimit";
-import { requireAnonymous } from "@/middleware/session";
-import { requireTerms } from "@/middleware/termsGate";
-import { isMobileClient } from "@/models/db/supabase";
+import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
+import { requireAnonymous } from "@/platform/middleware/session";
+import { requireTerms } from "@/platform/middleware/termsGate";
+import { isMobileClient } from "@/platform/db/supabase";
 import { AuthController } from "@/controllers/authController";
 
 // Konverterer den indloggede anonyme bruger til en konto med samme user id (architecture 7.7).
