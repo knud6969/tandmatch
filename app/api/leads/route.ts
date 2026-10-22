@@ -1,5 +1,5 @@
-import { LeadsController } from "@/controllers/leadsController";
-import { clinicLeadsQuerySchema } from "@/lib/schemas/leads";
+import { LeadsController } from "@/features/leads/leadsController";
+import { clinicLeadsQuerySchema } from "@/lib/leads/schemas/leads";
 import { jsonResponse, readQuery, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

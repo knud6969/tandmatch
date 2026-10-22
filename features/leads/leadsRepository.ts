@@ -1,13 +1,13 @@
 import "server-only";
 import type { z } from "zod";
-import { isActiveLead } from "@/lib/domain/leads";
+import { isActiveLead } from "@/lib/leads/domain/leads";
 import { priceEstimate } from "@/lib/domain/reviews";
 import {
   MAX_ACTIVE_LEADS_PER_CASE,
   MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/common/constants/limits";
-import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/schemas/leads";
+import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/leads/schemas/leads";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/cases/types/cases";
 import type { PriceRange } from "@/lib/common/types/common";
@@ -19,7 +19,7 @@ import type {
   LeadExportDto,
   LeadStatus,
   PatientLeadDto,
-} from "@/lib/types/leads";
+} from "@/lib/leads/types/leads";
 import {
   ACCOUNT_REQUIRED_MESSAGES,
   accountRequired,

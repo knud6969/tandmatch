@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { canSendCase } from "@/lib/domain/leads";
+import { canSendCase } from "@/lib/leads/domain/leads";
 import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/cases/schemas/cases";
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/cases/types/cases";
 import { notDraft } from "@/platform/middleware/http";
@@ -12,7 +12,7 @@ import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
 import { CaseServicesRepository } from "@/features/cases/caseServicesRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { LeadsRepository } from "@/models/leadsRepository";
+import { LeadsRepository } from "@/features/leads/leadsRepository";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 

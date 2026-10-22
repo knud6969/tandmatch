@@ -1,7 +1,7 @@
 "use client";
 
 import { ClinicOverview } from "@/features/clinics/components/clinic-overview";
-import { LeadInbox } from "@/views/components/clinic/lead-inbox";
+import { LeadInbox } from "@/features/leads/components/lead-inbox";
 import { VerificationBanner } from "@/features/clinics/components/verification-banner";
 import { LoadState } from "@/components/ui/load-state";
 import { loadClinic } from "@/features/clinics/utils/clinic-loaders";

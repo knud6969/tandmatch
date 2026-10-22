@@ -1,4 +1,4 @@
-import type { PatientLeadDto } from "@/lib/types/leads";
+import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import { apiRequest } from "./client";
 
 // Leads (architecture 10.5). Kræver konto og gældende health_data_sharing-samtykke; fejlkoderne (LEAD_LIMIT,

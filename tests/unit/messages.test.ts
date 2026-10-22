@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Session } from "@/platform/middleware/session";
-import type { LeadStatus } from "@/lib/types/leads";
+import type { LeadStatus } from "@/lib/leads/types/leads";
 
 // server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.
 vi.mock("server-only", () => ({}));
 
 const { MessagesRepository, MessageRejectedError } =
-  await import("@/models/messagesRepository");
-const { MessagesController } = await import("@/controllers/messagesController");
+  await import("@/features/leads/messagesRepository");
+const { MessagesController } = await import("@/features/leads/messagesController");
 
 // RLS-grenen (databasen afviser indsættelsen, efter at controllerens forhåndstjek er bestået) kan ikke rammes
 // deterministisk fra en API-test: det kræver, at tråden lukkes eller døgnloftet nås mellem to kald i samme request.

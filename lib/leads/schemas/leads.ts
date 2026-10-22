@@ -7,7 +7,7 @@ import {
   LEAD_COMMENT_MAX_CHARS,
   LEAD_DECLINE_NOTE_MAX_CHARS,
   LEAD_STATUSES,
-} from "@/lib/constants/leads";
+} from "@/lib/leads/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { contactNameSchema } from "@/lib/schemas/bookings";
 import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";

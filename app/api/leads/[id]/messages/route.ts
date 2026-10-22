@@ -1,5 +1,5 @@
-import { MessagesController } from "@/controllers/messagesController";
-import { sendMessageSchema } from "@/lib/schemas/messages";
+import { MessagesController } from "@/features/leads/messagesController";
+import { sendMessageSchema } from "@/lib/leads/schemas/messages";
 import { jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

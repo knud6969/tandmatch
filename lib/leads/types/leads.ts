@@ -1,4 +1,4 @@
-import type { LEAD_DECLINE_REASONS, LEAD_STATUSES } from "@/lib/constants/leads";
+import type { LEAD_DECLINE_REASONS, LEAD_STATUSES } from "@/lib/leads/constants/leads";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/types/bookings";
 import type { CaseTimeframe } from "@/lib/cases/types/cases";
 import type { ImageDto, PriceRange } from "@/lib/common/types/common";

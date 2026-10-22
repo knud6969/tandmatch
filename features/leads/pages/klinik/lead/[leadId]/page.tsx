@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LeadCard } from "@/views/components/clinic/lead-card";
+import { LeadCard } from "@/features/leads/components/lead-card";
 import { Container } from "@/components/ui/container";
 
 export const metadata: Metadata = { title: "Henvendelse" };

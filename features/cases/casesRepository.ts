@@ -1,7 +1,7 @@
 import "server-only";
 import { parseAiSummary } from "@/lib/cases/schemas/aiSummary";
 import type { CaseConversationInfo, CaseExportDto, CaseRecordDto } from "@/lib/cases/types/cases";
-import type { LeadStatus } from "@/lib/types/leads";
+import type { LeadStatus } from "@/lib/leads/types/leads";
 import { notDraft, notFound } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";

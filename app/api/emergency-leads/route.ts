@@ -1,6 +1,6 @@
-import { LeadsController } from "@/controllers/leadsController";
+import { LeadsController } from "@/features/leads/leadsController";
 import { LEADS_SEND_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
-import { emergencyLeadSchema } from "@/lib/schemas/leads";
+import { emergencyLeadSchema } from "@/lib/leads/schemas/leads";
 import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { requireAccount, requireRole } from "@/platform/middleware/session";

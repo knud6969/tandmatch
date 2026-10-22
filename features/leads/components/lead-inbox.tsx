@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CLINIC_LEAD_STATUS_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
-import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/types/leads";
-import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/views/components/clinic/lead-facts";
+import { CLINIC_LEAD_STATUS_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
+import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/leads/types/leads";
+import { LeadBadges, leadAreaText, leadDistanceText, leadImagesText, leadTimeText } from "@/features/leads/components/lead-facts";
 import { FilterChips } from "@/components/ui/filter-chips";
 import { LoadState } from "@/components/ui/load-state";
 import { apiRequest } from "@/platform/ui-utils/api-client";

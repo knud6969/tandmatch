@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canSendCase, canSendMoreLeads, isActiveLead, remainingLeadSlots } from "@/lib/domain/leads";
+import { canSendCase, canSendMoreLeads, isActiveLead, remainingLeadSlots } from "@/lib/leads/domain/leads";
 
 const ready = { status: "draft", summaryApprovedAt: "2026-10-17T10:00:00Z", postalCode: "2100", preferredTimeframe: "asap" } as const;
 

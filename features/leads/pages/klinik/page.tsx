@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClinicHome } from "@/views/components/clinic/clinic-home";
+import { ClinicHome } from "@/features/leads/components/clinic-home";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 

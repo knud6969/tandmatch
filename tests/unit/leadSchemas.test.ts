@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clinicLeadsQuerySchema, leadDecisionSchema } from "@/lib/schemas/leads";
-import { sendMessageSchema } from "@/lib/schemas/messages";
+import { clinicLeadsQuerySchema, leadDecisionSchema } from "@/lib/leads/schemas/leads";
+import { sendMessageSchema } from "@/lib/leads/schemas/messages";
 
 describe("leadDecisionSchema", () => {
   it("tillader accept uden og med kommentar og pris", () => {

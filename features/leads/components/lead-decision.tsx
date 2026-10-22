@@ -6,9 +6,9 @@ import {
   LEAD_COMMENT_MAX_CHARS,
   LEAD_DECLINE_NOTE_MAX_CHARS,
   LEAD_DECLINE_REASON_LABEL,
-} from "@/lib/constants/leads";
-import { leadDecisionSchema } from "@/lib/schemas/leads";
-import type { ClinicLeadDetailDto } from "@/lib/types/leads";
+} from "@/lib/leads/constants/leads";
+import { leadDecisionSchema } from "@/lib/leads/schemas/leads";
+import type { ClinicLeadDetailDto } from "@/lib/leads/types/leads";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SelectField } from "@/components/ui/select-field";

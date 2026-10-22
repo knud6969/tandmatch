@@ -1,4 +1,4 @@
-import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/leads/constants/emergency";
 import type { ImageQuality, OutOfScopeTopic } from "@/lib/cases/types/ai";
 
 // Faste danske tekster om AI’ens grænser. Skrevet i koden og ikke af modellen (architecture 7.3, 7.5).

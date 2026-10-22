@@ -2,7 +2,7 @@ import type { CASE_FLOW_STEPS } from "@/lib/cases/constants/case-flow";
 import type { CASE_STATUSES, CASE_TIMEFRAMES } from "@/lib/cases/constants/cases";
 import type { AiSummary } from "@/lib/cases/types/ai";
 import type { ImageDto } from "@/lib/common/types/common";
-import type { LeadStatus } from "@/lib/types/leads";
+import type { LeadStatus } from "@/lib/leads/types/leads";
 import type { ServiceDto } from "@/lib/clinics/types/services";
 
 // Sager (architecture 4.3 `cases`, 10.5). Udvides i trin 2 med CaseDto m.fl.

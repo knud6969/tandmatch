@@ -7,9 +7,9 @@ import {
   MESSAGE_POLL_INTERVAL_MS,
   OWN_SENDER_LABEL,
   PATIENT_SENDER_LABEL,
-} from "@/lib/constants/messages";
+} from "@/lib/leads/constants/messages";
 import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
-import type { MessageDto } from "@/lib/types/messages";
+import type { MessageDto } from "@/lib/leads/types/messages";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cx } from "@/components/ui/cx";

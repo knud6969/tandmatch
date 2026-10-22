@@ -6,7 +6,7 @@ import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { ChatRepository } from "@/features/cases/chatRepository";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
-import { LeadsRepository } from "@/models/leadsRepository";
+import { LeadsRepository } from "@/features/leads/leadsRepository";
 import { ReviewsRepository } from "@/models/reviewsRepository";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).

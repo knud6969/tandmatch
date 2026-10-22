@@ -1,4 +1,4 @@
-import { LeadsController } from "@/controllers/leadsController";
+import { LeadsController } from "@/features/leads/leadsController";
 import { jsonResponse, parseId, withApi } from "@/platform/middleware/http";
 import { requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

@@ -16,7 +16,7 @@ import { AvailabilityRepository } from "@/features/clinics/availabilityRepositor
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { ClinicDirectoryRepository } from "@/features/clinics/clinicDirectoryRepository";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
-import { LeadsRepository } from "@/models/leadsRepository";
+import { LeadsRepository } from "@/features/leads/leadsRepository";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { AvailabilityService } from "@/features/clinics/availabilityService";
 

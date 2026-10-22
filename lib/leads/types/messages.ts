@@ -1,4 +1,4 @@
-import type { MESSAGE_SENDER_ROLES } from "@/lib/constants/messages";
+import type { MESSAGE_SENDER_ROLES } from "@/lib/leads/constants/messages";
 
 // Beskedtråd pr. lead (architecture 4.3 `messages`, 10.12).
 export type MessageSenderRole = (typeof MESSAGE_SENDER_ROLES)[number];

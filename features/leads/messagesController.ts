@@ -1,14 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { isActiveLead } from "@/lib/domain/leads";
+import { isActiveLead } from "@/lib/leads/domain/leads";
 import { MESSAGE_MAX_PER_DAY } from "@/lib/common/constants/limits";
-import type { sendMessageSchema } from "@/lib/schemas/messages";
-import type { MessageDto, MessageSenderRole } from "@/lib/types/messages";
+import type { sendMessageSchema } from "@/lib/leads/schemas/messages";
+import type { MessageDto, MessageSenderRole } from "@/lib/leads/types/messages";
 import { forbidden, messageLimit, threadClosed } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { LeadsRepository } from "@/models/leadsRepository";
-import { MessageRejectedError, MessagesRepository } from "@/models/messagesRepository";
+import { LeadsRepository } from "@/features/leads/leadsRepository";
+import { MessageRejectedError, MessagesRepository } from "@/features/leads/messagesRepository";
 
 type SendMessageInput = z.infer<typeof sendMessageSchema>;
 

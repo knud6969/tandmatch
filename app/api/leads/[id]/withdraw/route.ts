@@ -1,5 +1,5 @@
-import { LeadsController } from "@/controllers/leadsController";
-import { withdrawLeadSchema } from "@/lib/schemas/leads";
+import { LeadsController } from "@/features/leads/leadsController";
+import { withdrawLeadSchema } from "@/lib/leads/schemas/leads";
 import { ACCOUNT_REQUIRED_MESSAGES, jsonResponse, parseId, readJson, withApi } from "@/platform/middleware/http";
 import { requireAccount, requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";

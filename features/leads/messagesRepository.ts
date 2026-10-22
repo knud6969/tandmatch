@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import type { MessageDto, MessageSenderRole } from "@/lib/types/messages";
+import type { MessageDto, MessageSenderRole } from "@/lib/leads/types/messages";
 import { ApiError } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 

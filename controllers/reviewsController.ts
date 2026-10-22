@@ -8,7 +8,7 @@ import { alreadyReplied, notFound } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
-import { LeadsRepository } from "@/models/leadsRepository";
+import { LeadsRepository } from "@/features/leads/leadsRepository";
 import { ReviewsRepository } from "@/models/reviewsRepository";
 
 type CreateReviewInput = z.infer<typeof createReviewSchema>;

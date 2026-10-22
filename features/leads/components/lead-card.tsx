@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { LEAD_DECLINE_REASON_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/constants/leads";
-import type { ClinicLeadDetailDto } from "@/lib/types/leads";
-import { LeadBadges, leadAreaText, leadDistanceText, leadTimeText } from "@/views/components/clinic/lead-facts";
-import { LeadDecision } from "@/views/components/clinic/lead-decision";
-import { MessageThread } from "@/views/components/messages/message-thread";
+import { LEAD_DECLINE_REASON_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
+import type { ClinicLeadDetailDto } from "@/lib/leads/types/leads";
+import { LeadBadges, leadAreaText, leadDistanceText, leadTimeText } from "@/features/leads/components/lead-facts";
+import { LeadDecision } from "@/features/leads/components/lead-decision";
+import { MessageThread } from "@/features/leads/components/message-thread";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EMERGENCY_FILTER_HOURS } from "@/lib/clinics/constants/clinics";
-import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/constants/emergency";
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/leads/constants/emergency";
 import type { ClinicListDto } from "@/lib/clinics/types/clinics";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
