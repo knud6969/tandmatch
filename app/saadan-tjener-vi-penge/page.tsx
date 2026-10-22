@@ -1,1 +1,1 @@
-export { default, metadata } from "@/views/pages/saadan-tjener-vi-penge/page";
+export { default, metadata } from "@/features/site/pages/saadan-tjener-vi-penge/page";

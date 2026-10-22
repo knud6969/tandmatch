@@ -1,1 +1,1 @@
-export { default, metadata } from "@/views/pages/om-os/page";
+export { default, metadata } from "@/features/site/pages/om-os/page";

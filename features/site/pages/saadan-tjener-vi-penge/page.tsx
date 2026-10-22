@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
-import { InfoSection, PrototypeNote } from "@/views/components/home/info-section";
+import { InfoSection, PrototypeNote } from "@/features/site/components/info-section";
 
 export const metadata: Metadata = { title: "Sådan tjener vi penge" };
 

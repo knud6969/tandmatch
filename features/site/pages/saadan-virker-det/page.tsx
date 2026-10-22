@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 import { AiDisclaimer } from "@/components/ui/disclaimer";
-import { InfoSection } from "@/views/components/home/info-section";
+import { InfoSection } from "@/features/site/components/info-section";
 
 export const metadata: Metadata = { title: "Sådan virker det" };
 

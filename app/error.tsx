@@ -1,3 +1,3 @@
 "use client";
 
-export { default } from "@/views/pages/error";
+export { default } from "@/features/site/pages/error";
