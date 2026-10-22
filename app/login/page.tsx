@@ -1,1 +1,1 @@
-export { default, metadata } from "@/views/pages/login/page";
+export { default, metadata } from "@/features/identity/pages/login/page";

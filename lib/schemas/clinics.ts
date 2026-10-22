@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { phoneSchema } from "@/lib/common/schemas/phone";
-import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
+import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import {
   CLINIC_DESCRIPTION_MAX_CHARS,

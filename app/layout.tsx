@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { SessionProvider } from "@/views/components/session/session-provider";
+import { SessionProvider } from "@/features/identity/components/session-provider";
 import { SiteHeader } from "@/components/ui/site-header";
 import { SiteFooter } from "@/components/ui/site-footer";
 

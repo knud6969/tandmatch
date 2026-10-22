@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { MeDto } from "@/lib/types/auth";
+import type { MeDto } from "@/lib/identity/types/auth";
 import { ApiRequestError } from "~/api/client";
 import { getMe } from "~/api/me";
 import { clearSession, getSession, getTermsToken, subscribeAuthChange } from "./tokens";

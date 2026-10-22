@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { convertSchema, signupSchema } from "@/lib/schemas/auth";
+import { convertSchema, signupSchema } from "@/lib/identity/schemas/auth";
 import { Button, StatusMessage, TextField } from "~/components/ui";
 import { fieldErrorsFrom, type FieldErrors } from "~/utils/field-errors";
 import { spacing } from "~/theme";

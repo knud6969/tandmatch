@@ -11,7 +11,7 @@ import { IMAGE_ACCEPT } from "@/platform/ui-utils/prepare-image";
 import { uploadImage } from "@/platform/ui-utils/upload-image";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { PORTFOLIO_CAPTION_MAX_CHARS } from "@/lib/constants/clinics";
-import { PORTFOLIO_CONSENT_TEXT, PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/constants/consents";
+import { PORTFOLIO_CONSENT_TEXT, PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import type { PortfolioItemDto } from "@/lib/types/clinics";
 import type { ServiceGroupDto } from "@/lib/types/services";
 

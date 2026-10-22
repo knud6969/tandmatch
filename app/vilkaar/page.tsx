@@ -1,1 +1,1 @@
-export { default, metadata } from "@/views/pages/vilkaar/page";
+export { default, metadata } from "@/features/identity/pages/vilkaar/page";

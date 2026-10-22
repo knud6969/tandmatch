@@ -1,6 +1,6 @@
 import { apiErrorText } from "@/lib/common/domain/errors";
-import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE, TERMS_TOKEN_HEADER } from "@/lib/constants/sessions";
-import type { MobileSessionDto } from "@/lib/types/auth";
+import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE, TERMS_TOKEN_HEADER } from "@/lib/identity/constants/sessions";
+import type { MobileSessionDto } from "@/lib/identity/types/auth";
 import { clearSession, clearTermsToken, getSession, getTermsToken, notifyAuthChange, saveSession } from "~/auth/tokens";
 
 // Eneste sted i appen med fetch (architecture 13.2-13.3).

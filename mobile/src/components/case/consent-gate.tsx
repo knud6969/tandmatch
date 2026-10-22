@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { CONSENT_TEXTS, CONSENT_TYPE_LABEL } from "@/lib/constants/consents";
+import { CONSENT_TEXTS, CONSENT_TYPE_LABEL } from "@/lib/identity/constants/consents";
 import type { ConsentType } from "@/lib/common/types/common";
 import { Button, Checkbox, CheckboxText, StatusMessage } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";

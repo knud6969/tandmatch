@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { patchPatientSchema } from "@/lib/schemas/patients";
-import type { PatientMeDto } from "@/lib/types/patients";
+import { patchPatientSchema } from "@/lib/identity/schemas/patients";
+import type { PatientMeDto } from "@/lib/identity/types/patients";
 import { Button, StatusMessage, TextField } from "~/components/ui";
 import { fieldErrorsFrom, type FieldErrors } from "~/utils/field-errors";
 import { spacing } from "~/theme";

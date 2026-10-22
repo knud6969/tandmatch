@@ -10,7 +10,7 @@ import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CaseServicesRepository } from "@/models/caseServicesRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ChatRepository } from "@/models/chatRepository";
-import { ConsentsRepository } from "@/models/consentsRepository";
+import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { isAiUpstreamError } from "@/services/ai/errors";

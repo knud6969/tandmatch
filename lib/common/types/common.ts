@@ -1,6 +1,6 @@
 import type { TRUSTPILOT_ENTERED_BY } from "@/lib/constants/clinics";
-import type { CONSENT_TYPES } from "@/lib/constants/consents";
-import type { ROLES } from "@/lib/constants/roles";
+import type { CONSENT_TYPES } from "@/lib/identity/constants/consents";
+import type { ROLES } from "@/lib/identity/constants/roles";
 
 export type Role = (typeof ROLES)[number];
 export type ConsentType = (typeof CONSENT_TYPES)[number];

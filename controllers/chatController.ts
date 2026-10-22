@@ -11,7 +11,7 @@ import type { Session } from "@/platform/middleware/session";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ChatRepository, type ReservedTurn } from "@/models/chatRepository";
-import { ConsentsRepository } from "@/models/consentsRepository";
+import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { ServicesRepository } from "@/models/servicesRepository";
 import { AiChatService } from "@/services/ai/aiChatService";

@@ -1,10 +1,10 @@
-import { signupSchema } from "@/lib/schemas/auth";
+import { signupSchema } from "@/lib/identity/schemas/auth";
 import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { getSession } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { isMobileClient } from "@/platform/db/supabase";
-import { AuthController } from "@/controllers/authController";
+import { AuthController } from "@/features/identity/authController";
 
 export const POST = withApi(async (req) => {
   const gate = await requireTerms();

@@ -6,10 +6,10 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
-import { useSession } from "@/views/components/session/session-provider";
+import { useSession } from "@/features/identity/components/session-provider";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { deleteAccountSchema } from "@/lib/schemas/auth";
+import { deleteAccountSchema } from "@/lib/identity/schemas/auth";
 
 // Sletning af klinikkontoen (architecture 10.8). Tydelig advarsel om konsekvenserne og en skrevet bekræftelse.
 export function DeleteAccount({ clinicName }: { clinicName: string }) {

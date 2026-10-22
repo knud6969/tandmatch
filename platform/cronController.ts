@@ -1,11 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CLEANUP_BATCH_SIZE } from "@/lib/common/constants/limits";
-import { ANONYMOUS_SESSION_HOURS } from "@/lib/constants/sessions";
+import { ANONYMOUS_SESSION_HOURS } from "@/lib/identity/constants/sessions";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CleanupRepository } from "@/platform/cleanupRepository";
-import { AccountDeletionService } from "@/services/accountDeletionService";
+import { AccountDeletionService } from "@/features/identity/accountDeletionService";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type CronDeps = {

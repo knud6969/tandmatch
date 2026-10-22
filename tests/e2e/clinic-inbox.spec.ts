@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
-import { CONSENT_TEXT_VERSIONS } from "../../lib/constants/consents";
+import { CONSENT_TEXT_VERSIONS } from "../../lib/identity/constants/consents";
 
 // Klinikkens indbakke og lead-kort (arbejdsplan 5.3): klinik ser lead -> stiller spørgsmål -> patienten ser og svarer -> klinikken
 // accepterer med kommentar og pris -> patienten ser status og pris. Desuden: klinik Y kan ikke åbne X's lead (UI og API), patientens

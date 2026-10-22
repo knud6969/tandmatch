@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import type { MobileSessionDto } from "@/lib/types/auth";
+import type { MobileSessionDto } from "@/lib/identity/types/auth";
 import { clearTermsToken, getTermsToken, saveTermsToken } from "./terms";
 
 // Opbevaring af tokens i SecureStore (architecture 13.3) [PROTOTYPE, 0.1]. Intet i AsyncStorage.

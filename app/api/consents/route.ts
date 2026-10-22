@@ -1,8 +1,8 @@
-import { grantConsentSchema } from "@/lib/schemas/consents";
+import { grantConsentSchema } from "@/lib/identity/schemas/consents";
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { requireRole } from "@/platform/middleware/session";
 import { jsonResponse, readJson, withApi } from "@/platform/middleware/http";
-import { ConsentsController } from "@/controllers/consentsController";
+import { ConsentsController } from "@/features/identity/consentsController";
 
 // Samtykker (GDPR art. 9). Vilkårs-accept er IKKE et samtykke (architecture 2.5, 10.3).
 export const GET = withApi(async () => {

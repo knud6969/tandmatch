@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // server-only kaster uden for Next.js' server-bundle; i enhedstest erstattes den af en tom modul.
 vi.mock("server-only", () => ({}));
 
-const { AuthRepository } = await import("@/models/authRepository");
+const { AuthRepository } = await import("@/features/identity/authRepository");
 
 function clientReturning(...results: Array<{ user: { id: string } | null; error: { name?: string; status?: number } | null }>) {
   const getUser = vi.fn();

@@ -1,9 +1,9 @@
-import { termsAcceptSchema } from "@/lib/schemas/terms";
+import { termsAcceptSchema } from "@/lib/identity/schemas/terms";
 import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { signTermsPayload } from "@/platform/middleware/termsCookie";
 import { setTermsCookie } from "@/platform/middleware/termsGate";
 import { createSupabaseRequestClient, isMobileClient } from "@/platform/db/supabase";
-import { TermsController } from "@/controllers/termsController";
+import { TermsController } from "@/features/identity/termsController";
 
 // Undtaget fra vilkårs-gaten. Accepten gemmes i databasen (hvis der er en session) og i en signeret cookie.
 // Fra appen (X-TandMatch-Client: mobile) sættes ingen cookie; den samme signerede accept returneres som termsToken.

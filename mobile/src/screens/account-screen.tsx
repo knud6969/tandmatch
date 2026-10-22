@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { logout } from "~/api/auth";
-import type { PatientMeDto } from "@/lib/types/patients";
+import type { PatientMeDto } from "@/lib/identity/types/patients";
 import { getPatientMe, patchPatientMe } from "~/api/patients";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";

@@ -8,7 +8,7 @@ import type { Session } from "@/platform/middleware/session";
 import { CaseImageStorage } from "@/models/caseImageStorage";
 import { CaseImagesRepository } from "@/models/caseImagesRepository";
 import { CasesRepository } from "@/models/casesRepository";
-import { ConsentsRepository } from "@/models/consentsRepository";
+import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";
 import { ImageProcessingService } from "@/platform/imageProcessingService";

@@ -1,8 +1,8 @@
 import type { z } from "zod";
-import type { convertSchema, loginSchema, signupSchema } from "@/lib/schemas/auth";
-import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
-import type { AuthResultDto } from "@/lib/types/auth";
-import type { AnonymousSessionDto } from "@/lib/types/session";
+import type { convertSchema, loginSchema, signupSchema } from "@/lib/identity/schemas/auth";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
+import type { AuthResultDto } from "@/lib/identity/types/auth";
+import type { AnonymousSessionDto } from "@/lib/identity/types/session";
 import { clearSession, saveSession } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
 

@@ -1,5 +1,5 @@
-import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
-import type { TermsAcceptResultDto } from "@/lib/types/auth";
+import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
+import type { TermsAcceptResultDto } from "@/lib/identity/types/auth";
 import { saveTermsToken, notifyAuthChange } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
 

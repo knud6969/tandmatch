@@ -2,8 +2,8 @@ import { startAnonymousSession } from "~/api/auth";
 import { getChat, sendChatMessage } from "~/api/chat";
 import { ApiRequestError } from "~/api/client";
 import { getSession, saveTermsToken } from "~/auth/tokens";
-import { hasCurrentConsent } from "@/lib/domain/consents";
-import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
+import { hasCurrentConsent } from "@/lib/identity/domain/consents";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
 import type { ChatTurnResponse } from "@/lib/types/ai";
 import { runChatTurn } from "~/utils/chat-turn";
 

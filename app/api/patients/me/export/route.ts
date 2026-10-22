@@ -1,7 +1,7 @@
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { requireRole } from "@/platform/middleware/session";
 import { jsonResponse, withApi } from "@/platform/middleware/http";
-import { ExportController } from "@/controllers/exportController";
+import { ExportController } from "@/features/identity/exportController";
 
 // Dataeksport for egen konto (GDPR). Også for anonyme, så en patient kan se sin kladde før kontooprettelse.
 export const GET = withApi(async () => {

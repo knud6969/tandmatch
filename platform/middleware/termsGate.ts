@@ -1,10 +1,10 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
-import { TERMS_TOKEN_HEADER } from "@/lib/constants/sessions";
+import { TERMS_TOKEN_HEADER } from "@/lib/identity/constants/sessions";
 import { createAuthContext, type AuthContext } from "@/platform/middleware/session";
 import { AUTH_COOKIE_OPTIONS } from "@/platform/db/config";
 import { isTokenTransport } from "@/platform/db/supabase";
-import { TermsRepository } from "@/models/termsRepository";
+import { TermsRepository } from "@/features/identity/termsRepository";
 import {
   TERMS_COOKIE,
   TERMS_COOKIE_MAX_AGE_SECONDS,

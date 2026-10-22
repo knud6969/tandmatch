@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/constants/legal";
+import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
 
 // Signeret cookie tm_terms (architecture 2.5). Format: base64url(payloadJSON) "." base64url(HMAC-SHA256).
 // Bruger Web Crypto, så den kan køre i både proxy.ts og route handlers.

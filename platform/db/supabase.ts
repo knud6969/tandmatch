@@ -2,7 +2,7 @@ import "server-only";
 import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE } from "@/lib/constants/sessions";
+import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE } from "@/lib/identity/constants/sessions";
 import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/platform/db/config";
 
 export { AUTH_COOKIE_OPTIONS, getSupabaseConfig };

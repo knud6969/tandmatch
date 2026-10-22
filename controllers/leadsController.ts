@@ -13,7 +13,7 @@ import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/models/bookingsRepository";
 import { CasesRepository } from "@/models/casesRepository";
 import { ClinicsRepository } from "@/models/clinicsRepository";
-import { ConsentsRepository } from "@/models/consentsRepository";
+import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { LeadsRepository } from "@/models/leadsRepository";
 import { CaseImageUrlService } from "@/services/caseImageUrlService";

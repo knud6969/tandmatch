@@ -1,4 +1,4 @@
-import type { MeDto } from "@/lib/types/auth";
+import type { MeDto } from "@/lib/identity/types/auth";
 
 // Klientens eneste adgang til backend: fetch mod /api/* (architecture 2.1). Ingen Supabase i browseren.
 export class ApiRequestError extends Error {

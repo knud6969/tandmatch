@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { deflateSync } from "node:zlib";
 import { expect, type Browser, type Page, type TestInfo } from "@playwright/test";
-import { CONSENT_TEXT_VERSIONS } from "../../../lib/constants/consents";
+import { CONSENT_TEXT_VERSIONS } from "../../../lib/identity/constants/consents";
 
 // Fælles hjælpere til indbakke-testene (kopi af hjælperne i ../clinic-inbox.spec.ts, som bevares uændret).
 export const PASSWORD = "test-adgangskode-123";

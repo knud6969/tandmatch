@@ -1,6 +1,6 @@
-import { CONSENT_TEXT_VERSIONS } from "@/lib/constants/consents";
+import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
 import type { ConsentType } from "@/lib/common/types/common";
-import type { ConsentDto } from "@/lib/types/consents";
+import type { ConsentDto } from "@/lib/identity/types/consents";
 import { apiRequest } from "./client";
 
 // Patientens samtykker (architecture 10.3).

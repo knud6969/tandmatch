@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
-import { PRIVACY_VERSION } from "@/lib/constants/legal";
+import { PRIVACY_VERSION } from "@/lib/identity/constants/legal";
 
 export const metadata: Metadata = { title: "Privatlivspolitik" };
 

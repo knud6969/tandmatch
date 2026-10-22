@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { hasCurrentConsent } from "@/lib/domain/consents";
+import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import type { CaseDto } from "@/lib/types/cases";
 import { getCase } from "~/api/cases";
 import { getConsents, grantConsent } from "~/api/consents";

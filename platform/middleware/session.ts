@@ -1,10 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
-import { ANONYMOUS_SESSION_HOURS } from "@/lib/constants/sessions";
+import { ANONYMOUS_SESSION_HOURS } from "@/lib/identity/constants/sessions";
 import { createSupabaseRequestClient, isTokenTransport, type AuthTransport } from "@/platform/db/supabase";
-import { AuthRepository } from "@/models/authRepository";
-import { ProfilesRepository } from "@/models/profilesRepository";
+import { AuthRepository } from "@/features/identity/authRepository";
+import { ProfilesRepository } from "@/features/identity/profilesRepository";
 import { ApiError, anonymousNotAllowed, forbidden, unauthenticated } from "@/platform/middleware/http";
 import type { Role } from "@/lib/common/types/common";
 

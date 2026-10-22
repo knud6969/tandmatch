@@ -1,10 +1,10 @@
-import { anonymousSessionSchema } from "@/lib/schemas/session";
+import { anonymousSessionSchema } from "@/lib/identity/schemas/session";
 import { NO_STORE, jsonResponse, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { getSession } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { isMobileClient } from "@/platform/db/supabase";
-import { SessionController } from "@/controllers/sessionController";
+import { SessionController } from "@/features/identity/sessionController";
 
 // Opretter en anonym session (Supabase anonymous sign-in) efter vilkårs-accept og AI-samtykke.
 // Opretter også en tom sag (architecture 10.2). Der gives kun ai_processing her, aldrig billedsamtykke (se 9.4).

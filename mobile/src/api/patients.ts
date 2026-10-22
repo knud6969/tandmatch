@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import type { patchPatientSchema } from "@/lib/schemas/patients";
-import type { PatientMeDto } from "@/lib/types/patients";
+import type { patchPatientSchema } from "@/lib/identity/schemas/patients";
+import type { PatientMeDto } from "@/lib/identity/types/patients";
 import { apiRequest } from "./client";
 
 // Patientens egen profil (navn, postnummer m.m.).
