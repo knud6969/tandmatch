@@ -40,8 +40,6 @@ type Props = {
   onSend: (text: string) => Promise<TurnOutcome>;
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
-  // Hurtigsvar vises kun, når intet svar-kort venter på patienten (chat-trinnet).
-  quickRepliesAllowed?: boolean;
   cardsKey?: string;
 };
 
@@ -96,7 +94,6 @@ export function ChatPanel(props: Props) {
     messages,
     pending: pending !== null || sending,
     finished: finished || blockedByConsent,
-    cardActive: !props.quickRepliesAllowed,
     typing: draft.trim() !== "",
   });
 

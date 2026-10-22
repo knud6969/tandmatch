@@ -138,7 +138,6 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
-        quickRepliesAllowed={stepOf(dto) === "chat"}
         cards={cards}
         cardsKey={cardsKey(dto)}
       />
