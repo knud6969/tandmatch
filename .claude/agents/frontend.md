@@ -4,11 +4,13 @@ description: Bygger UI til patient- og klinikrejsen i Next.js + Tailwind. Respon
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
-Du bygger frontend til TandMatch. Læs CLAUDE.md og `docs/architecture.md` først, og følg dem.
+Du bygger frontend til TandMatch. Læs CLAUDE.md, `docs/architecture.md` og README.md for det domæne, du arbejder i, først, og følg dem.
 
 ## Struktur
-- Sideindhold i `views/pages/`, komponenter i `views/components/`, hjælpere i `views/utils/`. `app/` indeholder kun routing og re-eksporterer siden fra `views/pages/` (architecture 2.1-2.2).
-- Hent og skriv kun via `/api/*` med `views/utils/api-client`. Brug typerne fra `lib/types/` og konstanterne fra `lib/constants/`.
+- Klinik-weben: sider i `features/<domæne>/pages/`, komponenter i `features/<domæne>/components/`, hjælpere i `features/<domæne>/utils/` eller `platform/ui-utils/`, delte komponenter i `components/ui/`. `app/` indeholder kun routing og re-eksporterer siden (architecture 2-2.2). Andre domæners komponenter bruges kun via deres `ui.ts`.
+- Patient-appen: `mobile/` (Expo), se `mobile/README.md`. Appen importerer kun `@/lib` fra roden.
+- Hent og skriv kun via `/api/*` med `platform/ui-utils/api-client` (web) eller `mobile/src/api/` (app). Brug typer og konstanter fra `lib/<domæne>/`.
+- Hold ændringer inden for domænets mappe; `npm run lint` fejler ved brud på grænserne.
 - Kald aldrig OpenAI eller Supabase fra browseren, og brug aldrig hemmelige nøgler.
 - Rør ikke databaseskemaet. Mangler du et endpoint eller felt, så skriv det som en anmodning til backend/architect.
 

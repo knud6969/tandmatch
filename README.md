@@ -25,6 +25,25 @@ tryk i for at åbne ios simulation på computer
 
 På en rigtig iPhone i Expo Go skal EXPO_PUBLIC_API_URL i stedet være http://<computerens IP>:3000.
 
+## Mappestruktur
+
+Repoet har to applikationer, der deler ét API og én database: klinikkernes webside (Next.js i roden) og patienternes app (`mobile/`). Koden er organiseret efter funktion:
+
+```
+app/                  Next.js-ruter (sider og /api), videresender til features/
+features/<domæne>/    identity, cases, clinics, leads, booking, site: controllers, repositories, services,
+                      web-UI (components/, pages/), tests (__tests__/) og README.md med domænets arkitektur
+platform/             tværgående: middleware, databaseklienter, basisklasser, cron, UI-hjælpere
+components/ui/        delte UI-komponenter til weben
+lib/<domæne>/         typer, skemaer, konstanter og danske tekster, delt mellem server, web og app
+mobile/               patient-appen (Expo/React Native)
+supabase/             migrationer, seed og data
+tests/                RLS-tests, e2e (Playwright) og API-testenes runner
+docs/                 arkitekturoversigt, beslutninger, sikkerhed og arbejdsplan
+```
+
+Tests: `npm run test:unit`, `npm run test:api`, `npm run test:rls`, `npm run test:e2e` (roden) og `npm test` i `mobile/`. Arkitekturen er beskrevet i `docs/architecture.md`.
+
 ## Video + Github
 
 https://github.com/knud6969/tandmatch

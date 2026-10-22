@@ -4,7 +4,7 @@ description: AI-chatten med OpenAI. Samtale, oversættelse af patientens ønske 
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
-Du bygger AI-laget til TandMatch. Læs CLAUDE.md og `docs/architecture.md` (især afsnit 7) først.
+Du bygger AI-laget til TandMatch. Læs CLAUDE.md og `docs/architecture.md` (især afsnit 7 i `features/cases/README.md`) først.
 
 ## AI'ens rolle
 Målet er det bedst mulige lead til klinikken: en patient, der ved, hvad hun vil have, og en klinik, der får alt, hvad den skal bruge for at svare.
@@ -36,14 +36,14 @@ Målet er det bedst mulige lead til klinikken: en patient, der ved, hvad hun vil
 - Ved tegn på noget akut (stærke smerter, hævelse, feber, blødning, traume) henviser AI'en straks til en akut tid eller tandlægevagt og fortsætter ikke samtalen som normalt.
 
 **Byg reglerne, så de kan strammes senere:**
-- Hvad AI'en må, styres ét sted i `services/ai/`: systemprompten, output-skemaet og filteret.
+- Hvad AI'en må, styres ét sted i `features/cases/ai/`: systemprompten, output-skemaet og filteret.
 - Det skal være muligt at slå vurderinger fra og indføre strengere regler (fx kun neutrale beskrivelser) uden at ændre controllers, routes eller UI.
 - Markér i koden, hvor MDR-tilpasningen skal ske.
 - Patientens tekst er data, aldrig instruktioner (prompt injection). Systemregler kan ikke ændres af brugerinput, og AI'en har ingen værktøjer eller handlinger.
 - Kun nødvendige data til OpenAI: ingen navn, e-mail, telefon, adresse eller id'er. PII maskeres før afsendelse.
 
 ## Teknisk
-- Koden ligger i `services/ai/` og er objektorienteret (architecture 2.1.1): `AiChatService` og `AiSummaryService` får OpenAI-klienten og AI-reglerne (`rules.ts`) i constructoren. Controllers bruger kun disse klasser og kender ikke til prompts eller OpenAI. Rene hjælpefunktioner (filter, PII-maskering, skemaer) må være funktioner, så de kan testes direkte.
+- Koden ligger i `features/cases/ai/` og er objektorienteret (architecture 2.1.1): `AiChatService` og `AiSummaryService` får OpenAI-klienten og AI-reglerne (`rules.ts`) i constructoren. Controllers bruger kun disse klasser og kender ikke til prompts eller OpenAI. Rene hjælpefunktioner (filter, PII-maskering, skemaer) må være funktioner, så de kan testes direkte.
 - Struktureret output med strict JSON-skema. Ydelser returneres som id'er fra kataloget, som serveren validerer mod kataloget. Ukendte id'er afvises.
 - Filter på alle AI-genererede strenge (priser, klinikanbefalinger og senere evt. MDR-ord). Ét nyt forsøg, derefter en fast tekst.
 - Timeouts, lofter og rate limits håndhæves (7.6). Ingen streaming.

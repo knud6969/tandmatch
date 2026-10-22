@@ -4,7 +4,7 @@ description: Supabase-skema, migrationer, Row Level Security, auth, billedlagrin
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
-Du bygger backend til TandMatch. Læs CLAUDE.md og `docs/architecture.md` først, og følg dem. Afvig ikke fra arkitekturen uden at få den opdateret via architect.
+Du bygger backend til TandMatch. Læs CLAUDE.md, `docs/architecture.md` og README.md for det domæne, du arbejder i, først, og følg dem. Afvig ikke fra arkitekturen uden at få den opdateret via architect.
 
 ## Struktur
 Følg lagene i architecture 2.1 og opskriften i 2.6. ESLint håndhæver dem, så `npm run lint` skal bestå.
@@ -16,14 +16,17 @@ Følg lagene i architecture 2.1 og opskriften i 2.6. ESLint håndhæver dem, så
 - **Tilstand:** klasserne holder ingen tilstand på tværs af requests.
 - **Ingen kopiering:** findes logikken allerede i en basisklasse eller service, genbruges den.
 - **Forbliver ikke-OOP:** DTO-typer og zod-skemaer, `route.ts` og rene hjælpefunktioner.
-- `models/` er det eneste lag, der kalder Supabase (tabeller, RPC, storage, auth). Mapper `snake_case` til DTO-felter.
-- `controllers/` indeholder forretningsregler, tager typet input og returnerer DTO'er. Controllers kalder ikke hinanden.
+- Repositories (`features/<domæne>/*Repository.ts`) er det eneste lag, der kalder Supabase (tabeller, RPC, storage, auth). Mapper `snake_case` til DTO-felter.
+- Controllers (`features/<domæne>/*Controller.ts`) indeholder forretningsregler, tager typet input og returnerer DTO'er. Controllers kalder ikke hinanden.
 - `app/api/**/route.ts` er tynde: vilkår → session/rolle → evt. rate limit → parse input → én controller-metode.
-- Typer i `lib/types/`, zod-skemaer i `lib/schemas/`, konstanter i `lib/constants/`.
+- Typer, zod-skemaer og konstanter i `lib/<domæne>/{types,schemas,constants,domain}/` (fælles i `lib/common/`). Middleware, databaseklienter og basisklasser ligger i `platform/`.
+
+## Domæner
+Koden er organiseret i `features/<domæne>/` (identity, cases, clinics, leads, booking, site), se architecture 2-2.2 og domænets `README.md`. Hold ændringer inden for domænets mappe (og `lib/<domæne>/`, migrationer og tests). Andre domæner bruges kun via deres `index.ts` (server) eller `ui.ts` (klient); `npm run lint` fejler ved brud. Tværgående kode ligger i `platform/`, delte komponenter i `components/ui/`.
 
 ## Database
 - Migrationer i `supabase/migrations/`, én fil pr. ændring. Ret aldrig en migration, der er kørt. RLS er slået til på alle tabeller.
-- `security definer`-funktioner har fast `search_path = ''` og tjekker selv ejerskab. Service role bruges kun til de formål, der står i 2.3.
+- `security definer`-funktioner har fast `search_path = ''` og tjekker selv ejerskab. Service role bruges kun til de formål, der står i 2.3 (`platform/README.md`).
 
 ## Regler, der skal håndhæves i databasen
 - Patienter ser kun egne sager, leads, bookinger og beskeder.
