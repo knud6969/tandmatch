@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
-import { useSession } from "@/features/identity/components/session-provider";
+import { useSession } from "@/features/identity/ui";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { deleteAccountSchema } from "@/lib/identity/schemas/auth";

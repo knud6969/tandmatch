@@ -8,7 +8,7 @@ import { ApiError, unauthenticated } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import type { TermsPayload } from "@/platform/middleware/termsCookie";
 import { AuthRepository } from "@/features/identity/authRepository";
-import { CasesRepository } from "@/features/cases/casesRepository";
+import { CasesRepository } from "@/features/cases";
 import { ConsentsRepository, type NewConsent } from "@/features/identity/consentsRepository";
 import { TermsRepository } from "@/features/identity/termsRepository";
 

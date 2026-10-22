@@ -12,13 +12,13 @@ import type { ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bo
 import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { AvailabilityRepository } from "@/features/clinics/availabilityRepository";
+import { AvailabilityRepository } from "@/features/clinics";
 import { BookingsRepository } from "@/features/booking/bookingsRepository";
-import { ClinicDirectoryRepository } from "@/features/clinics/clinicDirectoryRepository";
-import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
-import { LeadsRepository } from "@/features/leads/leadsRepository";
-import { ServicesRepository } from "@/features/clinics/servicesRepository";
-import { AvailabilityService } from "@/features/clinics/availabilityService";
+import { ClinicDirectoryRepository } from "@/features/clinics";
+import { ClinicsRepository } from "@/features/clinics";
+import { LeadsRepository } from "@/features/leads";
+import { ServicesRepository } from "@/features/clinics";
+import { AvailabilityService } from "@/features/clinics";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type LeadAvailabilityQuery = z.infer<typeof leadAvailabilityQuerySchema>;

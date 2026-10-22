@@ -4,7 +4,7 @@ import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/common/navigation/entries
 import { ClinicPreview } from "@/features/site/components/clinic-preview";
 import { EntryButton } from "@/features/site/components/entry-button";
 import { FeatureCard } from "@/features/site/components/feature-card";
-import { HomeFlash } from "@/features/identity/components/home-flash";
+import { HomeFlash } from "@/features/identity/ui";
 import { AiDisclaimer } from "@/components/ui/disclaimer";
 import { LinkButton } from "@/components/ui/button";
 import { ICONS } from "@/components/ui/icons";

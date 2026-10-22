@@ -20,7 +20,7 @@ import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/features/clinics/portfolioRepository";
 import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
-import { AccountDeletionService } from "@/features/identity/accountDeletionService";
+import { AccountDeletionService } from "@/features/identity";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 type PatchClinicInput = z.infer<typeof patchClinicSchema>;

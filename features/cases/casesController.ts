@@ -6,14 +6,14 @@ import type { patchCaseSchema, putCaseServicesSchema } from "@/lib/cases/schemas
 import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/cases/types/cases";
 import { notDraft } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/features/booking/bookingsRepository";
+import { BookingsRepository } from "@/features/booking";
 import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
 import { CaseServicesRepository } from "@/features/cases/caseServicesRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { LeadsRepository } from "@/features/leads/leadsRepository";
-import { ServicesRepository } from "@/features/clinics/servicesRepository";
+import { LeadsRepository } from "@/features/leads";
+import { ServicesRepository } from "@/features/clinics";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 
 type PatchCaseInput = z.infer<typeof patchCaseSchema>;

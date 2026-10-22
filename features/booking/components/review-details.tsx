@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { PRICE_ACCURACY_LABEL } from "@/lib/booking/constants/reviews";
 import type { PublicReviewDto } from "@/lib/booking/types/reviews";
-import { Stars } from "@/features/clinics/components/star-rating";
+import { Stars } from "@/features/clinics/ui";
 import { Badge } from "@/components/ui/badge";
 import { formatKr, formatMonth } from "@/platform/ui-utils/format";
 

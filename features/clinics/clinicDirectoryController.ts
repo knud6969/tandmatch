@@ -22,7 +22,7 @@ import {
   type PublicClinicProfileRecord,
   type PublicClinicRecord,
 } from "@/features/clinics/clinicDirectoryRepository";
-import { ReviewsRepository } from "@/features/booking/reviewsRepository";
+import { ReviewsRepository } from "@/features/booking";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { AvailabilityService } from "@/features/clinics/availabilityService";
 import { type LatLng, RankingService } from "@/features/clinics/rankingService";

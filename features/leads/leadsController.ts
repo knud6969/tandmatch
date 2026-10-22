@@ -10,13 +10,13 @@ import type {
   PatientLeadDto,
 } from "@/lib/leads/types/leads";
 import type { Session } from "@/platform/middleware/session";
-import { BookingsRepository } from "@/features/booking/bookingsRepository";
-import { CasesRepository } from "@/features/cases/casesRepository";
-import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
-import { ConsentsRepository } from "@/features/identity/consentsRepository";
+import { BookingsRepository } from "@/features/booking";
+import { CasesRepository } from "@/features/cases";
+import { ClinicsRepository } from "@/features/clinics";
+import { ConsentsRepository } from "@/features/identity";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { LeadsRepository } from "@/features/leads/leadsRepository";
-import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
+import { CaseImageUrlService } from "@/features/cases";
 
 type SendLeadsInput = z.infer<typeof sendLeadsSchema>;
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;

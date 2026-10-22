@@ -3,8 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 import { ANONYMOUS_SESSION_HOURS } from "@/lib/identity/constants/sessions";
 import { createSupabaseRequestClient, isTokenTransport, type AuthTransport } from "@/platform/db/supabase";
-import { AuthRepository } from "@/features/identity/authRepository";
-import { ProfilesRepository } from "@/features/identity/profilesRepository";
+import { AuthRepository } from "@/features/identity";
+import { ProfilesRepository } from "@/features/identity";
 import { ApiError, anonymousNotAllowed, forbidden, unauthenticated } from "@/platform/middleware/http";
 import type { Role } from "@/lib/common/types/common";
 

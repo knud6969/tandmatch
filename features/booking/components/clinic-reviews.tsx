@@ -9,7 +9,7 @@ import { ReviewDetails } from "@/features/booking/components/review-details";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadState } from "@/components/ui/load-state";
-import { NotVerifiedNote } from "@/features/clinics/components/not-verified-note";
+import { NotVerifiedNote } from "@/features/clinics/ui";
 import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { apiRequest } from "@/platform/ui-utils/api-client";

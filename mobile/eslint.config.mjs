@@ -23,11 +23,6 @@ function layer(files, groups, message, ignores = []) {
 
 // Serverens lag, som appen aldrig må importere (kun lib/ deles).
 const NOT_ROOT_LAYERS = [
-  "@/models/*",
-  "@/controllers/*",
-  "@/services/*",
-  "@/middleware/*",
-  "@/views/*",
   "@/app/*",
   "@/platform/*",
   "@/features/*",

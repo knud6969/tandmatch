@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useSession } from "@/features/identity/components/session-provider";
+import { useSession } from "@/features/identity/ui";
 import { Button, LinkButton } from "@/components/ui/button";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { AreaTabs } from "@/components/ui/area-tabs";

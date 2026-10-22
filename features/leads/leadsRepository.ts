@@ -32,7 +32,7 @@ import {
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
 import { toClinicBookingDto } from "@/platform/db/mappers";
-import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
+import { PublicMediaStorage } from "@/features/clinics";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
 type EmergencyLeadInput = z.infer<typeof emergencyLeadSchema>;

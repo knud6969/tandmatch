@@ -7,8 +7,8 @@ import type { ClinicReviewDto, OwnReviewDto, ReviewCreatedDto, ReviewEligibleIte
 import { alreadyReplied, notFound } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/features/booking/bookingsRepository";
-import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
-import { LeadsRepository } from "@/features/leads/leadsRepository";
+import { ClinicsRepository } from "@/features/clinics";
+import { LeadsRepository } from "@/features/leads";
 import { ReviewsRepository } from "@/features/booking/reviewsRepository";
 
 type CreateReviewInput = z.infer<typeof createReviewSchema>;
