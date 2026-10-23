@@ -25,6 +25,9 @@ function Guarded() {
         <Stack.Screen name="sag/[caseId]/index" />
         <Stack.Screen name="sag/[caseId]/book/[leadId]" />
         <Stack.Screen name="bookinger" />
+        <Stack.Screen name="anmeld/[bookingId]" />
+        <Stack.Screen name="sag/[caseId]/beskeder/[leadId]" />
+        <Stack.Screen name="akut" />
         <Stack.Screen name="sag/[caseId]/send" />
         <Stack.Screen name="sag/[caseId]/flow" options={{ gestureEnabled: false }} />
       </Stack.Protected>

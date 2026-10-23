@@ -21,3 +21,8 @@ export async function listBookings(): Promise<PatientBookingDto[]> {
   const result = await apiRequest<{ bookings: PatientBookingDto[] }>("/api/bookings");
   return result.bookings;
 }
+
+// Patienten aflyser en booking før starttid (409 BOOKING_NOT_CANCELLABLE).
+export function cancelBooking(bookingId: string): Promise<PatientBookingDto> {
+  return apiRequest<PatientBookingDto>(`/api/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "POST", json: {} });
+}

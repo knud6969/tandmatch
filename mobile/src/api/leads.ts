@@ -13,3 +13,8 @@ export async function listCaseLeads(caseId: string): Promise<PatientLeadDto[]> {
   const result = await apiRequest<{ leads: PatientLeadDto[] }>(`/api/cases/${caseId}/leads`);
   return result.leads;
 }
+
+// Trækker et ubesvaret lead tilbage (409 LEAD_NOT_PENDING, hvis klinikken har svaret).
+export function withdrawLead(leadId: string): Promise<PatientLeadDto> {
+  return apiRequest<PatientLeadDto>(`/api/leads/${encodeURIComponent(leadId)}/withdraw`, { method: "POST", json: {} });
+}
