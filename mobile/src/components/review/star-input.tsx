@@ -15,7 +15,7 @@ export function StarInput({ value, onChange, error }: Props) {
             key={n}
             accessibilityRole="radio"
             accessibilityLabel={n === 1 ? "1 stjerne" : `${n} stjerner`}
-            accessibilityState={{ selected: n === value }}
+            accessibilityState={{ checked: n === value }}
             onPress={() => onChange(n)}
             style={styles.star}
             hitSlop={4}

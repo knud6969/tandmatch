@@ -1,5 +1,5 @@
-// Ren hjælper bag usePolling (kan testes uden React): kalder `tick` hvert `intervalMs`, men kun mens fanen er synlig, og
-// straks, når fanen bliver synlig igen. Returnerer en funktion, der stopper det hele.
+// Ren hjælper til polling (kan testes uden React), delt af weben og appen: kalder `tick` hvert `intervalMs`, men kun mens kilden er
+// synlig, og straks, når den bliver synlig igen. Returnerer en funktion, der stopper det hele.
 export type VisibilitySource = {
   visibilityState: string;
   addEventListener: (type: "visibilitychange", listener: () => void) => void;

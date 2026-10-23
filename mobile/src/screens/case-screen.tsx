@@ -10,7 +10,9 @@ import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
 import { spacing, type } from "~/theme";
 import { CASE_STATUS_LABEL } from "@/lib/cases/constants/cases";
-import { canCloseCase, CLOSE_CASE_CONSEQUENCE, WITHDRAW_LEAD_CONSEQUENCE } from "~/utils/case-actions";
+import { CLOSE_CASE_CONSEQUENCE } from "@/lib/cases/constants/cases";
+import { WITHDRAW_LEAD_CONSEQUENCE } from "@/lib/leads/constants/leads";
+import { canCloseCase } from "~/utils/case-actions";
 import { caseTitle } from "~/utils/case-view";
 import { formatDate } from "~/utils/format";
 

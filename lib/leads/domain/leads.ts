@@ -8,6 +8,11 @@ export function isActiveLead(status: LeadStatus): boolean {
   return (LEAD_ACTIVE_STATUSES as readonly string[]).includes(status);
 }
 
+// Kan der skrives i leadets beskedtråd? Samme regel som i databasen: sendt, accepteret eller booket.
+export function isThreadOpen(status: LeadStatus): boolean {
+  return status === "sent" || status === "accepted" || status === "booked";
+}
+
 // Er der plads til flere leads? Under 3 aktive og under 10 i alt (afviste og tilbagetrukne
 // tæller ikke i de 3, men i de 10). Databasen er den endelige vogter (send_leads() og leads_before_insert()).
 export function canSendMoreLeads(activeLeadCount: number, totalLeadCount = 0): boolean {

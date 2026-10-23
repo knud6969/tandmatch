@@ -6,6 +6,7 @@ import type { EmergencyLeadCreatedDto } from "@/lib/leads/types/leads";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { ServiceDto } from "@/lib/clinics/types/services";
 import { CONSENT_TEXTS } from "@/lib/identity/constants/consents";
+import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_NUMBER } from "@/lib/leads/constants/emergency";
 import { getClinicAvailability, sendEmergencyLead } from "~/api/emergency";
 import { listClinics } from "~/api/clinics";
 import { ApiRequestError } from "~/api/client";
@@ -54,8 +55,7 @@ async function loadEmergencyData(account: boolean): Promise<Loaded> {
 }
 
 // Formularen for den valgte klinik: behandling, ledig tid, beskrivelse og kontaktoplysninger. Sendes til netop denne klinik.
-function EmergencyForm({ clinic, data, account, onSent }: { clinic: ClinicListItemDto; data: Loaded; account: boolean; onSent: (r: EmergencyLeadCreatedDto) => void }) {
-  const router = useRouter();
+function EmergencyForm({ clinic, data, onSent }: { clinic: ClinicListItemDto; data: Loaded; onSent: (r: EmergencyLeadCreatedDto) => void }) {
   const [serviceId, setServiceId] = useState<string | null>(data.services.length === 1 ? data.services[0].id : null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [description, setDescription] = useState("");
@@ -99,7 +99,7 @@ function EmergencyForm({ clinic, data, account, onSent }: { clinic: ClinicListIt
       <Text style={type.heading}>Send akut henvendelse til {clinic.name}</Text>
 
       {data.services.length === 0 ? (
-        <StatusMessage message="Der er ingen akutbehandlinger i kataloget lige nu. Ring 1813 eller 112." tone="warning" />
+        <StatusMessage message={`Der er ingen akutbehandlinger i kataloget lige nu. Ring ${OUT_OF_HOURS_NUMBER} eller ${EMERGENCY_CALL_NUMBER}.`} tone="warning" />
       ) : data.services.length > 1 ? (
         <View style={styles.group}>
           <Text style={styles.label}>Behandling</Text>
@@ -138,13 +138,7 @@ function EmergencyForm({ clinic, data, account, onSent }: { clinic: ClinicListIt
       <TextField label="Telefon" value={phone} onChangeText={setPhone} error={errors.contactPhone} keyboardType="phone-pad" autoComplete="tel" />
       <Text style={styles.muted}>Klinikken ser dit navn og telefonnummer, når den har accepteret, og tiden er booket.</Text>
 
-      {!account ? (
-        <View style={styles.group}>
-          <StatusMessage message="Opret en konto eller log ind for at sende en akut henvendelse. Det tager et øjeblik." tone="info" />
-          <Button label="Opret konto" onPress={() => router.push("/opret")} />
-          <Button label="Log ind" variant="secondary" onPress={() => router.push("/login")} />
-        </View>
-      ) : !consent ? (
+      {!consent ? (
         <ConsentGate type="health_data_sharing" onGrant={() => void grant.run()} pending={grant.pending} error={grant.error} actionLabel="Giv samtykke" />
       ) : (
         <View style={styles.group}>
@@ -153,6 +147,19 @@ function EmergencyForm({ clinic, data, account, onSent }: { clinic: ClinicListIt
           <Button label="Send og reserver tiden" loading={submit.pending} disabled={data.services.length === 0} onPress={() => void submit.run()} />
         </View>
       )}
+    </Card>
+  );
+}
+
+// Login-kravet vises i stedet for formularen, så patienten ikke taster noget, der mistes ved login. Efter login eller oprettelse
+// sendes patienten tilbage til akutvejen (`returnTo`).
+function LoginRequired() {
+  const router = useRouter();
+  return (
+    <Card>
+      <StatusMessage message="Opret en konto eller log ind for at sende en akut henvendelse. Det tager et øjeblik." tone="info" />
+      <Button label="Opret konto" onPress={() => router.push({ pathname: "/opret", params: { returnTo: "/akut" } })} />
+      <Button label="Log ind" variant="secondary" onPress={() => router.push({ pathname: "/login", params: { returnTo: "/akut" } })} />
     </Card>
   );
 }
@@ -221,7 +228,8 @@ export function EmergencyScreen() {
               ) : (
                 loaded.clinics.map((c) => <EmergencyClinicOption key={c.id} clinic={c} selected={c.id === clinicId} onPress={() => setClinicId(c.id)} />)
               )}
-              {chosen ? <EmergencyForm key={chosen.id} clinic={chosen} data={loaded} account={account} onSent={setSent} /> : null}
+              {chosen && account ? <EmergencyForm key={chosen.id} clinic={chosen} data={loaded} onSent={setSent} /> : null}
+              {chosen && !account ? <LoginRequired /> : null}
             </>
           );
         }}

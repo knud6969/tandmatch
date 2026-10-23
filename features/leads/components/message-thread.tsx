@@ -19,6 +19,7 @@ import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { formatShortDateTime } from "@/platform/ui-utils/format";
 import { useAction } from "@/platform/ui-utils/use-action";
+import { usePolling } from "@/platform/ui-utils/use-polling";
 
 type MessageThreadProps = {
   leadId: string;
@@ -66,16 +67,10 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
   }, [leadId]);
 
   useEffect(() => {
-    let stopped = false;
     void refresh();
-    const timer = window.setInterval(() => {
-      if (!stopped && document.visibilityState === "visible") void refresh();
-    }, MESSAGE_POLL_INTERVAL_MS);
-    return () => {
-      stopped = true;
-      window.clearInterval(timer);
-    };
   }, [refresh]);
+  // Henter igen med jævne mellemrum, kun mens fanen er synlig (fælles hjælper).
+  usePolling(() => void refresh(), MESSAGE_POLL_INTERVAL_MS);
 
   const count = messages?.length ?? 0;
   useEffect(() => {

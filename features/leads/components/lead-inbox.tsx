@@ -57,20 +57,16 @@ function LeadRow({ lead }: { lead: ClinicLeadListItemDto }) {
 // ikke er verificeret, får en kort tekst i stedet for en fejl.
 export function LeadInbox() {
   const { data, error, errorCode, loading, reload } = useLoad(loadLeads, { pollMs: LEADS_POLL_MS });
-  const [filter, setFilter] = useState<Filter | null>(null);
-  // Standardfilteret vælges én gang ved første visning, så en ny henvendelse ved opdatering ikke skifter visning under brugeren.
-  const [autoFilter, setAutoFilter] = useState<Filter | null>(null);
   const waiting = data ? data.filter((lead) => lead.status === "sent").length : 0;
 
   // Antal ubesvarede i fanens titel, så det ses, selv når klinikken er i en anden fane.
   useEffect(() => {
-    if (!data) return;
     const base = document.title.replace(/^\(\d+\) /, "");
     document.title = waiting > 0 ? `(${waiting}) ${base}` : base;
     return () => {
-      document.title = base;
+      document.title = document.title.replace(/^\(\d+\) /, "");
     };
-  }, [data, waiting]);
+  }, [waiting]);
 
   // Forklaringen om verificering står i VerificationBanner på samme side; her kun en kort tekst, ikke endnu en advarsel.
   if (errorCode === "CLINIC_NOT_VERIFIED") {
@@ -81,12 +77,18 @@ export function LeadInbox() {
     );
   }
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
+  return <InboxList leads={data} waiting={waiting} />;
+}
+
+// Listen med filter. Monteres først, når der er data, så standardfilteret kan vælges én gang (som startværdi), og en ny
+// henvendelse ved opdatering ikke skifter visning under brugeren.
+function InboxList({ leads: data, waiting }: { leads: ClinicLeadListItemDto[]; waiting: number }) {
+  // Står der noget og venter, vises det først; ellers alle.
+  const [filter, setFilter] = useState<Filter>(() => (data.some((lead) => lead.status === "sent") ? "sent" : "all"));
 
   // API'ets rækkefølge bruges: venter på svar først, derefter akut, derefter nyeste.
   const count = (status: LeadStatus) => data.filter((lead) => lead.status === status).length;
-  // Står der noget og venter, vises det først; ellers alle.
-  if (autoFilter === null) setAutoFilter(count("sent") > 0 ? "sent" : "all");
-  const active: Filter = filter ?? autoFilter ?? "all";
+  const active = filter;
   const shown = active === "all" ? data : data.filter((lead) => lead.status === active);
   const options = [
     { value: "sent", label: `Nye (${count("sent")})` },

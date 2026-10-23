@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { startVisiblePolling, type VisibilitySource } from "@/platform/ui-utils/polling";
+import { startVisiblePolling, type VisibilitySource } from "@/lib/common/domain/polling";
 
 function fakeDoc(state: string) {
   let listener: (() => void) | null = null;

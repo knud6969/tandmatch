@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
+import { CANCEL_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import { cancelBooking, listBookings } from "~/api/bookings";
 import { BookingCard } from "~/components/booking/booking-card";
@@ -10,7 +11,6 @@ import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
 import { type } from "~/theme";
 import { splitBookings } from "~/utils/booking-form";
-import { CANCEL_BOOKING_CONSEQUENCE } from "~/utils/case-actions";
 
 // Patientens bookinger, kommende og tidligere (architecture 13.4).
 export function BookingsScreen() {

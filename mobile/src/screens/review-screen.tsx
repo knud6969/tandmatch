@@ -9,7 +9,6 @@ import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, spacing, type } from "~/theme";
 import { formatDate, formatPriceRange } from "~/utils/format";
-import { PRICE_SOURCE } from "~/utils/clinic-texts";
 import type { FieldErrors } from "~/utils/field-errors";
 import { EMPTY_REVIEW, parseReview, PRICE_ACCURACY_OPTIONS, REVIEW_TEXT_LIMITS, type ReviewField, type ReviewValues } from "~/utils/review-form";
 
@@ -41,7 +40,7 @@ function ReviewForm({ item, onDone }: { item: ReviewEligibleItemDto; onDone: () 
         </Text>
         {estimate ? (
           <Text style={styles.muted}>
-            Prisoverslag: {formatPriceRange(estimate.min, estimate.max)}, {PRICE_SOURCE} eller klinikkens præciserede pris
+            Prisoverslag (klinikkens præciserede pris eller prisliste): {formatPriceRange(estimate.min, estimate.max)}
           </Text>
         ) : null}
       </Card>

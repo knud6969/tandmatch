@@ -9,8 +9,10 @@ import { cancelBooking } from "~/api/bookings";
 import { createReview, listEligibleReviews } from "~/api/reviews";
 import { listMessages, sendMessage } from "~/api/messages";
 import { saveSession, saveTermsToken } from "~/auth/tokens";
+import { CANCEL_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
+import { CLOSE_CASE_CONSEQUENCE } from "@/lib/cases/constants/cases";
+import { isThreadOpen } from "@/lib/leads/domain/leads";
 import {
-  CLOSE_CASE_CONSEQUENCE,
   canCancelBooking,
   canCloseCase,
   canMessageLead,
@@ -19,7 +21,7 @@ import {
   messagesLabel,
 } from "~/utils/case-actions";
 import { emergencyClinicsQuery, emergencyServices, parseEmergency, selectableEmergencyClinics } from "~/utils/emergency-form";
-import { appendMessage, canWriteToLead, messagesChanged, senderLabel, sortMessages } from "~/utils/message-view";
+import { appendMessage, messagesChanged, senderLabel, sortMessages } from "~/utils/message-view";
 import { EMPTY_REVIEW, parseActualPrice, parseReview } from "~/utils/review-form";
 
 const mockStore = new Map<string, string>();
@@ -110,10 +112,10 @@ describe("10.4 beskeder", () => {
   it("afsendernavne og hvornår der kan skrives", () => {
     expect(senderLabel({ fromMe: true })).toBe("Dig");
     expect(senderLabel({ fromMe: false })).toBe("Klinikken");
-    expect(canWriteToLead("sent")).toBe(true);
-    expect(canWriteToLead("booked")).toBe(true);
-    expect(canWriteToLead("declined")).toBe(false);
-    expect(canWriteToLead("withdrawn")).toBe(false);
+    expect(isThreadOpen("sent")).toBe(true);
+    expect(isThreadOpen("booked")).toBe(true);
+    expect(isThreadOpen("declined")).toBe(false);
+    expect(isThreadOpen("withdrawn")).toBe(false);
   });
 
   it("kalder GET og POST på /api/leads/{id}/messages", async () => {
@@ -147,6 +149,7 @@ describe("10.5 træk tilbage, luk sag og aflys", () => {
     expect(messagesLabel(1)).toBe("Skriv til klinikken (1 ny)");
     expect(messagesLabel(3)).toBe("Skriv til klinikken (3 nye)");
     expect(CLOSE_CASE_CONSEQUENCE).toContain("Bookede tider består");
+    expect(CANCEL_BOOKING_CONSEQUENCE).toContain("ser aflysningen i sin kalender");
   });
 
   it("kalder de rigtige endpoints med tom body", async () => {

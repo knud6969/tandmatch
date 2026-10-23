@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canSendCase, canSendMoreLeads, isActiveLead, remainingLeadSlots } from "@/lib/leads/domain/leads";
+import { canSendCase, canSendMoreLeads, isActiveLead, isThreadOpen, remainingLeadSlots } from "@/lib/leads/domain/leads";
 
 const ready = { status: "draft", summaryApprovedAt: "2026-10-17T10:00:00Z", postalCode: "2100", preferredTimeframe: "asap" } as const;
 
@@ -9,6 +9,14 @@ describe("leads-domæne", () => {
     expect(isActiveLead("booked")).toBe(true);
     expect(isActiveLead("declined")).toBe(false);
     expect(isActiveLead("withdrawn")).toBe(false);
+  });
+
+  it("tillader beskeder, mens leadet er sendt, accepteret eller booket", () => {
+    expect(isThreadOpen("sent")).toBe(true);
+    expect(isThreadOpen("accepted")).toBe(true);
+    expect(isThreadOpen("booked")).toBe(true);
+    expect(isThreadOpen("declined")).toBe(false);
+    expect(isThreadOpen("withdrawn")).toBe(false);
   });
 
   it("har plads under 3 aktive og 10 i alt", () => {

@@ -1,5 +1,4 @@
 import { CLINIC_SENDER_LABEL, OWN_SENDER_LABEL } from "@/lib/leads/constants/messages";
-import type { LeadStatus } from "@/lib/leads/types/leads";
 import type { MessageDto } from "@/lib/leads/types/messages";
 import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
 
@@ -8,8 +7,6 @@ import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
 // Afsendernavnet over en besked: "Dig" eller "Klinikken" (også når klinikkontoen er slettet).
 export const senderLabel = (message: Pick<MessageDto, "fromMe">) => (message.fromMe ? OWN_SENDER_LABEL : CLINIC_SENDER_LABEL);
 
-// Samme regel som serveren: der kan kun skrives, mens leadet er sendt, accepteret eller booket.
-export const canWriteToLead = (status: LeadStatus) => status === "sent" || status === "accepted" || status === "booked";
 export const THREAD_CLOSED_NOTICE = THREAD_CLOSED_TEXT;
 
 // Ældste først. Serverens rækkefølge bevares ved lige tid.

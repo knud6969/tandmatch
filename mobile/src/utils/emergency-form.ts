@@ -5,8 +5,7 @@ import { phoneSchema } from "@/lib/common/schemas/phone";
 import { EMERGENCY_HOLD_MINUTES } from "@/lib/booking/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/clinics/types/services";
-import { DEFAULT_FILTERS, buildClinicsQuery } from "~/utils/clinic-filters";
-import { isPostalCode } from "~/utils/clinic-filters";
+import { DEFAULT_FILTERS, buildClinicsQuery, isPostalCode } from "~/utils/clinic-filters";
 import { fieldErrorsFrom, type FieldErrors } from "~/utils/field-errors";
 
 // Akutvejen (architecture 10.11, 13.4): hvilke klinikker og behandlinger der tilbydes, og formularen.

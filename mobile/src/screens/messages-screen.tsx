@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { MESSAGE_MAX_CHARS } from "@/lib/common/constants/limits";
 import { MESSAGE_POLL_INTERVAL_MS } from "@/lib/leads/constants/messages";
+import { isThreadOpen } from "@/lib/leads/domain/leads";
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import type { MessageDto } from "@/lib/leads/types/messages";
 import { ApiRequestError } from "~/api/client";
@@ -14,7 +15,7 @@ import { MessageBubble } from "~/components/messages/message-bubble";
 import { LoadState, StatusMessage } from "~/components/ui";
 import { useFocusPolling } from "~/hooks/use-polling";
 import { colors, fontSize, iconSize, MIN_TOUCH, radius, SEND_BUTTON, spacing, type } from "~/theme";
-import { appendMessage, canWriteToLead, messagesChanged, sortMessages, THREAD_CLOSED_NOTICE } from "~/utils/message-view";
+import { appendMessage, messagesChanged, sortMessages, THREAD_CLOSED_NOTICE } from "~/utils/message-view";
 
 type View_ = { messages: MessageDto[]; lead: PatientLeadDto };
 
@@ -33,21 +34,34 @@ export function MessagesScreen() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const listRef = useRef<ScrollViewInstance>(null);
+  // Refs i stedet for state, så hentninger og afsendelse ikke læser forældede værdier: om der er data at vise, om en hentning
+  // er i gang, om en besked er på vej, og de beskeder, patienten selv har sendt (flettes ind i hver hentning, så en hentning
+  // startet før afsendelsen ikke fjerner den sendte besked).
+  const hasData = useRef(false);
+  const inFlight = useRef(false);
+  const sendingRef = useRef(false);
+  const sent = useRef<MessageDto[]>([]);
 
-  // Henter tråden og leadet (til klinikkens navn og om tråden er åben). Ved polling bevares det viste, hvis hentningen fejler.
+  // Henter tråden og leadet (til klinikkens navn og om tråden er åben). Overlappende hentninger springes over, medmindre `force`.
+  // Fejler hentningen, bevares det viste, og der vises kun en advarsel; uden data vises fejlen i stedet.
   const fetchView = useCallback(
-    async (initial: boolean) => {
+    async (force = false) => {
+      if (inFlight.current && !force) return;
+      inFlight.current = true;
       try {
         const [messages, leads] = await Promise.all([listMessages(leadId), listCaseLeads(caseId)]);
         const lead = leads.find((l) => l.id === leadId);
         if (!lead) throw new Error("not-found");
-        setView({ messages: sortMessages(messages), lead });
+        setView({ messages: sent.current.reduce(appendMessage, sortMessages(messages)), lead });
+        hasData.current = true;
         setLoadError(null);
         setPollError(null);
       } catch (e) {
         const text = e instanceof Error && e.message === "not-found" ? "Henvendelsen findes ikke på denne sag." : errorText(e);
-        if (initial) setLoadError(text);
-        else setPollError(text);
+        if (hasData.current) setPollError(text);
+        else setLoadError(text);
+      } finally {
+        inFlight.current = false;
       }
     },
     [caseId, leadId],
@@ -55,12 +69,10 @@ export function MessagesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchView(view === null);
-      // Kun ved fokus; polling står for resten.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      void fetchView();
     }, [fetchView]),
   );
-  useFocusPolling(() => fetchView(false), MESSAGE_POLL_INTERVAL_MS);
+  useFocusPolling(() => fetchView(), MESSAGE_POLL_INTERVAL_MS);
 
   // Ruller kun ned, når der er kommet nye beskeder, så patienten ikke mister sin plads ved hver polling.
   const previous = useRef<MessageDto[]>([]);
@@ -75,24 +87,27 @@ export function MessagesScreen() {
 
   async function send() {
     const body = draft.trim();
-    if (!body || sending) return;
+    if (!body || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     setSendError(null);
     try {
       const created = await sendMessage(leadId, { body });
       setDraft("");
+      sent.current = appendMessage(sent.current, created);
       setView((v) => (v ? { ...v, messages: appendMessage(v.messages, created) } : v));
     } catch (e) {
       // Beskeden er ikke sendt: den bliver stående i feltet. MESSAGE_LIMIT og THREAD_CLOSED har egne danske tekster.
       setSendError(errorText(e));
-      if (e instanceof ApiRequestError && e.code === "THREAD_CLOSED") void fetchView(false);
+      if (e instanceof ApiRequestError && e.code === "THREAD_CLOSED") void fetchView(true);
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   }
 
   const leave = () => (router.canGoBack() ? router.back() : router.replace({ pathname: "/sag/[caseId]", params: { caseId } }));
-  const writable = view ? canWriteToLead(view.lead.status) && !view.lead.clinic.removed : false;
+  const writable = view ? isThreadOpen(view.lead.status) && !view.lead.clinic.removed : false;
   const empty = draft.trim() === "";
 
   return (
@@ -122,6 +137,9 @@ export function MessagesScreen() {
                   <>
                     {sendError ? <StatusMessage message={sendError} tone="danger" /> : null}
                     <Text style={styles.hint}>Skriv ikke om akutte problemer her. Ved akut sygdom, ring 112. Klinikken laver den endelige vurdering.</Text>
+                    <Pressable accessibilityRole="link" onPress={() => router.push("/akut")} style={styles.link}>
+                      <Text style={styles.linkText}>Har du ondt? Find en akuttid</Text>
+                    </Pressable>
                     <View style={styles.inputRow}>
                       <TextInput
                         accessibilityLabel="Din besked til klinikken"
@@ -168,6 +186,8 @@ const styles = StyleSheet.create({
   muted: type.body,
   footer: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface },
   hint: { fontSize: fontSize.xs, lineHeight: 16, color: colors.inkMuted },
+  link: { minHeight: MIN_TOUCH, justifyContent: "center" },
+  linkText: { fontSize: fontSize.sm, fontWeight: "600", color: colors.brand700, textDecorationLine: "underline" },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   input: {
     flex: 1,

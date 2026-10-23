@@ -23,14 +23,22 @@ export function useLoad<T>(loader: () => Promise<T>, options?: { pollMs?: number
     loading: true,
   });
   const [version, setVersion] = useState(0);
+  // Tæller op ved hver første hentning og hver reload. Et pollsvar, der er startet i en tidligere generation, kasseres, så det ikke
+  // overskriver nyere data eller en fejl fra en reload.
+  const generation = useRef(0);
+  const reloading = useRef(false);
 
   useEffect(() => {
     let active = true;
+    generation.current += 1;
+    reloading.current = true;
     loader().then(
       (data) => {
+        reloading.current = false;
         if (active) setState({ data, error: null, errorCode: null, loading: false });
       },
       (error: unknown) => {
+        reloading.current = false;
         if (active)
           setState({
             data: null,
@@ -55,22 +63,27 @@ export function useLoad<T>(loader: () => Promise<T>, options?: { pollMs?: number
   }, []);
   usePolling(
     () => {
-      if (refreshing.current) return;
+      if (refreshing.current || reloading.current) return;
       refreshing.current = true;
+      const started = generation.current;
       loader().then(
         (data) => {
           refreshing.current = false;
-          if (mounted.current) setState({ data, error: null, errorCode: null, loading: false });
+          if (mounted.current && started === generation.current && !reloading.current) {
+            setState({ data, error: null, errorCode: null, loading: false });
+          }
         },
         () => {
           refreshing.current = false;
         },
       );
     },
-    options?.pollMs ?? null,
+    // Ingen polling, mens der står en fejl (fx CLINIC_NOT_VERIFIED): den forsvinder ikke af sig selv.
+    state.errorCode === null ? (options?.pollMs ?? null) : null,
   );
 
   const reload = useCallback(() => {
+    generation.current += 1;
     setState((current) => ({
       ...current,
       loading: true,

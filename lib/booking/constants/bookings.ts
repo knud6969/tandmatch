@@ -40,3 +40,6 @@ export const BOOKING_STATUS_LABEL = {
   no_show: "Udeblevet",
   cancelled: "Aflyst",
 } as const satisfies Record<(typeof BOOKING_STATUSES)[number], string>;
+
+// Konsekvensen af at aflyse en booking, som patienten ser før bekræftelsen. Klinikken får ingen notifikation.
+export const CANCEL_BOOKING_CONSEQUENCE = "Tiden frigives, og klinikken ser aflysningen i sin kalender. Du kan booke en ny tid, hvis henvendelsen stadig er åben.";
