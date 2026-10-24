@@ -13,10 +13,11 @@ type ConvertInput = z.infer<typeof convertSchema>;
 
 export type LoginOutcome = "ok" | "not_patient";
 
+// Tokens gemmes og SessionProvider opdateres, før kaldet returnerer (atomisk: ingen skærm ser halvt opdateret tilstand).
 // Serveren giver kun tokens til mobilklienter; mangler de, er det en serverfejl.
 async function storeSession(result: AuthResultDto): Promise<void> {
   if (!result.session) throw new ApiRequestError(500, "INTERNAL", "");
-  await saveSession(result.session);
+  await saveSession(result.session, { settle: true });
 }
 
 // Login. En klinik-konto gemmes aldrig i appen: klinikker bruger weben (architecture 13.3).
@@ -42,7 +43,7 @@ export async function logout(): Promise<void> {
   try {
     await apiRequest("/api/auth/logout", { method: "POST" });
   } finally {
-    await clearSession();
+    await clearSession({ settle: true });
   }
 }
 
@@ -53,6 +54,6 @@ export async function startAnonymousSession(): Promise<AnonymousSessionDto> {
     method: "POST",
     json: { aiConsent: { textVersion: CONSENT_TEXT_VERSIONS.ai_processing } },
   });
-  if (result.session) await saveSession(result.session);
+  if (result.session) await saveSession(result.session, { settle: true });
   return result;
 }

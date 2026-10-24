@@ -11,5 +11,5 @@ export async function acceptTerms(): Promise<void> {
   });
   if (!result.termsToken) throw new ApiRequestError(500, "INTERNAL", "");
   await saveTermsToken(result.termsToken);
-  notifyAuthChange();
+  await notifyAuthChange();
 }

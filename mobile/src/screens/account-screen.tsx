@@ -51,22 +51,22 @@ function Profile() {
 // Konto: log ind/opret for gæster, opfordring til at oprette konto for anonyme og profil for patienter med konto.
 export function AccountScreen() {
   const router = useRouter();
-  const { me, ready, notice, retryable, reload } = useSession();
+  const { me, status, notice, reload } = useSession();
   const { run: doLogout, pending: loggingOut } = useAction(logout);
 
-  if (!ready) return <Screen>{null}</Screen>;
+  if (status === "loading") return <Screen>{null}</Screen>;
 
   return (
     <Screen>
       <Text accessibilityRole="header" style={styles.title}>
         Konto
       </Text>
-      {retryable ? (
+      {status === "unavailable" ? (
         <>
           <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
           <Button label="Prøv igen" variant="secondary" onPress={reload} />
         </>
-      ) : me === null ? (
+      ) : status === "none" || me === null ? (
         <>
           {notice ? <StatusMessage message={notice} tone="warning" /> : null}
           <Card>

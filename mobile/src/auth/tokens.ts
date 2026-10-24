@@ -25,28 +25,32 @@ export async function getSession(): Promise<StoredSession | null> {
   return { accessToken, refreshToken, expiresAt: Number.isNaN(expiresAt) ? 0 : expiresAt };
 }
 
-// Gemmer alle tre værdier og melder ændringen, så SessionProvider henter /api/me igen.
-export async function saveSession(session: MobileSessionDto): Promise<void> {
+// Gemmer alle tre værdier og melder ændringen, så SessionProvider henter /api/me igen. Med `settle` venter kaldet, til
+// SessionProvider har hentet /api/me, så skærmen efter login/opret/convert aldrig ser den gamle status. Fornyelse i klienten
+// bruger ikke `settle` (den kører selv inde i en hentning af /api/me).
+export async function saveSession(session: MobileSessionDto, options: { settle?: boolean } = {}): Promise<void> {
   await Promise.all([
     SecureStore.setItemAsync(ACCESS_KEY, session.accessToken),
     SecureStore.setItemAsync(REFRESH_KEY, session.refreshToken),
     SecureStore.setItemAsync(EXPIRES_KEY, session.expiresAt),
   ]);
-  notifyAuthChange();
+  const settled = notifyAuthChange();
+  if (options.settle) await settled;
 }
 
 // Sletter sessionen lokalt (logud, afvist fornyelse eller klinik-konto).
-export async function clearSession(): Promise<void> {
+export async function clearSession(options: { settle?: boolean } = {}): Promise<void> {
   await Promise.all([
     SecureStore.deleteItemAsync(ACCESS_KEY),
     SecureStore.deleteItemAsync(REFRESH_KEY),
     SecureStore.deleteItemAsync(EXPIRES_KEY),
   ]);
-  notifyAuthChange();
+  const settled = notifyAuthChange();
+  if (options.settle) await settled;
 }
 
 // Lille abonnement, så SessionProvider opdateres, når klienten fornyer, logger ud eller mister vilkårstokenet.
-type Listener = () => void;
+type Listener = () => void | Promise<void>;
 const listeners = new Set<Listener>();
 
 export function subscribeAuthChange(listener: Listener): () => void {
@@ -56,6 +60,7 @@ export function subscribeAuthChange(listener: Listener): () => void {
   };
 }
 
-export function notifyAuthChange(): void {
-  listeners.forEach((listener) => listener());
+// Returnerer et løfte, der er færdigt, når alle lyttere (SessionProvider) har opdateret deres tilstand.
+export function notifyAuthChange(): Promise<void> {
+  return Promise.all([...listeners].map((listener) => listener())).then(() => undefined);
 }

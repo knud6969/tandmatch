@@ -138,18 +138,20 @@ Fjernet 2026-10-22 (12.3 punkt 38 besluttet): `/start`, `/akut`, `/opret/patient
 
 **Demoklinikkernes profiler (trin 9.11).** `PRICE_BASE` erstattes af en basisprisliste for alle de slugs, profilerne bruger, og hver klinik får sin egen liste af slugs (`offers`) og sin prisfaktor som i dag. `clinic_service_groups` udledes af klinikkens egne slugs. Fra 2100 (demoen) ses de fem i Storkøbenhavn.
 
-| Klinik | Profil | Behandlinger (slugs) | Akut |
-|---|---|---|---|
-| v0 Nørrebro (2200) | Tandregulering og kosmetik | `undersoegelse`, `tandrensning`, `roentgen`, `tandregulering_konsultation`, `fast_bojle`, `tandreguleringsskinner`, `retainer`, `blegning`, `facing`, `diastema`, `akut_konsultation`, `akut_smertebehandling` | akutvindue (som i dag) |
-| v4 Østerbro (2100) | Almen tandpleje med akut alle ugens dage, ingen regulering og ingen kosmetik | `undersoegelse`, `tandrensning`, `roentgen`, `fluorbehandling`, `fyldning`, `stor_fyldning`, `udskiftning_fyldning`, `reparation_knaekket_tand`, `rodbehandling`, `rodbehandling_kindtand`, `krone`, `tandudtraekning`, `tandkoedsundersoegelse`, `dybderensning`, `bidskinne`, alle fire `akut_*` (+ `foelsomme_tandhalse`, `snorkeskinne`, hvis 9.10 er godkendt) | alle ugens dage (som i dag) |
-| v5 Vesterbro (1500) | Børn, familie og tandlægeskræk | `undersoegelse`, `tandrensning`, `fluorbehandling`, `fissurforsegling`, `fyldning`, `boerneundersoegelse`, `fyldning_maelketand`, `tilvaenning_tandlaege`, `angst_samtale`, `behandling_ekstra_tid`, `beroligende_medicin` (+ `lattergas`) | intet (`emergencyAllWeek` slås fra; v4 og v0 dækker `/akut`) |
-| v6 Amager (2300) | Implantater, kirurgi og proteser | `undersoegelse`, `tandrensning`, `roentgen`, `implantat_samtale`, `implantat`, `krone_paa_implantat`, `knogleopbygning`, `tandudtraekning`, `visdomstand`, `kirurgisk_udtraekning`, `tandkoedskorrektion`, `krone`, `bro`, `helprotese`, `delprotese`, `protese_tilpasning`, `protese_reparation` (+ `vurdering_behandlingsplan`) | intet |
-| v7 Hellerup (2900) | Kosmetisk tandpleje og skinner (ingen fast bøjle) | `undersoegelse`, `tandrensning`, `blegning`, `facing`, `diastema`, `kosmetisk_opbygning`, `tandregulering_konsultation`, `tandreguleringsskinner`, `retainer`, `krone`, `indlaeg` (+ `hjemmeblegning`) | intet |
-| v1 Aarhus (8000) | Almen og kosmetisk | `undersoegelse`, `tandrensning`, `roentgen`, `fyldning`, `rodbehandling`, `krone`, `tandudtraekning`, `blegning`, `facing`, `akut_konsultation`, `akut_smertebehandling` | akutvindue (som i dag) |
-| v2 Odense (5000) | Almen med proteser, lørdag | `undersoegelse`, `tandrensning`, `roentgen`, `fyldning`, `rodbehandling`, `krone`, `tandudtraekning`, `helprotese`, `delprotese`, `protese_tilpasning` | intet |
-| v3 Aalborg (9000) | Bred almen klinik med blegning og facing | `undersoegelse`, `tandrensning`, `roentgen`, `fyldning`, `stor_fyldning`, `rodbehandling`, `krone`, `bro`, `tandudtraekning`, `blegning`, `facing` | intet |
+**Opdatering (demo, bred dækning).** Brugerens krav: demoen skal have klinikker med mange behandlinger, så næsten hvert prompt giver flere klinikker. Filterreglen `onlyOffering` er uændret. De fem København-klinikker deler derfor en fælles kerne (`CORE`, `EXTRAS` i `scripts/seed-demo.ts`) og har hver en profil via beskrivelse og prisniveau. Seedet stopper med en fejl, hvis en aktiv katalogbehandling tilbydes af under 2 af dem (`assertCatalogCoverage`, postnummer 1000-2999).
 
-Det, demoen skal kunne vise fra 2100: `fast_bojle` giver kun v0; `tandreguleringsskinner` giver v0 og v7; `implantat` giver kun v6; `blegning` + `facing` giver v0 og v7; `boerneundersoegelse` giver kun v5; `akut_konsultation` med akutfilteret giver v4 og v0; `undersoegelse` giver alle fem.
+| Klinik | Profil | Behandlinger |
+|---|---|---|
+| v0 Nørrebro (2200) | Tandregulering og kosmetik, akutvindue hverdage 16-19 | kerne + ekstra + regulering (inkl. `fast_bojle`) + kosmetik + `bro`, `indlaeg` + alle fire `akut_*` |
+| v4 Østerbro (2100) | Bred almen tandpleje, akut alle ugens dage | kerne + ekstra + `bro`, `indlaeg` + implantater + proteser + kirurgi + børn + angst + alle fire `akut_*` (ingen regulering/kosmetik) |
+| v5 Vesterbro (1500) | Børn, familie og tandlægeskræk | kerne + ekstra + børn + angst |
+| v6 Amager (2300) | Implantater, kirurgi og proteser | kerne + ekstra + `bro`, `indlaeg` + implantater + proteser + kirurgi |
+| v7 Hellerup (2900) | Kosmetik og regulering | kerne + ekstra + regulering (inkl. `fast_bojle`) + kosmetik + `bro`, `indlaeg` |
+| v1 Aarhus, v2 Odense, v3 Aalborg | Smalle regionale profiler (uændret) | se `OFFERS` |
+
+Kerne: `undersoegelse`, `tandrensning`, `roentgen`, `fluorbehandling`, `fyldning`, `stor_fyldning`, `udskiftning_fyldning`, `reparation_knaekket_tand`, `rodbehandling`, `rodbehandling_kindtand`, `krone`, `tandudtraekning`, `tandkoedsundersoegelse`, `dybderensning`, `bidskinne`, `blegning`. Ekstra: `rodbehandling_genbehandling`, `opbygning_efter_rodbehandling`, `midlertidig_krone`, `bid_undersoegelse`, `bidskinne_justering`, `tandkoed_opfoelgning`.
+
+Fra 2100 giver fx `fast_bojle` Nørrebro og Hellerup; `tandreguleringsskinner` Nørrebro og Hellerup; `implantat` og `bro + implantat` Amager og Østerbro; `boerneundersoegelse` Vesterbro og Østerbro; `akut_konsultation` med akutfilteret Østerbro og Nørrebro; `undersoegelse`, `rodbehandling + krone`, `tandrensning + blegning` alle fem.
 
 Regler for resten af seedet: hvert seedet lead går til en klinik, der tilbyder alle sagens behandlinger (seedet stopper med en fejl, hvis ikke). Mettes hovedsag (`blegning`, `facing`) sendes til v0 (accept og booking), v1 (afvist), v7 (trukket tilbage) og derefter v3 (ubesvaret). Forhistorikken (anmeldelser for v0, v1, v2, v4, v5) vælger kun behandlinger, klinikken selv tilbyder (`undersoegelse`, `tandrensning` og `blegning`, hvor den findes). Sofie og Emil hos v3 og akut-leads hos v0 og v4 er uændrede.
 

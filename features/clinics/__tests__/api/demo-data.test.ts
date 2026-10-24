@@ -37,18 +37,23 @@ describe("demodata fra seed:demo", { skip: !hasDemo && "demodata er ikke seedet"
   }
   const sorted = (names: string[]) => [...names].sort();
 
-  it("onlyOffering fra 2100: fast_bojle giver kun Nørrebro; implantat kun Amager; børneundersøgelse kun Vesterbro", async () => {
-    assert.deepEqual(await offering("fast_bojle"), ["Nørrebro"]);
-    assert.deepEqual(await offering("implantat"), ["Amager"]);
-    assert.deepEqual(await offering("boerneundersoegelse"), ["Vesterbro"]);
+  it("onlyOffering fra 2100: specialbehandlinger findes hos mindst to klinikker", async () => {
+    assert.deepEqual(sorted(await offering("fast_bojle")), ["Hellerup", "Nørrebro"]);
+    assert.deepEqual(sorted(await offering("implantat")), ["Amager", "Østerbro"]);
+    assert.deepEqual(sorted(await offering("boerneundersoegelse")), ["Vesterbro", "Østerbro"]);
   });
 
-  it("onlyOffering fra 2100: skinner giver Nørrebro og Hellerup; blegning + facing giver Nørrebro og Hellerup", async () => {
+  it("onlyOffering fra 2100: typiske AI-kombinationer giver mindst to klinikker", async () => {
+    const combos = [
+      "undersoegelse,roentgen", "undersoegelse,fyldning,roentgen", "tandregulering_konsultation,tandreguleringsskinner",
+      "bro,implantat", "tandkoedsundersoegelse,dybderensning", "tandrensning,blegning", "tandrensning,blegning,fyldning",
+      "rodbehandling,krone", "boerneundersoegelse", "blegning,facing",
+    ];
+    for (const combo of combos) assert.ok((await offering(combo)).length >= 2, `${combo}: for få klinikker`);
     assert.deepEqual(sorted(await offering("tandreguleringsskinner")), ["Hellerup", "Nørrebro"]);
-    assert.deepEqual(sorted(await offering("blegning,facing")), ["Hellerup", "Nørrebro"]);
   });
 
-  it("onlyOffering fra 2100: undersøgelse giver alle fem verificerede (ingen basisklinikker); akut_konsultation med akutfilter giver Østerbro og Nørrebro", async () => {
+  it("onlyOffering fra 2100: undersøgelse giver alle fem verificerede; akut_konsultation med akutfilter giver Østerbro og Nørrebro", async () => {
     assert.deepEqual(sorted(await offering("undersoegelse")), ["Amager", "Hellerup", "Nørrebro", "Vesterbro", "Østerbro"]);
     // Østerbro har akuttider hver dag 07-22, så den er altid med. Nørrebros akutvindue er kun hverdage 16-19 (seed-demo.ts), så den er
     // kun med, når dens første akuttid ligger inden for akutfilterets vindue (EMERGENCY_FILTER_HOURS); i weekender kan den ligge senere.

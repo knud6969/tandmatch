@@ -71,3 +71,45 @@ export function activeFilterCount(filters: DirectoryFilters): number {
     (!filters.onlyOffering ? 1 : 0)
   );
 }
+
+// Hvad der blev søgt på, som label/værdi-linjer til den tomme liste, så patienten (og fejlsøgning) kan se det.
+export type SearchSummaryLine = { label: string; value: string };
+
+export function searchSummary(filters: DirectoryFilters, names: Map<string, string>): SearchSummaryLine[] {
+  const lines: SearchSummaryLine[] = [];
+  if (filters.serviceSlugs.length > 0) {
+    lines.push({ label: "Behandlinger", value: serviceNames(filters.serviceSlugs, names).join(", ") });
+  }
+  // Positionen går forud for postnummeret, som i forespørgslen.
+  if (filters.position) {
+    lines.push({ label: "Udgangspunkt", value: "din position" }, { label: "Afstand", value: `op til ${filters.maxDistanceKm} km` });
+  } else if (isPostalCode(filters.postalCode)) {
+    lines.push({ label: "Udgangspunkt", value: `postnummer ${filters.postalCode}` }, { label: "Afstand", value: `op til ${filters.maxDistanceKm} km` });
+  } else {
+    lines.push({ label: "Udgangspunkt", value: "intet postnummer eller position valgt, så afstand indgår ikke" });
+  }
+  lines.push({ label: "Akut", value: filters.emergency ? "slået til" : "slået fra" });
+  return lines;
+}
+
+// Det af sagen, der styrer filtrene: behandlinger (uafhængigt af rækkefølge) og postnummer.
+type CaseFilterSource = { postalCode: string | null; services: { slug: string }[] };
+
+// Sags-tilstand starter altid fra standardfiltrene, så gamle filtre (akut, sortering, afstand, position) ikke følger med fra en tidligere
+// brug af fanen. Kun sagens behandlinger og postnummer sættes, og "kun klinikker med pris" er slået til.
+export function filtersForCase(dto: CaseFilterSource): DirectoryFilters {
+  return {
+    ...DEFAULT_FILTERS,
+    serviceSlugs: dto.services.map((service) => service.slug),
+    postalCode: dto.postalCode ?? "",
+    position: null,
+    onlyOffering: true,
+  };
+}
+
+// Nøgle for sagens behandlinger og postnummer. Ændres den, er sagen ændret, og filtrene skal tages fra sagen igen.
+export const caseFilterKey = (caseId: string, dto: CaseFilterSource): string =>
+  `${caseId}|${dto.postalCode ?? ""}|${[...dto.services.map((service) => service.slug)].sort().join(",")}`;
+
+// Skal filtrene sættes fra sagen? Ja første gang og når sagen er ændret; ellers bevares patientens egne ændringer, mens hun er på skærmen.
+export const shouldApplyCase = (appliedKey: string | null, nextKey: string): boolean => appliedKey !== nextKey;

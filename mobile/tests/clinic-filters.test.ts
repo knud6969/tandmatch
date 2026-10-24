@@ -1,5 +1,5 @@
 import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
-import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, sameServices, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
+import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, sameServices, searchSummary, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
 import { lacksPriceForSelection } from "~/utils/lead-selection";
 
 // Sikrer, at filtrene giver samme forespørgsel som weben, og at meningsløse parametre udelades.
@@ -100,5 +100,31 @@ describe("sagens behandlinger og filtre", () => {
     expect(sameServices(["a", "b"], ["b", "a"])).toBe(true);
     expect(sameServices(["a"], ["a", "b"])).toBe(false);
     expect(sameServices([], ["a"])).toBe(false);
+  });
+});
+
+describe("searchSummary", () => {
+  const names = new Map([["rodbehandling", "Rodbehandling"]]);
+
+  it("viser behandlinger, postnummer, afstand og akut", () => {
+    const lines = searchSummary({ ...DEFAULT_FILTERS, serviceSlugs: ["rodbehandling", "ukendt"], postalCode: "2100" }, names);
+    expect(lines).toEqual([
+      { label: "Behandlinger", value: "Rodbehandling, ukendt" },
+      { label: "Udgangspunkt", value: "postnummer 2100" },
+      { label: "Afstand", value: "op til 50 km" },
+      { label: "Akut", value: "slået fra" },
+    ]);
+  });
+
+  it("foretrækker position og viser akut slået til", () => {
+    const lines = searchSummary({ ...DEFAULT_FILTERS, postalCode: "2100", position: { lat: 55.7, lng: 12.5 }, emergency: true }, names);
+    expect(lines).toContainEqual({ label: "Udgangspunkt", value: "din position" });
+    expect(lines).toContainEqual({ label: "Akut", value: "slået til" });
+  });
+
+  it("siger det, når der ikke er noget udgangspunkt", () => {
+    const lines = searchSummary(DEFAULT_FILTERS, names);
+    expect(lines.find((l) => l.label === "Udgangspunkt")?.value).toMatch(/intet postnummer eller position/);
+    expect(lines.some((l) => l.label === "Afstand")).toBe(false);
   });
 });
