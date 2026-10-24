@@ -40,3 +40,6 @@ export const EMERGENCY_DESCRIPTION_MIN = 10;
 export const EMERGENCY_DESCRIPTION_MAX = 1000;
 
 export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";
+
+// Konsekvensen af at trække en henvendelse tilbage, som patienten ser før bekræftelsen.
+export const WITHDRAW_LEAD_CONSEQUENCE = "Klinikken ser kun, at henvendelsen er trukket tilbage, ikke din beskrivelse. Du kan vælge en anden klinik i stedet.";

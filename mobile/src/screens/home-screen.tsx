@@ -32,7 +32,7 @@ export function HomeScreen() {
         <HomeEntries
           onDescribe={() => router.push("/start")}
           onFindClinic={() => router.push("/klinikker")}
-          onEmergency={() => router.push({ pathname: "/klinikker", params: { akut: "1" } })}
+          onEmergency={() => router.push("/akut")}
         />
         <View style={styles.steps}>
           <Text style={type.eyebrow}>SÅDAN VIRKER DET</Text>

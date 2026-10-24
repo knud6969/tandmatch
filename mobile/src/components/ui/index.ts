@@ -9,3 +9,4 @@ export { StatusMessage } from "./status-message";
 export { TextField } from "./text-field";
 export { BackLink } from "./back-link";
 export { Chip } from "./chip";
+export { confirmAction } from "./confirm";

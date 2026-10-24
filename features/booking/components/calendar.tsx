@@ -24,6 +24,8 @@ import { useLoad } from "@/platform/ui-utils/use-load";
 const loadBookings = async (): Promise<ClinicBookingDto[]> =>
   (await apiRequest<{ bookings: ClinicBookingDto[] }>("/api/bookings")).bookings;
 
+const BOOKINGS_POLL_MS = 20_000;
+
 type Pending = "cancel" | "no-show" | null;
 
 function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChanged: () => void }) {
@@ -117,7 +119,7 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
 // Klinikkens kalender (architecture 6.3, 10.10): bookinger og reserverede akuttider pr. dag. Gennemført sættes automatisk
 // efter sluttid, så der er ingen knap til det.
 export function ClinicCalendar() {
-  const { data, loading, error, errorCode, reload } = useLoad(loadBookings);
+  const { data, loading, error, errorCode, reload } = useLoad(loadBookings, { pollMs: BOOKINGS_POLL_MS });
   const [showCancelled, setShowCancelled] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [today] = useState(() => toClinicDate(new Date()));

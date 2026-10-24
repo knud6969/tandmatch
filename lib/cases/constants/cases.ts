@@ -16,3 +16,7 @@ export const CASE_TIMEFRAME_LABEL = {
   within_3_months: "Inden for 3 måneder",
   flexible: "Jeg er fleksibel",
 } as const satisfies Record<(typeof CASE_TIMEFRAMES)[number], string>;
+
+// Konsekvensen af at lukke en sag, som patienten ser før bekræftelsen (architecture 6.2).
+export const CLOSE_CASE_CONSEQUENCE =
+  "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og en reserveret akuttid frigives. Bookede tider består; du kan aflyse dem under Bookinger.";

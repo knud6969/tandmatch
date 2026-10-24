@@ -38,3 +38,8 @@ export function createSummary(caseId: string): Promise<SummaryResponse> {
 export function approveSummary(caseId: string, summaryText: string): Promise<ApproveSummaryResponse> {
   return apiRequest<ApproveSummaryResponse>(`/api/cases/${caseId}/summary`, { method: "PUT", json: { summaryText } });
 }
+
+// Lukker sagen (idempotent): ubesvarede og accepterede leads uden booking trækkes tilbage, bookede tider består.
+export function closeCase(caseId: string): Promise<CaseDto> {
+  return apiRequest<CaseDto>(`/api/cases/${caseId}/close`, { method: "POST", json: {} });
+}

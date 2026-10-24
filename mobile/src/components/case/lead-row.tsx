@@ -4,12 +4,16 @@ import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL } from "@/lib/leads/consta
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import { Badge, Button, Card } from "~/components/ui";
 import { colors, spacing, type } from "~/theme";
+import { canMessageLead, canWithdrawLead, messagesLabel } from "~/utils/case-actions";
 import { canBookLead, declineText, leadTone } from "~/utils/case-view";
 import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "~/utils/clinic-texts";
 import { formatDateTime, formatPriceRange } from "~/utils/format";
 
 // Et lead på sagsskærmen: klinik, status og det klinikken har svaret (13.4). Priser vises altid med kilde.
-export function LeadRow({ lead, onBook }: { lead: PatientLeadDto; onBook: () => void }) {
+type Props = { lead: PatientLeadDto; onBook: () => void; onMessages: () => void; onWithdraw: () => void; withdrawing?: boolean };
+
+// Under leadet: book, skriv til klinikken (med antal nye) og træk tilbage, mens klinikken ikke har svaret.
+export function LeadRow({ lead, onBook, onMessages, onWithdraw, withdrawing = false }: Props) {
   const decline = declineText(lead);
   return (
     <Card>
@@ -61,6 +65,17 @@ export function LeadRow({ lead, onBook }: { lead: PatientLeadDto; onBook: () => 
       ) : null}
 
       {canBookLead(lead) ? <Button label="Book tid" accessibilityLabel={`Book tid hos ${lead.clinic.name}`} onPress={onBook} /> : null}
+      {canMessageLead(lead) ? (
+        <Button
+          label={messagesLabel(lead.unreadMessages)}
+          accessibilityLabel={`${messagesLabel(lead.unreadMessages)}: ${lead.clinic.name}`}
+          variant="secondary"
+          onPress={onMessages}
+        />
+      ) : null}
+      {canWithdrawLead(lead) ? (
+        <Button label="Træk henvendelsen tilbage" accessibilityLabel={`Træk henvendelsen til ${lead.clinic.name} tilbage`} variant="text" loading={withdrawing} onPress={onWithdraw} />
+      ) : null}
     </Card>
   );
 }

@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
-import { listBookings } from "~/api/bookings";
+import { CANCEL_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
+import type { PatientBookingDto } from "@/lib/booking/types/bookings";
+import { cancelBooking, listBookings } from "~/api/bookings";
 import { BookingCard } from "~/components/booking/booking-card";
-import { BackLink, LoadState, Screen } from "~/components/ui";
+import { BackLink, confirmAction, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
 import { type } from "~/theme";
@@ -13,12 +17,41 @@ export function BookingsScreen() {
   const router = useRouter();
   const bookings = useLoad(listBookings);
   useReloadOnFocus(bookings.reload);
+
+  // Aflysning efter bekræftelse; listen hentes igen bagefter, også ved BOOKING_NOT_CANCELLABLE, så den nyeste status ses.
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const cancel = useAction(async (bookingId: string) => {
+    setCancellingId(bookingId);
+    try {
+      await cancelBooking(bookingId);
+    } finally {
+      setCancellingId(null);
+      bookings.reload();
+    }
+  });
+  const askCancel = (booking: PatientBookingDto) =>
+    confirmAction({
+      title: `Aflys tiden hos ${booking.clinic.name}?`,
+      message: CANCEL_BOOKING_CONSEQUENCE,
+      confirmLabel: "Aflys tiden",
+      onConfirm: () => void cancel.run(booking.id),
+    });
+  const card = (b: PatientBookingDto) => (
+    <BookingCard
+      key={b.id}
+      booking={b}
+      onCancel={() => askCancel(b)}
+      cancelling={cancellingId === b.id}
+      onReview={() => router.push({ pathname: "/anmeld/[bookingId]", params: { bookingId: b.id } })}
+    />
+  );
   return (
     <Screen>
       <BackLink label="Mine sager" onPress={() => (router.canGoBack() ? router.back() : router.replace("/sager"))} />
       <Text accessibilityRole="header" style={styles.title}>
         Mine bookinger
       </Text>
+      {cancel.error ? <StatusMessage message={cancel.error} tone="danger" /> : null}
       <LoadState {...bookings} onRetry={bookings.reload}>
         {(list) => {
           const { upcoming, past } = splitBookings(list);
@@ -26,13 +59,11 @@ export function BookingsScreen() {
           return (
             <>
               <Text style={styles.heading}>Kommende</Text>
-              {upcoming.length === 0 ? <Text style={styles.muted}>Ingen kommende tider.</Text> : upcoming.map((b) => <BookingCard key={b.id} booking={b} />)}
+              {upcoming.length === 0 ? <Text style={styles.muted}>Ingen kommende tider.</Text> : upcoming.map(card)}
               {past.length > 0 ? (
                 <>
                   <Text style={styles.heading}>Tidligere</Text>
-                  {past.map((b) => (
-                    <BookingCard key={b.id} booking={b} />
-                  ))}
+                  {past.map(card)}
                 </>
               ) : null}
             </>

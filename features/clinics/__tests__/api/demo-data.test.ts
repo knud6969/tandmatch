@@ -1,6 +1,7 @@
 // Acceptkriterier for demodata (arbejdsplan 7.9): kører kun, når `npm run seed:demo` er kørt (ellers springes over).
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { EMERGENCY_FILTER_HOURS } from "../../../../lib/clinics/constants/clinics.ts";
 import { adminClient, newClientWithTerms } from "../../../../tests/api/helpers.ts";
 
 type Listed = { name: string; tier: string; canReceiveLeads: boolean; reviewStats: { priceAccuracyPct: number | null } | null };
@@ -31,7 +32,8 @@ describe("demodata fra seed:demo", { skip: !hasDemo && "demodata er ikke seedet"
     const c = await newClientWithTerms();
     const r = await c.get(`/api/clinics?postalCode=2100&services=${services}&onlyOffering=true${extra}`);
     assert.equal(r.status, 200, JSON.stringify(r.body));
-    return (r.body.clinics as Listed[]).map((x) => x.name.replace("Demo ", "").replace(/^Tandklinik |^Tandcenter |^Tandlægerne /, ""));
+    // Kun demoklinikkerne: andre tests kan have efterladt egne verificerede klinikker i databasen.
+    return (r.body.clinics as Listed[]).filter((x) => x.name.startsWith("Demo ")).map((x) => x.name.replace("Demo ", "").replace(/^Tandklinik |^Tandcenter |^Tandlægerne /, ""));
   }
   const sorted = (names: string[]) => [...names].sort();
 
@@ -48,7 +50,15 @@ describe("demodata fra seed:demo", { skip: !hasDemo && "demodata er ikke seedet"
 
   it("onlyOffering fra 2100: undersøgelse giver alle fem verificerede (ingen basisklinikker); akut_konsultation med akutfilter giver Østerbro og Nørrebro", async () => {
     assert.deepEqual(sorted(await offering("undersoegelse")), ["Amager", "Hellerup", "Nørrebro", "Vesterbro", "Østerbro"]);
-    assert.deepEqual(sorted(await offering("akut_konsultation", "&emergency=true")), ["Nørrebro", "Østerbro"]);
+    // Østerbro har akuttider hver dag 07-22, så den er altid med. Nørrebros akutvindue er kun hverdage 16-19 (seed-demo.ts), så den er
+    // kun med, når dens første akuttid ligger inden for akutfilterets vindue (EMERGENCY_FILTER_HOURS); i weekender kan den ligge senere.
+    const c = await newClientWithTerms();
+    const all = await c.get("/api/clinics?postalCode=2100&services=akut_konsultation&onlyOffering=true");
+    assert.equal(all.status, 200, JSON.stringify(all.body));
+    const nbro = (all.body.clinics as (Listed & { firstEmergencyAt: string | null })[]).find((x) => x.name.includes("Nørrebro"));
+    const first = nbro?.firstEmergencyAt ? new Date(nbro.firstEmergencyAt).getTime() : null;
+    const inWindow = first !== null && first <= Date.now() + EMERGENCY_FILTER_HOURS * 60 * 60 * 1000;
+    assert.deepEqual(sorted(await offering("akut_konsultation", "&emergency=true")), inWindow ? ["Nørrebro", "Østerbro"] : ["Østerbro"]);
   });
 
   it("onlyOffering uden behandlinger giver 400", async () => {
