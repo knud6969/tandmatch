@@ -32,7 +32,7 @@ Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten).
 | submitted_at, closed_at | timestamptz null | |
 | updated_at | timestamptz | |
 
-Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_guard` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger).
+Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_guard` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger). En anonym kladde med indhold kan overdrages til en eksisterende patientkonto ved login (`claim_anonymous_case()`, identity 10.2): `patient_id` på sagen, samtalen, beskederne og billederne skifter ejer i én transaktion; `cases_guard()` tillader kun det under `tm.claim`.
 
 #### `case_services` (bekræftede ydelser)
 | Felt | Type | Note |
