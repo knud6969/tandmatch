@@ -11,7 +11,7 @@ import { errorCodeOf } from "./chat-turn";
 export const UPLOAD_MAX_EDGE = 1600;
 export const UPLOAD_JPEG_QUALITY = 0.7;
 
-export const IMAGE_ADDED_NOTICE = "AI'en ser billedet, når du sender din næste besked. Billedet er ikke en vurdering; klinikken vurderer selv.";
+export const IMAGE_ADDED_NOTICE = "AI'en ser billedet, når du sender din næste besked.";
 export const IMAGE_UPLOAD_FAILED_TEXT = "Billedet blev ikke sendt. Prøv igen.";
 
 // Resize-handlingen til expo-image-manipulator: kun hvis billedet er større end grænsen, og kun på den længste kant.
@@ -48,7 +48,7 @@ export function uploadErrorText(error: unknown): string {
 export function qualityNotice(quality: string | null): string | null {
   if (!quality || quality === "ok") return null;
   if (!(IMAGE_QUALITIES as readonly string[]).includes(quality)) return null;
-  return `${IMAGE_QUALITY_LABELS[quality as ImageQuality]}. Du kan tage et nyt billede, men det er ikke et krav.`;
+  return `${IMAGE_QUALITY_LABELS[quality as ImageQuality]}. Et nyt billede er valgfrit.`;
 }
 
 // Et billede i chatten: enten gemt på serveren, eller lokalt under upload / fejlet. Lokale vises med telefonens egen fil.

@@ -63,7 +63,7 @@ describe("kvalitetsfeedback", () => {
   it("forklarer problemet og gør nyt billede frivilligt", () => {
     const text = qualityNotice("too_dark");
     expect(text).toMatch(/mørkt/i);
-    expect(text).toContain("ikke et krav");
+    expect(text).toContain("valgfrit");
   });
 });
 

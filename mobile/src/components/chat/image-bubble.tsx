@@ -26,7 +26,7 @@ export function ImageBubble({ item, index, onDelete, onRetry }: Props) {
           ) : null}
         </View>
         <View style={styles.footer}>
-          <Text style={styles.status}>{item.status === "uploading" ? "Sender …" : item.status === "failed" ? "Ikke sendt" : "Sendt til sagen"}</Text>
+          <Text style={styles.status}>{item.status === "uploading" ? "Sender …" : item.status === "failed" ? "Ikke sendt" : "Sendt"}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Slet billede ${index + 1}`}

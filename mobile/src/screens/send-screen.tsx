@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CONSENT_TEXTS } from "@/lib/identity/constants/consents";
 import { LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import { remainingLeadSlots } from "@/lib/leads/domain/leads";
@@ -59,7 +58,7 @@ function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
           <Text style={styles.strong}>{formatPriceRange(clinic.priceForSelection.min, clinic.priceForSelection.max)}</Text> for dit valg, {PRICE_SOURCE}
         </Text>
       ) : (
-        <Text style={styles.muted}>Prisen for dit valg er ikke angivet i klinikkens prisliste</Text>
+        <Text style={styles.muted}>Pris ikke angivet i klinikkens prisliste</Text>
       )}
     </Card>
   );
@@ -73,7 +72,7 @@ function Sent({ leads, onOpen }: { leads: PatientLeadDto[]; onOpen: () => void }
         Din sag er sendt
       </Text>
       <Text style={styles.body}>
-        Vi har sendt din godkendte beskrivelse til {clinicsWord(leads.length)}. Klinikken laver den endelige vurdering og svarer dig her på TandMatch.
+        Sendt til {clinicsWord(leads.length)}. Klinikken laver den endelige vurdering og svarer her.
       </Text>
       {leads.map((lead) => (
         <Card key={lead.id}>
@@ -167,15 +166,14 @@ export function SendScreen() {
                   ))}
                   <StatusMessage
                     tone="info"
-                    message="Det deler vi med klinikkerne: din godkendte opsummering, dine behandlinger, dit tidsrum, dit postnummer og dine billeder. Din chat deles ikke. Klinikken ser først dit navn og dine kontaktoplysninger, når den har accepteret, og en tid er booket. Klinikken laver den endelige vurdering."
+                    message="Klinikken får din beskrivelse, behandlinger, tidsrum, postnummer og billeder, ikke din chat. Dit navn og dine kontaktoplysninger ser den først, når en tid er booket."
                   />
                   {anonymous ? (
                     <View style={styles.section}>
                       <Text accessibilityRole="header" style={styles.name}>
-                        Opret en konto for at sende
+                        Opret konto for at sende
                       </Text>
-                      <Text style={styles.muted}>Din samtale og din beskrivelse gemmes på kontoen.</Text>
-                      <SignupForm onSubmit={(v) => void onSignup(v)} pending={signup.pending} error={signup.error} submitLabel="Opret konto og fortsæt" />
+                      <SignupForm onSubmit={(v) => void onSignup(v)} pending={signup.pending} error={signup.error} submitLabel="Opret konto" />
                     </View>
                   ) : status !== "account" ? (
                     <View style={styles.section}>
@@ -193,7 +191,6 @@ export function SendScreen() {
                     <ConsentGate type="health_data_sharing" onGrant={() => void onGrant()} pending={grant.pending} error={send.error ?? grant.error} actionLabel="Giv samtykke" />
                   ) : (
                     <View style={styles.section}>
-                      <Text style={styles.muted}>{CONSENT_TEXTS.health_data_sharing}</Text>
                       {send.error ? <StatusMessage message={send.error} tone="danger" /> : null}
                       <Button label={`Send til ${clinicsWord(chosen.length)}`} loading={send.pending} onPress={() => void onSend()} />
                       <Text style={styles.muted}>Du kan trække en henvendelse tilbage, indtil klinikken har svaret.</Text>

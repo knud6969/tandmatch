@@ -71,7 +71,6 @@ export function AccountScreen() {
           {notice ? <StatusMessage message={notice} tone="warning" /> : null}
           <Card>
             <Text style={styles.heading}>Du er ikke logget ind</Text>
-            <Text style={styles.body}>Log ind eller opret en konto for at kontakte klinikker, booke tid og skrive anmeldelser.</Text>
             <Button label="Log ind" onPress={() => router.push("/login")} />
             <Button label="Opret konto" variant="secondary" onPress={() => router.push("/opret")} />
           </Card>
@@ -96,5 +95,4 @@ export function AccountScreen() {
 const styles = StyleSheet.create({
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
   heading: { fontSize: fontSize.xl, fontWeight: "700", color: colors.ink },
-  body: { fontSize: fontSize.md, color: colors.inkMuted },
 });

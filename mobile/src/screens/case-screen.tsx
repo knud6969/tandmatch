@@ -69,7 +69,7 @@ export function CaseScreen() {
             {actionError ? <StatusMessage message={actionError} tone="danger" /> : null}
             {leads.length === 0 ? (
               <Card>
-                <Text style={styles.muted}>Du har ikke kontaktet nogen klinikker med denne sag endnu.</Text>
+                <Text style={styles.muted}>Ingen klinikker kontaktet endnu.</Text>
                 <Button label="Se klinikker der kan hjælpe" onPress={() => router.push({ pathname: "/klinikker", params: { sag: caseId } })} />
               </Card>
             ) : (
@@ -85,7 +85,6 @@ export function CaseScreen() {
               ))
             )}
             {canCloseCase(caseDto.status) ? <Button label="Luk sagen" variant="secondary" loading={close.pending} onPress={askClose} /> : null}
-            <Text style={styles.muted}>Klinikken laver den endelige vurdering. Kontaktoplysninger deles først, når du har booket en tid.</Text>
           </>
         )}
       </LoadState>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
+import { CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Ionicons } from "@expo/vector-icons";
@@ -114,7 +114,6 @@ export function ChatPanel(props: Props) {
         keyboardDismissMode="interactive"
         accessibilityLabel="Samtale med AI-assistenten"
       >
-        <Text style={styles.boundary}>{AI_BOUNDARY_TEXT}</Text>
         <ChatBubble message={WELCOME} />
         {messages.map((message) => (
           <ChatBubble key={message.id} message={message} />
@@ -168,10 +167,12 @@ export function ChatPanel(props: Props) {
               <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
             ) : null}
             {props.images?.notice ? <StatusMessage message={props.images.notice} tone="warning" /> : null}
-            {/* Gentager advarslen om personoplysninger ved inputfeltet, hvor patienten skriver. */}
-            <Text style={styles.hint} testID="pii-advarsel">
-              {CHAT_PII_WARNING_TEXT}
-            </Text>
+            {/* Advarslen om personoplysninger vises kun, før patienten er begyndt at skrive, og ikke mens et samtykke er åbent. */}
+            {messages.length === 0 && !pending && !props.images?.awaitingConsent ? (
+              <Text style={styles.hint} testID="pii-advarsel">
+                {CHAT_PII_WARNING_TEXT}
+              </Text>
+            ) : null}
             {props.images?.awaitingConsent ? (
               <View style={styles.consent}>
                 <ConsentGate
@@ -179,7 +180,7 @@ export function ChatPanel(props: Props) {
                   onGrant={() => void props.images?.grantConsent()}
                   pending={props.images.consentPending}
                   error={props.images.consentError}
-                  actionLabel="Giv samtykke og vælg billede"
+                  actionLabel="Giv samtykke"
                 />
                 <Button label="Ikke nu" variant="text" onPress={props.images.declineConsent} />
               </View>
@@ -204,7 +205,7 @@ export function ChatPanel(props: Props) {
                 onChangeText={setDraft}
                 multiline
                 maxLength={CHAT_MAX_CHARS}
-                placeholder="Skriv dit svar …"
+                placeholder={messages.length === 0 ? "Beskriv dit problem …" : "Skriv dit svar …"}
                 placeholderTextColor={colors.inkMuted}
                 style={styles.input}
               />
@@ -230,7 +231,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { padding: spacing.lg },
   list: { padding: spacing.lg, gap: spacing.lg },
-  boundary: { fontSize: fontSize.sm, lineHeight: 20, color: colors.inkMuted, textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: {
     minHeight: MIN_TOUCH,

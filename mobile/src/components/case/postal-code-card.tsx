@@ -79,9 +79,9 @@ export function PostalCodeCard({ caseDto, answered, hasAccount, actions, onSaved
         returnKeyType="done"
         onSubmitEditing={submit}
       />
-      <Text style={styles.hint}>Bruges til at vise afstand til klinikkerne. Det deles ikke, før du sender.</Text>
+      <Text style={styles.hint}>Bruges til afstand. Deles ikke, før du sender.</Text>
       {save.error ? <StatusMessage message={save.error} tone="danger" /> : null}
-      <Button label="Gem postnummer" loading={save.pending} onPress={submit} />
+      <Button label="Fortsæt" loading={save.pending} onPress={submit} />
     </FlowCard>
   );
 }

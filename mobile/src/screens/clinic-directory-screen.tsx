@@ -158,8 +158,7 @@ export function ClinicDirectoryScreen() {
       </Text>
       {caseId ? (
         <Text style={styles.muted}>
-          Vælg de klinikker, du vil kontakte med din beskrivelse. Kun verificerede klinikker kan kontaktes.
-          {selection.slots > 0 ? ` Du kan vælge op til ${selection.slots}.` : " Du kan ikke kontakte flere klinikker lige nu."}
+          {selection.slots > 0 ? `Vælg op til ${selection.slots} klinikker.` : "Du kan ikke kontakte flere klinikker lige nu."}
         </Text>
       ) : null}
       <View style={styles.toggle} accessibilityRole="tablist">
@@ -221,7 +220,7 @@ export function ClinicDirectoryScreen() {
               />
               {mapped < list.clinics.length ? (
                 <Text style={styles.muted}>
-                  {list.clinics.length - mapped === 1 ? "1 klinik" : `${list.clinics.length - mapped} klinikker`} har ingen placering og vises kun i listen.
+                  {list.clinics.length - mapped === 1 ? "1 klinik" : `${list.clinics.length - mapped} klinikker`} vises kun i listen.
                 </Text>
               ) : null}
               {selected ? (
@@ -233,7 +232,7 @@ export function ClinicDirectoryScreen() {
                   action={selectAction(selected)}
                 />
               ) : (
-                <Text style={styles.muted}>Tryk på en klinik på kortet for at se pris og afstand. Skift til listen for at se alle detaljer.</Text>
+                <Text style={styles.muted}>Tryk på en klinik for at se pris og afstand.</Text>
               )}
             </View>
           ) : clinics.loading ? (

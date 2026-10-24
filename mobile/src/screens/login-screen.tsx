@@ -55,7 +55,6 @@ export function LoginScreen() {
       ) : (
         <>
           <LoginForm onSubmit={(v) => void onSubmit(v)} pending={pending} error={error ?? clinicNotice} />
-          <Text style={styles.muted}>Har du ikke en konto endnu?</Text>
           <Button label="Opret konto" variant="secondary" onPress={() => router.replace(returnTo ? { pathname: "/opret", params: { returnTo } } : "/opret")} />
         </>
       )}
@@ -65,5 +64,4 @@ export function LoginScreen() {
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
-  muted: { fontSize: fontSize.md, color: colors.inkMuted },
 });

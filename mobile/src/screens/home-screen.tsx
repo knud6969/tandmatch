@@ -27,7 +27,7 @@ export function HomeScreen() {
           <Text accessibilityRole="header" style={type.display}>
             Find den rigtige tandklinik til en fair pris
           </Text>
-          <Text style={type.body}>Se priser og anmeldelser, og book direkte. Du bestemmer selv, hvilke klinikker du vil høre fra.</Text>
+          <Text style={type.body}>Se priser og anmeldelser, og book direkte.</Text>
         </View>
         <HomeEntries
           onDescribe={() => router.push("/start")}

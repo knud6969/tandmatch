@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, TextInput, View } from "react-native";
 import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
-import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS, OUT_OF_SCOPE_NOTICES } from "@/lib/cases/constants/ai-texts";
+import { CHAT_NOT_SHARED_TEXT, DESCRIPTION_LABEL, IMAGE_QUALITY_LABELS } from "@/lib/cases/constants/ai-texts";
 import { SUMMARY_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { CaseDto } from "@/lib/cases/types/cases";
 import { Badge, Button, StatusMessage } from "~/components/ui";
@@ -10,6 +10,9 @@ import type { CaseActions } from "~/hooks/use-case-actions";
 import { shouldAutoGenerate, type SummaryAttempt } from "~/utils/case-cards";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 import { FlowCard, FoldedCard } from "./flow-card";
+
+// Pris og klinikvalg hører til i oversigten; kort linje i stedet for AI'ens lange faste svar, som allerede står i chatten.
+const SUMMARY_PRICE_CLINIC_NOTICE = "Priser og klinikker sammenligner du selv i oversigten.";
 
 type Props = { caseDto: CaseDto; answered: boolean; actions: CaseActions; onSaved: () => void };
 
@@ -74,7 +77,7 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
       {generating ? (
         <View style={styles.loading} accessibilityRole="progressbar" accessibilityLabel="Laver et udkast">
           <ActivityIndicator color={colors.brand600} />
-          <Text style={styles.muted}>Laver et udkast ud fra det, du har skrevet …</Text>
+          <Text style={styles.muted}>Laver et udkast …</Text>
         </View>
       ) : null}
 
@@ -101,22 +104,21 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
             textAlignVertical="top"
             style={styles.input}
           />
-          <Text style={styles.muted}>
-            {text.length} af {SUMMARY_MAX_CHARS} tegn.
-          </Text>
+          {text.length >= SUMMARY_MAX_CHARS * 0.8 ? (
+            <Text style={styles.muted}>
+              {text.length} af {SUMMARY_MAX_CHARS} tegn
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
       {attempt?.kind === "write_yourself" && attempt.message ? <StatusMessage message={attempt.message} tone="warning" /> : null}
-      {attempt?.kind === "write_yourself" && !attempt.message ? (
-        <StatusMessage message="Vi kunne ikke lave et udkast. Skriv selv kort, hvad klinikken skal vide." />
-      ) : null}
-      {attempt?.outOfScopeNotice ? Object.values(OUT_OF_SCOPE_NOTICES).map((line) => <StatusMessage key={line} message={line} />) : null}
+      {attempt?.outOfScopeNotice ? <StatusMessage message={SUMMARY_PRICE_CLINIC_NOTICE} /> : null}
 
       {attempt && attempt.retake.length > 0 ? (
         <StatusMessage
           tone="warning"
-          message={`Nogle billeder kan være svære at bruge: ${attempt.retake.map((item) => IMAGE_QUALITY_LABELS[item.reason].toLowerCase()).join(", ")}. Du kan tage nye billeder, men det er ikke et krav.`}
+          message={`Svære at bruge: ${attempt.retake.map((item) => IMAGE_QUALITY_LABELS[item.reason].toLowerCase()).join(", ")}. Nye billeder er valgfrie.`}
         />
       ) : null}
 
@@ -134,9 +136,8 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
         </View>
       ) : null}
 
-      <Text style={styles.clinicSees}>{CASE_FLOW_TEXTS.summaryClinicSees}</Text>
+      {/* Én kort linje: det er kun denne tekst, klinikken ser. */}
       <Text style={styles.muted}>{CHAT_NOT_SHARED_TEXT}</Text>
-      {attempt && attempt.generationsLeft !== null && !showField ? <Text style={styles.muted}>Du kan lave {attempt.generationsLeft} nye udkast.</Text> : null}
 
       {approve.error ? <StatusMessage message={approve.error} tone="danger" /> : null}
 
@@ -144,13 +145,16 @@ export function SummaryCard({ caseDto, answered, actions, onSaved }: Props) {
         <Button label={CASE_FLOW_TEXTS.summarySaveAndApprove} disabled={trimmed === ""} loading={approve.pending} onPress={() => void approve.run(trimmed)} />
       ) : null}
       {!generating && !showField && trimmed !== "" ? (
-        <>
-          <Button label={CASE_FLOW_TEXTS.summaryApprove} loading={approve.pending} onPress={() => void approve.run(trimmed)} />
-          <Button label={CASE_FLOW_TEXTS.summaryEdit} variant="text" onPress={() => setEditing(true)} />
-        </>
+        <Button label={CASE_FLOW_TEXTS.summaryApprove} loading={approve.pending} onPress={() => void approve.run(trimmed)} />
       ) : null}
-      {!generating && !answered && !noMoreDrafts && (trimmed !== "" || attempt !== null) ? (
-        <Button label={CASE_FLOW_TEXTS.summaryRegenerate} variant="text" onPress={() => void generate()} />
+      {/* "Ret" og "Nyt udkast" er sekundære og står side om side under den ene primære knap. */}
+      {!generating ? (
+        <View style={styles.links}>
+          {!showField && trimmed !== "" ? <Button label={CASE_FLOW_TEXTS.summaryEdit} variant="text" onPress={() => setEditing(true)} /> : null}
+          {!answered && !noMoreDrafts && (trimmed !== "" || attempt !== null) ? (
+            <Button label={CASE_FLOW_TEXTS.summaryRegenerate} variant="text" onPress={() => void generate()} />
+          ) : null}
+        </View>
       ) : null}
     </FlowCard>
   );
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
   summary: { fontSize: fontSize.md, lineHeight: 24, color: colors.ink, backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: spacing.md },
-  clinicSees: { fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
+  links: { flexDirection: "row", justifyContent: "center", columnGap: spacing.lg },
   field: { gap: spacing.sm },
   label: { fontSize: fontSize.md, fontWeight: "600", color: colors.ink },
   input: {

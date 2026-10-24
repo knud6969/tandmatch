@@ -118,8 +118,8 @@ export function CaseFlowScreen() {
         <StatusMessage
           message={
             closed
-              ? "Sagen kan ikke ændres, fordi den er lukket. Du kan starte en ny samtale, hvis du har brug for hjælp igen."
-              : "Sagen kan ikke ændres, fordi den allerede er sendt. Du kan følge den under Mine sager."
+              ? "Sagen er lukket."
+              : "Sagen er sendt og kan ikke ændres."
           }
         />
         <Button label={closed ? "Start en ny samtale" : "Gå til Mine sager"} onPress={() => (closed ? router.replace("/start") : router.replace("/sager"))} />

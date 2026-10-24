@@ -111,3 +111,13 @@ export function visibleQuickReplies(input: {
   if (!last || last.role !== "assistant" || input.pending || input.finished || input.typing) return [];
   return quickRepliesOf(last);
 }
+
+// Fremdriftslinjen (13.9): fem trin; i chatten er første trin aktuelt, og når alt er besvaret står der "Klar".
+export const FLOW_PROGRESS_LABELS = ["Beskriv", "Behandlinger", "Tidspunkt", "Område", "Beskrivelse"] as const;
+const PROGRESS_INDEX: Partial<Record<CaseFlowStep, number>> = { chat: 0, emergency: 0, services: 1, timeframe: 2, postal_code: 3, summary: 4 };
+
+export function flowProgress(step: CaseFlowStep): { done: number; label: string; ready: boolean } {
+  const index = PROGRESS_INDEX[step];
+  if (index === undefined) return { done: FLOW_PROGRESS_LABELS.length, label: "Klar", ready: true };
+  return { done: index, label: `${index + 1} af ${FLOW_PROGRESS_LABELS.length} · ${FLOW_PROGRESS_LABELS[index]}`, ready: false };
+}

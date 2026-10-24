@@ -7,12 +7,12 @@ export const PRICE_SOURCE = "ifølge klinikkens prisliste";
 export const VERIFIED_CLINIC_LABEL = "Verificeret klinik";
 export const BASIC_CLINIC_LABEL = "Ikke på TandMatch endnu";
 export const BASIC_CLINIC_FACTS_TEXT =
-  "Klinikken er endnu ikke på TandMatch. Vi viser kun grunddata, så der er ingen priser eller anmeldelser her.";
+  "Ikke på TandMatch endnu. Kun grunddata: ingen priser eller anmeldelser.";
 export const BASIC_CLINIC_PROFILE_TITLE = "Klinikken er endnu ikke på TandMatch";
 export const BASIC_CLINIC_PROFILE_TEXT =
-  "Vi viser kun de grunddata, der er offentligt tilgængelige. Klinikken har endnu ikke oprettet sig hos os, så der er ingen prisliste, ingen verificerede anmeldelser og ingen ledige tider, og du kan ikke kontakte klinikken via TandMatch. Ring eller skriv til klinikken direkte.";
+  "Grunddata er offentligt tilgængelige. Ingen prisliste, anmeldelser eller ledige tider, og klinikken kan ikke kontaktes via TandMatch. Ring eller skriv direkte.";
 export const NO_REVIEWS_TEXT = "Ingen verificerede anmeldelser endnu";
-export const PRICE_FINAL_NOTE = "Klinikken laver den endelige vurdering, og den endelige pris kan afvige.";
+export const PRICE_FINAL_NOTE = "Klinikken laver den endelige vurdering; prisen kan afvige.";
 
 // Trustpilot vises altid med kilde: hvem der har angivet scoren og linket.
 export function trustpilotSource(trustpilot: NonNullable<TrustpilotInfo>): string {

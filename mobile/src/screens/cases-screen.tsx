@@ -19,8 +19,7 @@ function CaseList() {
       {(items) =>
         items.length === 0 ? (
           <Card>
-            <Text style={styles.heading}>Du har ingen sager endnu</Text>
-            <Text style={styles.body}>Beskriv dit problem, så hjælper vi dig med at finde klinikker.</Text>
+            <Text style={styles.heading}>Ingen sager endnu</Text>
             <Button label="Beskriv dit problem" onPress={() => router.push("/start")} />
           </Card>
         ) : (
@@ -49,7 +48,7 @@ export function CasesScreen() {
       ) : status === "none" ? (
         <Card>
           <Text style={styles.heading}>Du er ikke logget ind</Text>
-          <Text style={styles.body}>Log ind for at se dine sager og svar fra klinikkerne.</Text>
+          <Text style={styles.body}>Log ind for at se dine sager.</Text>
           <Button label="Log ind" onPress={() => router.push("/login")} />
         </Card>
       ) : (

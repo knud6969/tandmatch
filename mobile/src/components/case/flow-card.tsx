@@ -21,17 +21,14 @@ export function FlowCard({ title, children, testID }: { title?: string; children
   );
 }
 
-// Besvaret kort: én linje med svaret og "Ret", så længe sagen er en kladde.
+// Besvaret kort: én kompakt linje ("Behandlinger  Undersøgelse   Ret"), så længe sagen er en kladde.
 export function FoldedCard({ label, value, onEdit, testID }: { label: string; value: string; onEdit: () => void; testID?: string }) {
   return (
     <View style={styles.folded} testID={testID}>
-      <View style={styles.foldedText}>
-        <Text style={styles.sender}>{FLOW_CARD_SENDER}</Text>
-        <Text style={styles.foldedLabel}>{label}</Text>
-        <Text style={styles.foldedValue} numberOfLines={2}>
-          {value}
-        </Text>
-      </View>
+      <Text style={styles.foldedLabel}>{label}</Text>
+      <Text style={styles.foldedValue} numberOfLines={1}>
+        {value}
+      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${CASE_FLOW_TEXTS.answeredEdit}: ${label}`}
@@ -59,17 +56,14 @@ const styles = StyleSheet.create({
   folded: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    borderColor: colors.line,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.xs,
   },
-  foldedText: { flex: 1, gap: 2 },
   foldedLabel: { fontSize: fontSize.sm, color: colors.inkMuted },
-  foldedValue: { fontSize: fontSize.md, fontWeight: "600", color: colors.ink },
-  edit: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
+  foldedValue: { flex: 1, fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
+  edit: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
   editText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
 });

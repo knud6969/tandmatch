@@ -76,8 +76,8 @@ export function ServicesCard({ caseDto, answered, catalog, actions, onSaved }: P
     <FlowCard title={CASE_FLOW_TEXTS.servicesQuestion} testID="kort-behandlinger">
       <Text style={styles.hint}>
         {noSuggestions
-          ? `Vælg selv, eller vælg en undersøgelse, hvis du er i tvivl. Højst ${MAX_CONFIRMED_SERVICES_PER_CASE}.`
-          : "Det er forslag ud fra det, du har skrevet. Du bestemmer selv, og klinikken laver den endelige vurdering."}
+          ? `Vælg op til ${MAX_CONFIRMED_SERVICES_PER_CASE}, eller tryk "${CASE_FLOW_TEXTS.servicesNotSure}".`
+          : "Forslag ud fra din beskrivelse. Klinikken laver den endelige vurdering."}
       </Text>
       {options.length > 0 ? (
         <View style={styles.chips}>
@@ -91,17 +91,13 @@ export function ServicesCard({ caseDto, answered, catalog, actions, onSaved }: P
           ))}
         </View>
       ) : null}
-      <View style={styles.chips}>
-        <Chip
-          label={CASE_FLOW_TEXTS.servicesNotSure}
-          selected={examination !== null && selected.length === 1 && selected[0] === examination.id}
-          disabled={examination === null}
-          onPress={notSure}
-        />
-        <Chip label={CASE_FLOW_TEXTS.servicesPickMyself} selected={false} onPress={() => setSheetOpen(true)} />
-      </View>
       {save.error ? <StatusMessage message={save.error} tone="danger" /> : null}
       <Button label={CASE_FLOW_TEXTS.servicesConfirm} disabled={selected.length === 0} loading={save.pending} onPress={() => void save.run()} />
+      {/* Sekundære veje som stille tekstknapper, så der kun er ét tydeligt valg: Bekræft. */}
+      <View style={styles.links}>
+        <Button label={CASE_FLOW_TEXTS.servicesPickMyself} variant="text" onPress={() => setSheetOpen(true)} />
+        {examination ? <Button label={CASE_FLOW_TEXTS.servicesNotSure} variant="text" onPress={notSure} /> : null}
+      </View>
       <ServicePickerSheet
         visible={sheetOpen}
         groups={catalog.groups}
@@ -119,4 +115,5 @@ export function ServicesCard({ caseDto, answered, catalog, actions, onSaved }: P
 const styles = StyleSheet.create({
   hint: { fontSize: fontSize.sm, lineHeight: 20, color: colors.inkMuted },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  links: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: spacing.lg },
 });
