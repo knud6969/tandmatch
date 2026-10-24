@@ -11,7 +11,6 @@ import { errorCodeOf } from "./chat-turn";
 export const UPLOAD_MAX_EDGE = 1600;
 export const UPLOAD_JPEG_QUALITY = 0.7;
 
-export const IMAGE_ADDED_NOTICE = "AI'en ser billedet, når du sender din næste besked.";
 export const IMAGE_UPLOAD_FAILED_TEXT = "Billedet blev ikke sendt. Prøv igen.";
 
 // Resize-handlingen til expo-image-manipulator: kun hvis billedet er større end grænsen, og kun på den længste kant.
@@ -59,6 +58,7 @@ export type ChatImageItem = {
   imageId: string | null;
   error: string | null;
   quality: string | null;
+  createdAt: string | null; // lokale billeder har ingen endnu
 };
 
 export type LocalImage = { key: string; uri: string; status: "uploading" | "failed"; error: string | null };
@@ -66,8 +66,8 @@ export type LocalImage = { key: string; uri: string; status: "uploading" | "fail
 // Samler serverens billeder (signerede URL'er, nyeste kvalitet) og de lokale i én liste. Lokale kommer sidst.
 export function chatImageItems(uploaded: readonly ImageDto[], local: readonly LocalImage[]): ChatImageItem[] {
   return [
-    ...uploaded.map((image): ChatImageItem => ({ key: image.id, uri: image.url, status: "uploaded", imageId: image.id, error: null, quality: image.quality })),
-    ...local.map((image): ChatImageItem => ({ ...image, imageId: null, quality: null })),
+    ...uploaded.map((image): ChatImageItem => ({ key: image.id, uri: image.url, status: "uploaded", imageId: image.id, error: null, quality: image.quality, createdAt: image.createdAt ?? null })),
+    ...local.map((image): ChatImageItem => ({ ...image, imageId: null, quality: null, createdAt: null })),
   ];
 }
 

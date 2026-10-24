@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
@@ -27,16 +27,21 @@ async function prepare(asset: { uri: string; width: number; height: number }): P
 }
 
 // Billeder i chatten (architecture 9.3, 9.4): samtykke først, derefter tag/vælg, komprimér og upload. Intet uploades uden samtykke.
-// AI'en ser sagens billeder ved næste chat-tur (ChatController henter dem selv); der sendes ingen ekstra besked.
-export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onChanged: () => void) {
+// Når en upload-batch er færdig (mindst ét billede gemt, ingen i gang), kaldes onBatchUploaded: så starter billedturen (7.9c).
+export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onChanged: () => void, onBatchUploaded?: () => void) {
   const [local, setLocal] = useState<LocalImage[]>([]);
   const [awaitingConsent, setAwaitingConsent] = useState<ImageSource | null>(null);
   const [consentPending, setConsentPending] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [justAdded, setJustAdded] = useState(false);
   const prepared = useRef(new Map<string, string>());
   const counter = useRef(0);
+  const inFlight = useRef(0);
+  const batchOk = useRef(false);
+  const batchDone = useRef(onBatchUploaded);
+  useEffect(() => {
+    batchDone.current = onBatchUploaded;
+  }, [onBatchUploaded]);
 
   const uploadedCount = uploaded.length;
   const busy = local.some((image) => image.status === "uploading");
@@ -46,21 +51,32 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
     setLocal((current) => current.map((image) => (image.key === key ? { ...image, ...next } : image)));
   }, []);
 
+  // Ét upload er afsluttet; når alle i batchen er det, og mindst ét lykkedes, starter billedturen.
+  const settle = useCallback((ok: boolean) => {
+    inFlight.current = Math.max(0, inFlight.current - 1);
+    if (ok) batchOk.current = true;
+    if (inFlight.current === 0 && batchOk.current) {
+      batchOk.current = false;
+      batchDone.current?.();
+    }
+  }, []);
+
   const send = useCallback(
-    async (key: string, uri: string, index: number) => {
+    async (key: string, uri: string, index: number): Promise<boolean> => {
       try {
         await uploadCaseImage(caseId, uploadFilePart(uri, index));
         prepared.current.delete(key);
         setLocal((current) => current.filter((image) => image.key !== key));
-        setJustAdded(true);
         onChanged();
+        return true;
       } catch (error) {
         // Samtykket kan være trukket tilbage et andet sted: spørg igen i stedet for at vise en fejl.
         if (error instanceof ApiRequestError && error.code === "CONSENT_REQUIRED") {
           patch(key, { status: "failed", error: "Samtykket mangler. Giv samtykke og prøv igen." });
-          return;
+          return false;
         }
         patch(key, { status: "failed", error: uploadErrorText(error) });
+        return false;
       }
     },
     [caseId, onChanged, patch],
@@ -69,20 +85,23 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
   const handleAsset = useCallback(
     async (asset: { uri: string; width: number; height: number }) => {
       const key = `lokal-${(counter.current += 1)}`;
+      inFlight.current += 1;
       setLocal((current) => [...current, { key, uri: asset.uri, status: "uploading", error: null }]);
       try {
         const file = await prepare(asset);
         if (!withinSizeLimit(file.bytes)) {
           patch(key, { status: "failed", error: SIZE_TEXT });
+          settle(false);
           return;
         }
         prepared.current.set(key, file.uri);
-        await send(key, file.uri, uploadedCount);
+        settle(await send(key, file.uri, uploadedCount));
       } catch {
         patch(key, { status: "failed", error: "Billedet kunne ikke gøres klar. Prøv et andet billede." });
+        settle(false);
       }
     },
-    [patch, send, uploadedCount],
+    [patch, send, settle, uploadedCount],
   );
 
   const pick = useCallback(
@@ -167,9 +186,10 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         return;
       }
       patch(key, { status: "uploading", error: null });
-      void send(key, uri, uploadedCount);
+      inFlight.current += 1;
+      void send(key, uri, uploadedCount).then(settle);
     },
-    [patch, send, uploadedCount],
+    [patch, send, settle, uploadedCount],
   );
 
   const remove = useCallback(
@@ -206,7 +226,5 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
     retry,
     remove,
     notice,
-    justAdded,
-    clearJustAdded: () => setJustAdded(false),
   };
 }

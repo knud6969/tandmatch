@@ -1,4 +1,4 @@
-import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
+import type { ClinicListDto, ClinicListItemDto } from "@/lib/clinics/types/clinics";
 
 export type LatLng = { lat: number; lng: number };
 export type MapRegion = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
@@ -76,9 +76,8 @@ export function regionForRadius(origin: LatLng, km: number): MapRegion {
   return { latitude: origin.lat, longitude: origin.lng, latitudeDelta, longitudeDelta: latitudeDelta / cos };
 }
 
-// Udgangspunktet fra serverens svar (postnummerets punkt), hvis feltet findes; ellers patientens position. Læses defensivt.
-export function resolveOrigin(data: unknown, position: LatLng | null): LatLng | null {
-  const origin = (data as { origin?: Partial<LatLng> | null } | null | undefined)?.origin;
-  if (origin && typeof origin.lat === "number" && typeof origin.lng === "number") return { lat: origin.lat, lng: origin.lng };
-  return position;
+// Udgangspunktet fra serverens svar (ClinicListDto.origin: positionen eller postnummerets punkt); ellers patientens position.
+export function resolveOrigin(data: Pick<ClinicListDto, "origin"> | null | undefined, position: LatLng | null): LatLng | null {
+  const origin = data?.origin;
+  return origin ? { lat: origin.lat, lng: origin.lng } : position;
 }

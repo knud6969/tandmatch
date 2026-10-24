@@ -64,11 +64,13 @@ describe("radius på kortet", () => {
     expect(regionForRadius(origin, 1).latitudeDelta).toBeGreaterThanOrEqual(MIN_DELTA);
   });
 
-  it("bruger serverens origin, ellers positionen", () => {
+  it("bruger serverens origin (position eller postnummer), ellers positionen", () => {
     const position = { lat: 1, lng: 2 };
-    expect(resolveOrigin({ origin: { lat: 55, lng: 12 } }, position)).toEqual({ lat: 55, lng: 12 });
-    expect(resolveOrigin({ origin: null }, position)).toEqual(position);
-    expect(resolveOrigin({}, null)).toBeNull();
+    const list = (origin: { lat: number; lng: number } | null) => ({ origin });
+    expect(resolveOrigin(list({ lat: 55, lng: 12 }), position)).toEqual({ lat: 55, lng: 12 });
+    expect(resolveOrigin(list({ lat: 55, lng: 12 }), null)).toEqual({ lat: 55, lng: 12 }); // postnummer uden position
+    expect(resolveOrigin(list(null), position)).toEqual(position);
+    expect(resolveOrigin(list(null), null)).toBeNull();
     expect(resolveOrigin(null, position)).toEqual(position);
   });
 });

@@ -10,7 +10,7 @@ import { colors, fontSize, iconSize, MIN_TOUCH, radius, SEND_BUTTON, spacing } f
 import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
 import type { useChatImages } from "~/hooks/use-chat-images";
-import { IMAGE_ADDED_NOTICE } from "~/utils/chat-images";
+import { buildTimeline } from "~/utils/chat-timeline";
 import { ChatBubble } from "./chat-bubble";
 import { ImageBubble } from "./image-bubble";
 
@@ -41,6 +41,10 @@ type Props = {
   consentError: string | null;
   onGrantConsent: () => void;
   onSend: (text: string) => Promise<TurnOutcome>;
+  // Billedturen (7.9c): AI'en reagerer selv efter en upload-batch.
+  imageTurning?: boolean;
+  imageNotice?: { message: string; retry: boolean } | null;
+  onRetryImageTurn?: () => void;
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
   cardsKey?: string;
@@ -61,14 +65,13 @@ export function ChatPanel(props: Props) {
   useEffect(() => {
     const id = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(id);
-  }, [messages.length, pending, props.cardsKey, props.images?.items.length]);
+  }, [messages.length, pending, props.imageTurning, props.cardsKey, props.images?.items.length]);
 
   async function send(override?: string) {
     const text = (override ?? draft).trim();
-    if (!text || sending) return;
+    if (!text || sending || props.imageTurning) return;
     setSending(true);
     setSendError(null);
-    props.images?.clearJustAdded();
     if (override === undefined) setDraft("");
     const outcome = await props.onSend(text);
     setSending(false);
@@ -98,7 +101,7 @@ export function ChatPanel(props: Props) {
   const low = lowMessagesLeft(props.messagesLeft, finished);
   const quickReplies = visibleQuickReplies({
     messages,
-    pending: pending !== null || sending,
+    pending: pending !== null || sending || props.imageTurning === true,
     finished: finished || blockedByConsent,
     typing: draft.trim() !== "",
   });
@@ -115,13 +118,19 @@ export function ChatPanel(props: Props) {
         accessibilityLabel="Samtale med AI-assistenten"
       >
         <ChatBubble message={WELCOME} />
-        {messages.map((message) => (
-          <ChatBubble key={message.id} message={message} />
-        ))}
-        {props.images?.items.map((item, index) => (
-          <ImageBubble key={item.key} item={item} index={index} onDelete={() => props.images?.remove(item)} onRetry={() => props.images?.retry(item.key)} />
-        ))}
-        {props.images?.justAdded ? <StatusMessage message={IMAGE_ADDED_NOTICE} /> : null}
+        {buildTimeline(messages, props.images?.items ?? []).map((entry) =>
+          entry.kind === "message" ? (
+            <ChatBubble key={entry.key} message={entry.message} />
+          ) : (
+            <ImageBubble
+              key={entry.key}
+              item={entry.item}
+              index={entry.index}
+              onDelete={() => props.images?.remove(entry.item)}
+              onRetry={() => props.images?.retry(entry.item.key)}
+            />
+          ),
+        )}
         {/* Patientens besked vises med det samme, mens svaret hentes, så det føles hurtigt. */}
         {pending ? (
           <>
@@ -135,6 +144,18 @@ export function ChatPanel(props: Props) {
               <Text style={styles.muted}>AI-assistenten skriver …</Text>
             </View>
           </>
+        ) : null}
+        {props.imageTurning ? (
+          <View style={styles.typing} accessibilityRole="progressbar" accessibilityLabel="AI-assistenten skriver">
+            <ActivityIndicator color={colors.inkMuted} size="small" />
+            <Text style={styles.muted}>AI-assistenten skriver …</Text>
+          </View>
+        ) : null}
+        {props.imageNotice && !props.imageTurning ? (
+          <View style={styles.imageNotice}>
+            <StatusMessage message={props.imageNotice.message} tone="warning" />
+            {props.imageNotice.retry && props.onRetryImageTurn ? <Button label="Prøv igen" variant="text" onPress={props.onRetryImageTurn} /> : null}
+          </View>
         ) : null}
         {quickReplies.length > 0 ? (
           <View style={styles.chips} accessibilityLabel="Svarforslag">
@@ -245,6 +266,7 @@ const styles = StyleSheet.create({
   pendingRow: { flexDirection: "row", justifyContent: "flex-end" },
   pendingBubble: { maxWidth: "88%", backgroundColor: colors.brand600, borderRadius: radius.lg, borderBottomRightRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   pendingText: { fontSize: fontSize.md, lineHeight: 22, color: colors.onBrand },
+  imageNotice: { gap: spacing.xs },
   typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
   footer: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface },

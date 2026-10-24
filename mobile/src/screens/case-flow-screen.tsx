@@ -33,7 +33,9 @@ export function CaseFlowScreen() {
   const consents = useLoad(getConsents);
   const [aiGranted, setAiGranted] = useState(false);
   const chat = useChat(caseId, caseLoad.reload);
-  const chatImages = useChatImages(caseId, caseLoad.data?.images ?? [], caseLoad.reload);
+  // Kvaliteten fra billedturen vises med det samme, før sagen er hentet igen.
+  const images = (caseLoad.data?.images ?? []).map((image) => (image.id in chat.assessedQuality ? { ...image, quality: chat.assessedQuality[image.id] } : image));
+  const chatImages = useChatImages(caseId, images, caseLoad.reload, () => void chat.imageTurn());
   const actions = useCaseActions(caseId);
   const catalog = useLoad(getServiceGroups);
   const session = useSession();
@@ -140,6 +142,9 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
+        imageTurning={chat.imageTurning}
+        imageNotice={chat.imageNotice}
+        onRetryImageTurn={() => void chat.imageTurn()}
         images={chatImages}
         cards={cards}
         cardsKey={cardsKey(dto)}
