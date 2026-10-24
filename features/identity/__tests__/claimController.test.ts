@@ -13,11 +13,17 @@ const { ClaimController } = await import("@/features/identity/claimController");
 
 const session = { userId: "patient-1", role: "patient" as const, isAnonymous: false, lastActiveAt: "" };
 
-function controller(outcome: { caseId: string | null; moved: boolean; anonId: string | null }) {
+// Admin-klienten svarer på opslaget i profiles: er den gamle bruger stadig anonym?
+function adminWith(isAnonymous: boolean): SupabaseClient {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: { is_anonymous: isAnonymous }, error: null });
+  return { from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }) } as unknown as SupabaseClient;
+}
+
+function controller(outcome: { caseId: string | null; moved: boolean; anonId: string | null }, isAnonymous = true) {
   const claims = { claim: vi.fn().mockResolvedValue(outcome), issueToken: vi.fn() };
   const ctl = new ClaimController({} as SupabaseClient, session, {
     claims: claims as never,
-    admin: () => ({}) as SupabaseClient,
+    admin: () => adminWith(isAnonymous),
   });
   return ctl;
 }
@@ -34,6 +40,13 @@ describe("ClaimController.claim", () => {
     deleteAccount.mockReset();
     await controller({ caseId: "c1", moved: true, anonId: null }).claim("t".repeat(64));
     await controller({ caseId: "c1", moved: true, anonId: "patient-1" }).claim("t".repeat(64));
+    expect(deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it("sletter ikke, hvis den gamle bruger er blevet en rigtig konto i mellemtiden", async () => {
+    deleteAccount.mockReset();
+    const result = await controller({ caseId: "c1", moved: true, anonId: "anon-1" }, false).claim("t".repeat(64));
+    expect(result).toEqual({ caseId: "c1", moved: true });
     expect(deleteAccount).not.toHaveBeenCalled();
   });
 

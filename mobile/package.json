@@ -21,7 +21,7 @@
     "react-native-maps": "1.29.11",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@types/jest": "30.0.0",

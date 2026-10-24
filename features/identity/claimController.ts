@@ -37,6 +37,9 @@ export class ClaimController {
     const { anonId, ...result } = await this.claims.claim(claimToken);
     if (anonId !== null && anonId !== this.session.userId) {
       try {
+        // Slet kun, hvis brugeren stadig er anonym: er den gamle session konverteret i mellemtiden, er det en rigtig konto.
+        const { data: profile } = await this.admin().from("profiles").select("is_anonymous").eq("id", anonId).maybeSingle();
+        if (profile?.is_anonymous !== true) return result;
         // 2.3 (c, f): billedfiler og auth-brugeren for den anonyme bruger (id'et kommer fra databasens claim-svar).
         await new AccountDeletionService(this.admin()).deleteAccount(anonId);
       } catch {
