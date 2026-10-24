@@ -1,8 +1,7 @@
-import { DEFAULT_MAX_DISTANCE_KM, MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
+import { DEFAULT_MAX_DISTANCE_KM, MAX_RADIUS_KM, MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
 import { buildClinicQuery, canSortClinicsBy, hasClinicOrigin } from "@/lib/clinics/domain/clinic-query";
 import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicSort } from "@/lib/clinics/types/clinics";
-import { MAX_RADIUS_KM } from "./map-region";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). Positionen gemmes kun i skærmens tilstand.
 export type DirectoryFilters = {

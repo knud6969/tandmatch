@@ -1,4 +1,8 @@
+import { MAX_RADIUS_KM, MIN_RADIUS_KM } from "@/lib/clinics/constants/clinics";
 import type { ClinicListDto, ClinicListItemDto } from "@/lib/clinics/types/clinics";
+
+// Grænserne ligger i lib, så rodens API-test kan læse clinic-filters.ts; genudstilles her for appens skærme.
+export { MAX_RADIUS_KM, MIN_RADIUS_KM };
 
 export type LatLng = { lat: number; lng: number };
 export type MapRegion = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
@@ -57,8 +61,6 @@ export function directionsUrl(location: LatLng, name: string): string {
 }
 
 // Radius på kortet: 1 til 50 km i hele kilometer.
-export const MIN_RADIUS_KM = 1;
-export const MAX_RADIUS_KM = 50;
 
 // Runder til hele km og holder værdien inden for skyderens grænser.
 export function clampRadiusKm(value: number): number {
