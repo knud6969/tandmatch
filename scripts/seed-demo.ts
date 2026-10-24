@@ -299,24 +299,57 @@ const PRICE_BASE: PriceBase[] = [
   { slug: 'angst_samtale', min: 295, max: 595 },
   { slug: 'behandling_ekstra_tid', min: 995, max: 1995 },
   { slug: 'beroligende_medicin', min: 695, max: 1495 },
+  { slug: 'rodbehandling_genbehandling', min: 3995, max: 6495 },
+  { slug: 'opbygning_efter_rodbehandling', min: 1295, max: 2495 },
+  { slug: 'midlertidig_krone', min: 795, max: 1495 },
+  { slug: 'tandkoed_opfoelgning', min: 395, max: 695 },
+  { slug: 'bid_undersoegelse', min: 395, max: 795 },
+  { slug: 'bidskinne_justering', min: 395, max: 795 },
   { slug: 'akut_konsultation', min: 695, max: 1195 },
   { slug: 'akut_smertebehandling', min: 995, max: 1895 },
   { slug: 'akut_knaekket_tand', min: 895, max: 1595 },
   { slug: 'akut_haevelse', min: 895, max: 1695 },
 ];
 
+// Bred dækning (demo): hver aktiv katalogbehandling tilbydes af mindst to af de verificerede København-klinikker (v0, v4, v5, v6, v7),
+// og de almindelige behandlinger af næsten alle, så en AI-sag næsten altid giver flere klinikker med onlyOffering.
+// Klinikkerne beholder en profil via beskrivelse og prisniveau. seed() stopper, hvis dækningen glider (assertCatalogCoverage).
+const CORE = ['undersoegelse', 'tandrensning', 'roentgen', 'fluorbehandling', 'fyldning', 'stor_fyldning', 'udskiftning_fyldning', 'reparation_knaekket_tand', 'rodbehandling', 'rodbehandling_kindtand', 'krone', 'tandudtraekning', 'tandkoedsundersoegelse', 'dybderensning', 'bidskinne', 'blegning'];
+const EXTRAS = ['rodbehandling_genbehandling', 'opbygning_efter_rodbehandling', 'midlertidig_krone', 'bid_undersoegelse', 'bidskinne_justering', 'tandkoed_opfoelgning'];
+const REGULATION = ['tandregulering_konsultation', 'tandreguleringsskinner', 'retainer', 'fast_bojle'];
+const COSMETIC = ['facing', 'diastema', 'kosmetisk_opbygning'];
+const IMPLANTS = ['implantat_samtale', 'implantat', 'krone_paa_implantat', 'knogleopbygning'];
+const PROSTHETICS = ['helprotese', 'delprotese', 'protese_tilpasning', 'protese_reparation'];
+const SURGERY = ['visdomstand', 'kirurgisk_udtraekning', 'tandkoedskorrektion'];
+const KIDS = ['boerneundersoegelse', 'fyldning_maelketand', 'tilvaenning_tandlaege', 'fissurforsegling'];
+const ANXIETY = ['angst_samtale', 'behandling_ekstra_tid', 'beroligende_medicin'];
+const EMERGENCY = ['akut_konsultation', 'akut_smertebehandling', 'akut_knaekket_tand', 'akut_haevelse'];
+
 // Hvad hver verificeret klinik tilbyder (trin 9.11, mobile/README.md 13.8): kun de slugs får en pris og dermed
 // "tilbydes" (features/clinics/README.md 4.3). Kategorierne (clinic_service_groups) udledes af disse slugs.
 const OFFERS: Record<string, string[]> = {
-  v0: ['undersoegelse', 'tandrensning', 'roentgen', 'tandregulering_konsultation', 'fast_bojle', 'tandreguleringsskinner', 'retainer', 'blegning', 'facing', 'diastema', 'akut_konsultation', 'akut_smertebehandling'],
+  v0: [...CORE, ...EXTRAS, ...REGULATION, ...COSMETIC, 'bro', 'indlaeg', ...EMERGENCY],
   v1: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'rodbehandling', 'krone', 'tandudtraekning', 'blegning', 'facing', 'akut_konsultation', 'akut_smertebehandling'],
   v2: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'rodbehandling', 'krone', 'tandudtraekning', 'helprotese', 'delprotese', 'protese_tilpasning'],
   v3: ['undersoegelse', 'tandrensning', 'roentgen', 'fyldning', 'stor_fyldning', 'rodbehandling', 'krone', 'bro', 'tandudtraekning', 'blegning', 'facing'],
-  v4: ['undersoegelse', 'tandrensning', 'roentgen', 'fluorbehandling', 'fyldning', 'stor_fyldning', 'udskiftning_fyldning', 'reparation_knaekket_tand', 'rodbehandling', 'rodbehandling_kindtand', 'krone', 'tandudtraekning', 'tandkoedsundersoegelse', 'dybderensning', 'bidskinne', 'akut_konsultation', 'akut_smertebehandling', 'akut_knaekket_tand', 'akut_haevelse'],
-  v5: ['undersoegelse', 'tandrensning', 'fluorbehandling', 'fissurforsegling', 'fyldning', 'boerneundersoegelse', 'fyldning_maelketand', 'tilvaenning_tandlaege', 'angst_samtale', 'behandling_ekstra_tid', 'beroligende_medicin'],
-  v6: ['undersoegelse', 'tandrensning', 'roentgen', 'implantat_samtale', 'implantat', 'krone_paa_implantat', 'knogleopbygning', 'tandudtraekning', 'visdomstand', 'kirurgisk_udtraekning', 'tandkoedskorrektion', 'krone', 'bro', 'helprotese', 'delprotese', 'protese_tilpasning', 'protese_reparation'],
-  v7: ['undersoegelse', 'tandrensning', 'blegning', 'facing', 'diastema', 'kosmetisk_opbygning', 'tandregulering_konsultation', 'tandreguleringsskinner', 'retainer', 'krone', 'indlaeg'],
+  v4: [...CORE, ...EXTRAS, 'bro', 'indlaeg', ...IMPLANTS, ...PROSTHETICS, ...SURGERY, ...KIDS, ...ANXIETY, ...EMERGENCY],
+  v5: [...CORE, ...EXTRAS, ...KIDS, ...ANXIETY],
+  v6: [...CORE, ...EXTRAS, 'bro', 'indlaeg', ...IMPLANTS, ...PROSTHETICS, ...SURGERY],
+  v7: [...CORE, ...EXTRAS, ...REGULATION, ...COSMETIC, 'bro', 'indlaeg'],
 };
+
+// Dækningskrav: hver aktiv katalogbehandling skal tilbydes af mindst MIN_DEMO_COVERAGE verificerede demoklinikker i/omkring København
+// (postnummer 1000-2999, inden for 25 km af 2100), ellers findes der sager uden klinikker i demoen.
+const MIN_DEMO_COVERAGE = 2;
+function assertCatalogCoverage(activeSlugs: string[]): void {
+  const nearby = VERIFIED.filter((v) => Number(v.postalCode) >= 1000 && Number(v.postalCode) <= 2999);
+  const lacking = activeSlugs
+    .map((slug) => ({ slug, count: nearby.filter((v) => OFFERS[v.key]?.includes(slug)).length }))
+    .filter((x) => x.count < MIN_DEMO_COVERAGE);
+  if (lacking.length > 0) {
+    throw new Error(`Demodækning for lav: ${lacking.map((x) => `${x.slug} (${x.count})`).join(', ')} tilbydes af under ${MIN_DEMO_COVERAGE} København-klinikker. Ret OFFERS i seed-demo.ts.`);
+  }
+}
 
 // Standardvarigheder, læst fra kataloget (services.default_duration_min) når seedet starter.
 const catalogDurations = new Map<string, number>();
@@ -477,7 +510,8 @@ async function seed(config: Config): Promise<void> {
   const cleaned = await cleanupDemo(admin, false);
   log(`  slettet: ${cleaned.users} brugere, ${cleaned.clinics} klinikker, ${cleaned.files} filer`);
 
-  const serviceRows = must(await admin.from('services').select('id, slug, group_id, default_duration_min'), 'services') as { id: string; slug: string; group_id: string; default_duration_min: number }[];
+  const serviceRows = must(await admin.from('services').select('id, slug, group_id, default_duration_min, is_active, service_groups!inner(is_active)'), 'services') as unknown as { id: string; slug: string; group_id: string; default_duration_min: number; is_active: boolean; service_groups: { is_active: boolean } }[];
+  assertCatalogCoverage(serviceRows.filter((s) => s.is_active && s.service_groups.is_active).map((s) => s.slug));
   for (const row of serviceRows) catalogDurations.set(row.slug, row.default_duration_min);
   const serviceId = new Map(serviceRows.map((s) => [s.slug, s.id]));
   // Kategorierne bag en klinikkens prisliste: klinikken skal have valgt dem, før en pris kan gemmes (clinic_prices_guard).
@@ -832,7 +866,7 @@ async function seed(config: Config): Promise<void> {
   log('    patient3 (Sofie, 5000): booking der lige er slut (kan ikke anmeldes endnu).');
   log('    patient4 (Emil, 2100): akutvejen: en reserveret akuttid hos v0 (udløber efter 30 minutter) og en booket akuttid hos v4; desuden en udeblivelse.');
   log('    patient5 (Laura, 9000): kladde uden leads.');
-  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 har akuttider alle ugens dage. Profiler: v0 regulering/kosmetik, v4 almen+akut, v5 børn, v6 implantater, v7 kosmetik+skinner.');
+  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 har akuttider alle ugens dage. Alle aktive behandlinger tilbydes af mindst 2 af dem. Profiler (beskrivelse/prisniveau): v0 regulering/kosmetik, v4 bred almen+akut, v5 børn, v6 implantater/kirurgi, v7 kosmetik+skinner.');
 }
 
 // Standardvarighed fra kataloget (bruges til prislistens varighed og forhistorik).
