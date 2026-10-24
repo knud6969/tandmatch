@@ -2,7 +2,7 @@ import type { z } from "zod";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/identity/schemas/auth";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
 import type { AuthResultDto } from "@/lib/identity/types/auth";
-import type { AnonymousSessionDto } from "@/lib/identity/types/session";
+import type { AnonymousSessionDto, ClaimResultDto, ClaimTokenDto } from "@/lib/identity/types/session";
 import { clearSession, saveSession } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
 
@@ -56,4 +56,47 @@ export async function startAnonymousSession(): Promise<AnonymousSessionDto> {
   });
   if (result.session) await saveSession(result.session, { settle: true });
   return result;
+}
+
+// Hvad der skete med kladden ved login: "moved" (flyttet til kontoen), "empty" (ingen kladde med indhold), "lost" (kunne ikke
+// flyttes; patienten er logget ind uden den) eller "none" (patienten var ikke anonym).
+export type DraftOutcome = "moved" | "empty" | "lost" | "none";
+export type LoginWithDraftResult = { outcome: LoginOutcome; draft: DraftOutcome; caseId: string | null; draftError: string | null };
+
+const CLAIM_ATTEMPTS = 3;
+
+// Indløser engangs-tokenet med de nye tokens. Netværksfejl prøves igen med samme token (kaldet er idempotent); en anden fejl
+// (fx 400 CLAIM_INVALID) giver "lost" med den danske tekst, fordi patienten da allerede er logget ind.
+async function claimDraft(claimToken: string): Promise<Pick<LoginWithDraftResult, "draft" | "caseId" | "draftError">> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < CLAIM_ATTEMPTS; attempt++) {
+    try {
+      const result = await apiRequest<ClaimResultDto>("/api/session/claim", { method: "POST", json: { claimToken } });
+      return result.moved && result.caseId ? { draft: "moved", caseId: result.caseId, draftError: null } : { draft: "empty", caseId: null, draftError: null };
+    } catch (e) {
+      lastError = e;
+      if (!(e instanceof ApiRequestError && e.code === "NETWORK")) break;
+    }
+  }
+  const draftError = lastError instanceof ApiRequestError ? lastError.message : "Din tidligere samtale kunne ikke hentes over på kontoen.";
+  return { draft: "lost", caseId: null, draftError };
+}
+
+// Login, der aldrig mister den anonyme kladde (architecture 10.2, identity 10.2). For en anonym patient, i denne rækkefølge:
+// (a) claim-token, mens det anonyme token stadig gælder (kun i hukommelsen), (b) login, (c) claim med de nye tokens.
+// Fejler (a) eller (b), ændres intet og fejlen kastes; den anonyme session består.
+export async function loginKeepingDraft(input: LoginInput, options: { anonymous: boolean }): Promise<LoginWithDraftResult> {
+  if (!options.anonymous) return { outcome: await login(input), draft: "none", caseId: null, draftError: null };
+
+  let claimToken: string | null = null;
+  try {
+    claimToken = (await apiRequest<ClaimTokenDto>("/api/session/claim-token", { method: "POST" })).claimToken;
+  } catch (e) {
+    // Ikke længere anonym eller ingen session: der er ingen kladde at tage med, så almindeligt login.
+    const notAnonymous = e instanceof ApiRequestError && (e.status === 401 || e.code === "NOT_ANONYMOUS");
+    if (!notAnonymous) throw e;
+  }
+  const outcome = await login(input);
+  if (outcome !== "ok" || claimToken === null) return { outcome, draft: "none", caseId: null, draftError: null };
+  return { outcome, ...(await claimDraft(claimToken)) };
 }

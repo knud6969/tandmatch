@@ -7,6 +7,7 @@ import { getCase } from "~/api/cases";
 import { getClinic, getClinicReviews } from "~/api/clinics";
 import { SelectButton } from "~/components/leads/select-button";
 import { getServiceGroups } from "~/api/services";
+import { ClinicLocationMap } from "~/components/clinic-directory/clinic-location-map";
 import { OpeningHours } from "~/components/clinic-directory/opening-hours";
 import { PriceList } from "~/components/clinic-directory/price-list";
 import { ProfileSection } from "~/components/clinic-directory/profile-section";
@@ -101,6 +102,11 @@ function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; ca
             <Reviews clinicId={clinic.id} />
           </ProfileSection>
         </>
+      ) : null}
+      {clinic.location ? (
+        <ProfileSection title="Placering">
+          <ClinicLocationMap name={clinic.name} location={clinic.location} />
+        </ProfileSection>
       ) : null}
       <ProfileSection title="Åbningstider">
         <OpeningHours hours={clinic.openingHours} />

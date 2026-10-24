@@ -55,7 +55,7 @@ export function BookingsScreen() {
       <LoadState {...bookings} onRetry={bookings.reload}>
         {(list) => {
           const { upcoming, past } = splitBookings(list);
-          if (list.length === 0) return <Text style={styles.muted}>Du har ingen bookinger endnu. Når en klinik har accepteret din henvendelse, kan du booke en tid fra sagen.</Text>;
+          if (list.length === 0) return <Text style={styles.muted}>Ingen bookinger endnu.</Text>;
           return (
             <>
               <Text style={styles.heading}>Kommende</Text>

@@ -21,4 +21,5 @@ export type ImageDto = {
   view: string | null;
   quality: string | null;
   description: string | null; // AI'ens beskrivelse (ikke vurdering); patientens egne billeder, godkendes med opsummeringen
+  createdAt?: string; // ISO 8601; sat på patientens egne billeder (så appen kan placere dem i tidslinjen), ikke på klinikkens
 };

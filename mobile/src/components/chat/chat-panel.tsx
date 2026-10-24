@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
+import { CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Ionicons } from "@expo/vector-icons";
 import { ConsentGate } from "~/components/case/consent-gate";
-import { LoadState, StatusMessage } from "~/components/ui";
+import { Button, LoadState, StatusMessage } from "~/components/ui";
 import { colors, fontSize, iconSize, MIN_TOUCH, radius, SEND_BUTTON, spacing } from "~/theme";
 import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
+import type { useChatImages } from "~/hooks/use-chat-images";
+import { buildTimeline } from "~/utils/chat-timeline";
 import { ChatBubble } from "./chat-bubble";
+import { ImageBubble } from "./image-bubble";
 
 // Velkomstbesked vises lokalt og gemmes ikke, så den ikke tæller med i beskedgrænsen.
 const WELCOME: AiChatMessageDto = {
@@ -38,9 +41,15 @@ type Props = {
   consentError: string | null;
   onGrantConsent: () => void;
   onSend: (text: string) => Promise<TurnOutcome>;
+  // Billedturen (7.9c): AI'en reagerer selv efter en upload-batch.
+  imageTurning?: boolean;
+  imageNotice?: { message: string; retry: boolean } | null;
+  onRetryImageTurn?: () => void;
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
   cardsKey?: string;
+  // Billeder i chatten (architecture 9.3); udeladt, hvis sagen ikke kan tage billeder.
+  images?: ReturnType<typeof useChatImages>;
 };
 
 // Samtalen med AI-assistenten (architecture 6.1, 7, 10.6). Fast tekst om AI'ens grænser og om personoplysninger, foreløbige
@@ -56,11 +65,11 @@ export function ChatPanel(props: Props) {
   useEffect(() => {
     const id = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(id);
-  }, [messages.length, pending, props.cardsKey]);
+  }, [messages.length, pending, props.imageTurning, props.cardsKey, props.images?.items.length]);
 
   async function send(override?: string) {
     const text = (override ?? draft).trim();
-    if (!text || sending) return;
+    if (!text || sending || props.imageTurning) return;
     setSending(true);
     setSendError(null);
     if (override === undefined) setDraft("");
@@ -92,7 +101,7 @@ export function ChatPanel(props: Props) {
   const low = lowMessagesLeft(props.messagesLeft, finished);
   const quickReplies = visibleQuickReplies({
     messages,
-    pending: pending !== null || sending,
+    pending: pending !== null || sending || props.imageTurning === true,
     finished: finished || blockedByConsent,
     typing: draft.trim() !== "",
   });
@@ -108,11 +117,20 @@ export function ChatPanel(props: Props) {
         keyboardDismissMode="interactive"
         accessibilityLabel="Samtale med AI-assistenten"
       >
-        <Text style={styles.boundary}>{AI_BOUNDARY_TEXT}</Text>
         <ChatBubble message={WELCOME} />
-        {messages.map((message) => (
-          <ChatBubble key={message.id} message={message} />
-        ))}
+        {buildTimeline(messages, props.images?.items ?? []).map((entry) =>
+          entry.kind === "message" ? (
+            <ChatBubble key={entry.key} message={entry.message} />
+          ) : (
+            <ImageBubble
+              key={entry.key}
+              item={entry.item}
+              index={entry.index}
+              onDelete={() => props.images?.remove(entry.item)}
+              onRetry={() => props.images?.retry(entry.item.key)}
+            />
+          ),
+        )}
         {/* Patientens besked vises med det samme, mens svaret hentes, så det føles hurtigt. */}
         {pending ? (
           <>
@@ -126,6 +144,18 @@ export function ChatPanel(props: Props) {
               <Text style={styles.muted}>AI-assistenten skriver …</Text>
             </View>
           </>
+        ) : null}
+        {props.imageTurning ? (
+          <View style={styles.typing} accessibilityRole="progressbar" accessibilityLabel="AI-assistenten skriver">
+            <ActivityIndicator color={colors.inkMuted} size="small" />
+            <Text style={styles.muted}>AI-assistenten skriver …</Text>
+          </View>
+        ) : null}
+        {props.imageNotice && !props.imageTurning ? (
+          <View style={styles.imageNotice}>
+            <StatusMessage message={props.imageNotice.message} tone="warning" />
+            {props.imageNotice.retry && props.onRetryImageTurn ? <Button label="Prøv igen" variant="text" onPress={props.onRetryImageTurn} /> : null}
+          </View>
         ) : null}
         {quickReplies.length > 0 ? (
           <View style={styles.chips} accessibilityLabel="Svarforslag">
@@ -157,11 +187,38 @@ export function ChatPanel(props: Props) {
             {low !== null ? (
               <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
             ) : null}
-            {/* Gentager advarslen om personoplysninger ved inputfeltet, hvor patienten skriver. */}
-            <Text style={styles.hint} testID="pii-advarsel">
-              {CHAT_PII_WARNING_TEXT}
-            </Text>
+            {props.images?.notice ? <StatusMessage message={props.images.notice} tone="warning" /> : null}
+            {/* Advarslen om personoplysninger vises kun, før patienten er begyndt at skrive, og ikke mens et samtykke er åbent. */}
+            {messages.length === 0 && !pending && !props.images?.awaitingConsent ? (
+              <Text style={styles.hint} testID="pii-advarsel">
+                {CHAT_PII_WARNING_TEXT}
+              </Text>
+            ) : null}
+            {props.images?.awaitingConsent ? (
+              <View style={styles.consent}>
+                <ConsentGate
+                  type="image_upload"
+                  onGrant={() => void props.images?.grantConsent()}
+                  pending={props.images.consentPending}
+                  error={props.images.consentError}
+                  actionLabel="Giv samtykke"
+                />
+                <Button label="Ikke nu" variant="text" onPress={props.images.declineConsent} />
+              </View>
+            ) : null}
             <View style={styles.inputRow}>
+              {props.images ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tilføj billede"
+                  accessibilityState={{ disabled: !props.images.canAdd }}
+                  disabled={!props.images.canAdd}
+                  onPress={props.images.chooseSource}
+                  style={[styles.attach, !props.images.canAdd && styles.sendOff]}
+                >
+                  <Ionicons name="camera-outline" size={iconSize.md} color={colors.brand700} />
+                </Pressable>
+              ) : null}
               <TextInput
                 accessibilityLabel="Din besked til AI-assistenten"
                 testID="chat-input"
@@ -169,7 +226,7 @@ export function ChatPanel(props: Props) {
                 onChangeText={setDraft}
                 multiline
                 maxLength={CHAT_MAX_CHARS}
-                placeholder="Skriv dit svar …"
+                placeholder={messages.length === 0 ? "Beskriv dit problem …" : "Skriv dit svar …"}
                 placeholderTextColor={colors.inkMuted}
                 style={styles.input}
               />
@@ -195,7 +252,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { padding: spacing.lg },
   list: { padding: spacing.lg, gap: spacing.lg },
-  boundary: { fontSize: fontSize.sm, lineHeight: 20, color: colors.inkMuted, textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: {
     minHeight: MIN_TOUCH,
@@ -210,6 +266,7 @@ const styles = StyleSheet.create({
   pendingRow: { flexDirection: "row", justifyContent: "flex-end" },
   pendingBubble: { maxWidth: "88%", backgroundColor: colors.brand600, borderRadius: radius.lg, borderBottomRightRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   pendingText: { fontSize: fontSize.md, lineHeight: 22, color: colors.onBrand },
+  imageNotice: { gap: spacing.xs },
   typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
   footer: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface },
@@ -231,4 +288,6 @@ const styles = StyleSheet.create({
   },
   send: { width: SEND_BUTTON, height: SEND_BUTTON, borderRadius: SEND_BUTTON / 2, backgroundColor: colors.brand600, alignItems: "center", justifyContent: "center" },
   sendOff: { opacity: 0.4 },
+  attach: { width: SEND_BUTTON, height: SEND_BUTTON, borderRadius: SEND_BUTTON / 2, borderWidth: 1, borderColor: colors.fieldBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  consent: { maxHeight: 360 },
 });

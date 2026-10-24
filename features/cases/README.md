@@ -32,7 +32,7 @@ Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten).
 | submitted_at, closed_at | timestamptz null | |
 | updated_at | timestamptz | |
 
-Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_guard` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger).
+Redigerbarhed håndhæves i databasen: UPDATE-policyen kræver ejer og `status = 'draft'`, og triggeren `cases_guard` afviser ændringer af beskyttede felter (status, AI-felter, tællere, `summary_text`, `submitted_at`) uden for funktionerne i 5.3. En anonym patient kan højst have én `draft` (trigger). En anonym kladde med indhold kan overdrages til en eksisterende patientkonto ved login (`claim_anonymous_case()`, identity 10.2): `patient_id` på sagen, samtalen, beskederne og billederne skifter ejer i én transaktion; `cases_guard()` tillader kun det under `tm.claim`.
 
 #### `case_services` (bekræftede ydelser)
 | Felt | Type | Note |
@@ -75,6 +75,7 @@ Chatten deles **aldrig** med klinikker. Triggeren `ai_messages_after_insert()` t
 | ai_view, ai_quality | image_view / image_quality null | Fra AI |
 | ai_description | text null | Neutral beskrivelse (7.3), højst 500 tegn (`imageDescription()` i `lib/cases/domain/summary.ts` afkorter til `IMAGE_DESCRIPTION_MAX_CHARS` før gemning), godkendes som del af opsummeringen. Deles kun med klinikken, når patienten har godkendt opsummeringen **efter** beskrivelsen blev skrevet: `clinic_lead_images()` returnerer den i kolonnen `approved_description`, når `cases.summary_approved_at >= ai_described_at`, ellers er `approved_description` `null` (fail closed; migration `20261019000200`). Klinikkens visning (trin 4-5) skal tåle `null` |
 | ai_described_at | timestamptz null | Sættes af trigger, når `ai_description` skrives eller ændres |
+| ai_turn_at | timestamptz null | Sættes af `reserve_image_turn()`, når billedet er taget med i en billedtur (7.9c); `null` = endnu ikke set af AI'en i en billedtur. Ryddes igen, hvis turen fejler, så den kan gentages. Migration `20261030000100` |
 | width, height, bytes | integer | |
 | created_at | timestamptz | Upload-tidspunkt under `consent_id` |
 
@@ -120,7 +121,7 @@ Rækkefølgen ovenfor var **webens** trinflow (`/start/[caseId]`, fjernet fra we
 
 | | Chat (`AiChatService.sendTurn`, `features/cases/ai/aiChatService.ts`) | Opsummering (`AiSummaryService.generate`, `features/cases/ai/aiSummaryService.ts`) |
 |---|---|---|
-| System-besked | Fast, versioneret `prompts/chat.v6.ts` (7.9a, trin 9.4; v6 se række 8 nedenfor), bygget af reglerne i `rules.ts` | `prompts/summary.v2.ts` (uændret) |
+| System-besked | Fast, versioneret `prompts/chat.v7.ts` (7.9a, trin 9.4; v7 se række 9 nedenfor), bygget af reglerne i `rules.ts` | `prompts/summary.v2.ts` (uændret) |
 | Katalog | Aktive behandlinger grupperet efter kategori: kategoriens navn og for hver behandling `slug`, navn, type og kort beskrivelse (`catalogContext.ts`, bygget fra databasen ved hvert kald, så ændringer i kataloget slår igennem uden kodeændring). **Ingen priser, ingen klinikker**. AI'en foreslår kun behandlings-slugs, ikke kategorier | Samme |
 | Kontekst | Seneste 20 beskeder; sagens billeder (low detail) | Hele chatten (max 30 brugerbeskeder), bekræftede ydelser, billeder |
 | Billeder | Re-encodet server-side (EXIF fjernet), max 1024 px, base64. Aldrig signerede URL'er | Samme |
@@ -221,6 +222,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | Chatbeskeder pr. patient pr. døgn | 100 (`ai_limits.chat_messages_per_patient_day`; tælles pr. UTC-dag i `ai_patient_usage_daily.chat_messages`, som ikke slettes med sagen) | 429 |
 | Opsummeringer pr. sag / pr. patient pr. døgn | 5 / 20 | 429 `SUMMARY_LIMIT` |
 | Billeder pr. sag | 5, max 4 MB hver | 400/413 |
+| Billedture pr. patient pr. døgn | 30 (`ai_limits.image_turns_per_patient_day`; `ai_patient_usage_daily.image_turns`, samme regler som chatbeskeder; anonyme bruger også det anonyme døgnloft). En billedtur kræver mindst ét billede uden `ai_turn_at`, så der højst er én tur pr. upload-batch (7.9c) | 409 `NO_NEW_IMAGES` / 429 `RATE_LIMITED`/`ANON_CAP_REACHED` |
 | Bekræftede ydelser pr. sag | 5 | 400 |
 | Tandlæger pr. klinik | 30 | 429 `DENTIST_LIMIT` |
 | Porteføljebilleder pr. klinik | 60 | 429 `PORTFOLIO_LIMIT` |
@@ -340,7 +342,17 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 - Ved inputfeltet er der en knap til kamera og bibliotek. Første tryk uden gældende `image_upload`-samtykke (`hasCurrentConsent`, `lib/identity/domain/consents.ts`) viser et samtykkekort i chatten med `CONSENT_TEXTS.image_upload` og knapperne "Giv samtykke" og "Ikke nu" (`POST /api/consents`). Samtykket gives aldrig sammen med AI-samtykket (9.4).
 - Derefter vælges kamera eller bibliotek, og billedet nedskaleres og uploades som i 13.5.
 - Billederne vises som miniaturer i en række over inputfeltet med slet-knap og tælleren `n/MAX_IMAGES_PER_CASE`. De indgår ikke i chatbeskederne, fordi `case_images` ikke er beskeder.
-- Efter en vellykket upload sender appen den faste besked `IMAGE_ADDED_CHAT_MESSAGE` ("Jeg har tilføjet et billede.", `lib/cases/constants/ai-texts.ts`) som en almindelig chat-tur. Så ser AI'en billedet (alle sagens billeder sendes med hver tur, 7.2) og svarer. Turen tæller som én besked. Er samtalen lukket, sendes beskeden ikke ([ÅBEN] 12.3 punkt 42).
+- Efter en upload-batch kalder appen **billedturen** `POST /api/cases/{id}/chat/image-turn` (7.9c). Patienten skriver ikke noget, og turen tæller ikke som en af hendes beskeder. Den faste besked `IMAGE_ADDED_CHAT_MESSAGE` sendes ikke længere (konstanten kan fjernes, når appen er opdateret). Er samtalen lukket (30 beskeder), giver billedturen 429 `CHAT_LIMIT`, og appen springer den over ([ÅBEN] 12.3 punkt 42).
+
+### 7.9c Billedtur: AI'en reagerer selv på et uploadet billede (brugerens beslutning 2026-10-24)
+
+"Den behøver ikke sende en besked, den skal bare selv vide, den modtager billedet og behandle det." Efter en upload-batch (ét eller flere billeder) kalder appen `POST /api/cases/{id}/chat/image-turn` **én gang**. Serveren kører en assistent-tur uden patientbesked:
+- **Forudsætninger:** sagen er `draft`, aktivt `ai_processing`-samtykke **og** aktivt `image_upload`-samtykke (gældende tekstversion), ellers 403 `CONSENT_REQUIRED`. Samme IP-grænse som chatten (`CHAT_IP_LIMIT_PER_HOUR`), anonym session tilladt.
+- **Reservation (før modelkaldet):** `reserve_image_turn(p_user_id, p_conversation_id)` (service role, 5.3) låser patienten og samtalen som `reserve_chat_turn`, tjekker ejer, kladde, begge samtykker, at samtalen er `active` (ellers `CHAT_LIMIT`) og at der er mindst ét billede med `ai_turn_at is null` (ellers `NO_NEW_IMAGES`), tæller døgnloftet `image_turns` (og det anonyme loft), stempler de nye billeder med `ai_turn_at` og returnerer deres id'er. Dermed højst én tur pr. upload-batch, og et loft pr. sag på antal uploadede billeder; upload-slet-løkker begrænses af døgnloftet. Turen indsætter **ingen** brugerbesked og tæller ikke i `user_message_count`, `messagesLeft` eller `chat_messages`. Samtalen oprettes, hvis den ikke findes.
+- **Modelkald:** `AiChatService.sendImageTurn()`. Samme system-prompt (`chat.v7.ts`, afsnittet BILLEDTUR), samme guard (`runChatGuard`: filtre, `forbiddenTerms`, katalog-slugs, retry, faste tekster), samme `rules` (`emergencyReferralInChat` uændret `false`). Der er ingen ny patienttekst, så akut-detektionen kører på en tom tekst; modellens eget `emergency`-flag tæller som altid kun med stærkt akut-ord i patientens tekst (7.4), dvs. aldrig i en billedtur. Modellen får de seneste beskeder, **alle** sagens billeder (nummereret `img_1` …, i uploadrækkefølge, uden id'er) og en kort system-genereret linje (ikke patienttekst) om, hvilke der er nye. Den kvitterer kort, nævner at den har set billedet (kun beskrivelse, ikke fortolkning i `reply`), stiller evt. næste spørgsmål og må opdatere forslagene, som i en almindelig tur. Er et nyt billede for mørkt, uskarpt, forkert vinkel eller ikke viser tænder, beder den om et nyt.
+- **Kvalitet:** chat-skemaet har feltet `images: { imageRef, view, quality }[]` (tom ved almindelige ture; `quality` er `ok | too_dark | blurry | wrong_angle | not_teeth`). Serveren mapper `imageRef` til de **nye** billeders id og gemmer `ai_view` og `ai_quality` (kun disse to felter; `ai_description` skrives stadig kun ved opsummeringen). Ukendte eller gamle referencer ignoreres. `quality` kommer til udtryk i `GET /api/cases/{id}` (`ImageDto.quality`) og i svaret fra billedturen. Opsummeringen overskriver senere værdierne.
+- **Svar:** assistentbeskeden gemmes med `append_assistant_message()` som i en almindelig tur (`content`, forslag, `readyForSummary` osv.) og ligger i `GET /chat` i rækkefølge efter billederne (`createdAt`). Billederne har `ImageDto.createdAt`, så appen kan placere billedbobler og assistentsvar i samme tidslinje.
+- **Fejl:** fejler modelkaldet eller gemningen efter reservationen, ryddes `ai_turn_at` på de nye billeder (turen kan gentages), og routen svarer 503 `AI_UNAVAILABLE`. Der gemmes ingen fast tekst, fordi der ikke er en patientbesked, der står ubesvaret. 409 `NO_NEW_IMAGES` betyder, at alle billeder allerede er set (appen ignorerer fejlen).
 
 **Hvad AI'en gør anderledes** (prompt `chat.v3.ts`, regler `rules-v3`, 8.6c):
 - AI'en spørger ind frem og tilbage, ét eller to spørgsmål ad gangen. Har den nok, gør den i **samme** svar fire ting: giver evt. en foreløbig vurdering i `preliminaryAssessment`, lægger slugs i `suggestedServices`, sætter `readyForSummary = true` og skriver i `reply` kort, at patienten selv bekræfter behandlingerne nedenfor, og at klinikken laver den endelige vurdering.
@@ -387,11 +399,12 @@ Brugerens oplevelse (2026-10-19 og 2026-10-22): "man chatter bare, uden der sker
 | 1 | `nextCaseFlowStep()` giver `services`, når der ingen bekræftede ydelser er, og mindst én af disse gælder: `readyForSummary`, samtalen er `closed`, **`caseDto.suggestedServices` er ikke tom**, eller **patienten har sendt mindst `SERVICE_CARD_AFTER_USER_MESSAGES` (6) beskeder** (talt i `chatState.messages` med `role === "user"`). Funktionen får `suggestedServices` med i sit `Pick`. Uden forslag viser kortet som i dag "Jeg er ikke sikker" og "Vælg selv" | `lib/cases/domain/case-flow.ts`, konstanten i `lib/cases/constants/case-flow.ts` |
 | 2 | `ChatStateDto.readyForSummary` er **klæbende**: `true`, hvis en assistentbesked i samtalen har `ready_for_summary` (ikke kun den seneste). `useChat` i appen holder `ready` sand, når den først er sand. Ingen migration | `features/cases/chatController.ts`, `mobile/src/hooks/use-chat.ts` |
 | 3 | **Forslag går ikke tabt i guarden.** Fejler begge forsøg kun på teksten (`reply` eller `preliminaryAssessment`), men det sidste forsøg var gyldigt efter skemaet, alle slugs findes i kataloget, og det havde `readyForSummary = true` med forslag, så returnerer guarden den faste tekst `SUGGESTION_FALLBACK_TEXT` (`lib/cases/constants/ai-texts.ts`: "Ud fra det, du har fortalt, kan behandlingerne nedenfor være relevante. Du vælger selv, og klinikken laver den endelige vurdering.") med forslagene, `readyForSummary = true`, `preliminaryAssessment = null`, `quickReplies = []` og `blocked = true` (sporbarhed). Den afviste tekst bruges aldrig. Gælder ikke ved akut, når `emergencyReferralInChat` er slået til | `features/cases/ai/guard.ts` |
-| 4 | **Prompt `chat.v5.ts` (nu `chat.v6.ts`, se række 8), regler `rules-v5` (nu `rules-v6`):** højst tre opklarende spørgsmål, før AI'en foreslår (straks, hvis patienten er klar); hvert spørgsmål har 2-4 hurtigsvar, og et af dem må være "Ved ikke". I forslagsturen skriver AI'en kun én til to sætninger om, hvad behandlingerne går ud på, og nævner **hverken klinikker, bekræftelse eller næste skridt** (det gør TandMatch-kortet med faste tekster). Har AI'en først foreslået, gentager den forslagene og `readyForSummary = true` i de følgende ture, medmindre patienten beskriver et nyt problem. `chat.v4.ts` slettes i samme commit, og `AI_RULES.version` hæves til `rules-v5` (og `MDR_STRICT_RULES.version` tilsvarende) | `features/cases/ai/prompts/chat.v6.ts`, `features/cases/ai/rules.ts` |
+| 4 | **Prompt `chat.v5.ts` (nu `chat.v7.ts`, se række 9), regler `rules-v5` (nu `rules-v6`):** højst tre opklarende spørgsmål, før AI'en foreslår (straks, hvis patienten er klar); hvert spørgsmål har 2-4 hurtigsvar, og et af dem må være "Ved ikke". I forslagsturen skriver AI'en kun én til to sætninger om, hvad behandlingerne går ud på, og nævner **hverken klinikker, bekræftelse eller næste skridt** (det gør TandMatch-kortet med faste tekster). Har AI'en først foreslået, gentager den forslagene og `readyForSummary = true` i de følgende ture, medmindre patienten beskriver et nyt problem. `chat.v4.ts` slettes i samme commit, og `AI_RULES.version` hæves til `rules-v5` (og `MDR_STRICT_RULES.version` tilsvarende) | `features/cases/ai/prompts/chat.v6.ts`, `features/cases/ai/rules.ts` |
 | 5 | **Hurtigsvar** vises under AI'ens seneste besked, når den har nogen, også når behandlingskortet er åbent (guarden giver i forvejen `[]` i forslagsturen). Kortene under hurtigsvarene står uændret | `mobile/src/utils/case-cards.ts` (`visibleQuickReplies`) |
 | 6 | **Falsk klient som en rigtig samtale:** uden nøgleord stiller to spørgsmål med hurtigsvar og foreslår `undersoegelse` med `readyForSummary = true` fra patientens tredje besked (tæller patientens beskeder i historikken). Nye markører: `test_suggest_not_ready` (forslag uden flag) og `test_blocked_suggestion` (gyldige forslag, men en pris i `reply` i begge forsøg). Eksisterende markører og tests består | `features/cases/ai/fakeAiClient.ts` |
 | 7 | **Rejse-test mod den falske klient:** `features/cases/__tests__/api/case-flow-journey.test.ts` kører hele sagen gennem API'et som appen (bearer, `X-TandMatch-Client: mobile`) og beregner trinnet med `nextCaseFlowStep()` efter hvert kald: anonym session → tre almindelige beskeder → `services` med forslaget `undersoegelse` → én besked mere → stadig `services` → `PUT /services` → `timeframe` → `PATCH` → `postal_code` → `PATCH` → `summary` → `POST`/`PUT /summary` → `ready` → konto (`/convert`) → `canSend`. Desuden: seks beskeder uden forslag giver `services` uden forslag; `test_suggest_not_ready` giver `services`; `test_blocked_suggestion` giver `SUGGESTION_FALLBACK_TEXT` og `services`. Til sidst `GET /api/clinics?services=…&onlyOffering=true` med sagens behandlinger (10.7) | testen |
 | 8 | **Prompt `chat.v6.ts`, regler `rules-v6`:** (a) nyt afsnit `scopeSection()`: tandkød (blødning, hævelse, tilbagetrækning), manglende tænder, børn m.m. er udtrykkeligt inden for området, blødning fra tandkød ved tandbørstning er ikke akut, og AI'en afviser kun pris/klinikvalg eller emner uden for tænder og mund. Årsagen til fejlen var, at modellen i `reply` kommenterede årsag og alvor ("kan være betændelse"), hvilket reply-filteret afviste to gange, så guarden gav den faste tekst `CHAT_BLOCKED_TEXT`; prompten forbyder nu årsager, diagnoseord og alvorsvurdering i `reply` (de hører kun hjemme i `preliminaryAssessment`) og retry-påmindelsen siger det samme. (b) nyt afsnit `serviceSelectionSection()`: foreslå de mest specifikke ydelser (barn: `boerneundersoegelse` m. `tilvaenning_tandlaege`; manglende tand: `implantat_samtale`/`bro`/`delprotese`; tandkød: `tandkoedsundersoegelse`), `undersoegelse` kun som udgangspunkt eller supplement, foreslå straks i stedet for at spørge om lov. (c) **højst 3 forslag**: prompten beder om det, og guarden afkorter til `MAX_CHAT_SUGGESTIONS` (3). Slugs valideres stadig mod kataloget; ingen priser, ingen klinikker. Filter, akut-detektion og `emergencyReferralInChat` er uændrede. Tests: "chat.v6" i `__tests__/ai/guardrails.test.ts` (inkl. opt-in live-tests med `AI_LIVE=1`) | `features/cases/ai/prompts/chat.v6.ts`, `features/cases/ai/guard.ts`, `features/cases/ai/rules.ts` |
+| 9 | **Prompt `chat.v7.ts` (erstatter `chat.v6.ts`, som slettes), regler `rules-v6` uændret:** nyt afsnit BILLEDTUR og feltet `images` i chat-skemaet (7.9c, 2026-10-24). Billedturen er en tur uden patientbesked: AI'en kvitterer kort for de nye billeder, stiller evt. næste spørgsmål og vurderer kun billedets tekniske kvalitet (`ok`, `too_dark`, `blurry`, `wrong_angle`, `not_teeth`) og vinkel i `images`; ingen fortolkning, priser eller klinikker. Ved almindelige ture er `images` `[]`. `buildChatSystemPrompt()` er uændret ellers; guarden, filtrene og `emergencyReferralInChat` er de samme | `features/cases/ai/prompts/chat.v7.ts`, `features/cases/ai/aiChatService.ts`, `features/cases/ai/schemas.ts` |
 
 Reglerne i 7.3 gælder uændret: ingen priser, ingen klinikanbefaling, foreløbig vurdering kun i `preliminaryAssessment` med forbehold, og patienten bekræfter selv. Ændring 3 og 4 rører AI-reglerne, så security-agenten kører efter dem (`docs/security.md`).
 
@@ -416,7 +429,7 @@ Bygget for forespørgsler; tilpasses til sager.
 4. `sharp` re-encoder til JPEG og fjerner EXIF.
 5. Service role skriver filen og `case_images`-rækken med `consent_id`.
 6. Trigger nulstiller `summary_approved_at`.
-7. Returnér `ImageDto` med signeret URL.
+7. Returnér `ImageDto` med signeret URL og `createdAt`. `quality` er `null` ved upload; den sættes af billedturen (7.9c) og vises derefter i `GET /api/cases/{id}`.
 
 ### 9.4 Samtykke og sletning
 
@@ -514,9 +527,24 @@ export type ChatTurnResponse = { userMessage: AiChatMessageDto; assistantMessage
 };
 ```
 
+```ts
+// POST /api/cases/{id}/chat/image-turn (7.9c). Ingen userMessage: turen er ikke en patientbesked.
+export type ImageTurnResponse = {
+  assistantMessage: AiChatMessageDto;   // med quickReplies som i ChatTurnResponse
+  assessedImages: { imageId: string; view: ImageView | null; quality: ImageQuality | null }[]; // kun de nye billeder
+  outOfScopeNotice: boolean;
+  emergency: boolean;
+  readyForSummary: boolean;
+  messagesLeft: number;                 // uændret af turen
+};
+// ImageDto (lib/common/types/common.ts) har fået createdAt?: string (ISO 8601): altid sat på patientens egne billeder
+// (CaseDto.images, POST /images), udeladt på klinikkens billeder (leads).
+```
+
 Appens samtaleflow (7.9) bruger routes og DTO'er uændret; kun `quickReplies` er nyt (P2). Fra 8.6c kan `readyForSummary` kun være `true`, når samme svar har forslag (7.4). Fra trin 9.2 er `ChatStateDto.readyForSummary` `true`, hvis **en** assistentbesked i samtalen har haft flaget (klæbende, 7.9a regel 2); `ChatTurnResponse.readyForSummary` gælder stadig kun turen.
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | GET `/api/cases/{id}/chat` | patient (+anonym), ejer | | `ChatStateDto` |
 | POST `/api/cases/{id}/chat` | patient (+anonym), ejer, `draft`, aktivt `ai_processing` | `{ message }` (1-1000) | 201 `ChatTurnResponse`; 403 `CONSENT_REQUIRED`; 409; 429 `CHAT_LIMIT`/`RATE_LIMITED`/`ANON_CAP_REACHED`; 503 |
+| POST `/api/cases/{id}/chat/image-turn` | patient (+anonym), ejer, `draft`, aktivt `ai_processing` **og** `image_upload` | `{}` (tom body) | 201 `ImageTurnResponse` (7.9c); 403 `CONSENT_REQUIRED`; 409 `NO_NEW_IMAGES` (ingen nye billeder siden sidste billedtur); 429 `CHAT_LIMIT` (samtalen er lukket) / `RATE_LIMITED` / `ANON_USER_LIMIT` / `ANON_CAP_REACHED`; 503 `AI_UNAVAILABLE` (billederne kan sendes igen) |

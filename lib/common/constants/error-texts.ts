@@ -92,6 +92,8 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   BOOKING_LIMIT: BOOKING_LIMIT_TEXT,
   ALREADY_REVIEWED: ALREADY_REVIEWED_TEXT,
   ALREADY_REPLIED: ALREADY_REPLIED_TEXT,
+  CLAIM_INVALID: "Din tidligere samtale kunne ikke hentes over på kontoen. Den kan være udløbet eller allerede overført.",
+  NOT_ANONYMOUS: "Der er ingen anonym samtale at overføre.",
   INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
 };
 

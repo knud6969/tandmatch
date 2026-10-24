@@ -126,7 +126,7 @@ export function MessagesScreen() {
           {(data) => (
             <>
               <ScrollView ref={listRef} style={styles.flex} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" accessibilityLabel="Beskeder med klinikken">
-                {data.messages.length === 0 ? <Text style={styles.muted}>Ingen beskeder endnu. Skriv, hvis du har et spørgsmål til klinikken.</Text> : null}
+                {data.messages.length === 0 ? <Text style={styles.muted}>Ingen beskeder endnu.</Text> : null}
                 {data.messages.map((m) => (
                   <MessageBubble key={m.id} message={m} />
                 ))}
@@ -136,7 +136,7 @@ export function MessagesScreen() {
                 {writable ? (
                   <>
                     {sendError ? <StatusMessage message={sendError} tone="danger" /> : null}
-                    <Text style={styles.hint}>Skriv ikke om akutte problemer her. Ved akut sygdom, ring 112. Klinikken laver den endelige vurdering.</Text>
+                    <Text style={styles.hint}>Akut? Ring 112.</Text>
                     <Pressable accessibilityRole="link" onPress={() => router.push("/akut")} style={styles.link}>
                       <Text style={styles.linkText}>Har du ondt? Find en akuttid</Text>
                     </Pressable>

@@ -55,13 +55,9 @@ export function SignupScreen() {
         </>
       ) : (
         <>
-          <Text style={styles.body}>
-            {anonymous ? "Din samtale gemmes på kontoen." : "Med en konto kan du kontakte klinikker og booke tid."}
-          </Text>
           <SignupForm onSubmit={(v) => void onSubmit(v)} pending={pending} error={error} />
           {anonymous ? null : (
             <>
-              <Text style={styles.body}>Har du allerede en konto?</Text>
               <Button label="Log ind" variant="secondary" onPress={() => router.replace(returnTo ? { pathname: "/login", params: { returnTo } } : "/login")} />
             </>
           )}
@@ -73,5 +69,4 @@ export function SignupScreen() {
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
-  body: { fontSize: fontSize.md, color: colors.inkMuted },
 });

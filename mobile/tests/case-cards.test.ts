@@ -5,6 +5,7 @@ import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 import type { SummaryResponse } from "@/lib/cases/types/ai";
 import {
   cardModes,
+  flowProgress,
   initialServiceSelection,
   lowMessagesLeft,
   shouldAutoGenerate,
@@ -168,5 +169,26 @@ describe("postnummer", () => {
     expect(postalCodeError("2100")).toBeNull();
     expect(postalCodeError("21")).toBe("Angiv et gyldigt postnummer.");
     expect(postalCodeError("")).not.toBeNull();
+  });
+});
+
+// Fremdriftslinjen skal matche kortet: ét trin ad gangen og "Klar" til sidst.
+describe("flowProgress", () => {
+  it("viser trinnet i chatten og de fire kort", () => {
+    expect(flowProgress("chat")).toEqual({ done: 0, label: "1 af 5 · Beskriv", ready: false });
+    expect(flowProgress("services").label).toBe("2 af 5 · Behandlinger");
+    expect(flowProgress("timeframe").label).toBe("3 af 5 · Tidspunkt");
+    expect(flowProgress("postal_code").label).toBe("4 af 5 · Område");
+    expect(flowProgress("summary").label).toBe("5 af 5 · Beskrivelse");
+  });
+
+  it("står som Klar, når beskrivelsen er godkendt, og ikke som sidste trin", () => {
+    expect(flowProgress("ready")).toEqual({ done: 5, label: "Klar", ready: true });
+    expect(flowProgress("submitted").ready).toBe(true);
+  });
+
+  it("tæller kun ét kort som aktuelt ad gangen", () => {
+    const modes = Object.values(cardModes("postal_code"));
+    expect(modes.filter((m) => m === "current")).toHaveLength(1);
   });
 });

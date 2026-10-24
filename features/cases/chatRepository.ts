@@ -1,6 +1,6 @@
 import "server-only";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/cases/types/ai";
-import { ApiError, aiConsentRequired, chatLimit, notDraft, notFound } from "@/platform/middleware/http";
+import { ApiError, aiConsentRequired, chatLimit, consentRequired, notDraft, notFound } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Database, Tables } from "@/platform/db/database.types";
 
@@ -179,6 +179,36 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
       },
       userMessageCount: row.user_message_count,
     };
+  }
+
+  // Kun service role (2.3 a). Reserverer en billedtur FØR modelkaldet (7.9c): databasen tjekker ejer, kladde, samtykker og
+  // samtale, tæller døgnloftet og stempler de nye billeder (ai_turn_at). Returnerer de nye billeders id. Indsætter ingen
+  // brugerbesked og tæller ikke som en patientbesked.
+  async reserveImageTurn(userId: string, conversationId: string): Promise<string[]> {
+    const data = await this.rpc<string[]>(
+      "reserve_image_turn",
+      { p_user_id: userId, p_conversation_id: conversationId },
+      {
+        NOT_FOUND: notFound(),
+        NOT_DRAFT: notDraft(),
+        CONSENT_REQUIRED: aiConsentRequired(),
+        IMAGE_CONSENT_REQUIRED: consentRequired("Du skal give samtykke til billeder, før AI'en kan se dem."),
+        CHAT_LIMIT: chatLimit(),
+        NO_NEW_IMAGES: new ApiError(409, "NO_NEW_IMAGES", "Der er ingen nye billeder at kigge på."),
+        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", "Du har sendt mange billeder i dag. Prøv igen i morgen."),
+        ANON_USER_LIMIT: new ApiError(
+          429,
+          "RATE_LIMITED",
+          "Du har sendt mange billeder i dag. Opret en konto for at fortsætte, eller prøv igen i morgen.",
+        ),
+        ANON_CAP_REACHED: new ApiError(
+          429,
+          "ANON_CAP_REACHED",
+          "AI-assistenten er optaget lige nu. Opret en konto eller prøv igen senere.",
+        ),
+      },
+    );
+    return data ?? [];
   }
 
   // Kun service role (2.3 a). Funktionen tjekker ejer, aktiv samtale og at ydelserne er aktive.

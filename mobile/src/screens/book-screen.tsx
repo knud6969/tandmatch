@@ -82,7 +82,7 @@ function BookingForm({ data, leadId, onBooked }: { data: Loaded; leadId: string;
         <LoadState {...slots} onRetry={slots.reload}>
           {() =>
             days.length === 0 ? (
-              <StatusMessage message="Klinikken har ingen ledige tider de næste 14 dage. Skriv til klinikken eller prøv igen senere." tone="warning" />
+              <StatusMessage message="Ingen ledige tider de næste 14 dage. Skriv til klinikken." tone="warning" />
             ) : (
               <SlotPicker days={days} selectedStartsAt={startsAt} onSelect={setStartsAt} error={errors.startsAt} />
             )
@@ -116,7 +116,7 @@ export function BookScreen() {
             Din tid er booket
           </Text>
           <BookingCard booking={booked} />
-          <Text style={styles.muted}>Klinikken kan nu se dit navn og telefonnummer. Klinikken laver den endelige vurdering ved besøget.</Text>
+          <Text style={styles.muted}>Klinikken kan nu se dit navn og telefonnummer.</Text>
           <Button label="Se mine bookinger" onPress={() => router.replace("/bookinger")} />
           <Button label="Tilbage til sagen" variant="secondary" onPress={back} />
         </>
@@ -131,7 +131,7 @@ export function BookScreen() {
                 <BookingForm data={loaded} leadId={leadId} onBooked={setBooked} />
               </>
             ) : (
-              <StatusMessage message="Du kan kun booke tid hos en klinik, der har accepteret din henvendelse." tone="warning" />
+              <StatusMessage message="Du kan booke, når klinikken har accepteret." tone="warning" />
             )
           }
         </LoadState>

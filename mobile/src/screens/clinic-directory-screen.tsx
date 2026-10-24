@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { remainingLeadSlots } from "@/lib/leads/domain/leads";
 import { getCase } from "~/api/cases";
 import { listCaseLeads } from "~/api/leads";
 import { listClinics } from "~/api/clinics";
 import { getServiceGroups } from "~/api/services";
 import { ClinicCard } from "~/components/clinic-directory/clinic-card";
+import { ClinicMap } from "~/components/clinic-directory/clinic-map";
+import { ClinicMapCard } from "~/components/clinic-directory/clinic-map-card";
 import { ClinicFilters } from "~/components/clinic-directory/clinic-filters";
 import { CriteriaBox } from "~/components/clinic-directory/criteria-box";
 import { EmptyDirectory, SHOW_OTHERS_LABEL } from "~/components/clinic-directory/empty-directory";
@@ -17,7 +20,7 @@ import { SelectButton } from "~/components/leads/select-button";
 import { ServicePicker } from "~/components/clinic-directory/service-picker";
 import { Button, StatusMessage } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
-import { colors, fontSize, spacing } from "~/theme";
+import { colors, fontSize, MIN_TOUCH, radius, spacing, type } from "~/theme";
 import {
   activeFilterCount,
   buildClinicsQuery,
@@ -35,9 +38,10 @@ import {
   type DirectoryFilters,
 } from "~/utils/clinic-filters";
 import { clinicsWord, setLimits, useSelection } from "~/utils/lead-selection";
+import { clinicsWithLocation, radiusLabel, resolveOrigin } from "~/utils/map-region";
 import { getRoundedPosition, PositionError } from "~/utils/position";
 
-// Klinikoversigten som liste med filtre (architecture 6.6, 13.4). Rækkefølgen og kriterierne er serverens.
+// Klinikoversigten som liste eller kort med filtre (architecture 6.6, 13.4). Rækkefølgen og kriterierne er serverens.
 export function ClinicDirectoryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ akut?: string; sag?: string }>();
@@ -46,6 +50,10 @@ export function ClinicDirectoryScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [positionError, setPositionError] = useState<string | null>(null);
+  // Liste eller kort: samme data, filtre og rækkefølge; ingen ekstra forespørgsel.
+  const [view, setView] = useState<"list" | "map">("list");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { height: windowHeight } = useWindowDimensions();
 
   // "Jeg har ondt" på forsiden åbner oversigten med akutfilteret slået til.
   useEffect(() => {
@@ -127,6 +135,23 @@ export function ClinicDirectoryScreen() {
   const onlyOffering = filtersOnOffering(filters);
   const names = new Map((catalog.data ?? []).flatMap((g) => g.services.map((s) => [s.slug, s.name] as const)));
 
+  // "Vælg klinik" til en sag, med samme regler i liste og kort.
+  const selectAction = (item: ClinicListItemDto) =>
+    caseId ? (
+      caseSlugs === null ? (
+        <Button label="Vælg klinik" disabled accessibilityLabel={`Vælg ${item.name}. Henter din sag`} onPress={() => undefined} />
+      ) : (
+        <SelectButton caseId={caseId} clinic={priceMatchesCase ? item : { ...item, priceForSelection: null }} hasServices={caseSlugs.length > 0} />
+      )
+    ) : null;
+  const openProfile = (item: ClinicListItemDto) =>
+    router.push({ pathname: "/klinik/[clinicId]", params: caseId ? { clinicId: item.id, sag: caseId } : { clinicId: item.id } });
+  // Valgt markør, der ikke længere er i svaret (nye filtre), vises ikke.
+  const selected = list?.clinics.find((c) => c.id === selectedId) ?? null;
+  // Udgangspunktet: postnummerets punkt fra serveren, hvis det findes, ellers patientens afrundede position.
+  const origin = resolveOrigin(list, filters.position);
+  const mapped = list ? clinicsWithLocation(list.clinics).length : 0;
+
   // Header i selve listen, så filtre og overskrift ruller med i stedet for at æde pladsen på en lille skærm.
   const header = (
     <View style={styles.header}>
@@ -135,10 +160,13 @@ export function ClinicDirectoryScreen() {
       </Text>
       {caseId ? (
         <Text style={styles.muted}>
-          Vælg de klinikker, du vil kontakte med din beskrivelse. Kun verificerede klinikker kan kontaktes.
-          {selection.slots > 0 ? ` Du kan vælge op til ${selection.slots}.` : " Du kan ikke kontakte flere klinikker lige nu."}
+          {selection.slots > 0 ? `Vælg op til ${selection.slots} klinikker.` : "Du kan ikke kontakte flere klinikker lige nu."}
         </Text>
       ) : null}
+      <View style={styles.toggle} accessibilityRole="tablist">
+        <ViewTab label="Liste" active={view === "list"} onPress={() => setView("list")} />
+        <ViewTab label="Kort" active={view === "map"} onPress={() => setView("map")} />
+      </View>
       <Button
         label={filtersOpen ? "Skjul filtre" : count > 0 ? `Filtre og sortering (${count})` : "Filtre og sortering"}
         variant="secondary"
@@ -167,6 +195,15 @@ export function ClinicDirectoryScreen() {
         </>
       ) : null}
       {hasServices ? <OfferingNotice names={serviceNames(filters.serviceSlugs, names)} onlyOffering={onlyOffering} caseMode={Boolean(caseId)} /> : null}
+      {view === "list" && origin ? (
+        <View style={styles.radiusLine}>
+          <Text style={type.caption}>{radiusLabel(filters.maxDistanceKm)}</Text>
+          <Text style={type.caption}> · </Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ret afstanden på kortet" hitSlop={12} onPress={() => setView("map")}>
+            <Text style={[type.caption, styles.link]}>Ret</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {list ? <CriteriaBox criteria={list.criteria} /> : null}
       {list ? (
         <Text style={styles.count} accessibilityLiveRegion="polite">
@@ -179,6 +216,46 @@ export function ClinicDirectoryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      {view === "map" ? (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {header}
+          {list ? (
+            <View style={styles.mapGroup}>
+              <ClinicMap
+                clinics={list.clinics}
+                origin={origin}
+                radiusKm={filters.maxDistanceKm}
+                selectedId={selected?.id ?? null}
+                onSelect={setSelectedId}
+                onRadiusChange={(km) => change({ maxDistanceKm: km })}
+                onUsePosition={() => void findPosition()}
+                locating={locating}
+                height={Math.max(320, Math.round(windowHeight * 0.5))}
+              />
+              {mapped < list.clinics.length ? (
+                <Text style={styles.muted}>
+                  {list.clinics.length - mapped === 1 ? "1 klinik" : `${list.clinics.length - mapped} klinikker`} vises kun i listen.
+                </Text>
+              ) : null}
+              {selected ? (
+                <ClinicMapCard
+                  clinic={selected}
+                  hasServices={hasServices}
+                  onOpenProfile={() => openProfile(selected)}
+                  onClose={() => setSelectedId(null)}
+                  action={selectAction(selected)}
+                />
+              ) : (
+                <Text style={styles.muted}>Tryk på en klinik for at se pris og afstand.</Text>
+              )}
+            </View>
+          ) : clinics.loading ? (
+            <View style={styles.center} accessibilityLabel="Henter">
+              <ActivityIndicator color={colors.brand600} size="large" />
+            </View>
+          ) : null}
+        </ScrollView>
+      ) : (
       <FlatList
         data={list?.clinics ?? []}
         keyExtractor={(clinic) => clinic.id}
@@ -192,19 +269,9 @@ export function ClinicDirectoryScreen() {
               clinic={item}
               hasServices={hasServices}
               emergency={filters.emergency}
-              onPress={() => router.push({ pathname: "/klinik/[clinicId]", params: caseId ? { clinicId: item.id, sag: caseId } : { clinicId: item.id } })}
+              onPress={() => openProfile(item)}
             />
-            {caseId ? (
-              caseSlugs === null ? (
-                <Button label="Vælg klinik" disabled accessibilityLabel={`Vælg ${item.name}. Henter din sag`} onPress={() => undefined} />
-              ) : (
-                <SelectButton
-                  caseId={caseId}
-                  clinic={priceMatchesCase ? item : { ...item, priceForSelection: null }}
-                  hasServices={caseSlugs.length > 0}
-                />
-              )
-            ) : null}
+            {selectAction(item)}
           </View>
         )}
         ListFooterComponent={
@@ -233,6 +300,7 @@ export function ClinicDirectoryScreen() {
           ) : undefined
         }
       />
+      )}
       {/* Fast bund-bjælke, så fortsæt-knappen altid er inden for tommelfingerens rækkevidde. */}
       {caseId && selection.ids.length > 0 ? (
         <View style={styles.bar}>
@@ -253,7 +321,28 @@ export function ClinicDirectoryScreen() {
   );
 }
 
+// Skifter mellem liste og kort (fane-agtigt, mindst 44 pt højt).
+function ViewTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={label === "Kort" ? "Vis klinikkerne på kort" : "Vis klinikkerne som liste"}
+      onPress={onPress}
+      style={[styles.tab, active && styles.tabActive]}
+    >
+      <Text style={[type.label, active && { color: colors.onBrand }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  toggle: { flexDirection: "row", borderRadius: radius.pill, borderWidth: 1, borderColor: colors.brand200, backgroundColor: colors.brand50, padding: 3 },
+  tab: { flex: 1, minHeight: MIN_TOUCH - 6, alignItems: "center", justifyContent: "center", borderRadius: radius.pill },
+  tabActive: { backgroundColor: colors.brand600 },
+  radiusLine: { flexDirection: "row", alignItems: "center" },
+  link: { color: colors.brand700, fontWeight: "600", textDecorationLine: "underline" },
+  mapGroup: { gap: spacing.md },
   safe: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   header: { gap: spacing.md, marginBottom: spacing.lg },

@@ -19,6 +19,7 @@ import { Button, LoadState, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useCaseActions } from "~/hooks/use-case-actions";
 import { useChat } from "~/hooks/use-chat";
+import { useChatImages } from "~/hooks/use-chat-images";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, spacing } from "~/theme";
 import { cardModes, flowStepForApp } from "~/utils/case-cards";
@@ -32,6 +33,9 @@ export function CaseFlowScreen() {
   const consents = useLoad(getConsents);
   const [aiGranted, setAiGranted] = useState(false);
   const chat = useChat(caseId, caseLoad.reload);
+  // Kvaliteten fra billedturen vises med det samme, før sagen er hentet igen.
+  const images = (caseLoad.data?.images ?? []).map((image) => (image.id in chat.assessedQuality ? { ...image, quality: chat.assessedQuality[image.id] } : image));
+  const chatImages = useChatImages(caseId, images, caseLoad.reload, () => void chat.imageTurn());
   const actions = useCaseActions(caseId);
   const catalog = useLoad(getServiceGroups);
   const session = useSession();
@@ -116,8 +120,8 @@ export function CaseFlowScreen() {
         <StatusMessage
           message={
             closed
-              ? "Sagen kan ikke ændres, fordi den er lukket. Du kan starte en ny samtale, hvis du har brug for hjælp igen."
-              : "Sagen kan ikke ændres, fordi den allerede er sendt. Du kan følge den under Mine sager."
+              ? "Sagen er lukket."
+              : "Sagen er sendt og kan ikke ændres."
           }
         />
         <Button label={closed ? "Start en ny samtale" : "Gå til Mine sager"} onPress={() => (closed ? router.replace("/start") : router.replace("/sager"))} />
@@ -138,6 +142,10 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
+        imageTurning={chat.imageTurning}
+        imageNotice={chat.imageNotice}
+        onRetryImageTurn={() => void chat.imageTurn()}
+        images={chatImages}
         cards={cards}
         cardsKey={cardsKey(dto)}
       />

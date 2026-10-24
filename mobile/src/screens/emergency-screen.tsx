@@ -5,7 +5,6 @@ import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import type { EmergencyLeadCreatedDto } from "@/lib/leads/types/leads";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { ServiceDto } from "@/lib/clinics/types/services";
-import { CONSENT_TEXTS } from "@/lib/identity/constants/consents";
 import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_NUMBER } from "@/lib/leads/constants/emergency";
 import { getClinicAvailability, sendEmergencyLead } from "~/api/emergency";
 import { listClinics } from "~/api/clinics";
@@ -96,7 +95,7 @@ function EmergencyForm({ clinic, data, onSent }: { clinic: ClinicListItemDto; da
 
   return (
     <Card>
-      <Text style={type.heading}>Send akut henvendelse til {clinic.name}</Text>
+      <Text style={type.heading}>Akut henvendelse til {clinic.name}</Text>
 
       {data.services.length === 0 ? (
         <StatusMessage message={`Der er ingen akutbehandlinger i kataloget lige nu. Ring ${OUT_OF_HOURS_NUMBER} eller ${EMERGENCY_CALL_NUMBER}.`} tone="warning" />
@@ -118,7 +117,7 @@ function EmergencyForm({ clinic, data, onSent }: { clinic: ClinicListItemDto; da
         <LoadState {...slots} onRetry={slots.reload}>
           {() =>
             days.length === 0 ? (
-              <StatusMessage message="Klinikken har ingen ledige akuttider de næste 14 dage. Vælg en anden klinik eller ring til lægevagten." tone="warning" />
+              <StatusMessage message="Ingen ledige akuttider de næste 14 dage. Vælg en anden klinik." tone="warning" />
             ) : (
               <SlotPicker days={days} selectedStartsAt={startsAt} onSelect={setStartsAt} error={errors.startsAt} />
             )
@@ -136,13 +135,12 @@ function EmergencyForm({ clinic, data, onSent }: { clinic: ClinicListItemDto; da
       />
       <TextField label="Dit navn" value={name} onChangeText={setName} error={errors.contactName} autoComplete="name" />
       <TextField label="Telefon" value={phone} onChangeText={setPhone} error={errors.contactPhone} keyboardType="phone-pad" autoComplete="tel" />
-      <Text style={styles.muted}>Klinikken ser dit navn og telefonnummer, når den har accepteret, og tiden er booket.</Text>
+      <Text style={styles.muted}>Klinikken ser dit navn og nummer, når tiden er booket.</Text>
 
       {!consent ? (
         <ConsentGate type="health_data_sharing" onGrant={() => void grant.run()} pending={grant.pending} error={grant.error} actionLabel="Giv samtykke" />
       ) : (
         <View style={styles.group}>
-          <Text style={styles.muted}>{CONSENT_TEXTS.health_data_sharing}</Text>
           {submit.error ? <StatusMessage message={submit.error} tone="danger" /> : null}
           <Button label="Send og reserver tiden" loading={submit.pending} disabled={data.services.length === 0} onPress={() => void submit.run()} />
         </View>
@@ -157,7 +155,7 @@ function LoginRequired() {
   const router = useRouter();
   return (
     <Card>
-      <StatusMessage message="Opret en konto eller log ind for at sende en akut henvendelse. Det tager et øjeblik." tone="info" />
+      <StatusMessage message="Log ind for at sende en akut henvendelse." tone="info" />
       <Button label="Opret konto" onPress={() => router.push({ pathname: "/opret", params: { returnTo: "/akut" } })} />
       <Button label="Log ind" variant="secondary" onPress={() => router.push({ pathname: "/login", params: { returnTo: "/akut" } })} />
     </Card>
@@ -213,7 +211,6 @@ export function EmergencyScreen() {
         Jeg har ondt
       </Text>
       <EmergencyNotice />
-      <Text style={styles.body}>Her kan du sende en akut henvendelse til en klinik med ledig akuttid. Klinikken laver den endelige vurdering.</Text>
       <LoadState {...data} onRetry={data.reload}>
         {(loaded) => {
           const chosen = loaded.clinics.find((c) => c.id === clinicId) ?? null;
@@ -222,7 +219,7 @@ export function EmergencyScreen() {
               <Text style={styles.heading}>Klinikker med ledig akuttid</Text>
               {loaded.clinics.length === 0 ? (
                 <>
-                  <StatusMessage message="Vi kan ikke finde klinikker med ledig akuttid lige nu. Ring til lægevagten, eller se alle klinikker." tone="warning" />
+                  <StatusMessage message="Ingen klinikker med ledig akuttid lige nu." tone="warning" />
                   <Button label="Se alle klinikker med akuttid" variant="secondary" onPress={() => router.push({ pathname: "/klinikker", params: { akut: "1" } })} />
                 </>
               ) : (

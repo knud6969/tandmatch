@@ -5,7 +5,7 @@ import type { ImageQuality, OutOfScopeTopic } from "@/lib/cases/types/ai";
 
 // Åbningsbesked i chatten (vises af UI, skrevet i koden og ikke af modellen).
 export const CHAT_WELCOME_TEXT =
-  "Hej. Beskriv med dine egne ord, hvad du oplever, eller hvad du gerne vil have lavet, fx hvor det sidder, og hvor længe du har haft det. Jeg hjælper dig med at sætte ord på det, så klinikkerne forstår dit behov. Jeg kan ikke stille diagnoser eller sige, hvad det koster.";
+  "Hej. Beskriv med dine egne ord, hvad du oplever, eller hvad du vil have lavet. Jeg kan ikke stille diagnoser eller sige, hvad det koster; klinikken vurderer.";
 
 // Fast tekst over chatten om personoplysninger (maskeringen i features/cases/ai/pii.ts er kun et sikkerhedsnet).
 export const CHAT_PII_WARNING_TEXT = "Skriv ikke dit navn, din adresse eller kontaktoplysninger.";

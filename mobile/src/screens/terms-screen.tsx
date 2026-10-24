@@ -22,7 +22,7 @@ export function TermsScreen() {
       <Text accessibilityRole="header" style={styles.title}>
         Velkommen til TandMatch
       </Text>
-      <Text style={styles.body}>Før du går i gang, skal du acceptere vilkårene og bekræfte, at du har læst privatlivspolitikken.</Text>
+      <Text style={styles.body}>Accepter vilkårene for at komme i gang.</Text>
       <Button label="Læs brugervilkårene" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(webUrl("/vilkaar"))} />
       <Button label="Læs privatlivspolitikken" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(webUrl("/privatliv"))} />
       <Checkbox checked={terms} onChange={setTerms} accessibilityLabel="Jeg accepterer brugervilkårene">
@@ -33,7 +33,7 @@ export function TermsScreen() {
       </Checkbox>
       {error ? <StatusMessage message={error} tone="danger" /> : null}
       <Button label="Fortsæt" disabled={!terms || !privacy} loading={pending} onPress={() => void run()} />
-      <Text style={styles.note}>Vilkårene er ikke dit samtykke til at dele helbredsoplysninger. Det spørger vi om særskilt, når det er relevant.</Text>
+      <Text style={styles.note}>Helbredsoplysninger deler vi kun efter særskilt samtykke.</Text>
     </Screen>
   );
 }

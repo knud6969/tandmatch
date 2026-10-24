@@ -12,7 +12,7 @@ import { formatDate, formatPriceRange } from "~/utils/format";
 import type { FieldErrors } from "~/utils/field-errors";
 import { EMPTY_REVIEW, parseReview, PRICE_ACCURACY_OPTIONS, REVIEW_TEXT_LIMITS, type ReviewField, type ReviewValues } from "~/utils/review-form";
 
-const NOT_ELIGIBLE_TEXT = "Dette besøg kan ikke anmeldes. Du kan først anmelde, når besøget er gennemført, og kun én gang pr. besøg.";
+const NOT_ELIGIBLE_TEXT = "Dette besøg kan ikke anmeldes (endnu).";
 
 function ReviewForm({ item, onDone }: { item: ReviewEligibleItemDto; onDone: () => void }) {
   const [values, setValues] = useState<ReviewValues>(EMPTY_REVIEW);
@@ -56,7 +56,7 @@ function ReviewForm({ item, onDone }: { item: ReviewEligibleItemDto; onDone: () 
           multiline
           maxLength={REVIEW_TEXT_LIMITS.max}
         />
-        <Text style={styles.muted}>Mindst {REVIEW_TEXT_LIMITS.min} tegn. Skriv ikke personoplysninger om andre. Anmeldelsen modereres, før den vises.</Text>
+        <Text style={styles.muted}>Mindst {REVIEW_TEXT_LIMITS.min} tegn. Modereres før visning; ingen personoplysninger om andre.</Text>
       </View>
 
       <View style={styles.group}>
@@ -111,7 +111,7 @@ export function ReviewScreen() {
           <Text accessibilityRole="header" style={styles.title}>
             Tak for din anmeldelse
           </Text>
-          <StatusMessage tone="success" message="Din anmeldelse er modtaget og vises som verificeret besøg, når den er godkendt." />
+          <StatusMessage tone="success" message="Tak. Anmeldelsen vises som verificeret, når den er godkendt." />
           <Button label="Tilbage til bookinger" onPress={() => router.replace("/bookinger")} />
         </>
       ) : (

@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { CHAT_UNAVAILABLE_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_CONTEXT_MESSAGES, CHAT_MAX_USER_MESSAGES_PER_CONVERSATION } from "@/lib/common/constants/limits";
 import type { chatMessageSchema } from "@/lib/cases/schemas/chat";
-import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse } from "@/lib/cases/types/ai";
+import type { AiChatMessageDto, AiConversationRecord, AiMessageRecord, ChatStateDto, ChatTurnResponse, ImageTurnResponse } from "@/lib/cases/types/ai";
 import type { ServiceDto, ServiceGroupDto } from "@/lib/clinics/types/services";
 import { AI_CONSENT_REQUIRED_MESSAGE, ApiError, aiUnavailable } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
@@ -121,23 +121,7 @@ export class ChatController {
     // AI-samtykket (nuværende tekstversion) er en forudsætning (vilkårs-accept giver det ikke, architecture 7.1).
     const consent = await this.consents.requireCurrentActive("ai_processing", AI_CONSENT_REQUIRED_MESSAGE);
 
-    let conversation = await this.chat.findConversation(caseId);
-    if (!conversation) {
-      try {
-        conversation = await this.chat.createConversation({
-          caseId,
-          patientId: this.session.userId,
-          consentId: consent.id,
-          promptVersion: `${this.ai.promptVersion}+${this.ai.rulesVersion}`,
-          model: this.ai.model,
-        });
-      } catch (err) {
-        // Et samtidigt kald oprettede samtalen først (unik pr. sag): brug den.
-        if (!(err instanceof ApiError && err.code === "CONVERSATION_EXISTS")) throw err;
-        conversation = await this.chat.findConversation(caseId);
-        if (!conversation) throw err;
-      }
-    }
+    const conversation = await this.ensureConversation(caseId, consent.id);
 
     // Patientens tekst maskeres, før den gemmes (maskering er idempotent, så AI-laget kan maskere igen).
     // 2.3 (a): reservationen kan kun udføres af service role, og IP-grænsen er allerede talt i route.ts.
@@ -148,6 +132,84 @@ export class ChatController {
       await this.storeFixedAnswer(conversation.id);
       // Turen er gemt: ingen fejl herfra må se ud som en afvist besked.
       console.error("Chat-tur fejlede efter reservationen:", err instanceof Error ? err.name : "ukendt");
+      throw aiUnavailable();
+    }
+  }
+
+  // Samtalen på sagen; oprettes ved første tur (chat eller billedtur).
+  private async ensureConversation(caseId: string, consentId: string): Promise<AiConversationRecord> {
+    const existing = await this.chat.findConversation(caseId);
+    if (existing) return existing;
+    try {
+      return await this.chat.createConversation({
+        caseId,
+        patientId: this.session.userId,
+        consentId,
+        promptVersion: `${this.ai.promptVersion}+${this.ai.rulesVersion}`,
+        model: this.ai.model,
+      });
+    } catch (err) {
+      // Et samtidigt kald oprettede samtalen først (unik pr. sag): brug den.
+      if (!(err instanceof ApiError && err.code === "CONVERSATION_EXISTS")) throw err;
+      const created = await this.chat.findConversation(caseId);
+      if (!created) throw err;
+      return created;
+    }
+  }
+
+  // Billedtur (architecture 7.9c, 10.6): AI'en reagerer selv på nyuploadede billeder, uden patientbesked. Reserveres før
+  // modelkaldet med reserve_image_turn() (ejer, kladde, begge samtykker, døgnloft, ét stempel pr. billede). Tæller ikke som
+  // en patientbesked. Fejler noget efter reservationen, fortrydes stemplerne, og routen svarer 503, så turen kan gentages.
+  async sendImageTurn(caseId: string): Promise<ImageTurnResponse> {
+    await this.cases.requireOwnDraft(caseId);
+    const consent = await this.consents.requireCurrentActive("ai_processing", AI_CONSENT_REQUIRED_MESSAGE);
+    await this.consents.requireCurrentActive("image_upload", "Du skal give samtykke til billeder, før AI'en kan se dem.");
+    const conversation = await this.ensureConversation(caseId, consent.id);
+
+    const newImageIds = await new ChatRepository(this.admin()).reserveImageTurn(this.session.userId, conversation.id);
+    try {
+      const catalog = await this.services.listGroups();
+      const history = (await this.chat.listRecentMessages(conversation.id, CHAT_CONTEXT_MESSAGES)).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      const images = await this.loadImages(caseId);
+      const result = await this.ai.sendImageTurn({ history, catalog, images, newImageIds });
+
+      // 2.3 (a, c): kvaliteten og svaret skrives med service role efter reservationen.
+      const imagesWriter = new CaseImagesRepository(this.admin());
+      for (const o of result.observations) await imagesWriter.saveTurnObservation(caseId, o.imageId, o);
+      const slugToId = new Map(flatten(catalog).map((s) => [s.slug, s.id]));
+      const assistant = await new ChatRepository(this.admin()).appendAssistantMessage(this.session.userId, {
+        conversationId: conversation.id,
+        content: result.reply,
+        preliminaryAssessment: result.preliminaryAssessment,
+        suggestedServiceIds: result.suggestedServices.flatMap((slug) => {
+          const id = slugToId.get(slug);
+          return id ? [id] : [];
+        }),
+        emergency: result.emergency,
+        outOfScopeTopics: result.outOfScopeTopics,
+        blocked: result.blocked,
+        readyForSummary: result.readyForSummary,
+      });
+      const byId = new Map(flatten(catalog).map((s) => [s.id, s]));
+      const assessed = new Map(result.observations.map((o) => [o.imageId, o]));
+      return {
+        assistantMessage: { ...this.toMessageDto(assistant, byId), quickReplies: result.quickReplies },
+        assessedImages: newImageIds.map((imageId) => ({
+          imageId,
+          view: assessed.get(imageId)?.view ?? null,
+          quality: assessed.get(imageId)?.quality ?? null,
+        })),
+        outOfScopeNotice: result.outOfScopeTopics.length > 0,
+        emergency: result.emergency,
+        readyForSummary: result.readyForSummary,
+        messagesLeft: this.messagesLeft(conversation),
+      };
+    } catch (err) {
+      await new CaseImagesRepository(this.admin()).clearTurnMarks(caseId, newImageIds).catch(() => {});
+      console.error("Billedtur fejlede efter reservationen:", err instanceof Error ? err.name : "ukendt");
       throw aiUnavailable();
     }
   }

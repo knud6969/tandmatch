@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AI_BOUNDARY_TEXT } from "@/lib/cases/constants/ai-texts";
-import { START_STEPS } from "@/lib/cases/constants/start";
 import { startAnonymousSession } from "~/api/auth";
 import { createCase, listCases } from "~/api/cases";
 import { useSession } from "~/auth/session-context";
@@ -20,9 +19,6 @@ function AnonymousStart({ onStarted }: { onStarted: (caseId: string) => void }) 
   return (
     <View style={styles.gap}>
       <ConsentGate type="ai_processing" actionLabel="Start samtalen" onGrant={() => void start.run()} pending={start.pending} error={start.error} />
-      <Text style={styles.muted}>
-        Du giver ikke samtykke til billeder her. Det spørger vi om særskilt, hvis du vil uploade et billede.
-      </Text>
     </View>
   );
 }
@@ -32,8 +28,8 @@ function ContinueAnonymous({ onStarted }: { onStarted: (caseId: string) => void 
   const resume = useAction(async () => onStarted((await startAnonymousSession()).caseId));
   return (
     <Card>
-      <Text style={styles.h2}>Du har en igangværende samtale</Text>
-      <Text style={styles.body}>Din anonyme samtale gemmes i 48 timer. Du kan fortsætte, hvor du slap.</Text>
+      <Text style={styles.h2}>Fortsæt din samtale</Text>
+      <Text style={styles.body}>Gemmes i 48 timer.</Text>
       {resume.error ? <StatusMessage message={resume.error} tone="danger" /> : null}
       <Button label="Fortsæt samtalen" loading={resume.pending} onPress={() => void resume.run()} />
     </Card>
@@ -52,7 +48,7 @@ function AccountStart({ onStarted }: { onStarted: (caseId: string) => void }) {
           <View style={styles.gap}>
             {drafts.length > 0 ? (
               <Card>
-                <Text style={styles.h2}>Fortsæt en igangværende sag</Text>
+                <Text style={styles.h2}>Igangværende</Text>
                 {drafts.map((draft) => (
                   <Button
                     key={draft.id}
@@ -65,7 +61,6 @@ function AccountStart({ onStarted }: { onStarted: (caseId: string) => void }) {
             ) : null}
             <Card>
               <Text style={styles.h2}>Start en ny sag</Text>
-              <Text style={styles.body}>Du bliver bedt om samtykke til AI-behandling, første gang du skriver til AI-assistenten.</Text>
               {create.error ? <StatusMessage message={create.error} tone="danger" /> : null}
               <Button label="Start samtalen" loading={create.pending} onPress={() => void create.run()} />
             </Card>
@@ -90,24 +85,15 @@ export function StartScreen() {
       <Text accessibilityRole="header" style={styles.title}>
         Beskriv dit problem
       </Text>
-      <Text style={styles.body}>Fortæl, hvad du oplever, eller hvad du gerne vil have lavet. Du kan starte uden at oprette en konto.</Text>
-      <View style={styles.steps}>
-        {START_STEPS.map((step, i) => (
-          <Text key={step} style={styles.body}>
-            {i + 1}. {step}
-          </Text>
-        ))}
-      </View>
-      <StatusMessage message={`${AI_BOUNDARY_TEXT} AI-assistenten anbefaler ikke bestemte klinikker og nævner ikke priser.`} />
+      <Text style={styles.muted}>{AI_BOUNDARY_TEXT}</Text>
       {status === "anonymous" ? <ContinueAnonymous onStarted={open} /> : status === "account" ? <AccountStart onStarted={open} /> : <AnonymousStart onStarted={open} />}
-      <Button label="Gå til klinikoversigten" variant="secondary" onPress={() => router.push("/klinikker")} />
+      <Button label="Se klinikker uden at skrive" variant="secondary" onPress={() => router.push("/klinikker")} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   gap: { gap: spacing.md },
-  steps: { gap: spacing.sm },
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.ink },
   h2: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
   body: { fontSize: fontSize.md, lineHeight: 22, color: colors.inkMuted },

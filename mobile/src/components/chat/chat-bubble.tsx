@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { OUT_OF_SCOPE_NOTICES, PRELIMINARY_ASSESSMENT_LABEL } from "@/lib/cases/constants/ai-texts";
+import { OUT_OF_SCOPE_NOTICES } from "@/lib/cases/constants/ai-texts";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Badge, StatusMessage } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
@@ -12,7 +12,6 @@ function AssistantExtras({ message }: { message: AiChatMessageDto }) {
         <View style={styles.assessment} testID="foreloebig-vurdering">
           <Badge label="Foreløbig – klinikken vurderer endeligt" tone="warning" />
           <Text style={styles.assessmentText}>{message.preliminaryAssessment}</Text>
-          <Text style={styles.assessmentLabel}>{PRELIMINARY_ASSESSMENT_LABEL}</Text>
         </View>
       ) : null}
       {message.outOfScopeTopics.map((topic) => (
@@ -20,7 +19,7 @@ function AssistantExtras({ message }: { message: AiChatMessageDto }) {
       ))}
       {message.suggestedServices.length > 0 ? (
         <View style={styles.suggestions} testID="forslag">
-          <Text style={styles.suggestionsTitle}>Behandlinger, din beskrivelse kan passe til. Du bekræfter selv nedenfor:</Text>
+          <Text style={styles.suggestionsTitle}>Kan passe til:</Text>
           <View style={styles.badges}>
             {message.suggestedServices.map((service) => (
               <Badge key={service.id} label={service.name} />
@@ -59,7 +58,6 @@ const styles = StyleSheet.create({
   extras: { gap: spacing.md, marginTop: spacing.md },
   assessment: { gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
   assessmentText: { fontSize: fontSize.md, lineHeight: 22, color: colors.ink },
-  assessmentLabel: { fontSize: fontSize.sm, color: colors.inkMuted },
   suggestions: { gap: spacing.sm },
   suggestionsTitle: { fontSize: fontSize.sm, color: colors.inkMuted },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

@@ -70,8 +70,9 @@ export class CaseImagesController {
     // 2.3 (c): filen og case_images-rækken skrives med service role efter ejer-, kladde- og samtykketjek.
     const storage = new CaseImageStorage(this.admin());
     await storage.upload(path, data, "image/jpeg");
+    let createdAt: string;
     try {
-      await new CaseImagesRepository(this.admin()).create({
+      createdAt = await new CaseImagesRepository(this.admin()).create({
         id,
         caseId,
         patientId: this.session.userId,
@@ -86,7 +87,7 @@ export class CaseImagesController {
       throw err;
     }
 
-    const [dto] = await this.imageUrls.toDtos([{ id, caseId, storagePath: path, view: null, quality: null, description: null, bytes: data.length }]);
+    const [dto] = await this.imageUrls.toDtos([{ id, caseId, storagePath: path, view: null, quality: null, description: null, bytes: data.length, createdAt, turnAt: null }]);
     return dto;
   }
 

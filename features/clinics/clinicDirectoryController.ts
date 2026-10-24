@@ -40,6 +40,10 @@ export type ClinicDirectoryDeps = {
   slots: AvailabilityService;
 };
 
+function roundCoordinate(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
 // De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og akutbehandlingen
@@ -99,7 +103,14 @@ export class ClinicDirectoryController {
       clinics: this.ranking.rank(items, { sort, filters }),
       sort,
       criteria: this.ranking.criteria(sort, filters),
+      origin: origin ? this.publicOrigin(origin, query) : null,
     };
+  }
+
+  // Udgangspunktet, appen får at vide: en given position afrundes (ca. 1 km); postnummerets punkt er offentlige data.
+  private publicOrigin(origin: LatLng, query: ClinicsQuery): LatLng {
+    if (query.lat === undefined) return origin;
+    return { lat: roundCoordinate(origin.lat), lng: roundCoordinate(origin.lng) };
   }
 
   // GET /api/clinics/{id}: 404 for ukendte, `registered` og `removed` klinikker (de findes ikke i public_clinic_profile).

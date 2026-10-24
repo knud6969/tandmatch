@@ -10,7 +10,7 @@ import {
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
 } from "@/lib/cases/constants/ai-texts";
-import type { AiImageObservation, AiSummary, ImageQuality, OutOfScopeTopic } from "@/lib/cases/types/ai";
+import type { AiImageObservation, AiSummary, ImageQuality, ImageView, OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { AiInvalidOutputError, AiTimeoutError, AiUnavailableError } from "./errors";
 import {
   DEFAULT_CATEGORIES,
@@ -25,7 +25,7 @@ import {
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
-import { CHAT_RETRY_REMINDER } from "./prompts/chat.v6";
+import { CHAT_RETRY_REMINDER } from "./prompts/chat.v7";
 import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
@@ -63,7 +63,11 @@ export type ChatGuardResult = {
   readyForSummary: boolean;
   quickReplies: string[]; // hurtigsvar (7.4); gemmes ikke
   blocked: boolean;
+  // Kun billedture (7.9c): kvalitet og vinkel pr. nyt billede (imageRef "img_1" …). Data fra faste lister, ikke fri tekst.
+  images: ChatImageObservation[];
 };
+
+export type ChatImageObservation = { imageRef: string; view: ImageView; quality: ImageQuality };
 
 function emergencyText(lifeThreatening: boolean): string {
   return lifeThreatening ? `${EMERGENCY_REFERRAL_TEXT} ${LIFE_THREATENING_REFERRAL_TEXT}` : EMERGENCY_REFERRAL_TEXT;
@@ -90,10 +94,12 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   // Slugs er data fra kataloget og ikke fri tekst, så forslagene kan bevares, mens den afviste tekst aldrig bruges.
   let textOnlyBlockedSuggestions: string[] | null = null;
   let lastModelEmergency = false;
+  let lastImages: ChatImageObservation[] = [];
 
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
     textOnlyBlockedSuggestions = null;
     lastModelEmergency = false;
+    lastImages = [];
     let raw: unknown;
     try {
       raw = await callModel(attempt > 1 ? CHAT_RETRY_REMINDER : null);
@@ -107,6 +113,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     const parsed = chatTurnSchema.safeParse(raw);
     if (!parsed.success) continue;
     const turn = parsed.data;
+    lastImages = turn.images;
     lastModelEmergency = turn.emergency && hasStrongEmergencyWord(maskedUserMessage);
 
     // MDR-TILPASNING: slår rules.allowPreliminaryAssessment vurdering fra, tvinges feltet til null.
@@ -141,6 +148,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
       // almindelige spørgsmål ved siden af (B1).
       return {
         maskedUserMessage,
+        images: lastImages,
         reply: modelEmergency ? turn.reply : emergencyText(detected.lifeThreatening),
         preliminaryAssessment: null,
         suggestedServices: [],
@@ -155,6 +163,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     }
     return {
       maskedUserMessage,
+      images: lastImages,
       reply: turn.reply,
       preliminaryAssessment: assessment,
       suggestedServices: suggestions,
@@ -180,6 +189,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   if (textOnlyBlockedSuggestions !== null && !showEmergency) {
     return {
       maskedUserMessage,
+      images: lastImages,
       reply: SUGGESTION_FALLBACK_TEXT,
       preliminaryAssessment: null,
       suggestedServices: textOnlyBlockedSuggestions,
@@ -194,6 +204,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   }
   return {
     maskedUserMessage,
+    images: lastImages,
     reply: showEmergency ? emergencyText(detected.lifeThreatening) : CHAT_BLOCKED_TEXT,
     preliminaryAssessment: null,
     suggestedServices: [],

@@ -1,20 +1,20 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CONSENT_TEXTS } from "@/lib/identity/constants/consents";
 import { LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import { remainingLeadSlots } from "@/lib/leads/domain/leads";
 import type { CaseDto } from "@/lib/cases/types/cases";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
-import { convertAnonymous } from "~/api/auth";
+import { convertAnonymous, loginKeepingDraft } from "~/api/auth";
 import { getCase } from "~/api/cases";
 import { listClinics } from "~/api/clinics";
 import { ApiRequestError } from "~/api/client";
 import { getConsents, grantConsent } from "~/api/consents";
 import { listCaseLeads, sendLeads } from "~/api/leads";
-import { useSession } from "~/auth/session-context";
+import { CLINIC_ON_WEB_MESSAGE, useSession } from "~/auth/session-context";
+import { LoginForm } from "~/components/auth/login-form";
 import { SignupForm, type SignupValues } from "~/components/auth/signup-form";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { BackLink, Badge, Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
@@ -59,7 +59,7 @@ function ClinicLine({ clinic }: { clinic: ClinicListItemDto }) {
           <Text style={styles.strong}>{formatPriceRange(clinic.priceForSelection.min, clinic.priceForSelection.max)}</Text> for dit valg, {PRICE_SOURCE}
         </Text>
       ) : (
-        <Text style={styles.muted}>Prisen for dit valg er ikke angivet i klinikkens prisliste</Text>
+        <Text style={styles.muted}>Pris ikke angivet i klinikkens prisliste</Text>
       )}
     </Card>
   );
@@ -73,7 +73,7 @@ function Sent({ leads, onOpen }: { leads: PatientLeadDto[]; onOpen: () => void }
         Din sag er sendt
       </Text>
       <Text style={styles.body}>
-        Vi har sendt din godkendte beskrivelse til {clinicsWord(leads.length)}. Klinikken laver den endelige vurdering og svarer dig her på TandMatch.
+        Sendt til {clinicsWord(leads.length)}. Klinikken laver den endelige vurdering og svarer her.
       </Text>
       {leads.map((lead) => (
         <Card key={lead.id}>
@@ -105,6 +105,10 @@ export function SendScreen() {
     return true as const;
   }, []);
   const signup = useAction(convert);
+  // Log ind i stedet for at oprette konto: kladden tages med (claim-token, login, claim), så intet går tabt.
+  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
+  const login = useAction(async (values: { email: string; password: string }) => loginKeepingDraft(values, { anonymous: true }));
   const grant = useAction(async () => {
     await grantConsent("health_data_sharing");
     return true as const;
@@ -124,6 +128,19 @@ export function SendScreen() {
 
   async function onSignup(values: SignupValues) {
     if (await signup.run(values)) loaded.reload();
+  }
+  async function onLogin(values: { email: string; password: string }) {
+    const result = await login.run(values);
+    if (!result) return;
+    if (result.outcome === "not_patient") return void setDraftNotice(CLINIC_ON_WEB_MESSAGE);
+    if (result.draft === "lost") {
+      setDraftNotice(result.draftError);
+      router.replace("/sager");
+      return;
+    }
+    // Kladden hører nu til kontoen; samme sag fortsætter, ellers åbnes den overdragne sags afsendelse med samme valg.
+    if (result.caseId && result.caseId !== caseId) router.replace({ pathname: "/sag/[caseId]/send", params: { caseId: result.caseId, klinikker: idsKey } });
+    else loaded.reload();
   }
   async function onGrant() {
     if (await grant.run()) setConsentNow(true);
@@ -167,15 +184,26 @@ export function SendScreen() {
                   ))}
                   <StatusMessage
                     tone="info"
-                    message="Det deler vi med klinikkerne: din godkendte opsummering, dine behandlinger, dit tidsrum, dit postnummer og dine billeder. Din chat deles ikke. Klinikken ser først dit navn og dine kontaktoplysninger, når den har accepteret, og en tid er booket. Klinikken laver den endelige vurdering."
+                    message="Klinikken får din beskrivelse, behandlinger, tidsrum, postnummer og billeder, ikke din chat. Dit navn og dine kontaktoplysninger ser den først, når en tid er booket."
                   />
                   {anonymous ? (
                     <View style={styles.section}>
                       <Text accessibilityRole="header" style={styles.name}>
-                        Opret en konto for at sende
+                        Du skal være logget ind for at sende
                       </Text>
-                      <Text style={styles.muted}>Din samtale og din beskrivelse gemmes på kontoen.</Text>
-                      <SignupForm onSubmit={(v) => void onSignup(v)} pending={signup.pending} error={signup.error} submitLabel="Opret konto og fortsæt" />
+                      <View style={styles.choice}>
+                        <View style={styles.choiceItem}>
+                          <Button label="Opret konto" variant={mode === "signup" ? "primary" : "secondary"} onPress={() => setMode("signup")} />
+                        </View>
+                        <View style={styles.choiceItem}>
+                          <Button label="Log ind" variant={mode === "login" ? "primary" : "secondary"} onPress={() => setMode("login")} />
+                        </View>
+                      </View>
+                      {mode === "signup" ? (
+                        <SignupForm onSubmit={(v) => void onSignup(v)} pending={signup.pending} error={signup.error} submitLabel="Opret konto" />
+                      ) : (
+                        <LoginForm onSubmit={(v) => void onLogin(v)} pending={login.pending} error={login.error ?? draftNotice} />
+                      )}
                     </View>
                   ) : status !== "account" ? (
                     <View style={styles.section}>
@@ -193,7 +221,6 @@ export function SendScreen() {
                     <ConsentGate type="health_data_sharing" onGrant={() => void onGrant()} pending={grant.pending} error={send.error ?? grant.error} actionLabel="Giv samtykke" />
                   ) : (
                     <View style={styles.section}>
-                      <Text style={styles.muted}>{CONSENT_TEXTS.health_data_sharing}</Text>
                       {send.error ? <StatusMessage message={send.error} tone="danger" /> : null}
                       <Button label={`Send til ${clinicsWord(chosen.length)}`} loading={send.pending} onPress={() => void onSend()} />
                       <Text style={styles.muted}>Du kan trække en henvendelse tilbage, indtil klinikken har svaret.</Text>
@@ -216,4 +243,6 @@ const styles = StyleSheet.create({
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
   strong: { fontWeight: "700", color: colors.ink },
   section: { gap: spacing.md },
+  choice: { flexDirection: "row", gap: spacing.sm },
+  choiceItem: { flex: 1 },
 });

@@ -57,4 +57,4 @@ export function parseEmergency(values: EmergencyValues): { ok: true; data: Retur
 }
 
 // Forklaring til kvitteringen: tiden er reserveret, ikke bekræftet, før klinikken har svaret.
-export const EMERGENCY_HOLD_TEXT = `Tiden er reserveret til dig i op til ${EMERGENCY_HOLD_MINUTES} minutter, mens klinikken svarer. Klinikken laver den endelige vurdering. Svarer klinikken ikke, kan du vælge en anden klinik.`;
+export const EMERGENCY_HOLD_TEXT = `Tiden er reserveret i op til ${EMERGENCY_HOLD_MINUTES} minutter, mens klinikken svarer. Klinikken laver den endelige vurdering.`;

@@ -66,5 +66,8 @@ export const CLINIC_SORT_LABEL = {
 } as const satisfies Record<(typeof CLINIC_SORTS)[number], string>;
 
 export const DEFAULT_MAX_DISTANCE_KM = 50;
+// Radius-skyderen i appens kort (1 km ad gangen); "Øg afstanden" stopper også her.
+export const MIN_RADIUS_KM = 1;
+export const MAX_RADIUS_KM = 50;
 export const EMERGENCY_FILTER_HOURS = 48; // "kun med akuttid inden for 48 timer"
 export const MAX_SELECTED_SERVICES = 5; // som antal bekræftede ydelser pr. sag (7.6)

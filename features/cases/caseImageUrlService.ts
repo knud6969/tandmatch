@@ -15,7 +15,7 @@ export class CaseImageUrlService {
   ) {}
 
   // Tager både patientens billedrækker og klinikkens (clinic_lead_images(), som hverken har sags-id eller størrelse).
-  async toDtos<T extends Pick<CaseImageRecord, "id" | "storagePath" | "view" | "quality" | "description">>(
+  async toDtos<T extends Pick<CaseImageRecord, "id" | "storagePath" | "view" | "quality" | "description"> & { createdAt?: string }>(
     images: readonly T[],
   ): Promise<ImageDto[]> {
     if (images.length === 0) return [];
@@ -23,6 +23,9 @@ export class CaseImageUrlService {
       images.map((image) => image.storagePath),
       this.ttlSeconds,
     );
-    return images.map((image, i) => ({ id: image.id, url: urls[i], view: image.view, quality: image.quality, description: image.description }));
+    return images.map((image, i) => ({ id: image.id, url: urls[i], view: image.view, quality: image.quality, description: image.description,
+      // Kun patientens egne billeder har et tidspunkt (klinikkens rækker har det ikke).
+      ...(image.createdAt === undefined ? {} : { createdAt: image.createdAt }),
+    }));
   }
 }

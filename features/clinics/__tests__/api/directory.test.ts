@@ -169,7 +169,7 @@ type ListItem = {
   firstAvailableAt: string | null; firstEmergencyAt: string | null; openingHours: unknown[]; location: unknown;
 };
 
-async function list(query = ""): Promise<{ clinics: ListItem[]; sort: string; criteria: string[] }> {
+async function list(query = ""): Promise<{ clinics: ListItem[]; sort: string; criteria: string[]; origin: { lat: number; lng: number } | null }> {
   const c = await newClientWithTerms();
   const r = await c.get(`/api/clinics${query}`);
   assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -277,6 +277,12 @@ describe("GET /api/clinics: filtre og sorteringer", () => {
     assert.ok(near.criteria.includes("Højst 50 km væk"));
     const wide = await list("?postalCode=2100&maxDistanceKm=500");
     assert.ok(find(wide.clinics, clinicB.clinicId));
+  });
+
+  it("returnerer udgangspunktet: postnummerets punkt, den afrundede position eller null", async () => {
+    assert.equal((await list()).origin, null);
+    assert.deepEqual((await list("?postalCode=2100&maxDistanceKm=500")).origin, { lat: 55.7072, lng: 12.572 });
+    assert.deepEqual((await list("?lat=55.67614&lng=12.56836&maxDistanceKm=30")).origin, { lat: 55.68, lng: 12.57 });
   });
 
   it("accepterer lat/lng i stedet for postnummer", async () => {
