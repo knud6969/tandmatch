@@ -11,6 +11,7 @@ import type { MessageDto } from "@/lib/leads/types/messages";
 import { ApiRequestError } from "~/api/client";
 import { listCaseLeads } from "~/api/leads";
 import { listMessages, sendMessage } from "~/api/messages";
+import { AccountRequired } from "~/screens/account-required";
 import { MessageBubble } from "~/components/messages/message-bubble";
 import { LoadState, StatusMessage } from "~/components/ui";
 import { useFocusPolling } from "~/hooks/use-polling";
@@ -24,7 +25,7 @@ const errorText = (e: unknown) => (e instanceof ApiRequestError ? e.message : GE
 
 // Beskedtråden med én klinik (architecture 10.12, 13.4). Hentes ved fokus og derefter hvert 15. sekund, men kun mens skærmen er i fokus.
 // Klinikken laver den endelige vurdering; tråden er til afklarende spørgsmål, ikke til akutte problemer.
-export function MessagesScreen() {
+function MessagesContent() {
   const router = useRouter();
   const { caseId, leadId } = useLocalSearchParams<{ caseId: string; leadId: string }>();
   const [view, setView] = useState<View_ | null>(null);
@@ -172,6 +173,14 @@ export function MessagesScreen() {
         </LoadState>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+export function MessagesScreen() {
+  return (
+    <AccountRequired title="Log ind for at se dine beskeder">
+      <MessagesContent />
+    </AccountRequired>
   );
 }
 

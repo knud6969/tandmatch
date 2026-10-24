@@ -53,7 +53,7 @@ export function CasesScreen() {
         </Card>
       ) : (
         <>
-          <Button label="Se mine bookinger" variant="secondary" onPress={() => router.push("/bookinger")} />
+          {status === "account" ? <Button label="Se mine bookinger" variant="secondary" onPress={() => router.push("/bookinger")} /> : null}
           <CaseList />
         </>
       )}

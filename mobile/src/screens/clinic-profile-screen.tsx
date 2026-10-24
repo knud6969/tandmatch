@@ -93,6 +93,15 @@ function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; ca
           <Text style={styles.body}>{clinic.description}</Text>
         </ProfileSection>
       ) : null}
+      {/* Rækkefølge efter brugerens ønske: hvor og hvornår først, derefter pris og anmeldelser. */}
+      {clinic.location ? (
+        <ProfileSection title="Placering">
+          <ClinicLocationMap name={clinic.name} location={clinic.location} />
+        </ProfileSection>
+      ) : null}
+      <ProfileSection title="Åbningstider">
+        <OpeningHours hours={clinic.openingHours} />
+      </ProfileSection>
       {full ? (
         <>
           <ProfileSection title="Prisliste">
@@ -103,14 +112,6 @@ function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; ca
           </ProfileSection>
         </>
       ) : null}
-      {clinic.location ? (
-        <ProfileSection title="Placering">
-          <ClinicLocationMap name={clinic.name} location={clinic.location} />
-        </ProfileSection>
-      ) : null}
-      <ProfileSection title="Åbningstider">
-        <OpeningHours hours={clinic.openingHours} />
-      </ProfileSection>
       <ProfileSection title="Trustpilot (ekstern kilde)">
         <TrustpilotBlock trustpilot={clinic.trustpilot} onOpen={openWeb} />
       </ProfileSection>

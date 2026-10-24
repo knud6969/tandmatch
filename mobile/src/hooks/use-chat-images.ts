@@ -8,7 +8,8 @@ import { getConsents, grantConsent } from "~/api/consents";
 import { ApiRequestError } from "~/api/client";
 import { deleteCaseImage, uploadCaseImage } from "~/api/images";
 import { confirmAction } from "~/components/ui";
-import { bytesFromBase64, chatImageItems, resizeFor, slotsLeft, uploadErrorText, uploadFilePart, UPLOAD_JPEG_QUALITY, UPLOAD_MAX_EDGE, withinSizeLimit, type LocalImage } from "~/utils/chat-images";
+import { deleteLocalFiles, multipartForImage } from "~/utils/local-files";
+import { bytesFromBase64, chatImageItems, resizeFor, slotsLeft, uploadErrorText, UPLOAD_JPEG_QUALITY, UPLOAD_MAX_EDGE, withinSizeLimit, type LocalImage } from "~/utils/chat-images";
 
 export type ImageSource = "camera" | "library";
 
@@ -35,6 +36,22 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
   const [consentError, setConsentError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const prepared = useRef(new Map<string, string>());
+  // Lokale filer pr. billede (vælgerens original og den komprimerede); slettes, når billedet er sendt, fjernet eller skærmen lukkes (helbredsdata).
+  const originals = useRef(new Map<string, string>());
+  const cleanup = useCallback((key: string) => {
+    deleteLocalFiles([originals.current.get(key), prepared.current.get(key)]);
+    originals.current.delete(key);
+    prepared.current.delete(key);
+  }, []);
+  useEffect(() => {
+    const originalFiles = originals.current;
+    const preparedFiles = prepared.current;
+    return () => {
+      deleteLocalFiles([...originalFiles.values(), ...preparedFiles.values()]);
+      originalFiles.clear();
+      preparedFiles.clear();
+    };
+  }, []);
   const counter = useRef(0);
   const inFlight = useRef(0);
   const batchOk = useRef(false);
@@ -64,8 +81,8 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
   const send = useCallback(
     async (key: string, uri: string, index: number): Promise<boolean> => {
       try {
-        await uploadCaseImage(caseId, uploadFilePart(uri, index));
-        prepared.current.delete(key);
+        await uploadCaseImage(caseId, await multipartForImage(uri, index));
+        cleanup(key);
         setLocal((current) => current.filter((image) => image.key !== key));
         onChanged();
         return true;
@@ -79,17 +96,20 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         return false;
       }
     },
-    [caseId, onChanged, patch],
+    [caseId, cleanup, onChanged, patch],
   );
 
   const handleAsset = useCallback(
     async (asset: { uri: string; width: number; height: number }) => {
       const key = `lokal-${(counter.current += 1)}`;
       inFlight.current += 1;
+      originals.current.set(key, asset.uri);
       setLocal((current) => [...current, { key, uri: asset.uri, status: "uploading", error: null }]);
       try {
         const file = await prepare(asset);
         if (!withinSizeLimit(file.bytes)) {
+          prepared.current.set(key, file.uri);
+          cleanup(key);
           patch(key, { status: "failed", error: SIZE_TEXT });
           settle(false);
           return;
@@ -97,11 +117,12 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         prepared.current.set(key, file.uri);
         settle(await send(key, file.uri, uploadedCount));
       } catch {
+        cleanup(key);
         patch(key, { status: "failed", error: "Billedet kunne ikke gøres klar. Prøv et andet billede." });
         settle(false);
       }
     },
-    [patch, send, settle, uploadedCount],
+    [cleanup, patch, send, settle, uploadedCount],
   );
 
   const pick = useCallback(
@@ -182,6 +203,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
     (key: string) => {
       const uri = prepared.current.get(key);
       if (!uri) {
+        cleanup(key);
         setLocal((current) => current.filter((image) => image.key !== key));
         return;
       }
@@ -189,13 +211,13 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
       inFlight.current += 1;
       void send(key, uri, uploadedCount).then(settle);
     },
-    [patch, send, settle, uploadedCount],
+    [cleanup, patch, send, settle, uploadedCount],
   );
 
   const remove = useCallback(
     (item: { key: string; imageId: string | null }) => {
       if (!item.imageId) {
-        prepared.current.delete(item.key);
+        cleanup(item.key);
         setLocal((current) => current.filter((image) => image.key !== item.key));
         return;
       }
@@ -211,7 +233,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         },
       });
     },
-    [caseId, onChanged],
+    [caseId, cleanup, onChanged],
   );
 
   return {

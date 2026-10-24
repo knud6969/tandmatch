@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { closeCase, getCase } from "~/api/cases";
 import { listCaseLeads, withdrawLead } from "~/api/leads";
+import { AccountRequired } from "~/screens/account-required";
 import { LeadRow } from "~/components/case/lead-row";
 import { BackLink, Badge, Button, Card, confirmAction, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
@@ -17,7 +18,7 @@ import { caseTitle } from "~/utils/case-view";
 import { formatDate } from "~/utils/format";
 
 // Sagsskærmen: sagens behandlinger og hvert lead med klinikkens svar (architecture 13.4). Hentes igen ved fokus.
-export function CaseScreen() {
+function CaseContent() {
   const router = useRouter();
   const { caseId } = useLocalSearchParams<{ caseId: string }>();
   const data = useLoad(async () => {
@@ -89,6 +90,14 @@ export function CaseScreen() {
         )}
       </LoadState>
     </Screen>
+  );
+}
+
+export function CaseScreen() {
+  return (
+    <AccountRequired title="Log ind for at se dine henvendelser">
+      <CaseContent />
+    </AccountRequired>
   );
 }
 

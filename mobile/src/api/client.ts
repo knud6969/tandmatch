@@ -14,8 +14,8 @@ export class ApiRequestError extends Error {
   readonly code: string;
   readonly serverMessage: string;
   // `message` er den danske tekst fra apiErrorText().
-  constructor(status: number, code: string, serverMessage: string) {
-    super(apiErrorText(code, serverMessage));
+  constructor(status: number, code: string, serverMessage: string, options?: { cause?: unknown }) {
+    super(apiErrorText(code, serverMessage), options);
     this.name = "ApiRequestError";
     this.status = status;
     this.code = code;
@@ -26,7 +26,8 @@ export class ApiRequestError extends Error {
 export type ApiRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   json?: unknown;
-  formData?: FormData;
+  // Færdigbygget kropp (fx multipart som bytes); Content-Type følger med.
+  rawBody?: { body: Uint8Array; contentType: string };
 };
 
 // 127.0.0.1 i stedet for localhost: på en emulator/enhed kan localhost pege på IPv6 eller enheden selv. Sættes via EXPO_PUBLIC_API_URL.
@@ -54,17 +55,20 @@ async function send(path: string, options: ApiRequestOptions, accessToken: strin
   const termsToken = await getTermsToken();
   if (termsToken) headers[TERMS_TOKEN_HEADER] = termsToken;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  let body: string | FormData | undefined;
-  if (options.formData) {
-    body = options.formData; // Content-Type med boundary sættes af fetch.
+  let body: string | Uint8Array | undefined;
+  if (options.rawBody) {
+    headers["Content-Type"] = options.rawBody.contentType;
+    body = options.rawBody.body;
   } else if (options.json !== undefined) {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(options.json);
   }
   try {
-    return await fetch(`${baseUrl()}${path}`, { method: options.method ?? "GET", headers, body });
-  } catch {
-    throw new ApiRequestError(0, "NETWORK", "");
+    return await fetch(`${baseUrl()}${path}`, { method: options.method ?? "GET", headers, body: body as BodyInit | undefined });
+  } catch (cause) {
+    // Kun under udvikling: vis den rigtige årsag. Aldrig tokens, headers eller kroppen.
+    if (__DEV__) console.warn(`[api] Netværksfejl ved ${options.method ?? "GET"} ${path}:`, cause instanceof Error ? cause.message : String(cause));
+    throw new ApiRequestError(0, "NETWORK", "", { cause });
   }
 }
 

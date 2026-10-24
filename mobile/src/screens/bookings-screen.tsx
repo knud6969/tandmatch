@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { CANCEL_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import { cancelBooking, listBookings } from "~/api/bookings";
+import { AccountRequired } from "~/screens/account-required";
 import { BookingCard } from "~/components/booking/booking-card";
 import { BackLink, confirmAction, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
@@ -13,7 +14,7 @@ import { type } from "~/theme";
 import { splitBookings } from "~/utils/booking-form";
 
 // Patientens bookinger, kommende og tidligere (architecture 13.4).
-export function BookingsScreen() {
+function BookingsContent() {
   const router = useRouter();
   const bookings = useLoad(listBookings);
   useReloadOnFocus(bookings.reload);
@@ -71,6 +72,14 @@ export function BookingsScreen() {
         }}
       </LoadState>
     </Screen>
+  );
+}
+
+export function BookingsScreen() {
+  return (
+    <AccountRequired title="Log ind for at se dine bookinger">
+      <BookingsContent />
+    </AccountRequired>
   );
 }
 
