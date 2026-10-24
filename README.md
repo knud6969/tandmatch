@@ -30,7 +30,7 @@ På en rigtig iPhone i Expo Go skal EXPO_PUBLIC_API_URL i stedet være http://<c
 
 https://github.com/knud6969/tandmatch
 
-[INDSÆT LINK TIL DEMOVIDEO]
+https://www.loom.com/share/3101b57a964f4b85bbfc66378a6de7fc
 
 ## Hvem har kodet hvad
 
