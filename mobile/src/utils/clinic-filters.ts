@@ -71,3 +71,23 @@ export function activeFilterCount(filters: DirectoryFilters): number {
     (!filters.onlyOffering ? 1 : 0)
   );
 }
+
+// Hvad der blev søgt på, som label/værdi-linjer til den tomme liste, så patienten (og fejlsøgning) kan se det.
+export type SearchSummaryLine = { label: string; value: string };
+
+export function searchSummary(filters: DirectoryFilters, names: Map<string, string>): SearchSummaryLine[] {
+  const lines: SearchSummaryLine[] = [];
+  if (filters.serviceSlugs.length > 0) {
+    lines.push({ label: "Behandlinger", value: serviceNames(filters.serviceSlugs, names).join(", ") });
+  }
+  // Positionen går forud for postnummeret, som i forespørgslen.
+  if (filters.position) {
+    lines.push({ label: "Udgangspunkt", value: "din position" }, { label: "Afstand", value: `op til ${filters.maxDistanceKm} km` });
+  } else if (isPostalCode(filters.postalCode)) {
+    lines.push({ label: "Udgangspunkt", value: `postnummer ${filters.postalCode}` }, { label: "Afstand", value: `op til ${filters.maxDistanceKm} km` });
+  } else {
+    lines.push({ label: "Udgangspunkt", value: "intet postnummer eller position valgt, så afstand indgår ikke" });
+  }
+  lines.push({ label: "Akut", value: filters.emergency ? "slået til" : "slået fra" });
+  return lines;
+}

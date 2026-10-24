@@ -212,6 +212,8 @@ export function ClinicDirectoryScreen() {
             <EmptyDirectory
               onlyOffering={onlyOffering}
               emergency={filters.emergency}
+              filters={filters}
+              serviceNames={names}
               canWiden={canWidenDistance(filters)}
               onShowOthers={() => setFilters(showOtherClinics)}
               onWiden={() => setFilters(widenDistance)}
