@@ -91,3 +91,25 @@ export function searchSummary(filters: DirectoryFilters, names: Map<string, stri
   lines.push({ label: "Akut", value: filters.emergency ? "slået til" : "slået fra" });
   return lines;
 }
+
+// Det af sagen, der styrer filtrene: behandlinger (uafhængigt af rækkefølge) og postnummer.
+type CaseFilterSource = { postalCode: string | null; services: { slug: string }[] };
+
+// Sags-tilstand starter altid fra standardfiltrene, så gamle filtre (akut, sortering, afstand, position) ikke følger med fra en tidligere
+// brug af fanen. Kun sagens behandlinger og postnummer sættes, og "kun klinikker med pris" er slået til.
+export function filtersForCase(dto: CaseFilterSource): DirectoryFilters {
+  return {
+    ...DEFAULT_FILTERS,
+    serviceSlugs: dto.services.map((service) => service.slug),
+    postalCode: dto.postalCode ?? "",
+    position: null,
+    onlyOffering: true,
+  };
+}
+
+// Nøgle for sagens behandlinger og postnummer. Ændres den, er sagen ændret, og filtrene skal tages fra sagen igen.
+export const caseFilterKey = (caseId: string, dto: CaseFilterSource): string =>
+  `${caseId}|${dto.postalCode ?? ""}|${[...dto.services.map((service) => service.slug)].sort().join(",")}`;
+
+// Skal filtrene sættes fra sagen? Ja første gang og når sagen er ændret; ellers bevares patientens egne ændringer, mens hun er på skærmen.
+export const shouldApplyCase = (appliedKey: string | null, nextKey: string): boolean => appliedKey !== nextKey;

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { remainingLeadSlots } from "@/lib/leads/domain/leads";
 import { getCase } from "~/api/cases";
 import { listCaseLeads } from "~/api/leads";
@@ -21,10 +21,13 @@ import { colors, fontSize, spacing } from "~/theme";
 import {
   activeFilterCount,
   buildClinicsQuery,
+  caseFilterKey,
   canWidenDistance,
   DEFAULT_FILTERS,
+  filtersForCase,
   filtersOnOffering,
   sameServices,
+  shouldApplyCase,
   serviceNames,
   showOtherClinics,
   toggleService,
@@ -55,35 +58,44 @@ export function ClinicDirectoryScreen() {
 
   // Fra sagsflowets "Se klinikker der kan hjælpe": filtrer på sagens bekræftede behandlinger og postnummer og lad patienten vælge klinikker (8.8a).
   const caseId = params.sag;
-  const [appliedCase, setAppliedCase] = useState<string | null>(null);
+  // Nøglen for den sag (id, behandlinger, postnummer), filtrene sidst blev sat fra.
+  const appliedKey = useRef<string | null>(null);
   // Sagens egne behandlinger, uafhængigt af filteret: "Vælg" afgøres af dem og først, når sagen er indlæst.
   const [caseSlugs, setCaseSlugs] = useState<string[] | null>(null);
-  useEffect(() => {
-    if (!caseId || appliedCase === caseId) return;
+  // Sagen hentes igen, hver gang oversigten får fokus med en sag (fanen forbliver monteret, og samme parametre udløser ikke en ny effekt),
+  // så ændrede behandlinger eller postnummer på samme sag slår igennem.
+  const loadCase = useCallback(() => {
+    if (!caseId) return () => undefined;
     let cancelled = false;
     Promise.all([getCase(caseId), listCaseLeads(caseId).catch(() => [])])
       .then(([dto, leads]) => {
         if (cancelled) return;
-        setAppliedCase(caseId);
+        const key = caseFilterKey(caseId, dto);
         setCaseSlugs(dto.services.map((service) => service.slug));
         setLimits(
           caseId,
           remainingLeadSlots(dto.leadCount, dto.totalLeadCount),
           leads.filter((lead) => !lead.clinic.removed).map((lead) => lead.clinic.id),
         );
-        setFilters((f) => ({
-          ...f,
-          serviceSlugs: dto.services.map((service) => service.slug),
-          onlyOffering: true,
-          postalCode: dto.postalCode ?? f.postalCode,
-          position: dto.postalCode ? null : f.position,
-        }));
+        // Kun ny eller ændret sag nulstiller filtrene til sagens; ellers bevares patientens egne ændringer.
+        if (shouldApplyCase(appliedKey.current, key)) setFilters(filtersForCase(dto));
+        appliedKey.current = key;
       })
       .catch(() => undefined); // Uden sagen vises oversigten ufiltreret.
     return () => {
       cancelled = true;
     };
-  }, [caseId, appliedCase]);
+  }, [caseId]);
+  useFocusEffect(loadCase);
+
+  // Forsvinder sagen (patienten åbner oversigten uden), nulstilles sagens filtre og sags-tilstanden, så de ikke hænger ved.
+  useEffect(() => {
+    if (!caseId && appliedKey.current !== null) {
+      appliedKey.current = null;
+      setCaseSlugs(null);
+      setFilters(DEFAULT_FILTERS);
+    }
+  }, [caseId]);
 
   // Valget af klinikker huskes pr. sag, så det overlever, at patienten åbner en profil og vender tilbage.
   const selection = useSelection(caseId);
