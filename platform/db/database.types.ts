@@ -113,13 +113,13 @@ isOneToOne: false
                   ]
                 },"ai_patient_usage_daily": {
                   Row: {
-                    "chat_messages": number,"day": string,"patient_id": string,"summary_generations": number
+                    "chat_messages": number,"day": string,"image_turns": number,"patient_id": string,"summary_generations": number
                   }
                   Insert: {
-                    "chat_messages"?: number,"day": string,"patient_id": string,"summary_generations"?: number
+                    "chat_messages"?: number,"day": string,"image_turns"?: number,"patient_id": string,"summary_generations"?: number
                   }
                   Update: {
-                    "chat_messages"?: number,"day"?: string,"patient_id"?: string,"summary_generations"?: number
+                    "chat_messages"?: number,"day"?: string,"image_turns"?: number,"patient_id"?: string,"summary_generations"?: number
                   }
                   Relationships: [
                     {
@@ -195,13 +195,13 @@ isOneToOne: false
                   ]
                 },"case_images": {
                   Row: {
-                    "ai_described_at": string | null,"ai_description": string | null,"ai_quality": Database["public"]['Enums']["image_quality"] | null,"ai_view": Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at": string,"height": number,"id": string,"patient_id": string,"storage_path": string,"width": number
+                    "ai_described_at": string | null,"ai_description": string | null,"ai_quality": Database["public"]['Enums']["image_quality"] | null,"ai_turn_at": string | null,"ai_view": Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at": string,"height": number,"id": string,"patient_id": string,"storage_path": string,"width": number
                   }
                   Insert: {
-                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at"?: string,"height": number,"id"?: string,"patient_id": string,"storage_path": string,"width": number
+                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_turn_at"?: string | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes": number,"case_id": string,"consent_id": string,"created_at"?: string,"height": number,"id"?: string,"patient_id": string,"storage_path": string,"width": number
                   }
                   Update: {
-                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes"?: number,"case_id"?: string,"consent_id"?: string,"created_at"?: string,"height"?: number,"id"?: string,"patient_id"?: string,"storage_path"?: string,"width"?: number
+                    "ai_described_at"?: string | null,"ai_description"?: string | null,"ai_quality"?: Database["public"]['Enums']["image_quality"] | null,"ai_turn_at"?: string | null,"ai_view"?: Database["public"]['Enums']["image_view"] | null,"bytes"?: number,"case_id"?: string,"consent_id"?: string,"created_at"?: string,"height"?: number,"id"?: string,"patient_id"?: string,"storage_path"?: string,"width"?: number
                   }
                   Relationships: [
                     {
@@ -953,6 +953,9 @@ isOneToOne: false
 { Args: { "p_content": string,"p_conversation_id": string,"p_user_id": string }; Returns: {
               "message_content": string,"message_created_at": string,"message_id": string,"user_message_count": number
             }[]
+                           },
+"reserve_image_turn":
+{ Args: { "p_conversation_id": string,"p_user_id": string }; Returns: (string)[]
                            },
 "review_is_approved":
 { Args: { "p_review_id": string }; Returns: boolean

@@ -458,7 +458,7 @@ Typer i `lib/<domæne>/types/`, zod-skemaer i `lib/<domæne>/schemas/`. "Rolle" 
 // lib/common/types/common.ts
 export type Role = (typeof ROLES)[number];   // ROLES = ["patient", "clinic", "admin"] as const i lib/identity/constants/roles.ts (2.1)
 export type PriceRange = { min: number; max: number };  // hele kroner
-export type ImageDto = { id: string; url: string; view: string | null; quality: string | null };
+export type ImageDto = { id: string; url: string; view: string | null; quality: string | null; description: string | null; createdAt?: string };  // createdAt: kun patientens egne billeder (cases 7.9c)
 export type TrustpilotInfo = { url: string; score: number | null; reviewCount: number | null; updatedAt: string | null; enteredBy: "clinic" | "admin" } | null;
 
 // lib/clinics/types/services.ts

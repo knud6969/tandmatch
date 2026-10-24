@@ -37,7 +37,7 @@ function lastPatientText(params: StructuredCallParams): string {
   return raw.replace(/<\/?patient_input>/g, "").trim().toLowerCase();
 }
 
-// Almindelig samtale uden nøgleord (7.9a regel 6): to spørgsmål med hurtigsvar, derefter forslag (som en rigtig AI under chat.v6).
+// Almindelig samtale uden nøgleord (7.9a regel 6): to spørgsmål med hurtigsvar, derefter forslag (som en rigtig AI under chat.v7).
 const FAKE_QUESTIONS: readonly { reply: string; quickReplies: string[] }[] = [
   { reply: "Hvor i munden sidder det?", quickReplies: ["Foran", "Bagtil", "Øverst", "Nederst"] },
   { reply: "Hvor længe har du haft det?", quickReplies: ["Et par dage", "Over en uge", "Over en måned", "Ved ikke"] },
@@ -73,6 +73,41 @@ export const FAKE_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   knaekket_tand: ["reparation_knaekket_tand"],
 };
 
+// Billedtur (7.9c): den sidste besked er systembeskeden fra AiChatService.sendImageTurn(), ikke patienttekst.
+function isImageTurn(params: StructuredCallParams): boolean {
+  const last = params.messages[params.messages.length - 1];
+  return last?.role === "user" && textOf(last).includes("Dette er en billedtur.");
+}
+
+// Markører i tidligere patientbeskeder (kun i tests), som ved opsummeringen:
+//   test_dark          nye billeder får quality too_dark
+//   test_image_price   reply med pris (filteret skal blokere)
+//   test_image_invalid ugyldigt format
+//   test_image_timeout timeout fra modellen
+//   (ingen markør)     kort kvittering, quality ok og view front for alle nye billeder
+function fakeImageTurn(params: StructuredCallParams, turn: Record<string, unknown>) {
+  const last = textOf(params.messages[params.messages.length - 1]);
+  const history = params.messages
+    .slice(0, -1)
+    .map(textOf)
+    .join("\n")
+    .toLowerCase();
+  if (history.includes("test_image_timeout")) throw new AiTimeoutError();
+  if (history.includes("test_image_invalid")) throw new AiInvalidOutputError();
+  const newRefs = (/Nye billeder: ([^.]*)\./.exec(last)?.[1] ?? "").split(",").map((r) => r.trim()).filter(Boolean);
+  const dark = history.includes("test_dark");
+  const images = newRefs.map((imageRef) => ({ imageRef, view: "front", quality: dark ? "too_dark" : "ok" }));
+  if (history.includes("test_image_price")) return { ...turn, reply: "Det koster ca. 2.500 kr.", images };
+  return {
+    ...turn,
+    reply: dark
+      ? "Tak, jeg har set billedet. Det er lidt for mørkt: kan du tage et nyt med mere lys?"
+      : "Tak, jeg har set billedet. Hvor længe har du haft det?",
+    quickReplies: dark ? [] : ["Et par dage", "Over en uge", "Over en måned", "Ved ikke"],
+    images,
+  };
+}
+
 function fakeChat(params: StructuredCallParams) {
   const text = lastPatientText(params);
   const turn = {
@@ -83,7 +118,9 @@ function fakeChat(params: StructuredCallParams) {
     outOfScopeTopics: [] as string[],
     readyForSummary: false,
     quickReplies: ["Et par dage", "Over en uge", "Over en måned"] as string[],
+    images: [] as { imageRef: string; view: string; quality: string }[],
   };
+  if (isImageTurn(params)) return fakeImageTurn(params, turn);
   if (text.includes("test_timeout")) throw new AiTimeoutError();
   if (text.includes("test_invalid")) throw new AiInvalidOutputError();
   if (text.includes("test_price")) return { ...turn, reply: "Det koster ca. 2.500 kr." };

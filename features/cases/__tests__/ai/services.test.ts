@@ -86,7 +86,7 @@ describe("AiChatService", () => {
     expect(client.calls).toHaveLength(2);
     expect(client.calls[1].instructions).toContain("overtrådte reglerne");
     expect(client.calls[0].instructions).not.toContain("overtrådte reglerne");
-    expect(out.promptVersion).toBe("chat.v6");
+    expect(out.promptVersion).toBe("chat.v7");
     expect(out.rulesVersion).toBe("rules-v6");
     expect(out.model).toBe("fake-model");
   });
@@ -176,5 +176,103 @@ describe("AiSummaryService", () => {
       history, confirmedSlugs: [], catalog: GROUPS, images: [],
     });
     expect(out.fallback).toBe("write_yourself");
+  });
+});
+
+describe("AiChatService.sendImageTurn (billedtur uden patientbesked, 7.9c)", () => {
+  const images = [
+    { imageId: "i1", data: "QUJD" },
+    { imageId: "i2", data: "REVG" },
+    { imageId: "i3", data: "R0hJ" },
+  ];
+  const observed = (over: Record<string, unknown> = {}) =>
+    turn({
+      reply: "Tak, jeg har set billedet. Hvor længe har du haft det?",
+      images: [
+        { imageRef: "img_2", view: "front", quality: "too_dark" },
+        { imageRef: "img_3", view: "upper", quality: "ok" },
+      ],
+      ...over,
+    });
+
+  it("sender billederne som base64 med en systembesked, ingen patienttekst, og gemmer kun nye billeders vurdering", async () => {
+    const client = new FakeAiClient(() => observed());
+    const out = await new AiChatService(client, AI_RULES).sendImageTurn({
+      history: [{ role: "user", content: "Min tand gør ondt" }, { role: "assistant", content: "Hvor?" }],
+      catalog: GROUPS,
+      images,
+      newImageIds: ["i2", "i3"],
+    });
+    const messages = client.calls[0].messages;
+    const last = messages[messages.length - 1];
+    expect(last.role).toBe("user");
+    expect(Array.isArray(last.content) && last.content.filter((p) => p.type === "image_jpeg_base64")).toHaveLength(3);
+    const text = textOfMessages(client);
+    expect(text).toContain("Dette er en billedtur.");
+    expect(text).toContain("Nye billeder: img_2, img_3.");
+    expect(text).not.toContain("i2"); // ingen interne id'er
+    expect(client.calls[0].instructions).toContain("BILLEDTUR");
+    expect(client.calls[0].instructions).toContain("chat.v7");
+    expect(out.observations).toEqual([
+      { imageId: "i2", view: "front", quality: "too_dark" },
+      { imageId: "i3", view: "upper", quality: "ok" },
+    ]);
+    expect(out.promptVersion).toBe("chat.v7");
+  });
+
+  it("ignorerer gamle, ukendte og dobbelte billedreferencer", async () => {
+    const client = new FakeAiClient(() =>
+      observed({
+        images: [
+          { imageRef: "img_1", view: "front", quality: "ok" }, // ikke nyt
+          { imageRef: "img_9", view: "front", quality: "ok" }, // findes ikke
+          { imageRef: "img_3", view: "upper", quality: "blurry" },
+          { imageRef: "img_3", view: "lower", quality: "ok" }, // dobbelt
+        ],
+      }),
+    );
+    const out = await new AiChatService(client, AI_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i3"] });
+    expect(out.observations).toEqual([{ imageId: "i3", view: "upper", quality: "blurry" }]);
+  });
+
+  it("samme guardrails: pris i svaret afvises og giver fast tekst, men kvaliteten bevares (faste lister)", async () => {
+    const client = new FakeAiClient(() => observed({ reply: "Det koster ca. 2.500 kr." }));
+    const out = await new AiChatService(client, AI_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i2"] });
+    expect(client.calls).toHaveLength(2); // retry
+    expect(client.calls[1].instructions).toContain("overtrådte reglerne");
+    expect(out.reply).not.toMatch(/\bkr\b|2\.500/);
+    expect(out.blocked).toBe(true);
+    expect(out.observations).toEqual([{ imageId: "i2", view: "front", quality: "too_dark" }]);
+  });
+
+  it("afviser ukendte slugs og modellens akut-flag giver ikke akut uden patienttekst (emergencyReferralInChat=false)", async () => {
+    const unknown = new FakeAiClient(() => observed({ suggestedServices: ["findes_ikke"] }));
+    const blocked = await new AiChatService(unknown, AI_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i2"] });
+    expect(blocked.suggestedServices).toEqual([]);
+    const flagged = new FakeAiClient(() => observed({ emergency: true }));
+    const off = await new AiChatService(flagged, PRODUCTION_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i2"] });
+    expect(PRODUCTION_RULES.emergencyReferralInChat).toBe(false);
+    expect(off.emergency).toBe(false);
+    expect(off.reply).not.toMatch(/112|1813/);
+  });
+
+  it("forslag og readyForSummary kan opdateres i billedturen, og almindelige ture har images = []", async () => {
+    const client = new FakeAiClient(() => observed({ suggestedServices: ["undersoegelse"], readyForSummary: true, quickReplies: [] }));
+    const out = await new AiChatService(client, AI_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i2"] });
+    expect(out.suggestedServices).toEqual(["undersoegelse"]);
+    expect(out.readyForSummary).toBe(true);
+    const normal = await new AiChatService(new FakeAiClient(() => turn()), AI_RULES).sendTurn({ history: [], userMessage: "hej", catalog: GROUPS, images: [] });
+    expect(normal.images).toEqual([]);
+  });
+
+  it("den falske klient svarer på billedture, også med dårlig kvalitet", async () => {
+    const ok = await new AiChatService(new FakeAiClient(), AI_RULES).sendImageTurn({ history: [], catalog: GROUPS, images, newImageIds: ["i3"] });
+    expect(ok.blocked).toBe(false);
+    expect(ok.observations).toEqual([{ imageId: "i3", view: "front", quality: "ok" }]);
+    const dark = await new AiChatService(new FakeAiClient(), AI_RULES).sendImageTurn({
+      history: [{ role: "user", content: "test_dark" }, { role: "assistant", content: "Hvor?" }],
+      catalog: GROUPS, images, newImageIds: ["i2", "i3"],
+    });
+    expect(dark.observations.map((o) => o.quality)).toEqual(["too_dark", "too_dark"]);
   });
 });

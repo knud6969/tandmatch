@@ -99,7 +99,8 @@ export type OwnClinicDto = ClinicProfileDto & { status: ClinicStatus; cvr: strin
 
 // GET /api/clinics: sorteret og filtreret af RankingService (architecture 6.6, 10.7). `criteria` er de kriterier,
 // patienten ser ved listen.
-export type ClinicListDto = { clinics: ClinicListItemDto[]; sort: ClinicSort; criteria: string[] };
+// `origin` er udgangspunktet for afstandene: den givne position afrundet til 2 decimaler, ellers postnummerets punkt, ellers null.
+export type ClinicListDto = { clinics: ClinicListItemDto[]; sort: ClinicSort; criteria: string[]; origin: { lat: number; lng: number } | null };
 
 // En ledig tid (architecture 6.7, 10.7). Tidspunkter som ISO 8601 (UTC).
 export type SlotDto = { startsAt: string; endsAt: string };

@@ -1,12 +1,13 @@
 import type { z } from "zod";
 import type { aiImageObservationSchema, aiSummarySchema } from "@/lib/cases/constants/ai-schemas";
-import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
+import type { CONVERSATION_STATUSES, IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
 import type { ServiceDto } from "@/lib/clinics/types/services";
 
 // Delte AI-typer (architecture 7.4, 10.6). Skemaerne er strict: ingen felter for pris eller klinikker.
 // MDR-TILPASNING: feltet preliminaryAssessment fjernes eller tvinges til null i features/cases/ai/rules.ts (architecture 7.8).
 export type OutOfScopeTopic = (typeof OUT_OF_SCOPE_TOPICS)[number];
 export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
+export type ImageView = (typeof IMAGE_VIEWS)[number];
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 
 // Udledt af de fælles skemaer i lib/cases/constants/ai-schemas.ts (imageRef = case_images.id på serveren).
@@ -41,6 +42,16 @@ export type ChatStateDto = {
 export type ChatTurnResponse = {
   userMessage: AiChatMessageDto;
   assistantMessage: AiChatMessageDto;
+  outOfScopeNotice: boolean;
+  emergency: boolean;
+  readyForSummary: boolean;
+  messagesLeft: number;
+};
+
+// POST /api/cases/{id}/chat/image-turn (7.9c): en assistent-tur uden patientbesked. `assessedImages` er kun de nye billeder.
+export type ImageTurnResponse = {
+  assistantMessage: AiChatMessageDto;
+  assessedImages: { imageId: string; view: ImageView | null; quality: ImageQuality | null }[];
   outOfScopeNotice: boolean;
   emergency: boolean;
   readyForSummary: boolean;

@@ -23,6 +23,17 @@ export const chatTurnSchema = z.strictObject({
   outOfScopeTopics: topics,
   readyForSummary: z.boolean(),
   quickReplies: z.array(z.string().min(1).max(60)).max(4),
+  // Kun i billedture (7.9c): teknisk kvalitet og vinkel pr. nyt billede. Tom ved almindelige ture.
+  images: z
+    .array(
+      z.strictObject({
+        imageRef: z.string().min(1).max(10),
+        view: z.enum(IMAGE_VIEWS),
+        quality: z.enum(IMAGE_QUALITIES),
+      }),
+    )
+    .max(5)
+    .default([]),
 });
 
 // Modellens opsummering: samme form som den færdige, men billederne har en kort intern reference ("img_1").
@@ -45,8 +56,21 @@ export const CHAT_TURN_JSON_SCHEMA = {
     outOfScopeTopics: topicsJson,
     readyForSummary: { type: "boolean" },
     quickReplies: stringArray,
+    images: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          imageRef: { type: "string" },
+          view: { type: "string", enum: [...IMAGE_VIEWS] },
+          quality: { type: "string", enum: [...IMAGE_QUALITIES] },
+        },
+        required: ["imageRef", "view", "quality"],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ["reply", "preliminaryAssessment", "suggestedServices", "emergency", "outOfScopeTopics", "readyForSummary", "quickReplies"],
+  required: ["reply", "preliminaryAssessment", "suggestedServices", "emergency", "outOfScopeTopics", "readyForSummary", "quickReplies", "images"],
   additionalProperties: false,
 } as const;
 

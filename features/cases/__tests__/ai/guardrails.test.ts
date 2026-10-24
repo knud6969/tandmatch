@@ -24,7 +24,7 @@ import {
 import { runChatGuard, runSummaryGuard, type ModelCall } from "@/features/cases/ai/guard";
 import { maskPii, PII_MASK } from "@/features/cases/ai/pii";
 import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/features/cases/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_RETRY_REMINDER, scopeSection, serviceSelectionSection } from "@/features/cases/ai/prompts/chat.v6";
+import { buildChatSystemPrompt, CHAT_RETRY_REMINDER, scopeSection, serviceSelectionSection } from "@/features/cases/ai/prompts/chat.v7";
 import { buildSummarySystemPrompt } from "@/features/cases/ai/prompts/summary.v2";
 import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/features/cases/ai/rules";
 // Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
@@ -1080,7 +1080,7 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     expect(suggested.length).toBeGreaterThan(0);
   }, 120_000);
 
-  // Regression (chat.v6): tandkød blev afvist som uden for området; børn og manglende tænder gav kun undersoegelse.
+  // Regression (chat.v7): tandkød blev afvist som uden for området; børn og manglende tænder gav kun undersoegelse.
   // Kataloget her er kun det lille testkatalog, så live-testen bruger sit eget katalog med de relevante slugs.
   const svc = (slug: string, name: string, description: string, category: "general" | "cosmetic" = "general") =>
     ({ id: slug, slug, name, description, category, defaultDurationMin: 30, groupId: "g9", groupSlug: "alle" }) as const;
@@ -1116,7 +1116,7 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     return last;
   }
 
-  it("chat.v6: blødende tandkød afvises ikke og er ikke akut", async () => {
+  it("chat.v7: blødende tandkød afvises ikke og er ikke akut", async () => {
     for (let i = 0; i < 3; i++) {
       const out = await liveConversation(["Mit tandkød bløder, når jeg børster tænder"]);
       expect(out.blocked).toBe(false);
@@ -1125,14 +1125,14 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     }
   }, 120_000);
 
-  it("chat.v6: barn giver boerneundersoegelse, højst tre forslag", async () => {
+  it("chat.v7: barn giver boerneundersoegelse, højst tre forslag", async () => {
     const out = await liveConversation(["Mit barn skal til tandlæge", "Hun er 5 år og har aldrig været hos tandlæge", "Ingen problemer, bare et eftersyn"]);
     expect(out.suggestedServices).toContain("boerneundersoegelse");
     expect(out.suggestedServices.length).toBeLessThanOrEqual(3);
     expect(findForbiddenCategories(out.reply, REPLY)).toEqual([]);
   }, 120_000);
 
-  it("chat.v6: manglende tand giver implantat_samtale, bro eller delprotese", async () => {
+  it("chat.v7: manglende tand giver implantat_samtale, bro eller delprotese", async () => {
     const out = await liveConversation(["Jeg mangler en tand", "Forreste tand foroven, siden i fjor", "Nej, jeg har ikke fået lavet noget"]);
     expect(out.suggestedServices.some((slug) => ["implantat_samtale", "bro", "delprotese"].includes(slug))).toBe(true);
     expect(out.suggestedServices.length).toBeLessThanOrEqual(3);
@@ -1481,7 +1481,7 @@ describe("8.6c: action_claim", () => {
 describe("8.6c: chat.v3-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("forbyder spørgsmål om tidsrum, postnummer og kontaktdata og påstande om handlinger", () => {
-    expect(prompt).toContain("chat.v6");
+    expect(prompt).toContain("chat.v7");
     expect(prompt).toContain("rules-v6");
     expect(prompt).toMatch(/Spørg ALDRIG om tidsrum[^\n]*postnummer[^\n]*telefon[^\n]*e-mail/);
     expect(prompt).toMatch(/aldrig påstå, at du har bekræftet, valgt, gemt, sendt, booket/);
@@ -1720,9 +1720,9 @@ describe("9.3: SUGGESTION_FALLBACK_TEXT", () => {
   });
 });
 
-// ---------- 9.4: chat.v6 og rules-v6 (7.9a regel 4) ----------
+// ---------- 9.4: chat.v7 og rules-v6 (7.9a regel 4) ----------
 
-describe("9.4: chat.v6-prompten", () => {
+describe("9.4: chat.v7-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("højst tre spørgsmål, ét ad gangen med 2-4 hurtigsvar, fri uddybning", () => {
     expect(prompt).toMatch(/højst TRE opklarende spørgsmål/);
@@ -1735,7 +1735,7 @@ describe("9.4: chat.v6-prompten", () => {
     expect(prompt).not.toMatch(/kan bekræfte behandlingerne nedenfor/);
   });
   it("versionerne er hævet", () => {
-    expect(prompt).toContain("chat.v6");
+    expect(prompt).toContain("chat.v7");
     expect(AI_RULES.version).toBe("rules-v6");
     expect(MDR_STRICT_RULES.version).toBe("rules-v6-mdr-strict");
   });
@@ -1745,9 +1745,9 @@ describe("9.4: chat.v6-prompten", () => {
   });
 });
 
-// ---------- chat.v6: tandkød inden for området, specifikke forslag, højst tre ----------
+// ---------- chat.v7: tandkød inden for området, specifikke forslag, højst tre ----------
 
-describe("chat.v6: område og specifikke forslag", () => {
+describe("chat.v7: område og specifikke forslag", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
 
   it("tandkødsproblemer er udtrykkeligt inden for området og ikke akutte", () => {
