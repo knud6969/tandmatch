@@ -1,6 +1,7 @@
 import { CLINIC_SORTS, DEFAULT_MAX_DISTANCE_KM } from "@/lib/clinics/constants/clinics";
 import { postalCodeSchema, servicesParamSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicSort } from "@/lib/clinics/types/clinics";
+import { buildClinicQuery, buildClinicQueryParams, hasClinicOrigin } from "@/lib/clinics/domain/clinic-query";
 import { isUuid } from "@/features/clinics/utils/ids";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). De spejles i URL'en (2.8, B16), så genindlæsning, profil
@@ -29,34 +30,15 @@ export const DEFAULT_FILTERS: DirectoryFilters = {
   sort: null,
 };
 
-export const hasOrigin = (filters: DirectoryFilters) => filters.position !== null || filters.postalCode !== "";
+export const hasOrigin = hasClinicOrigin;
 
 // Bygger forespørgslen til GET /api/clinics. Afstand og pris sendes kun, når de giver mening (API'et afviser maxPrice
 // uden behandlinger).
 export function buildClinicsQuery(filters: DirectoryFilters): string {
-  return buildParams(filters).toString();
+  return buildClinicQuery(filters);
 }
 
-function buildParams(filters: DirectoryFilters): URLSearchParams {
-  const params = new URLSearchParams();
-  if (filters.serviceSlugs.length > 0) params.set("services", filters.serviceSlugs.join(","));
-  if (filters.position) {
-    params.set("lat", String(filters.position.lat));
-    params.set("lng", String(filters.position.lng));
-  } else if (filters.postalCode) {
-    params.set("postalCode", filters.postalCode);
-  }
-  if (hasOrigin(filters)) params.set("maxDistanceKm", String(filters.maxDistanceKm));
-  if (filters.maxPrice !== null && filters.serviceSlugs.length > 0) params.set("maxPrice", String(filters.maxPrice));
-  if (filters.minStars !== null) params.set("minStars", String(filters.minStars));
-  if (filters.emergency) params.set("emergency", "true");
-  if (filters.contactableOnly) params.set("contactableOnly", "true");
-  // Afstand og pris kan kun sorteres efter, når der er en position eller valgte behandlinger.
-  const sortable = filters.sort !== "distance" || hasOrigin(filters);
-  const priceSortable = filters.sort !== "price" || filters.serviceSlugs.length > 0;
-  if (filters.sort && sortable && priceSortable) params.set("sort", filters.sort);
-  return params;
-}
+const buildParams = buildClinicQueryParams;
 
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
 
