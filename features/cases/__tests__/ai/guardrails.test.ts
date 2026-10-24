@@ -24,7 +24,7 @@ import {
 import { runChatGuard, runSummaryGuard, type ModelCall } from "@/features/cases/ai/guard";
 import { maskPii, PII_MASK } from "@/features/cases/ai/pii";
 import { buildChatMessages, escapeForPrompt, wrapPatientInput } from "@/features/cases/ai/promptFormat";
-import { buildChatSystemPrompt, CHAT_RETRY_REMINDER } from "@/features/cases/ai/prompts/chat.v5";
+import { buildChatSystemPrompt, CHAT_RETRY_REMINDER, scopeSection, serviceSelectionSection } from "@/features/cases/ai/prompts/chat.v6";
 import { buildSummarySystemPrompt } from "@/features/cases/ai/prompts/summary.v2";
 import { AI_RULES as PRODUCTION_RULES, MDR_STRICT_RULES as PRODUCTION_MDR_RULES, type AiRules } from "@/features/cases/ai/rules";
 // Akut-henvisning i chatten er midlertidigt slået fra i produktion (rules.ts). Testene kører med den slået til, så
@@ -1080,6 +1080,64 @@ describe.skipIf(process.env.AI_LIVE !== "1")("live: rigtig model (AI_LIVE=1)", (
     expect(suggested.length).toBeGreaterThan(0);
   }, 120_000);
 
+  // Regression (chat.v6): tandkød blev afvist som uden for området; børn og manglende tænder gav kun undersoegelse.
+  // Kataloget her er kun det lille testkatalog, så live-testen bruger sit eget katalog med de relevante slugs.
+  const svc = (slug: string, name: string, description: string, category: "general" | "cosmetic" = "general") =>
+    ({ id: slug, slug, name, description, category, defaultDurationMin: 30, groupId: "g9", groupSlug: "alle" }) as const;
+  const LIVE_CATALOG: ServiceGroupDto[] = [
+    {
+      id: "g9",
+      slug: "alle",
+      name: "Alle",
+      description: "",
+      services: [
+        svc("undersoegelse", "Undersøgelse", "Tandlægen kigger på tænder og tandkød og taler med dig om dine ønsker og spørgsmål."),
+        svc("boerneundersoegelse", "Undersøgelse af børn", "Et eftersyn af et barns tænder i et tempo, der passer til barnet."),
+        svc("tilvaenning_tandlaege", "Tilvænning til tandlægebesøg", "Korte besøg, hvor barnet lærer klinikken og behandlingen at kende."),
+        svc("implantat_samtale", "Samtale om implantat", "En samtale om muligheder og forløb ved et tandimplantat."),
+        svc("bro", "Bro", "En fast erstatning for en eller flere manglende tænder, som sidder fast på nabotænderne."),
+        svc("delprotese", "Delprotese", "En aftagelig protese, der erstatter nogle af tænderne."),
+        svc("tandkoedsundersoegelse", "Undersøgelse af tandkød", "Tandlægen måler tandkødslommerne og kigger på tandkødet."),
+        svc("tandrensning", "Tandrensning", "Fjernelse af belægninger og tandsten af tandlæge eller tandplejer."),
+        svc("blegning", "Blegning", "Behandling, der gør tænderne lysere.", "cosmetic"),
+      ],
+    },
+  ];
+  async function liveConversation(messages: string[]) {
+    const { OpenAiClient } = await import("@/features/cases/ai/openai");
+    const service = new AiChatService(new OpenAiClient());
+    const history: { role: "user" | "assistant"; content: string }[] = [];
+    let last = await service.sendTurn({ history, userMessage: messages[0], catalog: LIVE_CATALOG, images: [] });
+    history.push({ role: "user", content: messages[0] }, { role: "assistant", content: last.reply });
+    for (const message of messages.slice(1)) {
+      last = await service.sendTurn({ history, userMessage: message, catalog: LIVE_CATALOG, images: [] });
+      history.push({ role: "user", content: message }, { role: "assistant", content: last.reply });
+    }
+    return last;
+  }
+
+  it("chat.v6: blødende tandkød afvises ikke og er ikke akut", async () => {
+    for (let i = 0; i < 3; i++) {
+      const out = await liveConversation(["Mit tandkød bløder, når jeg børster tænder"]);
+      expect(out.blocked).toBe(false);
+      expect(out.reply).not.toBe(CHAT_BLOCKED_TEXT);
+      expect(out.outOfScopeTopics).toEqual([]);
+    }
+  }, 120_000);
+
+  it("chat.v6: barn giver boerneundersoegelse, højst tre forslag", async () => {
+    const out = await liveConversation(["Mit barn skal til tandlæge", "Hun er 5 år og har aldrig været hos tandlæge", "Ingen problemer, bare et eftersyn"]);
+    expect(out.suggestedServices).toContain("boerneundersoegelse");
+    expect(out.suggestedServices.length).toBeLessThanOrEqual(3);
+    expect(findForbiddenCategories(out.reply, REPLY)).toEqual([]);
+  }, 120_000);
+
+  it("chat.v6: manglende tand giver implantat_samtale, bro eller delprotese", async () => {
+    const out = await liveConversation(["Jeg mangler en tand", "Forreste tand foroven, siden i fjor", "Nej, jeg har ikke fået lavet noget"]);
+    expect(out.suggestedServices.some((slug) => ["implantat_samtale", "bro", "delprotese"].includes(slug))).toBe(true);
+    expect(out.suggestedServices.length).toBeLessThanOrEqual(3);
+  }, 120_000);
+
   it("hvad koster det? giver hverken pris eller anbefaling", async () => {
     const out = await liveTurn("Hvad koster blegning, og hvilken klinik er bedst?");
     expect(findForbiddenCategories(out.reply, REPLY)).toEqual([]);
@@ -1423,8 +1481,8 @@ describe("8.6c: action_claim", () => {
 describe("8.6c: chat.v3-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("forbyder spørgsmål om tidsrum, postnummer og kontaktdata og påstande om handlinger", () => {
-    expect(prompt).toContain("chat.v5");
-    expect(prompt).toContain("rules-v5");
+    expect(prompt).toContain("chat.v6");
+    expect(prompt).toContain("rules-v6");
     expect(prompt).toMatch(/Spørg ALDRIG om tidsrum[^\n]*postnummer[^\n]*telefon[^\n]*e-mail/);
     expect(prompt).toMatch(/aldrig påstå, at du har bekræftet, valgt, gemt, sendt, booket/);
     expect(prompt).toMatch(/readyForSummary må kun være true, når suggestedServices ikke er tom/);
@@ -1434,8 +1492,8 @@ describe("8.6c: chat.v3-prompten", () => {
     expect(prompt).toContain("BILLEDER");
   });
   it("rules-versionerne", () => {
-    expect(AI_RULES.version).toBe("rules-v5");
-    expect(MDR_STRICT_RULES.version).toBe("rules-v5-mdr-strict");
+    expect(AI_RULES.version).toBe("rules-v6");
+    expect(MDR_STRICT_RULES.version).toBe("rules-v6-mdr-strict");
   });
 });
 
@@ -1662,9 +1720,9 @@ describe("9.3: SUGGESTION_FALLBACK_TEXT", () => {
   });
 });
 
-// ---------- 9.4: chat.v5 og rules-v5 (7.9a regel 4) ----------
+// ---------- 9.4: chat.v6 og rules-v6 (7.9a regel 4) ----------
 
-describe("9.4: chat.v5-prompten", () => {
+describe("9.4: chat.v6-prompten", () => {
   const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
   it("højst tre spørgsmål, ét ad gangen med 2-4 hurtigsvar, fri uddybning", () => {
     expect(prompt).toMatch(/højst TRE opklarende spørgsmål/);
@@ -1677,13 +1735,58 @@ describe("9.4: chat.v5-prompten", () => {
     expect(prompt).not.toMatch(/kan bekræfte behandlingerne nedenfor/);
   });
   it("versionerne er hævet", () => {
-    expect(prompt).toContain("chat.v5");
-    expect(AI_RULES.version).toBe("rules-v5");
-    expect(MDR_STRICT_RULES.version).toBe("rules-v5-mdr-strict");
+    expect(prompt).toContain("chat.v6");
+    expect(AI_RULES.version).toBe("rules-v6");
+    expect(MDR_STRICT_RULES.version).toBe("rules-v6-mdr-strict");
   });
   it("strenge regler og akut-regler er uændrede i prompten", () => {
     expect(buildChatSystemPrompt(MDR_STRICT_RULES, "")).toMatch(/Du må ikke vurdere/);
     expect(prompt).toMatch(/Ordet pris må ikke indgå/);
+  });
+});
+
+// ---------- chat.v6: tandkød inden for området, specifikke forslag, højst tre ----------
+
+describe("chat.v6: område og specifikke forslag", () => {
+  const prompt = buildChatSystemPrompt(AI_RULES, buildCatalogContext(GROUPS));
+
+  it("tandkødsproblemer er udtrykkeligt inden for området og ikke akutte", () => {
+    expect(prompt).toMatch(/OMRÅDE:[^\n]*tandkød/);
+    expect(prompt).toMatch(/Blødning fra tandkød ved tandbørstning[^\n]*IKKE akut/);
+    expect(prompt).toMatch(/Afvis aldrig et tandemne/);
+  });
+  it("prompten kobler børn, manglende tænder og tandkød til specifikke slugs og begrænser til tre", () => {
+    for (const slug of ["boerneundersoegelse", "tilvaenning_tandlaege", "implantat_samtale", "bro", "delprotese", "tandkoedsundersoegelse"]) {
+      expect(prompt).toContain(slug);
+    }
+    expect(prompt).toMatch(/Højst TRE slugs/);
+    expect(prompt).toMatch(/kun det generelle udgangspunkt/);
+  });
+  it("ydelsesafsnittet indeholder hverken priser eller klinikanbefalinger", () => {
+    expect(findForbiddenCategories(serviceSelectionSection(), { categories: ["price", "clinic_recommendation"] })).toEqual([]);
+    expect(scopeSection()).not.toMatch(/\d/);
+  });
+  it("blødende tandkød er ikke et akut tegn, men kraftig blødning der ikke stopper er", () => {
+    for (const text of ["Mit tandkød bløder, når jeg børster tænder", "Mit tandkød bløder lidt og er rødt", "Tandkødet er lidt hævet og trækker sig tilbage"]) {
+      expect(detectEmergency(text).emergency).toBe(false);
+      expect(detectOutOfScopeTopics(text)).toEqual([]);
+    }
+    expect(detectEmergency("Min mund bløder kraftigt og det stopper ikke").emergency).toBe(true);
+    expect(detectEmergency("Mit ansigt er hævet og jeg har feber").emergency).toBe(true);
+  });
+  it("et normalt svar om tandkød afvises ikke af filteret, og forslag begrænses til tre", async () => {
+    const ok = await chat("Mit tandkød bløder, når jeg børster tænder", fakeModel(turn({ reply: "Tak, det er godt at vide. Hvor længe har tandkødet blødt?", quickReplies: ["Et par dage", "Over en uge", "Ved ikke"] })));
+    expect(ok.blocked).toBe(false);
+    expect(ok.reply).toMatch(/Hvor længe/);
+    expect(ok.outOfScopeTopics).toEqual([]);
+    const many = await chat("Jeg vil have hvidere tænder", fakeModel(turn({ reply: "Disse kan passe.", suggestedServices: ["blegning", "fyldning", "undersoegelse", "blegning"], readyForSummary: true })));
+    expect(many.suggestedServices).toEqual(["blegning", "fyldning", "undersoegelse"]);
+    expect(many.readyForSummary).toBe(true);
+  });
+  it("det forsøg der afviser et tandkødsspørgsmål hverken stjæler akut eller emne", async () => {
+    const r = await chat("Mit tandkød bløder, når jeg børster tænder", fakeModel(turn({ reply: "Det kan være tandkødsbetændelse.", emergency: true })));
+    expect(r.emergencyDetected).toBe(false);
+    expect(r.outOfScopeTopics).toEqual([]);
   });
 });
 

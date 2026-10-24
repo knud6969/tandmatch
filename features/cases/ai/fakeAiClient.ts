@@ -37,7 +37,7 @@ function lastPatientText(params: StructuredCallParams): string {
   return raw.replace(/<\/?patient_input>/g, "").trim().toLowerCase();
 }
 
-// Almindelig samtale uden nøgleord (7.9a regel 6): to spørgsmål med hurtigsvar, derefter forslag (som en rigtig AI under chat.v5).
+// Almindelig samtale uden nøgleord (7.9a regel 6): to spørgsmål med hurtigsvar, derefter forslag (som en rigtig AI under chat.v6).
 const FAKE_QUESTIONS: readonly { reply: string; quickReplies: string[] }[] = [
   { reply: "Hvor i munden sidder det?", quickReplies: ["Foran", "Bagtil", "Øverst", "Nederst"] },
   { reply: "Hvor længe har du haft det?", quickReplies: ["Et par dage", "Over en uge", "Over en måned", "Ved ikke"] },

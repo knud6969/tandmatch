@@ -25,12 +25,14 @@ import {
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
-import { CHAT_RETRY_REMINDER } from "./prompts/chat.v5";
+import { CHAT_RETRY_REMINDER } from "./prompts/chat.v6";
 import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
 
 export const MAX_AI_ATTEMPTS = 2;
+// Højst så mange forslag i en chat-tur (prompten beder om det samme). Overskydende kasseres, de mest relevante står først.
+export const MAX_CHAT_SUGGESTIONS = 3;
 
 // Kaldes med null ved første forsøg og med en påmindelse ved andet forsøg.
 export type ModelCall = (retryReminder: string | null) => Promise<unknown>;
@@ -112,7 +114,7 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
 
     // Ukendte slugs afvises (7.5). Kontrolleres før teksten, så tekstfejl kan skelnes fra ugyldige forslag.
     if (turn.suggestedServices.some((slug) => !input.knownSlugs.has(slug))) continue;
-    const suggestions = unique(turn.suggestedServices);
+    const suggestions = unique(turn.suggestedServices).slice(0, MAX_CHAT_SUGGESTIONS);
     const candidate = turn.readyForSummary && suggestions.length > 0 ? suggestions : null;
 
     if (findForbiddenCategories(turn.reply, replyFilterOptions(rules)).length > 0) {
@@ -155,17 +157,17 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
       maskedUserMessage,
       reply: turn.reply,
       preliminaryAssessment: assessment,
-      suggestedServices: unique(turn.suggestedServices),
+      suggestedServices: suggestions,
       // Slået fra: flaget beregnes, men vises ikke og ingen henvisningstekst indsættes (rules.ts).
       emergency: false,
       emergencyDetected: emergency,
       lifeThreatening: false,
       outOfScopeTopics: topics,
       // 7.9: uden forslag er der intet for patienten at bekræfte.
-      readyForSummary: turn.readyForSummary && unique(turn.suggestedServices).length > 0,
+      readyForSummary: turn.readyForSummary && suggestions.length > 0,
       // 8.6g: ved fund droppes kun hurtigsvarene, ikke hele svaret. Ingen hurtigsvar, når patienten skal bekræfte ydelser.
       quickReplies:
-        turn.readyForSummary && unique(turn.suggestedServices).length > 0
+        turn.readyForSummary && suggestions.length > 0
           ? []
           : filterQuickReplies(turn.quickReplies, replyFilterOptions(rules)),
       blocked: false,
