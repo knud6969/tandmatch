@@ -13,7 +13,7 @@ import { SaveBar } from "@/components/ui/save-bar";
 import { useLoad } from "@/platform/ui-utils/use-load";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadClinic, loadServiceGroups } from "@/features/clinics/utils/clinic-loaders";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { IMAGE_ACCEPT } from "@/platform/ui-utils/prepare-image";
 import { uploadImage } from "@/features/clinics/utils/upload-image";
 import { useAction } from "@/platform/ui-utils/use-action";

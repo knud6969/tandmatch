@@ -17,7 +17,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { formatShortDateTime } from "@/platform/ui-utils/format";
+import { formatShortDateTime } from "@/lib/common/domain/format";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { usePolling } from "@/platform/ui-utils/use-polling";
 

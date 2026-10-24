@@ -15,7 +15,7 @@ import { DefinitionList, type DefinitionItem } from "@/components/ui/definition-
 import { LoadState } from "@/components/ui/load-state";
 import { PriceWithSource } from "@/components/ui/price-with-source";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { formatDateTime, formatShortDateTime } from "@/platform/ui-utils/format";
+import { formatDateTime, formatShortDateTime } from "@/lib/common/domain/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 function BackLink() {

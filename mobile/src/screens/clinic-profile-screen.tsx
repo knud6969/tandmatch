@@ -17,12 +17,13 @@ import { TrustpilotBlock } from "~/components/clinic-directory/trustpilot-block"
 import { BackLink, Badge, Button, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, radius, spacing } from "~/theme";
-import { BASIC_CLINIC_LABEL, BASIC_CLINIC_PROFILE_TEXT, BASIC_CLINIC_PROFILE_TITLE, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
-import { formatKm, formatShortDateTime, phoneHref, safeWebHref, websiteLabel } from "~/utils/format";
+import { BASIC_CLINIC_LABEL, BASIC_CLINIC_PROFILE_TEXT, BASIC_CLINIC_PROFILE_TITLE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
+import { formatKm, formatShortDateTime } from "@/lib/common/domain/format";
+import { phoneHref, safeWebsiteHref, websiteLabel } from "@/lib/common/domain/links";
 
-// Åbner kun web-adresser, der er godkendt af safeWebHref (kilden er klinikkens egen tekst, så den må ikke blindt åbnes).
+// Åbner kun web-adresser, der er godkendt af safeWebsiteHref (kilden er klinikkens egen tekst, så den må ikke blindt åbnes).
 function openWeb(url: string) {
-  const href = safeWebHref(url);
+  const href = safeWebsiteHref(url);
   if (href) void WebBrowser.openBrowserAsync(href);
 }
 
@@ -41,7 +42,7 @@ function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; ca
   const catalog = useLoad(getServiceGroups);
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
-  const website = safeWebHref(clinic.website);
+  const website = safeWebsiteHref(clinic.website);
   return (
     <>
       <View style={styles.hero}>

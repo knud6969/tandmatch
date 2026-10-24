@@ -2,8 +2,9 @@ import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { bookSlotSchema, contactNameSchema } from "@/lib/booking/schemas/bookings";
 import { phoneSchema } from "@/lib/common/schemas/phone";
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiRequestError } from "~/api/client";
-import { dayKey, formatDayLabel } from "~/utils/format";
+import { dayKey, formatDayLabel } from "@/lib/common/domain/format";
 import { fieldErrorsFrom, type FieldErrors } from "~/utils/field-errors";
 
 // Booking: ledige tider pr. dag, formularen og fejlhåndtering (architecture 13.4, 10.10). Reglerne er lib's skemaer.
@@ -53,7 +54,7 @@ export function bookingFailure(error: unknown): { message: string; refetchSlots:
       clearSlot: error.code === "SLOT_TAKEN" || error.code === "SLOT_UNAVAILABLE",
     };
   }
-  return { message: "Der opstod en fejl. Prøv igen om lidt.", refetchSlots: false, clearSlot: false };
+  return { message: GENERIC_ERROR_TEXT, refetchSlots: false, clearSlot: false };
 }
 
 // Kommende: booket eller reserveret og endnu ikke slut, med den nærmeste først. Tidligere: resten, med den seneste først.

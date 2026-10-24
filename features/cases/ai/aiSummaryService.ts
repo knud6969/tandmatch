@@ -36,18 +36,6 @@ export class AiSummaryService {
     private readonly timeoutMs: number = AI_TIMEOUT_MS,
   ) {}
 
-  get promptVersion(): string {
-    return SUMMARY_PROMPT_VERSION;
-  }
-
-  get rulesVersion(): string {
-    return this.rules.version;
-  }
-
-  get model(): string {
-    return this.client.model;
-  }
-
   async generate(input: SummaryInput): Promise<SummaryOutput> {
     const instructions = buildSummarySystemPrompt(this.rules, buildCatalogContext(input.catalog));
     const refs = input.images.map((image, i) => ({ imageId: image.imageId, ref: `img_${i + 1}`, data: image.data }));

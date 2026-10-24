@@ -143,7 +143,7 @@ Rækkefølgen ovenfor var **webens** trinflow (`/start/[caseId]`, fjernet fra we
 |---|---|
 | Stille opklarende spørgsmål om ønsker, gener, varighed, tidligere behandling, tidshorisont | **Priser** i enhver form: beløb, prisniveau, "billig/dyr", sammenligning af priser |
 | Forklare behandlinger generelt (gerne med katalogets beskrivelser) | **Anbefale en bestemt klinik** eller tandlæge, rangere klinikker, nævne klinikker ved navn |
-| Give en **foreløbig vurdering** i feltet `preliminaryAssessment`, altid formuleret som foreløbig. UI viser altid den faste mærkat: "Foreløbig vurdering fra AI. Klinikken laver den endelige vurdering." | Endelige diagnoser eller garantier ("du har…", "det er helt sikkert…"); at sige, at patienten ikke behøver tandlæge |
+| Give en **foreløbig vurdering** i feltet `preliminaryAssessment`, altid formuleret som foreløbig. UI viser altid den faste mærkat `PRELIMINARY_ASSESSMENT_LABEL`: "Foreløbig – klinikken vurderer endeligt" | Endelige diagnoser eller garantier ("du har…", "det er helt sikkert…"); at sige, at patienten ikke behøver tandlæge |
 | Foreslå ydelser fra kataloget (`suggestedServices`, kun slugs fra kataloget). Patienten bekræfter selv | Ydelser uden for kataloget; at bekræfte ydelser på patientens vegne |
 | **Akut:** ved tegn som stærke smerter, hævelse, feber, blødning der ikke stopper, traume: `emergency = true` og en kort opfordring til at søge akut tid. UI viser den faste akut-henvisning med link til `/akut`. Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt/hals) henvises til 112/1813 i den faste tekst | At fortsætte almindelig udspørgen, når der er akutte tegn |
 | **Usikker patient:** spørge mere ind; er patienten stadig usikker, foreslå `undersoegelse` | At vælge spor eller klinik for patienten |
@@ -342,7 +342,7 @@ Er sagen klar, men `canSend` falsk (fx ingen ledige lead-pladser), viser `ready`
 - Ved inputfeltet er der en knap til kamera og bibliotek. Første tryk uden gældende `image_upload`-samtykke (`hasCurrentConsent`, `lib/identity/domain/consents.ts`) viser et samtykkekort i chatten med `CONSENT_TEXTS.image_upload` og knapperne "Giv samtykke" og "Ikke nu" (`POST /api/consents`). Samtykket gives aldrig sammen med AI-samtykket (9.4).
 - Derefter vælges kamera eller bibliotek, og billedet nedskaleres og uploades som i 13.5.
 - Billederne vises som miniaturer i en række over inputfeltet med slet-knap og tælleren `n/MAX_IMAGES_PER_CASE`. De indgår ikke i chatbeskederne, fordi `case_images` ikke er beskeder.
-- Efter en upload-batch kalder appen **billedturen** `POST /api/cases/{id}/chat/image-turn` (7.9c). Patienten skriver ikke noget, og turen tæller ikke som en af hendes beskeder. Den faste besked `IMAGE_ADDED_CHAT_MESSAGE` sendes ikke længere (konstanten kan fjernes, når appen er opdateret). Er samtalen lukket (30 beskeder), giver billedturen 429 `CHAT_LIMIT`, og appen springer den over ([ÅBEN] 12.3 punkt 42).
+- Efter en upload-batch kalder appen **billedturen** `POST /api/cases/{id}/chat/image-turn` (7.9c). Patienten skriver ikke noget, og turen tæller ikke som en af hendes beskeder. Er samtalen lukket (30 beskeder), giver billedturen 429 `CHAT_LIMIT`, og appen springer den over ([ÅBEN] 12.3 punkt 42).
 
 ### 7.9c Billedtur: AI'en reagerer selv på et uploadet billede (brugerens beslutning 2026-10-24)
 

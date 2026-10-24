@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { OUT_OF_SCOPE_NOTICES } from "@/lib/cases/constants/ai-texts";
+import { OUT_OF_SCOPE_NOTICES, PRELIMINARY_ASSESSMENT_LABEL } from "@/lib/cases/constants/ai-texts";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Badge, StatusMessage } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
@@ -10,7 +10,7 @@ function AssistantExtras({ message }: { message: AiChatMessageDto }) {
     <View style={styles.extras}>
       {message.preliminaryAssessment ? (
         <View style={styles.assessment} testID="foreloebig-vurdering">
-          <Badge label="Foreløbig – klinikken vurderer endeligt" tone="warning" />
+          <Badge label={PRELIMINARY_ASSESSMENT_LABEL} tone="warning" />
           <Text style={styles.assessmentText}>{message.preliminaryAssessment}</Text>
         </View>
       ) : null}

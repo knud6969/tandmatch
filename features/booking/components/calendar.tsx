@@ -15,9 +15,9 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { BOOKING_STATUS_TONE } from "@/features/booking/utils/booking-status";
 import { clinicLeadHref } from "@/features/leads/ui";
-import { formatDay, formatShortDateTime, formatTime } from "@/platform/ui-utils/format";
+import { formatDay, formatShortDateTime, formatTime } from "@/lib/common/domain/format";
 import { groupByDay } from "@/platform/ui-utils/group-by-day";
-import { phoneHref } from "@/platform/ui-utils/links";
+import { phoneHref } from "@/lib/common/domain/links";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { useLoad } from "@/platform/ui-utils/use-load";
 

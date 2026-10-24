@@ -1029,7 +1029,7 @@ describe("regression B6/B10: værdimængder og faste tekster", () => {
   it("velkomst og mærkat ligger som faste tekster", async () => {
     const texts = await import("@/lib/cases/constants/ai-texts");
     expect(texts.CHAT_WELCOME_TEXT).toMatch(/kan ikke stille diagnoser/);
-    expect(texts.PRELIMINARY_ASSESSMENT_LABEL).toMatch(/endelige vurdering/);
+    expect(texts.PRELIMINARY_ASSESSMENT_LABEL).toMatch(/vurderer endeligt/);
     expect(texts.CHAT_PII_WARNING_TEXT).toMatch(/navn/);
   });
 });

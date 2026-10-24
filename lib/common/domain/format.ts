@@ -1,4 +1,5 @@
 // Formatering af datoer, beløb og afstande til dansk visning. Alle tidspunkter vises i dansk tid.
+// Ren kode, delt af klinik-weben og patient-appen (architecture 2.1).
 import { CLINIC_TIME_ZONE as TIME_ZONE } from "@/lib/booking/constants/bookings";
 
 const dateFormat = new Intl.DateTimeFormat("da-DK", { dateStyle: "long", timeZone: TIME_ZONE });
@@ -77,7 +78,7 @@ const shortDateTimeFormat = new Intl.DateTimeFormat("da-DK", {
   timeZone: TIME_ZONE,
 });
 const dayFormat = new Intl.DateTimeFormat("da-DK", { weekday: "long", day: "numeric", month: "long", timeZone: TIME_ZONE });
-const timeFormat = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE });
+const timeFormat = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: TIME_ZONE });
 
 // "tir. 14. okt., 09.15" til kompakte kort.
 export function formatShortDateTime(iso: string): string {
@@ -101,3 +102,9 @@ export function formatClock(value: string): string {
 export function formatCount(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+// Kort dag og dagsnøgle i dansk tid til bookingen: "man. 26. okt." og "2026-10-26" (nøgle til gruppering).
+const dayLabelFormat = new Intl.DateTimeFormat("da-DK", { weekday: "short", day: "numeric", month: "short", timeZone: TIME_ZONE });
+const dayKeyFormat = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: TIME_ZONE });
+export const formatDayLabel = (iso: string) => dayLabelFormat.format(new Date(iso));
+export const dayKey = (iso: string) => dayKeyFormat.format(new Date(iso));

@@ -9,7 +9,7 @@ import { LoadState } from "@/components/ui/load-state";
 import { useLoad } from "@/platform/ui-utils/use-load";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { useAction } from "@/platform/ui-utils/use-action";
-import { formatDateTime, fromDateTimeLocal } from "@/platform/ui-utils/format";
+import { formatDateTime, fromDateTimeLocal } from "@/lib/common/domain/format";
 import { TIME_BLOCK_NOTE_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { createTimeBlockSchema } from "@/lib/clinics/schemas/clinics";
 import type { TimeBlockDto } from "@/lib/clinics/types/clinics";

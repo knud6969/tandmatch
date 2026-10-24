@@ -763,9 +763,6 @@ isOneToOne: false
 "auth_clinic_id":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
-"auth_role":
-{ Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["user_role"]
-                           },
 "book_slot":
 { Args: { "p_contact_name": string,"p_contact_phone": string,"p_lead_id": string,"p_service_id": string,"p_starts_at": string }; Returns: string
                            },
@@ -889,9 +886,6 @@ isOneToOne: false
                            },
 "is_valid_phone":
 { Args: { "p_phone": string }; Returns: boolean
-                           },
-"is_verified_clinic_owner":
-{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "issue_claim_token":
 { Args: Record<PropertyKey, never>; Returns: Json

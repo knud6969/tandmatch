@@ -16,7 +16,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
 import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
-import { parseWholeKr } from "@/platform/ui-utils/format";
+import { parseWholeKr } from "@/lib/common/domain/format";
 import { useAction } from "@/platform/ui-utils/use-action";
 
 type Mode = "idle" | "comment" | "decline";

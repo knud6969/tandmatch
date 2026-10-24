@@ -5,7 +5,7 @@ import { Badge, Button, Card } from "~/components/ui";
 import { canCancelBooking, canReviewBooking } from "~/utils/case-actions";
 import { colors, type } from "~/theme";
 import { bookingTone } from "~/utils/case-view";
-import { formatDateTime } from "~/utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
 
 type Props = { booking: PatientBookingDto; onCancel?: () => void; cancelling?: boolean; onReview?: () => void };
 

@@ -30,12 +30,6 @@ export abstract class BaseStorage {
     await this.remove(await this.listFiles(prefix));
   }
 
-  async signedUrl(path: string, ttlSeconds: number): Promise<string> {
-    const { data, error } = await this.admin.storage.from(this.bucket).createSignedUrl(path, ttlSeconds);
-    if (error || !data) throw new Error("storage: signering fejlede");
-    return data.signedUrl;
-  }
-
   // Signerer flere stier i ét kald. Resultatet har samme rækkefølge som `paths`.
   async signedUrls(paths: string[], ttlSeconds: number): Promise<string[]> {
     if (paths.length === 0) return [];

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { MESSAGE_MAX_CHARS } from "@/lib/common/constants/limits";
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import { MESSAGE_POLL_INTERVAL_MS } from "@/lib/leads/constants/messages";
 import { isThreadOpen } from "@/lib/leads/domain/leads";
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
@@ -20,8 +21,7 @@ import { appendMessage, messagesChanged, sortMessages, THREAD_CLOSED_NOTICE } fr
 
 type View_ = { messages: MessageDto[]; lead: PatientLeadDto };
 
-const GENERIC_ERROR = "Der opstod en fejl. Prøv igen om lidt.";
-const errorText = (e: unknown) => (e instanceof ApiRequestError ? e.message : GENERIC_ERROR);
+const errorText = (e: unknown) => (e instanceof ApiRequestError ? e.message : GENERIC_ERROR_TEXT);
 
 // Beskedtråden med én klinik (architecture 10.12, 13.4). Hentes ved fokus og derefter hvert 15. sekund, men kun mens skærmen er i fokus.
 // Klinikken laver den endelige vurdering; tråden er til afklarende spørgsmål, ikke til akutte problemer.

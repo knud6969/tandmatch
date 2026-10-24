@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { clinicProfileHref } from "@/features/clinics/utils/clinic-query";
 import { cx } from "@/components/ui/cx";
@@ -13,17 +12,13 @@ type ClinicCardProps = {
   emergency: boolean;
   highlighted?: boolean;
   onHover?: (id: string | null) => void;
-  // Med ?sag= kan patienten vælge klinikken til sammenligning og afsendelse (kun verificerede).
-  // `contacted`: sagen er allerede sendt til klinikken, så den kan ikke vælges igen.
-  // Med ?sag= fører kortet til profilen med sagen med, så valget bevares.
+  // Profillinket med oversigtens filtre, så "Alle klinikker" fører tilbage til dem.
   profileHref?: string;
-  // Egen handling nederst på kortet (fx "Vælg tid" på /akut).
-  action?: ReactNode;
 };
 
 // Klinikkort i Airbnb-stil. Verificerede klinikker har billede/logo, blå kant og mærket "Verificeret"; basisklinikker er
 // dæmpede, uden billede, og siger tydeligt, at de ikke er på TandMatch endnu. Hele kortet er et link til profilen.
-export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, profileHref, action }: ClinicCardProps) {
+export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHover, profileHref }: ClinicCardProps) {
   const full = clinic.tier === "full";
   return (
     <li
@@ -64,8 +59,6 @@ export function ClinicCard({ clinic, hasServices, emergency, highlighted, onHove
         <ClinicWhere clinic={clinic} />
         <ClinicFacts clinic={clinic} hasServices={hasServices} emergency={emergency} />
       </div>
-
-      {action && <div className="relative z-10 border-t border-line p-4">{action}</div>}
 
     </li>
   );

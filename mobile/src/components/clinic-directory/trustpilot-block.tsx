@@ -2,8 +2,8 @@ import { StyleSheet, Text, View } from "react-native";
 import type { TrustpilotInfo } from "@/lib/common/types/common";
 import { Button } from "~/components/ui";
 import { colors, fontSize } from "~/theme";
-import { formatDate, formatOneDecimal } from "~/utils/format";
-import { trustpilotSource } from "~/utils/clinic-texts";
+import { formatDate, formatOneDecimal } from "@/lib/common/domain/format";
+import { trustpilotSource } from "@/lib/clinics/domain/trustpilot";
 
 // Kort linje i klinikkort (uden link; hele kortet åbner profilen).
 // Trustpilot vises altid med kilde og aldrig sammenblandet med platformens egne anmeldelser (CLAUDE.md, Anmeldelser).

@@ -3,8 +3,8 @@ import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
-import { BASIC_CLINIC_FACTS_TEXT, BASIC_CLINIC_LABEL, NO_REVIEWS_TEXT, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
-import { formatKm, formatPercent, formatPriceRange, formatShortDateTime } from "~/utils/format";
+import { BASIC_CLINIC_FACTS_TEXT, BASIC_CLINIC_LABEL, NO_REVIEWS_TEXT, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
+import { formatKm, formatPercent, formatPriceRange, formatShortDateTime } from "@/lib/common/domain/format";
 import { StarRating } from "./star-rating";
 import { TrustpilotLine } from "./trustpilot-block";
 

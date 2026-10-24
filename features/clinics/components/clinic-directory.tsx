@@ -19,7 +19,7 @@ import { loadServiceGroups } from "@/features/clinics/utils/clinic-loaders";
 import {
   buildClinicsQuery,
   clinicProfileHref,
-  defaultFilters,
+  DEFAULT_FILTERS,
   filtersFromSearch,
   filtersToSearch,
   hasOrigin,
@@ -51,18 +51,16 @@ export function ClinicDirectory() {
   const [resetVersion, setResetVersion] = useState(0);
   const [view, setView] = useState<MobileView>("list");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Weben vælger ikke klinikker til en sag; det gør patient-appen (architecture 13.6).
-  const caseId = null;
 
   // Filtrene spejles i adressen (B16), så genindlæsning, profil og tilbage samt deling bevarer dem.
   const currentSearch = params.toString();
   useEffect(() => {
-    const next = filtersToSearch(filters, caseId);
+    const next = filtersToSearch(filters);
     if (next !== currentSearch)
       router.replace(next ? `${pathname}?${next}` : pathname, {
         scroll: false,
       });
-  }, [filters, caseId, currentSearch, pathname, router]);
+  }, [filters, currentSearch, pathname, router]);
 
   const query = useMemo(() => buildClinicsQuery(filters), [filters]);
   const loader = useCallback(
@@ -77,9 +75,9 @@ export function ClinicDirectory() {
 
   const patch = useCallback((change: Partial<DirectoryFilters>) => setFilters((current) => ({ ...current, ...change })), []);
   const reset = useCallback(() => {
-    setFilters(defaultFilters(caseId));
+    setFilters(DEFAULT_FILTERS);
     setResetVersion((v) => v + 1);
-  }, [caseId]);
+  }, []);
 
   const data = clinics.data;
   const updating = data !== null && data.query !== query;
@@ -87,8 +85,8 @@ export function ClinicDirectory() {
   const activeCount = countActive(filters);
   const withoutLocation = data ? data.clinics.filter((clinic) => !clinic.location).length : 0;
 
-  // Profil- og kortlinks tager oversigtens filtre (og sagen) med, så "Alle klinikker" fører tilbage til dem.
-  const directorySearch = filtersToSearch(filters, caseId);
+  // Profil- og kortlinks tager oversigtens filtre med, så "Alle klinikker" fører tilbage til dem.
+  const directorySearch = filtersToSearch(filters);
 
   return (
     <div className={"mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10"}>

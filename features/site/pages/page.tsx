@@ -4,7 +4,6 @@ import { DIRECTORY_HREF, DIRECTORY_READY } from "@/lib/common/navigation/entries
 import { ClinicPreview } from "@/features/site/components/clinic-preview";
 import { EntryButton } from "@/features/site/components/entry-button";
 import { FeatureCard } from "@/features/site/components/feature-card";
-import { HomeFlash } from "@/features/identity/ui";
 import { AiDisclaimer } from "@/components/ui/disclaimer";
 import { LinkButton } from "@/components/ui/button";
 import { ICONS } from "@/components/ui/icons";
@@ -21,7 +20,6 @@ const STEPS = [
 export default function HomePage() {
   return (
     <>
-      <HomeFlash />
       <section className="bg-brand-50">
         <div className="mx-auto flex max-w-wide flex-col gap-6 px-4 py-10 sm:px-6 sm:py-16">
           <div className="flex max-w-3xl flex-col gap-4">

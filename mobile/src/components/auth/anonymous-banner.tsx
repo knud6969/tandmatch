@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, fontSize, MIN_TOUCH, spacing, type } from "~/theme";
-import { formatDateTime } from "~/utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
 
 type Props = { expiresAt: string | null; onCreateAccount: () => void };
 

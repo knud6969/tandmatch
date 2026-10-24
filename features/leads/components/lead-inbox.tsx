@@ -9,7 +9,7 @@ import { FilterChips } from "@/components/ui/filter-chips";
 import { LoadState } from "@/components/ui/load-state";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { clinicLeadHref } from "@/features/leads/utils/clinic-links";
-import { formatDateTime } from "@/platform/ui-utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 type Filter = LeadStatus | "all";

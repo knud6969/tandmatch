@@ -23,8 +23,9 @@ import { TrustpilotBlock } from "@/features/clinics/components/trustpilot-block"
 import { ApiRequestError, apiRequest } from "@/platform/ui-utils/api-client";
 import { directoryHref } from "@/features/clinics/utils/clinic-query";
 import { loadServiceGroups } from "@/features/clinics/utils/clinic-loaders";
-import { formatShortDateTime } from "@/platform/ui-utils/format";
-import { phoneHref, safeWebsiteHref, websiteLabel } from "@/platform/ui-utils/links";
+import { formatShortDateTime } from "@/lib/common/domain/format";
+import { phoneHref, safeWebsiteHref, websiteLabel } from "@/lib/common/domain/links";
+import { BASIC_CLINIC_PROFILE_TITLE } from "@/lib/clinics/constants/clinic-texts";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 type Result = { kind: "found"; profile: ClinicProfileDto } | { kind: "missing" };
@@ -126,7 +127,7 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
       </header>
 
       {!full && (
-        <Alert tone="info" title="Klinikken er endnu ikke på TandMatch">
+        <Alert tone="info" title={BASIC_CLINIC_PROFILE_TITLE}>
           <p>
             Vi viser kun de grunddata, der er offentligt tilgængelige. Klinikken har endnu ikke oprettet sig hos os, så der er ingen
             prisliste, ingen verificerede anmeldelser og ingen ledige tider, og du kan ikke kontakte klinikken via TandMatch. Ring eller

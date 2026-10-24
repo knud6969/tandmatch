@@ -1,11 +1,7 @@
 import type { TrustpilotInfo } from "@/lib/common/types/common";
-import { formatDate, formatOneDecimal } from "@/platform/ui-utils/format";
+import { formatDate, formatOneDecimal } from "@/lib/common/domain/format";
+import { trustpilotSource } from "@/lib/clinics/domain/trustpilot";
 import { ExternalLink } from "@/features/clinics/components/external-link";
-
-// Mærkat efter hvem der har indtastet tallene (architecture 8.4). Trustpilot hentes eller scrapes aldrig af TandMatch.
-export function trustpilotSource(trustpilot: NonNullable<TrustpilotInfo>): string {
-  return trustpilot.enteredBy === "clinic" ? "angivet af klinikken" : "angivet af TandMatch";
-}
 
 // Kort visning i klinikkort og kortets popup. Linket ligger over kortets klikflade (relative z-10).
 export function TrustpilotLine({ trustpilot }: { trustpilot: TrustpilotInfo }) {

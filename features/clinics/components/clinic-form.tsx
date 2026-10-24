@@ -13,7 +13,7 @@ import { useLoad } from "@/platform/ui-utils/use-load";
 import { VerificationBanner } from "@/features/clinics/components/verification-banner";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadClinic } from "@/features/clinics/utils/clinic-loaders";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { CLINIC_DESCRIPTION_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { patchClinicSchema } from "@/lib/clinics/schemas/clinics";

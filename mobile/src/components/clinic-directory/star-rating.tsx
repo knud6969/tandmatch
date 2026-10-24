@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fontSize } from "~/theme";
-import { formatOneDecimal } from "~/utils/format";
+import { formatOneDecimal } from "@/lib/common/domain/format";
 
 // Stjerner med tekst til skærmlæsere. `value` kan have decimaler.
 export function StarRating({ value, count }: { value: number; count?: number }) {

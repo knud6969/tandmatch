@@ -8,7 +8,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/features/identity/components/session-provider";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { AREA_HOME } from "@/lib/common/navigation/areas";
 import { signupSchema } from "@/lib/identity/schemas/auth";
 import type { AuthUserDto } from "@/lib/identity/types/auth";

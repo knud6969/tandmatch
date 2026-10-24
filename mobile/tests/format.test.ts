@@ -1,4 +1,5 @@
-import { formatClock, formatPercent, formatPriceRange, phoneHref, safeWebHref, websiteLabel } from "~/utils/format";
+import { formatClock, formatPercent, formatPriceRange } from "@/lib/common/domain/format";
+import { phoneHref, safeWebsiteHref, websiteLabel } from "@/lib/common/domain/links";
 
 // Sikrer, at tal, tider og links vises på dansk, og at kun sikre links åbnes.
 describe("format", () => {
@@ -13,9 +14,9 @@ describe("format", () => {
   });
 
   it("åbner kun http(s)-links", () => {
-    expect(safeWebHref("www.klinik.dk")).toBe("https://www.klinik.dk/");
-    expect(safeWebHref("javascript:alert(1)")).toBeNull();
-    expect(safeWebHref("  ")).toBeNull();
+    expect(safeWebsiteHref("www.klinik.dk")).toBe("https://www.klinik.dk/");
+    expect(safeWebsiteHref("javascript:alert(1)")).toBeNull();
+    expect(safeWebsiteHref("  ")).toBeNull();
     expect(websiteLabel("https://www.klinik.dk/")).toBe("www.klinik.dk");
   });
 

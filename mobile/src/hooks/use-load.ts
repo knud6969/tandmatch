@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiRequestError } from "~/api/client";
 
 // Fælles hook til alle hentninger, så indlæsning, fejl og "prøv igen" ser ens ud overalt.
@@ -23,7 +24,7 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
         if (!cancelled) setData(result);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof ApiRequestError ? e.message : "Der opstod en fejl. Prøv igen om lidt.");
+        if (!cancelled) setError(e instanceof ApiRequestError ? e.message : GENERIC_ERROR_TEXT);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

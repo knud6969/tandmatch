@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 import type { PriceRange } from "@/lib/common/types/common";
-import { formatPriceRange } from "@/platform/ui-utils/format";
-
-// Kilden, der står ved alle priser patienten ser (priser vises altid med kilde).
-export const PRICE_SOURCE = "ifølge klinikkens prisliste";
+import { formatPriceRange } from "@/lib/common/domain/format";
+import { PRICE_SOURCE } from "@/lib/clinics/constants/clinic-texts";
 
 type PriceWithSourceProps = {
   price: PriceRange;
