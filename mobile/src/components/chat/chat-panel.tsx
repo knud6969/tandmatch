@@ -5,11 +5,14 @@ import { CHAT_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
 import { Ionicons } from "@expo/vector-icons";
 import { ConsentGate } from "~/components/case/consent-gate";
-import { LoadState, StatusMessage } from "~/components/ui";
+import { Button, LoadState, StatusMessage } from "~/components/ui";
 import { colors, fontSize, iconSize, MIN_TOUCH, radius, SEND_BUTTON, spacing } from "~/theme";
 import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
+import type { useChatImages } from "~/hooks/use-chat-images";
+import { IMAGE_ADDED_NOTICE } from "~/utils/chat-images";
 import { ChatBubble } from "./chat-bubble";
+import { ImageBubble } from "./image-bubble";
 
 // Velkomstbesked vises lokalt og gemmes ikke, så den ikke tæller med i beskedgrænsen.
 const WELCOME: AiChatMessageDto = {
@@ -41,6 +44,8 @@ type Props = {
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
   cardsKey?: string;
+  // Billeder i chatten (architecture 9.3); udeladt, hvis sagen ikke kan tage billeder.
+  images?: ReturnType<typeof useChatImages>;
 };
 
 // Samtalen med AI-assistenten (architecture 6.1, 7, 10.6). Fast tekst om AI'ens grænser og om personoplysninger, foreløbige
@@ -56,13 +61,14 @@ export function ChatPanel(props: Props) {
   useEffect(() => {
     const id = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(id);
-  }, [messages.length, pending, props.cardsKey]);
+  }, [messages.length, pending, props.cardsKey, props.images?.items.length]);
 
   async function send(override?: string) {
     const text = (override ?? draft).trim();
     if (!text || sending) return;
     setSending(true);
     setSendError(null);
+    props.images?.clearJustAdded();
     if (override === undefined) setDraft("");
     const outcome = await props.onSend(text);
     setSending(false);
@@ -113,6 +119,10 @@ export function ChatPanel(props: Props) {
         {messages.map((message) => (
           <ChatBubble key={message.id} message={message} />
         ))}
+        {props.images?.items.map((item, index) => (
+          <ImageBubble key={item.key} item={item} index={index} onDelete={() => props.images?.remove(item)} onRetry={() => props.images?.retry(item.key)} />
+        ))}
+        {props.images?.justAdded ? <StatusMessage message={IMAGE_ADDED_NOTICE} /> : null}
         {/* Patientens besked vises med det samme, mens svaret hentes, så det føles hurtigt. */}
         {pending ? (
           <>
@@ -157,11 +167,36 @@ export function ChatPanel(props: Props) {
             {low !== null ? (
               <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
             ) : null}
+            {props.images?.notice ? <StatusMessage message={props.images.notice} tone="warning" /> : null}
             {/* Gentager advarslen om personoplysninger ved inputfeltet, hvor patienten skriver. */}
             <Text style={styles.hint} testID="pii-advarsel">
               {CHAT_PII_WARNING_TEXT}
             </Text>
+            {props.images?.awaitingConsent ? (
+              <View style={styles.consent}>
+                <ConsentGate
+                  type="image_upload"
+                  onGrant={() => void props.images?.grantConsent()}
+                  pending={props.images.consentPending}
+                  error={props.images.consentError}
+                  actionLabel="Giv samtykke og vælg billede"
+                />
+                <Button label="Ikke nu" variant="text" onPress={props.images.declineConsent} />
+              </View>
+            ) : null}
             <View style={styles.inputRow}>
+              {props.images ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tilføj billede"
+                  accessibilityState={{ disabled: !props.images.canAdd }}
+                  disabled={!props.images.canAdd}
+                  onPress={props.images.chooseSource}
+                  style={[styles.attach, !props.images.canAdd && styles.sendOff]}
+                >
+                  <Ionicons name="camera-outline" size={iconSize.md} color={colors.brand700} />
+                </Pressable>
+              ) : null}
               <TextInput
                 accessibilityLabel="Din besked til AI-assistenten"
                 testID="chat-input"
@@ -231,4 +266,6 @@ const styles = StyleSheet.create({
   },
   send: { width: SEND_BUTTON, height: SEND_BUTTON, borderRadius: SEND_BUTTON / 2, backgroundColor: colors.brand600, alignItems: "center", justifyContent: "center" },
   sendOff: { opacity: 0.4 },
+  attach: { width: SEND_BUTTON, height: SEND_BUTTON, borderRadius: SEND_BUTTON / 2, borderWidth: 1, borderColor: colors.fieldBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  consent: { maxHeight: 360 },
 });

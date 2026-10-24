@@ -19,6 +19,7 @@ import { Button, LoadState, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useCaseActions } from "~/hooks/use-case-actions";
 import { useChat } from "~/hooks/use-chat";
+import { useChatImages } from "~/hooks/use-chat-images";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, spacing } from "~/theme";
 import { cardModes, flowStepForApp } from "~/utils/case-cards";
@@ -32,6 +33,7 @@ export function CaseFlowScreen() {
   const consents = useLoad(getConsents);
   const [aiGranted, setAiGranted] = useState(false);
   const chat = useChat(caseId, caseLoad.reload);
+  const chatImages = useChatImages(caseId, caseLoad.data?.images ?? [], caseLoad.reload);
   const actions = useCaseActions(caseId);
   const catalog = useLoad(getServiceGroups);
   const session = useSession();
@@ -138,6 +140,7 @@ export function CaseFlowScreen() {
         consentError={grant.error}
         onGrantConsent={() => void grant.run()}
         onSend={chat.send}
+        images={chatImages}
         cards={cards}
         cardsKey={cardsKey(dto)}
       />
