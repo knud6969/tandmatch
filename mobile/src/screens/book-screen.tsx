@@ -7,6 +7,7 @@ import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import { bookSlot, getLeadAvailability } from "~/api/bookings";
 import { getCase } from "~/api/cases";
 import { listCaseLeads } from "~/api/leads";
+import { AccountRequired } from "~/screens/account-required";
 import { getPatientMe } from "~/api/patients";
 import { BookingCard } from "~/components/booking/booking-card";
 import { SlotPicker } from "~/components/booking/slot-picker";
@@ -100,7 +101,7 @@ function BookingForm({ data, leadId, onBooked }: { data: Loaded; leadId: string;
 }
 
 // Book tid på et accepteret lead (architecture 13.4, 10.10), og bekræftelse.
-export function BookScreen() {
+function BookContent() {
   const router = useRouter();
   const { caseId, leadId } = useLocalSearchParams<{ caseId: string; leadId: string }>();
   const data = useLoad(() => loadBookingData(caseId, leadId), [caseId, leadId]);
@@ -137,6 +138,14 @@ export function BookScreen() {
         </LoadState>
       )}
     </Screen>
+  );
+}
+
+export function BookScreen() {
+  return (
+    <AccountRequired title="Log ind for at booke en tid">
+      <BookContent />
+    </AccountRequired>
   );
 }
 

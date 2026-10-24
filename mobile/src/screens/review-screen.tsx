@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ReviewEligibleItemDto } from "@/lib/booking/types/reviews";
 import { createReview, listEligibleReviews } from "~/api/reviews";
+import { AccountRequired } from "~/screens/account-required";
 import { StarInput } from "~/components/review/star-input";
 import { BackLink, Button, Card, Checkbox, CheckboxText, Chip, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
@@ -96,7 +97,7 @@ function ReviewForm({ item, onDone }: { item: ReviewEligibleItemDto; onDone: () 
 }
 
 // Anmeldelse af et gennemført besøg (architecture 8.2, 13.4). Kun patienter med en gennemført booking kan anmelde; serveren afgør det.
-export function ReviewScreen() {
+function ReviewContent() {
   const router = useRouter();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const eligible = useLoad(listEligibleReviews);
@@ -131,6 +132,14 @@ export function ReviewScreen() {
         </LoadState>
       )}
     </Screen>
+  );
+}
+
+export function ReviewScreen() {
+  return (
+    <AccountRequired title="Log ind for at skrive en anmeldelse">
+      <ReviewContent />
+    </AccountRequired>
   );
 }
 
