@@ -2,6 +2,7 @@ import { DEFAULT_MAX_DISTANCE_KM, MAX_SELECTED_SERVICES } from "@/lib/clinics/co
 import { buildClinicQuery, canSortClinicsBy, hasClinicOrigin } from "@/lib/clinics/domain/clinic-query";
 import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicSort } from "@/lib/clinics/types/clinics";
+import { MAX_RADIUS_KM } from "~/utils/map-region";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). Positionen gemmes kun i skærmens tilstand.
 export type DirectoryFilters = {
@@ -25,8 +26,6 @@ export const DEFAULT_FILTERS: DirectoryFilters = {
   onlyOffering: true,
 };
 
-// "Øg afstanden" i den tomme tilstand (13.4a).
-export const WIDER_DISTANCE_KM = 100;
 
 // Postnummeret valideres med samme skema som serveren.
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
@@ -41,9 +40,12 @@ export const filtersOnOffering = (filters: DirectoryFilters) => filters.onlyOffe
 // "Vis også andre klinikker i området": samme filtre ellers.
 export const showOtherClinics = (filters: DirectoryFilters): DirectoryFilters => ({ ...filters, onlyOffering: false });
 
-// "Øg afstanden": 100 km fra postnummer eller position.
-export const widenDistance = (filters: DirectoryFilters): DirectoryFilters => ({ ...filters, maxDistanceKm: WIDER_DISTANCE_KM });
-export const canWidenDistance = (filters: DirectoryFilters) => hasOrigin(filters) && filters.maxDistanceKm < WIDER_DISTANCE_KM;
+// "Øg afstanden" (13.4a): fordobler radius fra postnummer eller position, aldrig over kortets maks (samme grænse som skyderen).
+export const widenDistance = (filters: DirectoryFilters): DirectoryFilters => ({
+  ...filters,
+  maxDistanceKm: Math.min(MAX_RADIUS_KM, Math.max(filters.maxDistanceKm + 1, filters.maxDistanceKm * 2)),
+});
+export const canWidenDistance = (filters: DirectoryFilters) => hasOrigin(filters) && filters.maxDistanceKm < MAX_RADIUS_KM;
 
 // Valgte behandlinger som visningsnavne ud fra kataloget (slug som reserve, hvis kataloget ikke er hentet).
 export function serviceNames(slugs: string[], catalog: Map<string, string>): string[] {

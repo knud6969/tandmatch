@@ -1,3 +1,4 @@
+import { MAX_RADIUS_KM } from "~/utils/map-region";
 import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
 import { activeFilterCount, buildClinicsQuery, canSortBy, canWidenDistance, DEFAULT_FILTERS, sameServices, searchSummary, showOtherClinics, toggleService, widenDistance } from "~/utils/clinic-filters";
 import { lacksPriceForSelection } from "~/utils/lead-selection";
@@ -77,11 +78,16 @@ describe("onlyOffering (13.4a)", () => {
     expect(q).toBe("services=fast_bojle&postalCode=2100&maxDistanceKm=50");
   });
 
-  it("'Øg afstanden' giver 100 km og kun når der er udgangspunkt og plads til mere", () => {
+  it("'Øg afstanden' øger i trin inden for 1-50 km og kun når der er udgangspunkt og plads til mere", () => {
+    const small = { ...sag, maxDistanceKm: 10 };
     expect(canWidenDistance(DEFAULT_FILTERS)).toBe(false);
-    expect(canWidenDistance(sag)).toBe(true);
-    expect(buildClinicsQuery(widenDistance(sag))).toContain("maxDistanceKm=100");
-    expect(canWidenDistance(widenDistance(sag))).toBe(false);
+    expect(canWidenDistance(small)).toBe(true);
+    expect(widenDistance(small).maxDistanceKm).toBe(20);
+    expect(widenDistance({ ...sag, maxDistanceKm: 1 }).maxDistanceKm).toBe(2);
+    expect(widenDistance({ ...sag, maxDistanceKm: 40 }).maxDistanceKm).toBe(MAX_RADIUS_KM);
+    expect(canWidenDistance(widenDistance({ ...sag, maxDistanceKm: 40 }))).toBe(false);
+    // Standardradius er allerede maks, så knappen skjules.
+    expect(canWidenDistance(sag)).toBe(sag.maxDistanceKm < MAX_RADIUS_KM);
   });
 
   it("'Vælg klinik' slås fra uden pris på valget, men kun når der er valgte behandlinger", () => {
