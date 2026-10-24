@@ -24,9 +24,9 @@ export type AiRules = {
 
 // MDR-TILPASNING (UDSKUDT, architecture 7.3): prototypen tillader foreløbig vurdering og forklaring.
 // Før rigtige patienter skal det vurderes fagligt. Stramning sker her og i prompt-versionen
-// (prompts/chat.v4.ts, summary.v2.ts), uden ændringer i controllers, routes eller UI.
+// (prompts/chat.v5.ts, summary.v2.ts), uden ændringer i controllers, routes eller UI.
 export const AI_RULES: AiRules = Object.freeze<AiRules>({
-  version: "rules-v4",
+  version: "rules-v5",
   allowPreliminaryAssessment: true,
   allowTreatmentExplanation: true,
   strictMdrMode: false,
@@ -41,7 +41,7 @@ export const AI_RULES: AiRules = Object.freeze<AiRules>({
 // Bruges ved at give den til AiChatService/AiSummaryService i stedet for AI_RULES.
 export const MDR_STRICT_RULES: AiRules = Object.freeze<AiRules>({
   ...AI_RULES,
-  version: "rules-v4-mdr-strict",
+  version: "rules-v5-mdr-strict",
   allowPreliminaryAssessment: false,
   allowTreatmentExplanation: false,
   strictMdrMode: true,

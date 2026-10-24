@@ -99,13 +99,13 @@ export class ChatController {
     const records = await this.chat.listMessages(conversation.id);
     const ids = records.flatMap((r) => r.suggestedServiceIds);
     const byId = new Map((await this.services.findActive(ids)).map((s) => [s.id, s]));
-    const latestAssistant = [...records].reverse().find((r) => r.role === "assistant");
     return {
       conversationId: conversation.id,
       status: conversation.status,
       messages: records.map((r) => this.toMessageDto(r, byId)),
       messagesLeft: this.messagesLeft(conversation),
-      readyForSummary: latestAssistant?.readyForSummary ?? false,
+      // 7.9a regel 2: klæbende, så kortet ikke forsvinder, når en senere tur uden flag kommer.
+      readyForSummary: records.some((r) => r.role === "assistant" && r.readyForSummary),
     };
   }
 

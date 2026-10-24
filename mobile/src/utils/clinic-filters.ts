@@ -10,6 +10,8 @@ export type DirectoryFilters = {
   maxDistanceKm: number;
   emergency: boolean;
   sort: ClinicSort | null; // null = API'ets standard
+  // Kun klinikker med pris på alle valgte behandlinger (13.4a). Sendes kun, når der er valgt behandlinger.
+  onlyOffering: boolean;
 };
 
 export const DEFAULT_FILTERS: DirectoryFilters = {
@@ -19,7 +21,11 @@ export const DEFAULT_FILTERS: DirectoryFilters = {
   maxDistanceKm: DEFAULT_MAX_DISTANCE_KM,
   emergency: false,
   sort: null,
+  onlyOffering: true,
 };
+
+// "Øg afstanden" i den tomme tilstand (13.4a).
+export const WIDER_DISTANCE_KM = 100;
 
 // Postnummeret valideres med samme skema som serveren.
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
@@ -38,8 +44,24 @@ export function buildClinicsQuery(filters: DirectoryFilters): string {
   }
   if (hasOrigin(filters)) params.set("maxDistanceKm", String(filters.maxDistanceKm));
   if (filters.emergency) params.set("emergency", "true");
+  if (filtersOnOffering(filters)) params.set("onlyOffering", "true");
   if (filters.sort && canSortBy(filters, filters.sort)) params.set("sort", filters.sort);
   return params.toString();
+}
+
+// Filteret på klinikker, der tilbyder behandlingerne, er kun i kraft med valgte behandlinger (uden dem giver serveren 400).
+export const filtersOnOffering = (filters: DirectoryFilters) => filters.onlyOffering && filters.serviceSlugs.length > 0;
+
+// "Vis også andre klinikker i området": samme filtre ellers.
+export const showOtherClinics = (filters: DirectoryFilters): DirectoryFilters => ({ ...filters, onlyOffering: false });
+
+// "Øg afstanden": 100 km fra postnummer eller position.
+export const widenDistance = (filters: DirectoryFilters): DirectoryFilters => ({ ...filters, maxDistanceKm: WIDER_DISTANCE_KM });
+export const canWidenDistance = (filters: DirectoryFilters) => hasOrigin(filters) && filters.maxDistanceKm < WIDER_DISTANCE_KM;
+
+// Valgte behandlinger som visningsnavne ud fra kataloget (slug som reserve, hvis kataloget ikke er hentet).
+export function serviceNames(slugs: string[], catalog: Map<string, string>): string[] {
+  return slugs.map((slug) => catalog.get(slug) ?? slug);
 }
 
 // Sorteringer, der kræver noget andet (afstand kræver udgangspunkt, pris kræver en behandling), tilbydes ikke uden det.
@@ -57,9 +79,13 @@ export function toggleService(filters: DirectoryFilters, slug: string): Director
   return { ...filters, serviceSlugs, sort: filters.sort === "price" && serviceSlugs.length === 0 ? null : filters.sort };
 }
 
-// Antal aktive filtre (til knappen "Filtre").
+// Samme behandlinger i samme mængde, uanset rækkefølge.
+export const sameServices = (a: string[], b: string[]) => a.length === b.length && a.every((slug) => b.includes(slug));
+
+// Antal aktive filtre (til knappen "Filtre"). "Kun klinikker med pris" er slået til fra start, så det tæller, når det er slået fra.
 export function activeFilterCount(filters: DirectoryFilters): number {
   return (
-    (filters.serviceSlugs.length > 0 ? 1 : 0) + (hasOrigin(filters) ? 1 : 0) + (filters.emergency ? 1 : 0) + (filters.sort ? 1 : 0)
+    (filters.serviceSlugs.length > 0 ? 1 : 0) + (hasOrigin(filters) ? 1 : 0) + (filters.emergency ? 1 : 0) + (filters.sort ? 1 : 0) +
+    (!filters.onlyOffering ? 1 : 0)
   );
 }

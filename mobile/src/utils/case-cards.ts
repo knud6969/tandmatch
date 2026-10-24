@@ -81,11 +81,16 @@ export function shouldAutoGenerate(input: { hasDraft: boolean; hasText: boolean;
 // Appen lader ikke en akut-markering blokere flowet (brugerens beslutning): henvisningen står i AI'ens tekst, og kortene
 // vises som normalt. Derfor ses der bort fra `emergency` på beskederne, når det aktuelle trin findes.
 export function flowStepForApp(
-  caseDto: Pick<CaseDto, "status" | "services" | "preferredTimeframe" | "postalCode" | "summaryApprovedAt">,
+  caseDto: Pick<CaseDto, "status" | "services" | "suggestedServices" | "preferredTimeframe" | "postalCode" | "summaryApprovedAt">,
   chatState: Pick<ChatStateDto, "messages" | "status" | "readyForSummary">,
 ): CaseFlowStep {
   const messages = chatState.messages.map((m) => (m.emergency ? { ...m, emergency: false } : m));
   return nextCaseFlowStep(caseDto, { ...chatState, messages });
+}
+
+// Klæbende klar-signal (7.9a regel 2): har det først været sandt, forbliver det sandt, også når en senere tur svarer uden flag.
+export function stickyReady(previous: boolean | null, turnReady: boolean): boolean {
+  return previous === true || turnReady;
 }
 
 // Hurtigsvar (8.6i): 0-4 korte svar på AI'ens seneste besked. Læses defensivt, indtil typen findes overalt.
@@ -95,15 +100,14 @@ export function quickRepliesOf(message: AiChatMessageDto | undefined): string[] 
   return raw.filter((r): r is string => typeof r === "string" && r.trim() !== "").slice(0, 4);
 }
 
-// Kun under AI'ens seneste svar, og kun når intet svar-kort venter på patienten, samtalen er aktiv, og patienten ikke skriver.
+// Kun under AI'ens seneste svar, når samtalen er aktiv og patienten ikke skriver. Et åbent svar-kort skjuler dem ikke (7.9a regel 5).
 export function visibleQuickReplies(input: {
   messages: AiChatMessageDto[];
   pending: boolean;
   finished: boolean;
-  cardActive: boolean;
   typing: boolean;
 }): string[] {
   const last = input.messages[input.messages.length - 1];
-  if (!last || last.role !== "assistant" || input.pending || input.finished || input.cardActive || input.typing) return [];
+  if (!last || last.role !== "assistant" || input.pending || input.finished || input.typing) return [];
   return quickRepliesOf(last);
 }

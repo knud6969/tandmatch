@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { getChat, sendChatMessage } from "~/api/chat";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
-import { isChatLimitCode } from "~/utils/case-cards";
+import { isChatLimitCode, stickyReady } from "~/utils/case-cards";
 import { runChatTurn, type TurnOutcome } from "~/utils/chat-turn";
 import { useLoad } from "./use-load";
 
@@ -26,7 +26,7 @@ export function useChat(caseId: string, onTurn: () => void) {
       const outcome = await runChatTurn(() => sendChatMessage(caseId, text));
       if (outcome.kind === "ok") {
         setExtra((current) => [...current, outcome.turn.userMessage, outcome.turn.assistantMessage]);
-        setReady(outcome.turn.readyForSummary);
+        setReady((previous) => stickyReady(previous, outcome.turn.readyForSummary));
         setMessagesLeft(outcome.turn.messagesLeft);
         onTurn();
       } else if (outcome.kind === "consent_required") {
@@ -56,7 +56,7 @@ export function useChat(caseId: string, onTurn: () => void) {
     pending,
     needsConsent,
     clearNeedsConsent: () => setNeedsConsent(false),
-    ready: ready ?? state?.readyForSummary ?? false, // bruges af det kommende flow (AI'en har nok til en opsummering)
+    ready: ready === true || (state?.readyForSummary ?? false), // klæbende: AI'en har nok til en opsummering
     messagesLeft: limitHit ? 0 : (messagesLeft ?? state?.messagesLeft ?? 0),
     // Lukket ved loftet: serverens status, 429 CHAT_LIMIT eller ingen beskeder tilbage. Kortene virker stadig.
     closed: state?.status === "closed" || limitHit || (state !== null && (messagesLeft ?? state.messagesLeft) <= 0),

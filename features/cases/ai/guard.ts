@@ -6,6 +6,7 @@
 
 import {
   CHAT_BLOCKED_TEXT,
+  SUGGESTION_FALLBACK_TEXT,
   EMERGENCY_REFERRAL_TEXT,
   LIFE_THREATENING_REFERRAL_TEXT,
 } from "@/lib/cases/constants/ai-texts";
@@ -24,7 +25,7 @@ import {
   type ForbiddenCategory,
 } from "./forbiddenTerms";
 import { maskPii } from "./pii";
-import { CHAT_RETRY_REMINDER } from "./prompts/chat.v4";
+import { CHAT_RETRY_REMINDER } from "./prompts/chat.v5";
 import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
@@ -83,7 +84,14 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   // Sikkerhedsnet uanset modellen og uanset reglerne (emergencyReferral er altid true).
   const detected = detectEmergency(maskedUserMessage);
 
+  // 7.9a regel 3: gyldige forslag fra det sidste forsøg, hvis kun teksten (reply eller vurdering) blev afvist.
+  // Slugs er data fra kataloget og ikke fri tekst, så forslagene kan bevares, mens den afviste tekst aldrig bruges.
+  let textOnlyBlockedSuggestions: string[] | null = null;
+  let lastModelEmergency = false;
+
   for (let attempt = 1; attempt <= MAX_AI_ATTEMPTS; attempt++) {
+    textOnlyBlockedSuggestions = null;
+    lastModelEmergency = false;
     let raw: unknown;
     try {
       raw = await callModel(attempt > 1 ? CHAT_RETRY_REMINDER : null);
@@ -97,17 +105,29 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
     const parsed = chatTurnSchema.safeParse(raw);
     if (!parsed.success) continue;
     const turn = parsed.data;
+    lastModelEmergency = turn.emergency && hasStrongEmergencyWord(maskedUserMessage);
 
     // MDR-TILPASNING: slår rules.allowPreliminaryAssessment vurdering fra, tvinges feltet til null.
     const assessment = rules.allowPreliminaryAssessment ? turn.preliminaryAssessment : null;
 
-    if (findForbiddenCategories(turn.reply, replyFilterOptions(rules)).length > 0) continue;
-    if (assessment !== null) {
-      if (findForbiddenCategories(assessment, assessmentFilterOptions(rules)).length > 0) continue;
-      if (!isPhrasedAsPreliminary(assessment)) continue;
-    }
-    // Ukendte slugs afvises (7.5).
+    // Ukendte slugs afvises (7.5). Kontrolleres før teksten, så tekstfejl kan skelnes fra ugyldige forslag.
     if (turn.suggestedServices.some((slug) => !input.knownSlugs.has(slug))) continue;
+    const suggestions = unique(turn.suggestedServices);
+    const candidate = turn.readyForSummary && suggestions.length > 0 ? suggestions : null;
+
+    if (findForbiddenCategories(turn.reply, replyFilterOptions(rules)).length > 0) {
+      textOnlyBlockedSuggestions = candidate;
+      continue;
+    }
+    if (assessment !== null) {
+      if (
+        findForbiddenCategories(assessment, assessmentFilterOptions(rules)).length > 0 ||
+        !isPhrasedAsPreliminary(assessment)
+      ) {
+        textOnlyBlockedSuggestions = candidate;
+        continue;
+      }
+    }
 
     // 8.11e: et model-flag alene udløser kun akut, hvis patientens tekst har et stærkt tegn. Mild tandpine er ikke akut.
     const modelEmergency = turn.emergency && hasStrongEmergencyWord(maskedUserMessage);
@@ -153,7 +173,23 @@ export async function runChatGuard(input: ChatGuardInput, callModel: ModelCall):
   }
 
   // Fast tekst fra koden. Det afviste svar bruges ikke.
-  const showEmergency = detected.emergency && rules.emergencyReferralInChat;
+  // Også modellens akut-markering fra sidste forsøg tæller, når patientens tekst har et stærkt akut-ord (8.11e).
+  const showEmergency = (detected.emergency || lastModelEmergency) && rules.emergencyReferralInChat;
+  if (textOnlyBlockedSuggestions !== null && !showEmergency) {
+    return {
+      maskedUserMessage,
+      reply: SUGGESTION_FALLBACK_TEXT,
+      preliminaryAssessment: null,
+      suggestedServices: textOnlyBlockedSuggestions,
+      emergency: false,
+      emergencyDetected: detected.emergency,
+      lifeThreatening: false,
+      outOfScopeTopics: detectedTopics,
+      readyForSummary: true,
+      quickReplies: [],
+      blocked: true, // sporbarhed: teksten blev afvist
+    };
+  }
   return {
     maskedUserMessage,
     reply: showEmergency ? emergencyText(detected.lifeThreatening) : CHAT_BLOCKED_TEXT,

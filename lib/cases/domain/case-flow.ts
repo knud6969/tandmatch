@@ -1,3 +1,4 @@
+import { SERVICE_CARD_AFTER_USER_MESSAGES } from "@/lib/cases/constants/case-flow";
 import type { ChatStateDto } from "@/lib/cases/types/ai";
 import type { CaseDto, CaseFlowStep } from "@/lib/cases/types/cases";
 
@@ -6,7 +7,7 @@ import type { CaseDto, CaseFlowStep } from "@/lib/cases/types/cases";
 export function nextCaseFlowStep(
   caseDto: Pick<
     CaseDto,
-    "status" | "services" | "preferredTimeframe" | "postalCode" | "summaryApprovedAt"
+    "status" | "services" | "suggestedServices" | "preferredTimeframe" | "postalCode" | "summaryApprovedAt"
   >,
   chatState: Pick<ChatStateDto, "messages" | "status" | "readyForSummary">,
 ): CaseFlowStep {
@@ -16,7 +17,14 @@ export function nextCaseFlowStep(
   if (lastAssistant?.emergency) return "emergency";
 
   if (caseDto.services.length === 0) {
-    return chatState.readyForSummary || chatState.status === "closed" ? "services" : "chat";
+    // 7.9a regel 1: kortet vises ved klar-signal, lukket samtale, forslag eller nok patientbeskeder.
+    const userMessages = chatState.messages.filter((m) => m.role === "user").length;
+    const showCard =
+      chatState.readyForSummary ||
+      chatState.status === "closed" ||
+      caseDto.suggestedServices.length > 0 ||
+      userMessages >= SERVICE_CARD_AFTER_USER_MESSAGES;
+    return showCard ? "services" : "chat";
   }
   if (caseDto.preferredTimeframe === null) return "timeframe";
   if (caseDto.postalCode === null) return "postal_code";

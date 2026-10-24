@@ -7,8 +7,10 @@ export function listClinics(query: string): Promise<ClinicListDto> {
   return apiRequest<ClinicListDto>(`/api/clinics${query ? `?${query}` : ""}`);
 }
 
-export function getClinic(clinicId: string): Promise<ClinicProfileDto> {
-  return apiRequest<ClinicProfileDto>(`/api/clinics/${encodeURIComponent(clinicId)}`);
+// Med `serviceSlugs` udfyldes priceForSelection (prisen for sagens behandlinger).
+export function getClinic(clinicId: string, serviceSlugs: string[] = []): Promise<ClinicProfileDto> {
+  const query = serviceSlugs.length > 0 ? `?services=${encodeURIComponent(serviceSlugs.join(","))}` : "";
+  return apiRequest<ClinicProfileDto>(`/api/clinics/${encodeURIComponent(clinicId)}${query}`);
 }
 
 export function getClinicReviews(clinicId: string): Promise<PublicReviewsDto> {

@@ -100,6 +100,33 @@ RLS er slået til uden policies; `anon` og `authenticated` har ingen rettigheder
 | note | text null | max 200, fx "inkl. 2 røntgenbilleder" |
 | updated_at | timestamptz | |
 
+**En klinik tilbyder en behandling**, når den er `verified` og har en række i `clinic_prices` for behandlingen, og behandlingen og dens kategori er aktive. Det er den eneste definition; den bruges af filteret `onlyOffering` (6.6), af prissorteringen og af appens "Se klinikker der kan hjælpe". `clinic_service_groups` er klinikkens interne valg af kategorier i prislistens UI og betyder **ikke**, at klinikken tilbyder alle behandlinger i kategorien (fx kan en klinik have valgt "Tandregulering" og kun prissætte "Samtale om tandregulering" og "Tandregulering med skinner", men ikke "Fast bøjle"). Valget er ikke offentligt. Basisklinikker (`imported`) har ingen prisliste og tilbyder derfor ingen behandlinger i denne forstand.
+
+#### Tilføjelser til kataloget (trin 9.10) [IKKE BYGGET, kræver brugerens godkendelse, 12.3 punkt 45]
+
+Kataloget har i dag 14 kategorier og 53 behandlinger (`docs/behandlingskatalog.md`). Det dækker de fleste søgninger, men disse fem er almindelige hos danske klinikker og noget, patienter selv efterspørger. De tilføjes med en ny migration `supabase/migrations/20261029000100_catalog_additions.sql` (ingen kørte migrationer ændres; `sort_order` efter reglen i bilaget, så de lægger sig efter de eksisterende i kategorien):
+
+| slug | Kategori | Type | Navn | Beskrivelse | Min. |
+|---|---|---|---|---|---|
+| `hjemmeblegning` | `kosmetisk` | cosmetic | Blegning med skinner hjemme | Tilpassede skinner og blegemiddel, som du bruger hjemme efter klinikkens vejledning. | 30 |
+| `vurdering_behandlingsplan` | `forebyggelse` | general | Vurdering af en behandlingsplan | Tandlægen ser på en plan eller et prisoverslag, du har fået et andet sted, og giver sin egen vurdering. | 30 |
+| `foelsomme_tandhalse` | `forebyggelse` | general | Behandling af følsomme tænder | Behandling af tænder eller tandhalse, der er følsomme for koldt, varmt eller berøring. | 30 |
+| `snorkeskinne` | `bidskinner` | general | Snorkeskinne | En tilpasset skinne til natten, der holder underkæben lidt frem for at mindske snorken. | 45 |
+| `lattergas` | `tandlaegeangst` | general | Behandling med lattergas | En behandling, hvor du indånder lattergas for at slappe mere af. | 60 |
+
+Beskrivelserne er neutrale som resten af kataloget (ingen priser, vurderinger eller løfter). "Invisalign" er et varemærke og tilføjes ikke; AI'en og patienten bruger `tandreguleringsskinner`. Bilaget opdateres ikke (det viser startindholdet).
+
+#### Egne behandlinger og flere standardvalg (trin 10) [UDSKUDT]
+
+Skitse til efter afleveringen; intet bygges før aflevering. Målet er mange standardvalg i kataloget og mulighed for, at klinikken kan tilbyde noget, kataloget ikke har.
+
+1. **Flere standardvalg først.** Kataloget vedligeholdes i databasen (admin/service role, adminside [UDSKUDT] 12.4 punkt 14). Hver ny standardbehandling kan straks prissættes, filtreres på, foreslås af AI'en og bookes, uden kodeændringer. Det er altid førstevalget.
+2. **Egne behandlinger pr. klinik**, når kataloget ikke slår til. To muligheder (12.3 punkt 47):
+   - **A. Tabellen `clinic_custom_services`** (`id`, `clinic_id` FK clinics cascade, `group_id` FK service_groups, `name` 1-80, `description` 1-500, `price_min`, `price_max`, `duration_min`, `is_active`, `updated_at`; højst 20 pr. klinik; RLS som `clinic_prices`; offentlig via `public_clinic_profile()` for verificerede). Vises på klinikprofilen under kategorien med mærkatet "Klinikkens egen behandling". Indgår **ikke** i filteret, i AI'ens katalog eller i `case_services`. Booking kræver, at `bookings.service_id` kan pege på en egen behandling (ny nullable FK og check "præcis én"), og at `book_slot()` og ledige tider kender varigheden. Patienten nævner den i opsummeringen eller i beskedtråden.
+   - **B. "Andet" pr. kategori** som almindelige katalogbehandlinger (`<kategori>_andet`, fx "Anden behandling inden for implantater"), hvor klinikken skriver navnet i prisens `note` (gøres påkrævet for disse). Ingen nye tabeller; filter, booking og leads virker uændret; AI'en foreslår dem aldrig (markeres i katalogkonteksten).
+   Architects forslag: **B** først (lille, ingen ændring af booking), **A** når klinikker efterspørger flere egne linjer.
+3. **Admin-overblik:** egne behandlinger, der går igen hos mange klinikker, løftes ind i kataloget som standardvalg.
+
 #### `clinic_opening_hours`
 | Felt | Type | Note |
 |---|---|---|
@@ -164,6 +191,7 @@ En `registered` klinik ser et banner "Afventer verificering" og kan sætte alt o
 | `/klinik/prisliste` | To trin på samme side: (1) klinikken krydser de kategorier af, den arbejder med (fravalg af en kategori med priser kræver bekræftelse, fordi priserne slettes); (2) under hver valgt kategori vises dens behandlinger med beskrivelse; klinikken krydser dem af, den tilbyder, og skriver prisinterval (fra-til), varighed (forudfyldt med standardvarighed) og evt. note. Hjælpetekst: tom "Pris til" betyder en fast pris. Ingen prisforslag (12.4) |
 | `/klinik/aabningstider` | Ugeskema og akutvinduer |
 | `/klinik/tandlaeger` | Tandlæger og deres portefølje (upload med bekræftelse af patientens samtykke) |
+| `/klinik` (trin 10.7) [IKKE BYGGET] | Henvendelser fra appen skal ses uden manuel genindlæsning: indbakken (`features/leads`) henter `/api/leads` igen hvert 30. sekund, mens fanen er synlig (`document.visibilityState`), og fanen "Indbakke" viser antallet af ubesvarede leads. Samme polling på kalenderen for nye bookinger. Ingen realtime (princip 8) |
 | `/klinik/anmeldelser` | Godkendte anmeldelser + offentligt svar. Bygget i 6.5: anmeldelser med stjerner, tekst, prisnøjagtighed og måned; svarformular, når `replyStatus` er `null`; eget svar med status; punktet "Anmeldelser" i navigationen |
 
 ### 6.6 Klinikoversigt, rangering og filtre
@@ -191,7 +219,8 @@ Rangeringen ligger i `RankingService` (`features/clinics/rankingService.ts`, ing
 - Klinikker uden værdi for kriteriet (fx ingen prisliste, ingen anmeldelser, basisniveau) sorteres **sidst**. Ved lighed: navn.
 - Prissortering og prisvisning gælder kun verificerede klinikker med pris for **alle** valgte ydelser.
 - **Filtre** (regler som bygget):
-  - **Behandlinger:** slugs i `?services=`, højst `MAX_SELECTED_SERVICES` (5). En ukendt eller inaktiv slug giver 400 `UNKNOWN_SERVICE`.
+  - **Behandlinger:** slugs i `?services=`, højst `MAX_SELECTED_SERVICES` (5). En ukendt eller inaktiv slug giver 400 `UNKNOWN_SERVICE`. **Valgte behandlinger filtrerer ikke i sig selv:** de bestemmer kun pris, prissortering og første ledige tid, og klinikker uden pris for alle valgte står sidst.
+  - **Kun klinikker, der tilbyder behandlingerne** (`onlyOffering=true`, trin 9.8, bygget): kun verificerede klinikker med pris på **alle** valgte behandlinger (4.3, "En klinik tilbyder en behandling"), dvs. `priceForSelection !== null`. Basisklinikker og verificerede klinikker uden pris på én af behandlingerne falder fra. Kræver mindst én valgt behandling (ellers 400 `VALIDATION_ERROR`, som `maxPrice`). Kriterielinjen er "Kun klinikker med pris på alle valgte behandlinger". Filteret ligger i `RankingService.filter()` sammen med de andre filtre. Appen sætter det, når der er valgt behandlinger (13.4); weben ignorerer det.
   - **Position:** `postalCode` eller `lat`+`lng` (aldrig gemt). Ukendt postnummer giver 400 `UNKNOWN_POSTAL_CODE`; `lat` uden `lng` (eller omvendt) giver 400.
   - **Maks. afstand:** `maxDistanceKm` (standard `DEFAULT_MAX_DISTANCE_KM` i `lib/clinics/constants/clinics.ts` = 50 km, bygget i 7.16, besluttet 12.3 punkt 33; samme standard i API'et, oversigten, URL-filtrene og `/akut`) gælder kun, når der er en position; så falder klinikker uden koordinater fra. Uden position filtreres der ikke på afstand.
   - **Maks. pris:** `maxPrice` kræver mindst én valgt behandling (ellers 400) og sammenlignes med summen af `price_min` for de valgte behandlinger; klinikker uden pris for alle valgte falder fra.
@@ -291,7 +320,7 @@ export type SlotDto = { startsAt: string; endsAt: string };
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/clinics` | alle | `?ids=uuid,uuid` (valgfri, højst 3; kun disse klinikker, via `public_clinics(p_clinic_ids)`; bruges af afsendelsessiden) `&services=slug,slug&postalCode=&lat=&lng=&maxDistanceKm=&maxPrice=&minStars=&emergency=true&contactableOnly=true&sort=price\|rating\|price_accuracy\|distance\|first_available` | `{ clinics: ClinicListItemDto[], sort, criteria: string[] }`. Sorteret af `RankingService` (6.6). `lat/lng` gemmes ikke. 400 `UNKNOWN_SERVICE` (ukendt slug eller over 5), 400 `UNKNOWN_POSTAL_CODE`, 400 ved `lat` uden `lng` eller `maxPrice` uden valgte behandlinger. Ukendte parametre ignoreres |
+| GET `/api/clinics` | alle | `?ids=uuid,uuid` (valgfri, højst 3; kun disse klinikker, via `public_clinics(p_clinic_ids)`; bruges af afsendelsessiden) `&services=slug,slug&postalCode=&lat=&lng=&maxDistanceKm=&maxPrice=&minStars=&emergency=true&contactableOnly=true&onlyOffering=true&sort=price\|rating\|price_accuracy\|distance\|first_available` | `{ clinics: ClinicListItemDto[], sort, criteria: string[] }`. Sorteret af `RankingService` (6.6). `lat/lng` gemmes ikke. 400 `UNKNOWN_SERVICE` (ukendt slug eller over 5), 400 `UNKNOWN_POSTAL_CODE`, 400 ved `lat` uden `lng` eller `maxPrice`/`onlyOffering` uden valgte behandlinger. Ukendte parametre ignoreres. `onlyOffering` (6.6) er bygget i trin 9.8; skemaet i `lib/clinics/schemas/clinics.ts` (`queryBoolean`) |
 | GET `/api/clinics/{id}` | alle | `?services=` (samme regler) | `ClinicProfileDto`. `distanceKm` er altid `null` på profilen; 404 for klinikker, der ikke er offentlige (5.1 regel 11) |
 | GET `/api/clinics/{id}/availability` | alle | `?serviceId=&from=&to=` (max 14 dage pr. kald) | `{ slots: SlotDto[] }`. Kun verificerede; 404 ellers (6.7) |
 | GET `/api/clinics/{id}/reviews` | alle | | `{ stats: ReviewStats, reviews: PublicReviewDto[] }`. 404 for ikke-verificerede klinikker |

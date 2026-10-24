@@ -86,7 +86,7 @@ const CLINIC_PATTERNS: RegExp[] = [
   rx(String.raw`(?<!${L})(bedste|bedre|dygtigste|dygtigere|førende|mest\s+erfarne|top|bedst\s+anmeldt|højest\s+rangeret)\s+(${L}+\s+)?${CLINIC_NOUN}`),
   rx(String.raw`${CLINIC_NOUN}\s+(${L}+\s+){0,5}(er|var|virker)\s+(${L}+\s+)?(bedst|bedre|bedste|god|gode|godt|dårlig|dygtig|dygtige|dygtigere|populær|populære|kendt|kendte|pålidelig|pålidelige|fremragende|fantastisk|fantastiske|anbefalelsesværdig|at\s+foretrække)(?!${L})`),
   rx(String.raw`(anbefal${L}*|foreslå${L}*|vælg|vælge|kontakt|book|prøv)[^.!?\n]{0,40}(en\s+bestemt|denne|den\s+her|netop)\s+${CLINIC_NOUN}`),
-  rx(String.raw`(anbefal${L}*|vælg|vælge)[^.!?,\n]{0,25}(klinik|klinikker|klinikken)(?!${L})`),
+  rx(String.raw`(anbefal${L}*|(?<!selv\s)vælg|(?<!selv\s)vælge)[^.!?,\n]{0,25}(klinik|klinikker|klinikken)(?!${L})`),
   rx(String.raw`(vælg|vælge|kontakt|book)\s+(klinikken|tandlægen)\s+(med|der|som)`),
   rx(String.raw`${CLINIC_NOUN}\s+(med|der\s+har)\s+(de\s+)?(bedste|højeste|flest)`),
   rx(String.raw`(rang(?:ér|er)${L}*)`),
@@ -99,6 +99,9 @@ const CLINIC_PATTERNS: RegExp[] = [
   rx(String.raw`(?<!${L})klinik${L}*[^.!?\n]{0,60}(?<!${L})anmeldelse${L}*|(?<!${L})anmeldelse${L}*[^.!?\n]{0,60}(?<!${L})klinik${L}*`),
   rx(String.raw`(?<!${L})(en|den)\s+(klinik|tandlæge)(en)?,?\s+(der|som)\s+(har|får|scorer)\s+(${L}+\s+)?(flest|højest|bedst|mest|lavest)`),
   rx(String.raw`(?<!${L})(gå|går)\s+efter\s+(den|en)\s+(${L}+\s+)?${CLINIC_NOUN}`),
+  // Formuleringer, der styrer patientens valg ("du bør gå til den nærmeste klinik", "vælg den billigste klinik").
+  rx(String.raw`(bør|burde|skal|må|kan\s+med\s+fordel)\s+(du\s+)?(nok\s+|helt\s+sikkert\s+)?(gå|tage|køre|ringe|vælge|kontakte|booke|henvende\s+dig)\s+(hen\s+)?(til\s+|på\s+)?(den|en)\s+(${L}+\s+)?(nærmeste|tætteste|billigste|bedste|dygtigste|første|korteste|lavest\w*|højest\w*)\s+(${L}+\s+)?${CLINIC_NOUN}`),
+  rx(String.raw`(vælg|gå\s+til|tag\s+til|kontakt|book)\s+(den|en)\s+(${L}+\s+)?(nærmeste|tætteste|billigste|bedste|dygtigste|første|korteste)\s+(${L}+\s+)?${CLINIC_NOUN}`),
 ];
 // Klinikker med egennavn eller stednavn ("Tandlægehuset Vesterbro", "Vesterbro Tandlæger", "Klinikken på Nørrebro").
 // Kræver stort bogstav i stednavnet, så de kontrolleres på den originale tekst (ikke case-insensitivt).

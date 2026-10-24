@@ -15,6 +15,7 @@ export type RankingFilters = {
   minStars?: number;
   emergency?: boolean; // kun klinikker med akuttid inden for EMERGENCY_FILTER_HOURS
   contactableOnly?: boolean; // kun verificerede klinikker
+  onlyOffering?: boolean; // kun klinikker med pris på alle valgte behandlinger (priceForSelection !== null)
 };
 
 export type RankingOptions = { sort: ClinicSort; filters?: RankingFilters };
@@ -76,6 +77,7 @@ export class RankingService {
     const emergencyUntil = now + EMERGENCY_FILTER_HOURS * 60 * 60 * 1000;
     return clinics.filter((clinic) => {
       if (filters.contactableOnly && !clinic.canReceiveLeads) return false;
+      if (filters.onlyOffering && clinic.priceForSelection === null) return false;
       if (filters.maxDistanceKm !== undefined && (clinic.distanceKm === null || clinic.distanceKm > filters.maxDistanceKm)) {
         return false;
       }
@@ -142,6 +144,7 @@ export class RankingService {
     if (filters.minStars !== undefined) lines.push(`Mindst ${filters.minStars.toLocaleString("da-DK")} stjerner`);
     if (filters.emergency) lines.push(`Akuttid inden for ${EMERGENCY_FILTER_HOURS} timer`);
     if (filters.contactableOnly) lines.push("Kun klinikker, der kan kontaktes");
+    if (filters.onlyOffering) lines.push("Kun klinikker med pris på alle valgte behandlinger");
     lines.push("Klinikker uden værdi for kriteriet står nederst");
     return lines;
   }

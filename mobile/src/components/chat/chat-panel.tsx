@@ -3,9 +3,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { AI_BOUNDARY_TEXT, CHAT_LIMIT_REACHED_TEXT, CHAT_PII_WARNING_TEXT, CHAT_WELCOME_TEXT } from "@/lib/cases/constants/ai-texts";
 import { CHAT_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiChatMessageDto } from "@/lib/cases/types/ai";
+import { Ionicons } from "@expo/vector-icons";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { LoadState, StatusMessage } from "~/components/ui";
-import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
+import { colors, fontSize, iconSize, MIN_TOUCH, radius, SEND_BUTTON, spacing } from "~/theme";
 import { lowMessagesLeft, visibleQuickReplies } from "~/utils/case-cards";
 import type { TurnOutcome } from "~/utils/chat-turn";
 import { ChatBubble } from "./chat-bubble";
@@ -39,8 +40,6 @@ type Props = {
   onSend: (text: string) => Promise<TurnOutcome>;
   // Svar-kortene fra TandMatch, som vises under beskederne (architecture 7.9), og en nøgle, der ændres, når de ændrer sig.
   cards?: ReactNode;
-  // Hurtigsvar vises kun, når intet svar-kort venter på patienten (chat-trinnet).
-  quickRepliesAllowed?: boolean;
   cardsKey?: string;
 };
 
@@ -95,7 +94,6 @@ export function ChatPanel(props: Props) {
     messages,
     pending: pending !== null || sending,
     finished: finished || blockedByConsent,
-    cardActive: !props.quickRepliesAllowed,
     typing: draft.trim() !== "",
   });
 
@@ -110,12 +108,7 @@ export function ChatPanel(props: Props) {
         keyboardDismissMode="interactive"
         accessibilityLabel="Samtale med AI-assistenten"
       >
-        <View style={styles.boundary}>
-          <Text style={styles.boundaryTitle}>{AI_BOUNDARY_TEXT}</Text>
-          <Text style={styles.boundaryText} testID="pii-advarsel">
-            {CHAT_PII_WARNING_TEXT}
-          </Text>
-        </View>
+        <Text style={styles.boundary}>{AI_BOUNDARY_TEXT}</Text>
         <ChatBubble message={WELCOME} />
         {messages.map((message) => (
           <ChatBubble key={message.id} message={message} />
@@ -129,7 +122,7 @@ export function ChatPanel(props: Props) {
               </View>
             </View>
             <View style={styles.typing} accessibilityRole="progressbar" accessibilityLabel="AI-assistenten skriver">
-              <ActivityIndicator color={colors.brand600} />
+              <ActivityIndicator color={colors.inkMuted} size="small" />
               <Text style={styles.muted}>AI-assistenten skriver …</Text>
             </View>
           </>
@@ -165,7 +158,9 @@ export function ChatPanel(props: Props) {
               <StatusMessage message={low === 1 ? "Du har 1 besked tilbage" : `Du har ${low} beskeder tilbage`} tone="warning" />
             ) : null}
             {/* Gentager advarslen om personoplysninger ved inputfeltet, hvor patienten skriver. */}
-            <Text style={styles.hint}>{CHAT_PII_WARNING_TEXT}</Text>
+            <Text style={styles.hint} testID="pii-advarsel">
+              {CHAT_PII_WARNING_TEXT}
+            </Text>
             <View style={styles.inputRow}>
               <TextInput
                 accessibilityLabel="Din besked til AI-assistenten"
@@ -174,7 +169,7 @@ export function ChatPanel(props: Props) {
                 onChangeText={setDraft}
                 multiline
                 maxLength={CHAT_MAX_CHARS}
-                placeholder="Beskriv dit problem …"
+                placeholder="Skriv dit svar …"
                 placeholderTextColor={colors.inkMuted}
                 style={styles.input}
               />
@@ -186,7 +181,7 @@ export function ChatPanel(props: Props) {
                 onPress={() => void send()}
                 style={[styles.send, (sending || draft.trim() === "") && styles.sendOff]}
               >
-                <Text style={styles.sendText}>Send</Text>
+                <Ionicons name="arrow-up" size={iconSize.md} color={colors.onBrand} />
               </Pressable>
             </View>
           </>
@@ -199,29 +194,26 @@ export function ChatPanel(props: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { padding: spacing.lg },
-  list: { padding: spacing.lg, gap: spacing.md },
-  boundary: { gap: spacing.xs, backgroundColor: colors.infoBg, borderColor: colors.infoLine, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
-  boundaryTitle: { fontSize: fontSize.sm, fontWeight: "700", color: colors.ink },
-  boundaryText: { fontSize: fontSize.sm, color: colors.ink },
+  list: { padding: spacing.lg, gap: spacing.lg },
+  boundary: { fontSize: fontSize.sm, lineHeight: 20, color: colors.inkMuted, textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: {
     minHeight: MIN_TOUCH,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.brand600,
-    borderRadius: radius.lg,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
   },
-  chipText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
+  chipText: { fontSize: fontSize.sm, fontWeight: "500", color: colors.brand700 },
   pendingRow: { flexDirection: "row", justifyContent: "flex-end" },
-  pendingBubble: { maxWidth: "92%", backgroundColor: colors.brand600, borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  pendingBubble: { maxWidth: "88%", backgroundColor: colors.brand600, borderRadius: radius.lg, borderBottomRightRadius: radius.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   pendingText: { fontSize: fontSize.md, lineHeight: 22, color: colors.onBrand },
   typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkMuted },
-  footer: { gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface },
-  hint: { fontSize: 12, color: colors.inkMuted },
+  footer: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.surface },
+  hint: { fontSize: fontSize.xs, lineHeight: 16, color: colors.inkMuted },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   input: {
     flex: 1,
@@ -229,15 +221,14 @@ const styles = StyleSheet.create({
     maxHeight: 112,
     borderWidth: 1,
     borderColor: colors.fieldBorder,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
     paddingTop: 12,
     paddingBottom: 12,
     fontSize: fontSize.md,
     color: colors.ink,
     backgroundColor: colors.surface,
   },
-  send: { minHeight: MIN_TOUCH, minWidth: 64, borderRadius: radius.md, backgroundColor: colors.brand600, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },
-  sendOff: { opacity: 0.5 },
-  sendText: { color: colors.onBrand, fontSize: fontSize.md, fontWeight: "600" },
+  send: { width: SEND_BUTTON, height: SEND_BUTTON, borderRadius: SEND_BUTTON / 2, backgroundColor: colors.brand600, alignItems: "center", justifyContent: "center" },
+  sendOff: { opacity: 0.4 },
 });

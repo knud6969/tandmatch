@@ -91,6 +91,18 @@ Gennemgået `git diff 7a81a257..HEAD` (trin 7) den 2026-10-19 med psql-prober i 
 - **`npm audit`:** 0 sårbarheder i produktionsafhængigheder; 5 høje i dev-kæden `eslint-config-next` → `fast-glob` → `micromatch` → `braces` (DoS i lint-værktøj, ikke i appen) (L2).
 - **Fund:** ingen kritiske eller høje. Middel: kompromis 24 (M1) og 25 (M2). Lav: kompromis 26-27, L1 og L2. HSTS i produktionsbuild kontrolleres af hovedsessionen.
 
+## Trin 9 og 10.1-10.2 (security 9.13)
+
+Gennemgået `git diff -M main..HEAD` på `feat/app-klar` den 2026-10-23 (ingen migrationer i diffet; kun læsende psql-prober).
+
+- **`onlyOffering` (9.8):** valideres af zod (`queryBoolean`, `.strict()`, kræver `services`) og filtrerer i hukommelsen på `priceForSelection`, som kun verificerede klinikker med pris på alle valgte ydelser får. Filteret kan kun fjerne klinikker, aldrig tilføje felter; basisklinikker får stadig ingen priser. Ingen SQL bygges af parameteren.
+- **Klæbende `readyForSummary` (9.2):** `getState` kalder `requireOwn` og læser med patientens JWT; `ai_messages`/`ai_conversations` har RLS med `patient_id = auth.uid()`. Kun egne beskeder.
+- **`SUGGESTION_FALLBACK_TEXT` (9.3):** ved afvist tekst bruges en fast tekst fra koden; modellens `reply` og vurdering gemmes og returneres aldrig. Kun slugs, der er tjekket mod kataloget før tekstfiltret, bevares. Kompromis 29 (akut slået fra) er uændret.
+- **chat.v5 (9.4):** kun prompttekst og versioner ændret; `promptFormat.ts`, `pii.ts` og `openai.ts` er uændrede, så modellen stadig kun får maskeret patienttekst, kataloget og billeder (ingen postnummer, navn eller kontakt).
+- **Demodata (9.11):** fiktive navne, telefonnumre `+45 00 00 xx xx`, CVR uden modulus 11, `@demo.tandmatch.test`; ingen nøgler; seedet nægter ikke-lokale URL'er uden `--allow-remote`.
+- **Appen, Mine sager og booking (10.1-10.2):** kald går til eksisterende ruter med ejertjek og RLS; telefon og navn valideres med `bookSlotSchema` både i appen og på serveren; ingen tokens eller persondata i `console.*`.
+- **`npm audit` (rod):** `next@16.3.8` har en kritisk rådgivning (GHSA-2464-fhr4-w9xw m.fl., RCE i billedoptimering med SVG og i `use cache`). Ikke indført af denne branch, men skal opgraderes til `next@16.4.2` før drift (H1).
+
 ## Hvem har adgang
 
 - **Patient:** egne data. Kan eksportere og slette konto, sager og billeder og trække samtykker tilbage.

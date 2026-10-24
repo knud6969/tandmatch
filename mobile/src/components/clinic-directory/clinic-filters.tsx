@@ -41,6 +41,12 @@ export function ClinicFilters({ filters, groups, onChange, onReset, onPickServic
       <Text style={styles.label}>Behandling</Text>
       <Button label={serviceLabel} variant="secondary" accessibilityLabel={`Behandling: ${serviceLabel}. Tryk for at ændre`} onPress={onPickServices} />
 
+      {filters.serviceSlugs.length > 0 ? (
+        <Checkbox checked={filters.onlyOffering} onChange={(onlyOffering) => onChange({ onlyOffering })} accessibilityLabel="Kun klinikker, der tilbyder behandlingerne">
+          <CheckboxText>Kun klinikker, der tilbyder behandlingerne</CheckboxText>
+        </Checkbox>
+      ) : null}
+
       <TextField
         label="Postnummer"
         value={postalDraft}

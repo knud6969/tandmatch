@@ -92,6 +92,7 @@ export class ClinicDirectoryController {
       minStars: query.minStars,
       emergency: query.emergency,
       contactableOnly: query.contactableOnly,
+      onlyOffering: query.onlyOffering,
     };
     const sort = query.sort ?? this.ranking.defaultSort({ hasOrigin: origin !== null, emergency: query.emergency === true });
     return {

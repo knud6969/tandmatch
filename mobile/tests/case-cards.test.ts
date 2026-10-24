@@ -71,7 +71,7 @@ describe("kortenes API-kald", () => {
 
 // Sikrer, at kortenes rækkefølge og tilstand følger sagens trin.
 describe("hvilke kort der vises", () => {
-  const dto = { status: "draft", services: [], preferredTimeframe: null, postalCode: null, summaryApprovedAt: null } as never;
+  const dto = { status: "draft", services: [], suggestedServices: [], preferredTimeframe: null, postalCode: null, summaryApprovedAt: null } as never;
   const chat = (over = {}) => ({ messages: [], status: "active", readyForSummary: false, ...over }) as never;
 
   it("chat: ingen kort", () => {

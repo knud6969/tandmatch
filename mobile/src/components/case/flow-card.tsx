@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CASE_FLOW_TEXTS } from "@/lib/cases/constants/case-flow";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
-// Svar-kortene i chatten er fra "TandMatch", ikke fra AI'en (architecture 7.9): eget afsendernavn, blå kant og intet AI-mærkat.
+// Svar-kortene i chatten er fra "TandMatch", ikke fra AI'en (architecture 7.9): eget afsendernavn, tynd kant og intet AI-mærkat.
 export const FLOW_CARD_SENDER = "TandMatch";
 
 // Kortets ramme; accessibilityLabel nævner afsenderen, så en skærmlæser skelner kortet fra AI'ens beskeder.
@@ -49,19 +49,18 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
     backgroundColor: colors.surface,
-    borderColor: colors.brand200,
-    borderWidth: 2,
+    borderColor: colors.line,
+    borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  sender: { fontSize: 12, fontWeight: "700", color: colors.brand700, letterSpacing: 0.4 },
-  title: { fontSize: fontSize.lg, fontWeight: "700", color: colors.ink },
+  sender: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: "600", color: colors.inkMuted, letterSpacing: 0.4 },
+  title: { fontSize: fontSize.lg, lineHeight: 24, fontWeight: "600", color: colors.ink },
   folded: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.brand50,
-    borderColor: colors.brand100,
+    borderColor: colors.line,
     borderWidth: 1,
     borderRadius: radius.lg,
     paddingLeft: spacing.lg,
@@ -72,5 +71,5 @@ const styles = StyleSheet.create({
   foldedLabel: { fontSize: fontSize.sm, color: colors.inkMuted },
   foldedValue: { fontSize: fontSize.md, fontWeight: "600", color: colors.ink },
   edit: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
-  editText: { fontSize: fontSize.md, fontWeight: "700", color: colors.brand700 },
+  editText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
 });

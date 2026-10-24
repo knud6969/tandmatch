@@ -135,6 +135,17 @@ describe("RankingService.rank: filtre", () => {
     expect(names(ranking.rank(list, { sort: "price", filters: { maxPrice: 1000 } }))).toEqual(["A"]);
   });
 
+  it("onlyOffering: klinik uden pris på én behandling og basisklinik falder fra; kriterielinjen vises", () => {
+    const list = [
+      clinic("A", { priceForSelection: { min: 1000, max: 3000 } }),
+      clinic("B", { priceForSelection: null }),
+      basic("C"),
+    ];
+    expect(names(ranking.rank(list, { sort: "price", filters: { onlyOffering: true } }))).toEqual(["A"]);
+    expect(names(ranking.rank(list, { sort: "price", filters: { onlyOffering: false } }))).toHaveLength(3);
+    expect(ranking.criteria("price", { onlyOffering: true })).toContain("Kun klinikker med pris på alle valgte behandlinger");
+  });
+
   it("minStars: kun klinikker med mindst så højt gennemsnit; uden anmeldelser falder fra", () => {
     const list = [
       clinic("A", { reviewStats: stats(4.0, 4) }),
