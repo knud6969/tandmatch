@@ -59,7 +59,20 @@ function userMessageCount(params: StructuredCallParams): number {
 //   undersøgelse      foreslår undersoegelse
 //   test_suggest_not_ready   forslag, men readyForSummary = false
 //   test_blocked_suggestion  gyldigt forslag, men en pris i reply i begge forsøg (guarden bruger SUGGESTION_FALLBACK_TEXT)
+//   test_scenario_<n> realistiske forslag pr. scenarie (se FAKE_SCENARIOS), klar til opsummering
 //   (ingen markør)    spørgsmål 1 og 2 med hurtigsvar, fra den tredje patientbesked forslaget undersoegelse
+// Realistiske forslag pr. scenarie (kun tests): slugs som en rigtig AI ville vælge fra kataloget.
+export const FAKE_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
+  tandpine_koldt: ["undersoegelse", "fyldning"],
+  skaeve_taender: ["tandregulering_konsultation", "tandreguleringsskinner"],
+  bloedende_tandkoed: ["tandkoedsundersoegelse", "tandrensning"],
+  manglende_tand: ["implantat_samtale", "bro"],
+  blegning: ["blegning"],
+  tjek_og_rens: ["undersoegelse", "tandrensning"],
+  barn: ["boerneundersoegelse", "tilvaenning_tandlaege"],
+  knaekket_tand: ["reparation_knaekket_tand"],
+};
+
 function fakeChat(params: StructuredCallParams) {
   const text = lastPatientText(params);
   const turn = {
@@ -83,6 +96,16 @@ function fakeChat(params: StructuredCallParams) {
     return { ...turn, reply: "Det koster ca. 2.500 kr.", suggestedServices: ["undersoegelse"], readyForSummary: true, quickReplies: [] };
   }
   if (text.includes("test_unknown_slug")) return { ...turn, suggestedServices: ["findes_ikke"] };
+  const scenario = /test_scenario_([a-z_]+)/.exec(text)?.[1];
+  if (scenario && FAKE_SCENARIOS[scenario]) {
+    return {
+      ...turn,
+      reply: "Ud fra det, du beskriver, kan behandlingerne nedenfor passe. Du bekræfter selv, og klinikken laver den endelige vurdering.",
+      suggestedServices: [...FAKE_SCENARIOS[scenario]],
+      readyForSummary: true,
+      quickReplies: [],
+    };
+  }
   if (text.includes("karies")) {
     return {
       ...turn,
