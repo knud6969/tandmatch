@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import MapView, { Circle, Marker } from "react-native-maps";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
-import { colors, radius } from "~/theme";
+import { colors, radius, spacing, type } from "~/theme";
+import { Button } from "~/components/ui";
+import { RadiusSlider } from "~/components/clinic-directory/radius-slider";
 import { BASIC_CLINIC_LABEL, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
-import { clinicsWithLocation, regionForClinics, regionKey, type LatLng } from "~/utils/map-region";
+import { clinicsWithLocation, regionForClinics, regionForRadius, regionKey, type LatLng } from "~/utils/map-region";
 
 type Props = {
   clinics: ClinicListItemDto[];
@@ -13,12 +15,20 @@ type Props = {
   radiusKm: number;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  // Ny radius, når patienten slipper skyderen.
+  onRadiusChange: (km: number) => void;
+  onUsePosition: () => void;
+  locating: boolean;
   height: number;
 };
 
 // Kortet i klinikoversigten. Samme klinikker i samme rækkefølge som listen; markørerne følger filtrene, fordi de kommer fra samme svar.
 // Verificerede klinikker er udfyldte og blå med kryds; basisklinikker er hule og grå, så de kan kende forskel.
-export function ClinicMap({ clinics, origin, radiusKm, selectedId, onSelect, height }: Props) {
+export function ClinicMap({ clinics, origin, radiusKm, selectedId, onSelect, onRadiusChange, onUsePosition, locating, height }: Props) {
+  // Radius mens man trækker; cirklen og zoom følger med uden at hente klinikker.
+  const [liveKm, setLiveKm] = useState(radiusKm);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setLiveKm(radiusKm), [radiusKm]);
   const ref = useRef<MapView>(null);
   const key = regionKey(clinics, origin);
   const lastKey = useRef<string | null>(null);
@@ -46,7 +56,7 @@ export function ClinicMap({ clinics, origin, radiusKm, selectedId, onSelect, hei
           <>
             <Circle
               center={{ latitude: origin.lat, longitude: origin.lng }}
-              radius={radiusKm * 1000}
+              radius={liveKm * 1000}
               strokeColor={colors.brand200}
               fillColor="rgba(37, 99, 235, 0.06)"
               strokeWidth={1}
@@ -84,14 +94,36 @@ export function ClinicMap({ clinics, origin, radiusKm, selectedId, onSelect, hei
           );
         })}
       </MapView>
+      {origin ? (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <RadiusSlider
+            value={radiusKm}
+            onChange={(km) => {
+              setLiveKm(km);
+              ref.current?.animateToRegion(regionForRadius(origin, km), 120);
+            }}
+            onCommit={onRadiusChange}
+          />
+        </View>
+      ) : (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <View style={styles.hint}>
+            <Text style={type.caption}>Vælg postnummer eller brug din position for at sætte en afstand</Text>
+            <Button label="Brug min position" variant="secondary" loading={locating} onPress={onUsePosition} />
+          </View>
+        </View>
+      )}
       {/* Attributionen for kortdata vises af Apple Maps selv (logo nederst); der bruges ingen egne kortfliser. */}
     </View>
   );
 }
 
 const PIN = 32;
+
 const styles = StyleSheet.create({
   wrap: { borderRadius: radius.lg, overflow: "hidden", borderWidth: 1, borderColor: colors.line },
+  overlay: { position: "absolute", left: spacing.md, right: spacing.md, bottom: spacing.xl },
+  hint: { backgroundColor: "rgba(255,255,255,0.94)", borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
   pin: { width: PIN, height: PIN, borderRadius: PIN / 2, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   pinFull: { backgroundColor: colors.brand600, borderColor: colors.onBrand },
   pinBasic: { backgroundColor: colors.surface, borderColor: colors.fieldBorder, borderStyle: "dashed" },

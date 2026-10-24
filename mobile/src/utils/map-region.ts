@@ -55,3 +55,30 @@ export function regionForClinic(location: LatLng): MapRegion {
 export function directionsUrl(location: LatLng, name: string): string {
   return `https://maps.apple.com/?daddr=${location.lat},${location.lng}&dirflg=d&q=${encodeURIComponent(name)}`;
 }
+
+// Radius på kortet: 1 til 50 km i hele kilometer.
+export const MIN_RADIUS_KM = 1;
+export const MAX_RADIUS_KM = 50;
+
+// Runder til hele km og holder værdien inden for skyderens grænser.
+export function clampRadiusKm(value: number): number {
+  if (!Number.isFinite(value)) return MIN_RADIUS_KM;
+  return Math.min(MAX_RADIUS_KM, Math.max(MIN_RADIUS_KM, Math.round(value)));
+}
+
+// "Inden for 12 km" (bruges i skyderens label og i listen).
+export const radiusLabel = (km: number): string => `Inden for ${km} km`;
+
+// Udsnit der viser hele cirklen omkring udgangspunktet med lidt luft.
+export function regionForRadius(origin: LatLng, km: number): MapRegion {
+  const latitudeDelta = Math.max(((km * 2) / 111) * 1.25, MIN_DELTA);
+  const cos = Math.max(Math.cos((origin.lat * Math.PI) / 180), 0.1);
+  return { latitude: origin.lat, longitude: origin.lng, latitudeDelta, longitudeDelta: latitudeDelta / cos };
+}
+
+// Udgangspunktet fra serverens svar (postnummerets punkt), hvis feltet findes; ellers patientens position. Læses defensivt.
+export function resolveOrigin(data: unknown, position: LatLng | null): LatLng | null {
+  const origin = (data as { origin?: Partial<LatLng> | null } | null | undefined)?.origin;
+  if (origin && typeof origin.lat === "number" && typeof origin.lng === "number") return { lat: origin.lat, lng: origin.lng };
+  return position;
+}

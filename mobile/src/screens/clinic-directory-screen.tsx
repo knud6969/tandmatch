@@ -38,7 +38,7 @@ import {
   type DirectoryFilters,
 } from "~/utils/clinic-filters";
 import { clinicsWord, setLimits, useSelection } from "~/utils/lead-selection";
-import { clinicsWithLocation } from "~/utils/map-region";
+import { clinicsWithLocation, radiusLabel, resolveOrigin } from "~/utils/map-region";
 import { getRoundedPosition, PositionError } from "~/utils/position";
 
 // Klinikoversigten som liste eller kort med filtre (architecture 6.6, 13.4). Rækkefølgen og kriterierne er serverens.
@@ -148,6 +148,8 @@ export function ClinicDirectoryScreen() {
     router.push({ pathname: "/klinik/[clinicId]", params: caseId ? { clinicId: item.id, sag: caseId } : { clinicId: item.id } });
   // Valgt markør, der ikke længere er i svaret (nye filtre), vises ikke.
   const selected = list?.clinics.find((c) => c.id === selectedId) ?? null;
+  // Udgangspunktet: postnummerets punkt fra serveren, hvis det findes, ellers patientens afrundede position.
+  const origin = resolveOrigin(list, filters.position);
   const mapped = list ? clinicsWithLocation(list.clinics).length : 0;
 
   // Header i selve listen, så filtre og overskrift ruller med i stedet for at æde pladsen på en lille skærm.
@@ -193,6 +195,15 @@ export function ClinicDirectoryScreen() {
         </>
       ) : null}
       {hasServices ? <OfferingNotice names={serviceNames(filters.serviceSlugs, names)} onlyOffering={onlyOffering} caseMode={Boolean(caseId)} /> : null}
+      {view === "list" && origin ? (
+        <View style={styles.radiusLine}>
+          <Text style={type.caption}>{radiusLabel(filters.maxDistanceKm)}</Text>
+          <Text style={type.caption}> · </Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ret afstanden på kortet" hitSlop={12} onPress={() => setView("map")}>
+            <Text style={[type.caption, styles.link]}>Ret</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {list ? <CriteriaBox criteria={list.criteria} /> : null}
       {list ? (
         <Text style={styles.count} accessibilityLiveRegion="polite">
@@ -212,10 +223,13 @@ export function ClinicDirectoryScreen() {
             <View style={styles.mapGroup}>
               <ClinicMap
                 clinics={list.clinics}
-                origin={filters.position}
+                origin={origin}
                 radiusKm={filters.maxDistanceKm}
                 selectedId={selected?.id ?? null}
                 onSelect={setSelectedId}
+                onRadiusChange={(km) => change({ maxDistanceKm: km })}
+                onUsePosition={() => void findPosition()}
+                locating={locating}
                 height={Math.max(320, Math.round(windowHeight * 0.5))}
               />
               {mapped < list.clinics.length ? (
@@ -326,6 +340,8 @@ const styles = StyleSheet.create({
   toggle: { flexDirection: "row", borderRadius: radius.pill, borderWidth: 1, borderColor: colors.brand200, backgroundColor: colors.brand50, padding: 3 },
   tab: { flex: 1, minHeight: MIN_TOUCH - 6, alignItems: "center", justifyContent: "center", borderRadius: radius.pill },
   tabActive: { backgroundColor: colors.brand600 },
+  radiusLine: { flexDirection: "row", alignItems: "center" },
+  link: { color: colors.brand700, fontWeight: "600", textDecorationLine: "underline" },
   mapGroup: { gap: spacing.md },
   safe: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
