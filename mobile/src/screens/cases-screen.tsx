@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { listCases } from "~/api/cases";
 import { useSession } from "~/auth/session-context";
 import { CaseListItem } from "~/components/case/case-list-item";
-import { Button, Card, LoadState, Screen } from "~/components/ui";
+import { Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
 import { type } from "~/theme";
@@ -34,14 +34,19 @@ function CaseList() {
 // Fanen "Mine sager": liste med status og næste booking (architecture 13.4), og vej til bookingerne.
 export function CasesScreen() {
   const router = useRouter();
-  const { me, ready } = useSession();
-  if (!ready) return <Screen>{null}</Screen>;
+  const { status, reload } = useSession();
+  if (status === "loading") return <Screen>{null}</Screen>;
   return (
     <Screen>
       <Text accessibilityRole="header" style={styles.title}>
         Mine sager
       </Text>
-      {me === null ? (
+      {status === "unavailable" ? (
+        <>
+          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
+          <Button label="Prøv igen" variant="secondary" onPress={reload} />
+        </>
+      ) : status === "none" ? (
         <Card>
           <Text style={styles.heading}>Du er ikke logget ind</Text>
           <Text style={styles.body}>Log ind for at se dine sager og svar fra klinikkerne.</Text>

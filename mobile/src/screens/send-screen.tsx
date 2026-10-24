@@ -94,7 +94,7 @@ export function SendScreen() {
   const { caseId, klinikker } = useLocalSearchParams<{ caseId: string; klinikker?: string }>();
   const ids = parseClinicIds(klinikker);
   const idsKey = ids.join(",");
-  const { me } = useSession();
+  const { status, reload } = useSession();
   const loader = useCallback(() => loadSendData(caseId, idsKey === "" ? [] : idsKey.split(",")), [caseId, idsKey]);
   const loaded = useLoad(loader, [loader]);
   const [consentNow, setConsentNow] = useState<boolean | null>(null);
@@ -120,7 +120,7 @@ export function SendScreen() {
   });
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace({ pathname: "/klinikker", params: { sag: caseId } }));
-  const anonymous = me?.isAnonymous === true;
+  const anonymous = status === "anonymous";
 
   async function onSignup(values: SignupValues) {
     if (await signup.run(values)) loaded.reload();
@@ -176,6 +176,18 @@ export function SendScreen() {
                       </Text>
                       <Text style={styles.muted}>Din samtale og din beskrivelse gemmes på kontoen.</Text>
                       <SignupForm onSubmit={(v) => void onSignup(v)} pending={signup.pending} error={signup.error} submitLabel="Opret konto og fortsæt" />
+                    </View>
+                  ) : status !== "account" ? (
+                    <View style={styles.section}>
+                      <StatusMessage
+                        message={status === "none" ? "Log ind eller opret en konto for at sende." : "Vi kunne ikke hente din konto lige nu."}
+                        tone="warning"
+                      />
+                      {status === "none" ? (
+                        <Button label="Log ind" onPress={() => router.push("/login")} />
+                      ) : (
+                        <Button label="Prøv igen" variant="secondary" onPress={reload} />
+                      )}
                     </View>
                   ) : !consentGiven ? (
                     <ConsentGate type="health_data_sharing" onGrant={() => void onGrant()} pending={grant.pending} error={send.error ?? grant.error} actionLabel="Giv samtykke" />

@@ -35,7 +35,7 @@ export function CaseFlowScreen() {
   const actions = useCaseActions(caseId);
   const catalog = useLoad(getServiceGroups);
   const session = useSession();
-  const hasAccount = session.me !== null && !session.me.isAnonymous;
+  const hasAccount = session.status === "account";
 
   // AI-samtykket gives i chatten, første gang det mangler (architecture 10.2); chatten låses op uden at hente samtykkerne igen.
   const grant = useAction(async () => {

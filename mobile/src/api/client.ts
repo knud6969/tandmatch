@@ -121,7 +121,7 @@ export async function apiRequest<T = void>(path: string, options: ApiRequestOpti
     const error = await readError(response);
     if (error.status === 403 && error.code === "TERMS_REQUIRED") {
       await clearTermsToken();
-      notifyAuthChange();
+      void notifyAuthChange();
     }
     throw error;
   }

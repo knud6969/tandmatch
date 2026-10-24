@@ -79,7 +79,7 @@ function AccountStart({ onStarted }: { onStarted: (caseId: string) => void }) {
 // "Beskriv dit problem" (architecture 6.1 /start, 13.3): forklaring og indgang til sagsflowet.
 export function StartScreen() {
   const router = useRouter();
-  const { me } = useSession();
+  const { status } = useSession();
   const open = (caseId: string) => {
     router.replace(flowHref(caseId));
   };
@@ -99,7 +99,7 @@ export function StartScreen() {
         ))}
       </View>
       <StatusMessage message={`${AI_BOUNDARY_TEXT} AI-assistenten anbefaler ikke bestemte klinikker og nævner ikke priser.`} />
-      {me?.isAnonymous ? <ContinueAnonymous onStarted={open} /> : me ? <AccountStart onStarted={open} /> : <AnonymousStart onStarted={open} />}
+      {status === "anonymous" ? <ContinueAnonymous onStarted={open} /> : status === "account" ? <AccountStart onStarted={open} /> : <AnonymousStart onStarted={open} />}
       <Button label="Gå til klinikoversigten" variant="secondary" onPress={() => router.push("/klinikker")} />
     </Screen>
   );

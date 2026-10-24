@@ -187,8 +187,8 @@ function Sent({ result, onOpenCase, onOpenBookings }: { result: EmergencyLeadCre
 // Akutvejen (architecture 6.1, 10.11, 13.4): fast tekst om 112 og lægevagten, klinikker med ledig akuttid, og én henvendelse med reserveret tid.
 export function EmergencyScreen() {
   const router = useRouter();
-  const { me } = useSession();
-  const account = me !== null && !me.isAnonymous;
+  const { status } = useSession();
+  const account = status === "account";
   const data = useLoad(() => loadEmergencyData(account), [account]);
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [sent, setSent] = useState<EmergencyLeadCreatedDto | null>(null);
