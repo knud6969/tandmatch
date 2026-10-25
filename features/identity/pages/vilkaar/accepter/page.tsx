@@ -26,10 +26,10 @@ export default async function AcceptTermsPage({ searchParams }: { searchParams: 
       <Card className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <p>
-            <Badge tone="warning">Pladsholdertekst</Badge>
+            <Badge tone="warning">Studieprojekt</Badge>
           </p>
           <p className="text-base leading-relaxed text-ink-muted">
-            De juridiske tekster er endnu ikke skrevet og gennemgået. Teksterne på siderne er pladsholdere.
+            TandMatch er et studieprojekt. Vilkårene og privatlivspolitikken er ikke juridisk gennemgået.
           </p>
         </div>
 
