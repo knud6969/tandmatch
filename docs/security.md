@@ -105,6 +105,16 @@ Gennemgået `git diff -M main..HEAD` på `feat/app-klar` den 2026-10-23 (ingen m
 - **Appen, Mine sager og booking (10.1-10.2):** kald går til eksisterende ruter med ejertjek og RLS; telefon og navn valideres med `bookSlotSchema` både i appen og på serveren; ingen tokens eller persondata i `console.*`.
 - **`npm audit` (rod):** `next@16.3.8` har en kritisk rådgivning (GHSA-2464-fhr4-w9xw m.fl., RCE i billedoptimering med SVG og i `use cache`). Ikke indført af denne branch, men skal opgraderes til `next@16.4.2` før drift (H1).
 
+## Klinik-web: glemt adgangskode, skift af login, indbakke-overblik (security, 2026-10-25)
+
+Gennemgået `git diff main..HEAD` på `feat/klinik-web` (migrationer `20261031000100`, `20261101000100`, `20261101000200`, lokalt `supabase db reset`).
+
+- **Glemt/nulstil adgangskode:** `forgot` svarer altid 202 (også ved fejl og ukendt e-mail); IP-rate limit på forgot, recovery, reset og skift; redirect-URL bygges kun af serveren (strict zod), Supabase' allow-list er sidste værn. Koden byttes én gang til en recovery-session i httpOnly-cookies og fjernes fra adresselinjen (`replaceState`, `referrer: no-referrer`). `reset` kræver amr `recovery`/`otp` inden for 15 min og logger alle sessioner ud. Skift af e-mail/adgangskode kræver den nuværende adgangskode (tjekkes med en separat klient uden cookies) og virker kun på sessionens egen konto; en optaget e-mail giver samme svar. Vilkårs-gaten håndhæves stadig på `/api/auth/account/*`.
+- **`clinic_leads()`:** nye felter (uddrag på 121 tegn af den godkendte opsummering, listepris-snapshot, akut-frist kun ved `held`) er `null` for tilbagetrukne leads; ingen kontakt, `patient_id` eller `case_id`; samme adgangsregel (ejer, verified, `sent_at >= owner_since`). RLS-test 55.
+- **`cancel_booking(uuid, text)`:** grunden gemmes kun, når aktøren er klinikken (check-constraint + funktion), 1-200 tegn; én-parameter-versionen er droppet, kun `authenticated` har EXECUTE, klientroller har stadig kun SELECT på `bookings`. RLS-test 54.
+- **Lead-routes** (`GET /api/leads`, `GET /api/leads/[id]`) svarer nu med `Cache-Control: no-store` (helbredsdata og signerede billed-URL'er).
+- **Driftskrav (Supabase-dashboard):** Site URL = produktionsdomænet; Redirect URLs kun eksakte egne adresser (ingen `*.vercel.app`-wildcards); custom SMTP (EU, med DPA); "Secure email change" til; "Secure password change" fra (serveren tjekker selv den nuværende adgangskode); nulstillingsskabelonen bør linke til `{{ .SiteURL }}/nulstil-adgangskode?token_hash={{ .TokenHash }}&type=recovery`. Sæt `SITE_URL` i produktion.
+
 ## Hvem har adgang
 
 - **Patient:** egne data. Kan eksportere og slette konto, sager og billeder og trække samtykker tilbage.
@@ -120,6 +130,7 @@ Gennemgået `git diff -M main..HEAD` på `feat/app-klar` den 2026-10-23 (ingen m
 | Supabase | Hosting af database, Auth og filer (EU) | Databehandleraftale (DPA) skal accepteres i Supabase-kontoen før rigtige data. **[ÅBEN]** |
 | OpenAI | AI-chat og opsummering. Modtager aldrig navn, e-mail, telefon, adresse, postnummer, `patient_id` eller priser; tekst PII-maskeres; billeder re-encodes uden EXIF | DPA skal underskrives, og det skal verificeres i kontoen, at API-data ikke bruges til træning (standard), og om zero data retention kan fås. **[ÅBEN]** |
 | Hosting af Next.js | Server-routes | Ikke valgt; skal være EU-region og have DPA. **[ÅBEN]** |
+| SMTP-udbyder (Supabase Auth-mails) | Sender nulstillings- og e-mailskift-links til klinikkernes login-e-mail | Ikke valgt; skal være EU-baseret og have DPA. **[ÅBEN]** |
 
 ## Kendte kompromiser i prototypen
 

@@ -154,6 +154,7 @@ describe("klinikkens leads: liste og detalje", () => {
     const [leadId] = await send(p, [k]);
     const list = await k.c.get("/api/leads");
     assert.equal(list.status, 200);
+    assert.equal(list.headers.get("cache-control"), "no-store", "helbredsdata caches ikke");
     const item = list.body.leads[0];
     assert.equal(item.id, leadId);
     assert.equal(item.status, "sent");
@@ -202,6 +203,7 @@ describe("klinikkens leads: liste og detalje", () => {
     const k = await clinic();
     const [leadId] = await send(p, [k]);
     const detail = await k.c.get(`/api/leads/${leadId}`);
+    assert.equal(detail.headers.get("cache-control"), "no-store", "signerede URL'er caches ikke");
     assert.equal(detail.body.imageCount, 1);
     assert.equal(detail.body.images.length, 1);
     const image = detail.body.images[0];
