@@ -182,7 +182,7 @@ export function ClinicCalendar() {
     };
   }, [data, today]);
 
-  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Din kalender bliver tilgængelig, når TandMatch har verificeret klinikken." />;
+  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Din kalender er ikke tilgængelig endnu." />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
 
   const days = showPast ? [...past, ...upcoming] : upcoming;

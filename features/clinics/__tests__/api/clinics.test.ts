@@ -220,17 +220,17 @@ describe("egen klinik: valgte kategorier", () => {
 });
 
 describe("klinik-signup", () => {
-  it("opretter klinik med status registered, og /api/me returnerer den", async () => {
+  it("opretter klinik med status verified [PROTOTYPE], og /api/me returnerer den", async () => {
     const { c, userId, cvr, clinicId } = await signupClinic();
     const me = await c.get("/api/me");
     assert.equal(me.body.id, userId);
     assert.equal(me.body.role, "clinic");
-    assert.deepEqual(me.body.clinic, { id: clinicId, name: "Testklinikken ApS", status: "registered" });
+    assert.deepEqual(me.body.clinic, { id: clinicId, name: "Testklinikken ApS", status: "verified" });
     const own = await c.get("/api/clinics/me");
     assert.equal(own.status, 200);
     assert.equal(own.body.cvr, cvr);
-    assert.equal(own.body.status, "registered");
-    assert.equal(own.body.canReceiveLeads, false);
+    assert.equal(own.body.status, "verified");
+    assert.equal(own.body.canReceiveLeads, true);
   });
 
   it("patienter får ingen clinic i /api/me", async () => {
@@ -263,7 +263,7 @@ describe("klinik-signup", () => {
     createdUserIds.add(r.body.userId);
     const me = await c.get("/api/me");
     assert.equal(me.body.clinic.id, importedId);
-    assert.equal(me.body.clinic.status, "registered");
+    assert.equal(me.body.clinic.status, "verified");
     assert.equal(me.body.clinic.name, "Importeret Tandklinik");
     await admin.from("clinics").delete().eq("id", importedId);
   });
@@ -337,7 +337,7 @@ describe("egen klinik: profil", () => {
     assert.equal(r.body.trustpilot.enteredBy, "clinic");
     assert.ok(r.body.trustpilot.updatedAt);
     assert.ok(r.body.location, "placering følger det nye postnummer");
-    assert.equal(r.body.status, "registered");
+    assert.equal(r.body.status, "verified");
   });
 
   it("kan ikke ændre status, CVR, ejer eller verificering (strict)", async () => {
@@ -346,7 +346,7 @@ describe("egen klinik: profil", () => {
       assert.equal((await c.patch("/api/clinics/me", body)).status, 400, JSON.stringify(body));
     }
     const own = await c.get("/api/clinics/me");
-    assert.equal(own.body.status, "registered");
+    assert.equal(own.body.status, "verified");
     assert.equal(own.body.cvr, cvr);
   });
 
@@ -804,7 +804,7 @@ describe("sletning af klinikkonto", () => {
     createdUserIds.add(r.body.userId);
     const me = await again.get("/api/me");
     assert.notEqual(me.body.clinic.id, clinicId);
-    assert.equal(me.body.clinic.status, "registered");
+    assert.equal(me.body.clinic.status, "verified");
     assert.equal((await admin.from("clinics").select("status").eq("id", clinicId).single()).data?.status, "removed");
     await admin.from("clinics").delete().eq("id", clinicId);
   });

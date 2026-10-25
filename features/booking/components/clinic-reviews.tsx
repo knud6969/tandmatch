@@ -97,7 +97,7 @@ function ClinicReview({ review, onChanged }: { review: ClinicReviewDto; onChange
 // Klinikkens godkendte anmeldelser med mulighed for ét offentligt svar pr. anmeldelse (architecture 6.3, 8.5).
 export function ClinicReviews() {
   const { data, loading, error, errorCode, reload } = useLoad(loadReviews);
-  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Dine anmeldelser bliver tilgængelige, når TandMatch har verificeret klinikken." />;
+  if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Dine anmeldelser er ikke tilgængelige endnu." />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
   if (data.length === 0) {
     return (

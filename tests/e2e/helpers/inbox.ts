@@ -54,7 +54,8 @@ export async function verifiedClinic(browser: Browser, testInfo: TestInfo, label
   });
   expect(signup.status(), await signup.text()).toBe(201);
   const me = (await (await page.request.get("/api/me")).json()) as { clinic: { id: string } };
-  if (verify) sql(`select public.admin_set_clinic_status('${me.clinic.id}', 'verified')`);
+  // [PROTOTYPE] Nye klinikker auto-verificeres ved oprettelse; verify=false sætter dem eksplicit tilbage til 'registered'.
+  sql(`select public.admin_set_clinic_status('${me.clinic.id}', '${verify ? "verified" : "registered"}')`);
   return { page, id: me.clinic.id, name };
 }
 

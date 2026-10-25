@@ -22,7 +22,8 @@ after(async () => {
 type Patient = { c: TestClient; caseId: string; userId: string };
 
 // Verificeret (eller kun oprettet) klinik; returnerer klinikkens id.
-async function clinic(verified = true): Promise<string> {
+// verified = "auto": ingen statusændring efter signup (tester [PROTOTYPE] auto-verificeringen).
+async function clinic(verified: boolean | "auto" = true): Promise<string> {
   const c = await newClientWithTerms();
   const r = await c.post("/api/auth/signup", {
     role: "clinic",
@@ -39,6 +40,9 @@ async function clinic(verified = true): Promise<string> {
   createdUserIds.add(r.body.userId);
   const me = await c.get("/api/me");
   const clinicId = me.body.clinic.id as string;
+  // [PROTOTYPE] Nye klinikker auto-verificeres ved oprettelse; en ikke-verificeret testklinik sættes eksplicit til registered.
+  if (verified === "auto") return clinicId;
+  if (!verified) assert.ifError((await admin.rpc("admin_set_clinic_status", { p_clinic_id: clinicId, p_status: "registered" })).error);
   if (verified) {
     const { error } = await admin.rpc("admin_set_clinic_status", { p_clinic_id: clinicId, p_status: "verified" });
     assert.ifError(error);
@@ -127,6 +131,16 @@ describe("send leads", () => {
     const ghost = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: ["00000000-0000-4000-8000-000000000000"] });
     assert.equal(ghost.status, 409);
     assert.equal(errorOf(ghost), "CLINIC_NOT_AVAILABLE");
+  });
+
+  it("[PROTOTYPE] en nyoprettet klinik er straks verificeret og kan modtage et lead", async () => {
+    const p = await patient();
+    const fresh = await clinic("auto");
+    const row = await admin.from("clinics").select("status, verified_at").eq("id", fresh).single();
+    assert.equal(row.data?.status, "verified");
+    assert.ok(row.data?.verified_at);
+    const r = await p.c.post(`/api/cases/${p.caseId}/leads`, { clinicIds: [fresh] });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
   });
 
   it("kræver konto (ACCOUNT_REQUIRED) for anonyme", async () => {

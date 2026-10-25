@@ -236,7 +236,7 @@ test.describe("forhåndsvisning af klinikkens profil", () => {
       await own.page.getByRole("link", { name: "Se din profil som patienten ser den" }).click();
       await own.page.waitForURL((url) => url.pathname === "/klinik/profil/forhaandsvisning");
       await expect(own.page.getByText(PROFILE_PREVIEW_LABEL)).toBeVisible();
-      await expect(own.page.getByText(/afventer verificering/)).toBeVisible();
+      await expect(own.page.getByText(/ikke offentlig endnu/)).toBeVisible();
 
       const preview = own.page.getByTestId("profil-forhaandsvisning");
       await expect(preview.getByRole("heading", { level: 1, name: own.name })).toBeVisible();

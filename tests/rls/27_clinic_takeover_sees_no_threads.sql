@@ -28,6 +28,8 @@ insert into auth.users (id, email, is_anonymous, raw_user_meta_data) values
    jsonb_build_object('role', 'clinic', 'cvr', (select cvr from tt.clinic_names where name = 'A1'),
                       'clinic_name', 'Overtaget klinik', 'address', 'Testvej 9', 'postal_code', '2100', 'city', 'København Ø'));
 select tt.eq((select owner_id from public.clinics where id = tt.cid('A1')), tt.id('uTakeover'), 'forudsætning: klinikken er overtaget');
+-- [PROTOTYPE] Signup auto-verificerer; scenariet gælder uverificerede ejere, så klinikken sættes tilbage til registered.
+select public.admin_set_clinic_status(tt.cid('A1'), 'registered');
 select tt.eq((select status::text from public.clinics where id = tt.cid('A1')), 'registered', 'forudsætning: den nye ejer er ikke verificeret');
 
 select tt.as_user(tt.id('uTakeover'));

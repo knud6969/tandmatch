@@ -109,6 +109,9 @@ select 'imported', n.cvr, 'Importeret klinik', 'Importvej 2', '2200', 'Københav
 select public.admin_set_clinic_status(tt.cid(n.name), 'verified')
   from tt.clinic_names n where n.name not in ('R', 'I');
 
+-- R forbliver 'registered': [PROTOTYPE] signup auto-verificerer (prototype_auto_verify_clinics()), så den sættes tilbage her.
+select public.admin_set_clinic_status(tt.cid('R'), 'registered');
+
 -- Åbningstider: alle ugens dage 08-17 (almindelig) og 17-20 (akutvindue)
 insert into public.clinic_opening_hours (clinic_id, weekday, opens_at, closes_at, is_emergency)
 select c.id, d, '08:00'::time, '17:00'::time, false from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__'

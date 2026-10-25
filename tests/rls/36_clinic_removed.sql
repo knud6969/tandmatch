@@ -96,7 +96,7 @@ insert into auth.users (id, email, is_anonymous, raw_user_meta_data) values
                                                               'postal_code', '2100', 'city', 'København Ø'));
 select tt.eq((select count(*) from public.clinics where cvr = '10000006')::int, 1, 'præcis én klinik har CVR');
 select tt.ok((select id from public.clinics where cvr = '10000006') <> tt.cid('A1'), 'det er en ny række');
-select tt.eq((select status::text from public.clinics where cvr = '10000006'), 'registered', 'den nye klinik er registered');
+select tt.eq((select status::text from public.clinics where cvr = '10000006'), 'verified', 'den nye klinik er verified [PROTOTYPE: signup auto-verificerer]');
 select tt.eq((select status::text from public.clinics where id = tt.cid('A1')), 'removed', 'den gamle er stadig removed');
 select tt.eq((select count(*) from public.leads where clinic_id = (select id from public.clinics where cvr = '10000006'))::int, 0, 'den nye klinik arver ingen leads');
 select tt.eq(public.is_cvr_claimed('10000006'), true, 'CVR er nu optaget');

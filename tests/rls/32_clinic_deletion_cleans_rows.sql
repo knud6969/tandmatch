@@ -58,6 +58,8 @@ select tt.as_postgres();
 insert into auth.users (id, email, is_anonymous, raw_user_meta_data) values
   (tt.id('uNew'), 'ny@test.invalid', false, jsonb_build_object('role', 'clinic', 'cvr', '10000006', 'clinic_name', 'Ny', 'address', 'Vej 1',
                                                               'postal_code', '2100', 'city', 'København Ø'));
+-- [PROTOTYPE] Signup auto-verificerer; scenariet gælder uverificerede ejere, så klinikken sættes tilbage til registered.
+select public.admin_set_clinic_status(tt.cid('A1'), 'registered');
 select tt.eq((select status::text from public.clinics where id = tt.cid('A1')), 'registered', 'overtaget klinik er registered');
 select tt.as_anon();
 select tt.eq((select count(*) from public.public_clinics(null, array[tt.cid('A1')]))::int, 0, 'H1: overtaget klinik er usynlig i oversigten');

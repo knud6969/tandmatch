@@ -36,8 +36,7 @@ export function ClinicProfilePreview() {
       <Alert tone="warning" title={PROFILE_PREVIEW_LABEL}>
         {data && !data.verified ? (
           <p>
-            Klinikken afventer verificering, så patienterne kan ikke se profilen endnu. Sådan kommer den til at se ud, når TandMatch har
-            verificeret klinikken.
+            Klinikken er ikke offentlig endnu, så patienterne kan ikke se profilen. Sådan kommer den til at se ud, når klinikken er synlig.
           </p>
         ) : (
           <p>Det er de samme oplysninger og den samme rækkefølge, som patienterne ser i appen. Ret oplysningerne på klinikprofilen og de andre opsætningssider.</p>

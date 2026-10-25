@@ -146,7 +146,9 @@ before(async () => {
   );
   await verify(clinicB.clinicId);
 
-  registered = await signupClinic(`Directory Oprettet ${RUN}`, "2100", "København Ø"); // forbliver `registered`
+  registered = await signupClinic(`Directory Oprettet ${RUN}`, "2100", "København Ø");
+  // [PROTOTYPE] Nye klinikker auto-verificeres; denne sættes eksplicit til `registered`.
+  assert.ifError((await admin.rpc("admin_set_clinic_status", { p_clinic_id: registered.clinicId, p_status: "registered" })).error);
 
   removed = await signupClinic(`Directory Slettet ${RUN}`, "2100", "København Ø");
   const del = await removed.c.del("/api/clinics/me", { confirm: "SLET" });
