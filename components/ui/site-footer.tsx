@@ -57,7 +57,7 @@ export function SiteFooter() {
             </li>
           </ul>
         </nav>
-        <p>Prototype. Vilkår og privatlivspolitik er pladsholdertekster.</p>
+        <p>TandMatch er et studieprojekt på INNT, CBS, og ikke en eksisterende virksomhed. Vilkår og privatlivspolitik er skrevet til prototypen og ikke gennemgået juridisk.</p>
       </div>
     </footer>
   );
