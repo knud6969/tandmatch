@@ -1,26 +1,21 @@
 "use client";
 
-import { ClinicOverview } from "@/features/clinics/ui";
-import { LeadInbox } from "@/features/leads/components/lead-inbox";
-import { VerificationBanner } from "@/features/clinics/ui";
-import { LoadState } from "@/components/ui/load-state";
-import { loadClinic } from "@/features/clinics/ui";
+import { ClinicSetupNotice, VerificationBanner, loadClinic } from "@/features/clinics/ui";
+import { InboxLayout, NoLeadSelected } from "@/features/leads/components/inbox-layout";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
-// Klinikkens forside: verificeringsbanneret øverst (kun ved "registered"), derefter indbakken og opsætningen. Klinikken hentes
-// én gang og gives til både banner og oversigt.
+// Klinikkens forside (features/clinics/README.md 6.3): verificeringsbanneret (kun ved "registered") og én linje om opsætningen,
+// når noget mangler; derefter indbakken. Klinikken hentes én gang til banner og opsætningslinje. Fejler hentningen, vises
+// indbakken alligevel; opsætningen kan ses under Klinikprofil.
 export function ClinicHome() {
-  const { data, error, loading, reload } = useLoad(loadClinic);
+  const { data } = useLoad(loadClinic);
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       {data && <VerificationBanner status={data.status} />}
-      <section aria-labelledby="henvendelser" className="flex flex-col gap-4">
-        <h2 id="henvendelser" className="text-xl font-semibold text-ink">
-          Henvendelser
-        </h2>
-        <LeadInbox />
-      </section>
-      {data ? <ClinicOverview clinic={data} /> : <LoadState loading={loading} error={error} onRetry={reload} />}
+      {data && <ClinicSetupNotice clinic={data} />}
+      <InboxLayout>
+        <NoLeadSelected />
+      </InboxLayout>
     </div>
   );
 }

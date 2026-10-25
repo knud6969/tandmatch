@@ -1,6 +1,6 @@
 import { WEEKDAYS, WEEKDAY_LABEL } from "@/lib/clinics/constants/clinics";
 import type { OpeningHoursDto } from "@/lib/clinics/types/clinics";
-import { formatClock } from "@/platform/ui-utils/format";
+import { formatClock } from "@/lib/common/domain/format";
 
 // Åbningstider pr. ugedag. Akutvinduer er tider, hvor klinikken tager imod akutte patienter (architecture 4.3).
 export function OpeningHours({ hours }: { hours: OpeningHoursDto[] }) {

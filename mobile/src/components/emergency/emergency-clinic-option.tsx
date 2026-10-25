@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Badge } from "~/components/ui";
 import { colors, radius, spacing, type } from "~/theme";
-import { VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
-import { formatKm, formatShortDateTime } from "~/utils/format";
+import { VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
+import { formatKm, formatShortDateTime } from "@/lib/common/domain/format";
 
 type Props = { clinic: ClinicListItemDto; selected: boolean; onPress: () => void };
 

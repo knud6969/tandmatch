@@ -26,6 +26,14 @@ export const LEAD_NOT_ACCEPTED_TEXT = "Klinikken har ikke accepteret din henvend
 export const ALREADY_REVIEWED_TEXT = "Du har allerede anmeldt dette besøg.";
 export const ALREADY_REPLIED_TEXT = "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.";
 
+// Adgangskode og login-e-mail (identity 10.2).
+export const INVALID_CURRENT_PASSWORD_TEXT = "Den nuværende adgangskode er forkert.";
+export const SAME_PASSWORD_TEXT = "Den nye adgangskode skal være en anden end den nuværende.";
+export const SAME_EMAIL_TEXT = "Det er allerede din login-e-mail.";
+export const RECOVERY_INVALID_TEXT = "Linket er ugyldigt, brugt eller udløbet. Bed om et nyt link, og åbn det i samme browser.";
+export const RECOVERY_REQUIRED_TEXT = "Linket til at vælge en ny adgangskode er udløbet. Bed om et nyt link.";
+export const WEB_ONLY_TEXT = "Det kan kun gøres på TandMatch' webside.";
+
 export const API_ERROR_TEXTS: Record<string, string> = {
   INVALID_CREDENTIALS: "E-mail eller adgangskode er forkert. Tjek oplysningerne og prøv igen.",
   EMAIL_EXISTS: "Der findes allerede en konto med denne e-mail. Prøv at logge ind i stedet.",
@@ -42,10 +50,8 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   NOT_FOUND: "Vi kunne ikke finde det, du søgte efter.",
   CONSENT_REQUIRED: "Du skal give samtykke til at dele din beskrivelse med klinikkerne, før du kan sende.",
   CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
-  CONVERSATION_CLOSED: "Samtalen er lukket. Du kan stadig lave en opsummering.",
   CHAT_LIMIT: `Samtalen har nået grænsen på ${CHAT_MAX_USER_MESSAGES_PER_CONVERSATION} beskeder. Du kan lave en opsummering af det, du har skrevet.`,
   RATE_LIMITED: "Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.",
-  AI_TIMEOUT: "AI-assistenten svarede ikke i tide. Prøv igen om lidt.",
   AI_UNAVAILABLE: "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.",
   SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne sag. Ret teksten selv i stedet.",
   INVALID_FORM: "Billedet kunne ikke sendes. Prøv et andet billede.",
@@ -53,9 +59,6 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   FILE_TOO_LARGE: `Billedet er for stort. Vælg et billede på højst ${MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024)} MB.`,
   IMAGE_LIMIT: `Du kan højst uploade ${MAX_IMAGES_PER_CASE} billeder pr. sag.`,
   ACCOUNT_REQUIRED: "Opret en konto for at fortsætte.",
-  SUMMARY_NOT_APPROVED: "Godkend opsummeringen, før sagen sendes.",
-  POSTAL_CODE_REQUIRED: "Angiv dit postnummer, før sagen sendes.",
-  POSTAL_CODE_UNKNOWN: "Postnummeret findes ikke i postnummerlisten. Tjek det og prøv igen.",
   LEAD_LIMIT: `Din sag kan højst have ${MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser ad gangen. Træk en henvendelse tilbage, eller vælg færre klinikker.`,
   LEAD_DAILY_LIMIT: `Du har sendt henvendelser til mange klinikker i dag. Der kan højst sendes ${MAX_LEADS_PER_PATIENT_DAY} henvendelser pr. døgn. Prøv igen senere.`,
   LEAD_TOTAL_LIMIT: `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`,
@@ -67,7 +70,6 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   THREAD_CLOSED: THREAD_CLOSED_TEXT,
   MESSAGE_LIMIT: MESSAGE_LIMIT_TEXT,
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
-  EXPORT_FAILED: "Dine data kunne ikke hentes lige nu. Prøv igen om lidt.",
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",
   TRUSTPILOT_URL_REQUIRED: "Angiv linket til din Trustpilot-side, hvis du angiver score eller antal anmeldelser.",
   UNKNOWN_SERVICE: "En af behandlingerne findes ikke længere i kataloget. Genindlæs siden og prøv igen.",
@@ -94,7 +96,11 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   ALREADY_REPLIED: ALREADY_REPLIED_TEXT,
   CLAIM_INVALID: "Din tidligere samtale kunne ikke hentes over på kontoen. Den kan være udløbet eller allerede overført.",
   NOT_ANONYMOUS: "Der er ingen anonym samtale at overføre.",
-  INVALID_REVIEW: "Anmeldelsen kunne ikke gemmes. Tjek felterne og prøv igen.",
+  INVALID_CURRENT_PASSWORD: INVALID_CURRENT_PASSWORD_TEXT,
+  SAME_PASSWORD: SAME_PASSWORD_TEXT,
+  SAME_EMAIL: SAME_EMAIL_TEXT,
+  RECOVERY_INVALID: RECOVERY_INVALID_TEXT,
+  RECOVERY_REQUIRED: RECOVERY_REQUIRED_TEXT,
 };
 
 // Neutrale tekster, når serverens besked ikke kan vises som den står.

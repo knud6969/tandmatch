@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canCancel, canMarkNoShow, canReview, graceEndsAt, pickLeadBooking } from "@/lib/booking/domain/bookings";
+import { bookingCanceller, canCancel, canMarkNoShow, canReview, graceEndsAt, patientCancellationText, pickLeadBooking } from "@/lib/booking/domain/bookings";
+import { cancelBookingSchema } from "@/lib/booking/schemas/bookings";
 
 const HOUR = 3_600_000;
 const now = new Date("2026-10-20T12:00:00Z");
@@ -71,5 +72,29 @@ describe("bookings-domæne: leadets booking", () => {
 
   it("giver null uden bookinger", () => {
     expect(pickLeadBooking([])).toBeNull();
+  });
+});
+
+describe("bookings-domæne: hvem der aflyste (10.10)", () => {
+  it("bookingCanceller giver kun en aktør for aflyste bookinger; null fra databasen er systemet", () => {
+    expect(bookingCanceller("cancelled", "patient")).toBe("patient");
+    expect(bookingCanceller("cancelled", "clinic")).toBe("clinic");
+    expect(bookingCanceller("cancelled", null)).toBe("system");
+    expect(bookingCanceller("cancelled", undefined)).toBeNull();
+    for (const status of ["held", "booked", "completed", "no_show"] as const) expect(bookingCanceller(status, "clinic")).toBeNull();
+  });
+
+  it("patientCancellationText viser klinikkens grund, ellers hvem der aflyste", () => {
+    expect(patientCancellationText({ cancelledBy: "clinic", cancelReason: "Syg" })).toBe("Klinikken aflyste: Syg");
+    expect(patientCancellationText({ cancelledBy: "patient", cancelReason: null })).toBe("Du aflyste tiden");
+    expect(patientCancellationText({ cancelledBy: null, cancelReason: null })).toBeNull();
+  });
+
+  it("cancelBookingSchema trimmer grunden, tillader tom body og afviser over 200 tegn og ukendte felter", () => {
+    expect(cancelBookingSchema.parse({})).toEqual({});
+    expect(cancelBookingSchema.parse({ reason: "  Syg  " })).toEqual({ reason: "Syg" });
+    expect(cancelBookingSchema.parse({ reason: "x".repeat(200) }).reason).toHaveLength(200);
+    expect(cancelBookingSchema.safeParse({ reason: "x".repeat(201) }).success).toBe(false);
+    expect(cancelBookingSchema.safeParse({ note: "x" }).success).toBe(false);
   });
 });

@@ -120,14 +120,16 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       addListPrice(x.id);
       const [leadId] = await sendTo(patient, [x]);
 
-      // Indbakken: ét nyt lead med behandling, område og "Ny".
+      // Indbakken: ét nyt lead med prik for "ikke åbnet", behandling, uddrag, listepris og område.
       await x.page.goto("/klinik");
       const row = x.page.getByTestId("lead-raekke");
       await expect(row).toHaveCount(1);
-      await expect(row).toContainText("Ny");
-      await expect(row).toContainText("Venter på dit svar");
+      await expect(row.getByTestId("ikke-aabnet")).toHaveCount(1);
+      await expect(row).toContainText("Venter på svar");
       await expect(row).toContainText("Blegning");
       await expect(row).toContainText("2100");
+      await expect(row.getByTestId("uddrag")).toHaveText("Jeg vil gerne have lysere tænder.");
+      await expect(row).toContainText("Listepris 500–900 kr.");
       await expectNoHorizontalScroll(x.page);
       await x.page.screenshot({ path: `test-results/indbakke-${x.page.viewportSize()!.width}.png`, fullPage: true });
 
@@ -136,8 +138,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page).toHaveURL(new RegExp(`/klinik/lead/${leadId}$`));
       await expect(x.page.getByRole("heading", { level: 1 })).toContainText("Blegning");
       await expect(x.page.getByTestId("opsummering")).toHaveText("Jeg vil gerne have lysere tænder.");
-      await expect(x.page.getByText("500–900 kr.")).toBeVisible();
-      await expect(x.page.getByText("ifølge klinikkens prisliste").first()).toBeVisible();
+      await expect(x.page.getByTestId("fakta")).toContainText("Listepris 500–900 kr.");
       await expect(x.page.getByTestId("kontakt-skjult")).toBeVisible();
       const content = await x.page.locator("main").innerText();
       expect(content).not.toContain(PATIENT_NAME);
@@ -151,7 +152,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await x.page.screenshot({ path: `test-results/lead-kort-${x.page.viewportSize()!.width}.png`, fullPage: true });
 
       // Klinikken stiller et spørgsmål før beslutningen.
-      await expect(x.page.getByText(/kan se dine beskeder/)).toBeVisible();
+      await expect(x.page.getByText(/kan læse dine beskeder/)).toBeVisible();
       await x.page.getByLabel("Skriv en besked").fill("Har du været til tandlæge det seneste år?");
       await x.page.getByRole("button", { name: "Send besked" }).click();
       await expect(x.page.getByTestId("besked")).toHaveCount(1);
@@ -168,8 +169,8 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       // Accepter med kommentar og præciseret pris: ét tryk til at åbne og ét til at sende.
       await x.page.getByRole("button", { name: "Accepter med kommentar", exact: true }).click();
       await x.page.getByLabel("Kommentar til patienten").fill("Vi kan klare det på én time. Husk at medbringe sundhedskortet.");
-      await x.page.getByLabel("Laveste pris (kr.)").fill("700");
-      await x.page.getByLabel("Højeste pris (kr.)").fill("1100");
+      await x.page.getByLabel("Fra (kr.)").fill("700");
+      await x.page.getByLabel("Til (kr.)").fill("1100");
       await expectNoHorizontalScroll(x.page);
       await x.page.screenshot({ path: `test-results/lead-accept-${x.page.viewportSize()!.width}.png`, fullPage: true });
       await x.page.getByRole("button", { name: "Send og accepter" }).click();
@@ -185,8 +186,9 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       // Leadet er nu besvaret i indbakken.
       await x.page.goto("/klinik");
       await expect(x.page.getByTestId("lead-raekke")).toHaveCount(1);
+      // Patientens svar er læst, så intet kræver handling: listen viser alle, og leadet er accepteret og åbnet.
       await expect(x.page.getByTestId("lead-raekke")).toContainText("Accepteret");
-      await expect(x.page.getByTestId("lead-raekke")).not.toContainText("Ny");
+      await expect(x.page.getByTestId("lead-raekke").getByTestId("ikke-aabnet")).toHaveCount(0);
     } finally {
       await cleanup(patient, [x]);
     }
@@ -236,11 +238,12 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       const [leadId] = await sendTo(patient, [x]);
       await x.page.goto(`/klinik/lead/${leadId}`);
       await x.page.getByRole("button", { name: "Afvis", exact: true }).click();
-      // clinic_left kan ikke vælges.
-      const options = await x.page.getByLabel("Årsag").locator("option").allTextContents();
+      // Ingen forvalgt årsag, og clinic_left kan ikke vælges.
+      await expect(x.page.getByLabel("Årsag")).toHaveValue("");
+      const options = await x.page.getByLabel("Årsag").locator("option:not([disabled])").allTextContents();
       expect(options).toHaveLength(4);
       expect(options.join(" ")).not.toContain("ikke længere på TandMatch");
-      await expect(x.page.getByText(/Patienten kan se både årsagen og noten/)).toBeVisible();
+      await expect(x.page.getByText(/Patienten ser årsagen og noten/)).toBeVisible();
       await x.page.getByLabel("Årsag").selectOption("needs_referral");
       await x.page.getByLabel("Note til patienten (valgfri)").fill("Kontakt din læge for en henvisning.");
       await expectNoHorizontalScroll(x.page);
@@ -301,7 +304,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page.getByTestId("ingen-henvendelser")).toHaveCount(0);
       // Banneret står øverst, lige under sideintroen og før indbakken.
       const banner = (await x.page.getByText("Afventer verificering", { exact: true }).boundingBox())!;
-      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true }).boundingBox())!;
+      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true, level: 2 }).boundingBox())!;
       expect(banner.y).toBeLessThan(inbox.y);
       await expect(x.page.getByText("forespørgsler")).toHaveCount(0);
       await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toHaveCount(0);

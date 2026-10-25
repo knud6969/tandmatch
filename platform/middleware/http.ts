@@ -6,6 +6,7 @@ import {
   BOOKING_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
+  GENERIC_ERROR_TEXT,
   LEAD_NOT_ACCEPTED_TEXT,
   MESSAGE_LIMIT_TEXT,
   NO_SHOW_WINDOW_CLOSED_TEXT,
@@ -59,7 +60,7 @@ export function withApi<C = unknown>(handler: (req: Request, ctx: C) => Promise<
       // Logger kun fejltypen, aldrig request-indhold, nøgler eller persondata.
       console.error("API-fejl:", err instanceof Error ? err.name : "ukendt");
       return errorResponse(
-        new ApiError(500, "INTERNAL", "Der opstod en fejl. Prøv igen om lidt."),
+        new ApiError(500, "INTERNAL", GENERIC_ERROR_TEXT),
       );
     }
   };

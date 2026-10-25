@@ -1,4 +1,5 @@
 import { BOOKING_STATUS_LABEL } from "@/lib/booking/constants/bookings";
+import { patientCancellationText } from "@/lib/booking/domain/bookings";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import { LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import { SLOT_TAKEN_TEXT, SLOT_UNAVAILABLE_TEXT, BOOKING_LIMIT_TEXT } from "@/lib/common/constants/error-texts";
@@ -138,7 +139,7 @@ describe("booking", () => {
   it("deler bookinger i kommende og tidligere", () => {
     const mk = (id: string, startsAt: string, endsAt: string, status: PatientBookingDto["status"]): PatientBookingDto => ({
       id, leadId: "l", clinic: { id: "c", name: "K", address: "A", city: "B" }, service: { id: "s", name: "S" },
-      startsAt, endsAt, status, canCancel: false, canReview: false, holdExpiresAt: null,
+      startsAt, endsAt, status, canCancel: false, canReview: false, holdExpiresAt: null, cancelledBy: null, cancelReason: null,
     });
     const now = new Date("2026-10-25T12:00:00Z");
     const { upcoming, past } = splitBookings(
@@ -153,5 +154,13 @@ describe("booking", () => {
     expect(upcoming.map((b) => b.id)).toEqual(["soon", "late"]);
     expect(past.map((b) => b.id)).toEqual(["cancelled", "done"]);
     expect(BOOKING_STATUS_LABEL.cancelled).toBe("Aflyst");
+  });
+
+  it("viser én linje om aflysningen: klinikkens grund, ellers hvem der aflyste", () => {
+    expect(patientCancellationText({ cancelledBy: null, cancelReason: null })).toBeNull();
+    expect(patientCancellationText({ cancelledBy: "clinic", cancelReason: "Tandlægen er syg" })).toBe("Klinikken aflyste: Tandlægen er syg");
+    expect(patientCancellationText({ cancelledBy: "clinic", cancelReason: null })).toBe("Aflyst af klinikken");
+    expect(patientCancellationText({ cancelledBy: "patient", cancelReason: null })).toBe("Du aflyste tiden");
+    expect(patientCancellationText({ cancelledBy: "system", cancelReason: null })).toBe("Reservationen udløb");
   });
 });

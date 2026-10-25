@@ -431,6 +431,20 @@ describe("GET /api/clinics/[id]", () => {
     const patient = await newClientWithTerms();
     assert.equal((await patient.get("/api/clinics/me")).status, 401);
   });
+
+  it("forhåndsvisningen (/klinik/profil/forhaandsvisning) er kun for ejeren: en anden klinik får 404 på en uverificeret profil", async () => {
+    // Ejeren af en registered klinik ser sin egen profil på fuldt niveau via /api/clinics/me.
+    const own = await registered.c.get("/api/clinics/me");
+    assert.equal(own.status, 200);
+    assert.equal(own.body.id, registered.clinicId);
+    assert.equal(own.body.status, "registered");
+    assert.equal(own.body.tier, "full");
+    // En anden klinik kan hverken læse den offentligt eller via /me (som altid er sessionens egen klinik).
+    assert.equal((await clinicA.c.get(`/api/clinics/${registered.clinicId}`)).status, 404);
+    assert.equal((await clinicA.c.get("/api/clinics/me")).body.id, clinicA.clinicId);
+    // Heller ingen offentlig adgang for besøgende.
+    assert.equal((await (await newClientWithTerms()).get(`/api/clinics/${registered.clinicId}`)).status, 404);
+  });
 });
 
 describe("GET /api/clinics/[id]/availability", () => {

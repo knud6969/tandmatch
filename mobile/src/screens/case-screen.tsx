@@ -15,7 +15,7 @@ import { CLOSE_CASE_CONSEQUENCE } from "@/lib/cases/constants/cases";
 import { WITHDRAW_LEAD_CONSEQUENCE } from "@/lib/leads/constants/leads";
 import { canCloseCase } from "~/utils/case-actions";
 import { caseTitle } from "~/utils/case-view";
-import { formatDate } from "~/utils/format";
+import { formatDate } from "@/lib/common/domain/format";
 
 // Sagsskærmen: sagens behandlinger og hvert lead med klinikkens svar (architecture 13.4). Hentes igen ved fokus.
 function CaseContent() {

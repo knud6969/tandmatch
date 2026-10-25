@@ -100,6 +100,8 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await page.getByLabel("Telefon").fill("12345678");
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Adgangskode").fill("Test-kodeord-1234");
+    // /opret/klinik er undtaget fra vilkårs-gaten; accepten gives i formularen (identity 2.5).
+    await page.getByRole("checkbox", { name: /accepterer brugervilkårene/ }).check();
     if (mobile) await expectNoHorizontalScroll(page, "/opret/klinik");
     await page.getByRole("button", { name: "Opret klinik" }).click();
     await page.waitForURL((url) => url.pathname === "/klinik");

@@ -6,8 +6,8 @@ import { Badge, Button, Card } from "~/components/ui";
 import { colors, spacing, type } from "~/theme";
 import { canMessageLead, canWithdrawLead, messagesLabel } from "~/utils/case-actions";
 import { canBookLead, declineText, leadTone } from "~/utils/case-view";
-import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "~/utils/clinic-texts";
-import { formatDateTime, formatPriceRange } from "~/utils/format";
+import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "@/lib/clinics/constants/clinic-texts";
+import { formatDateTime, formatPriceRange } from "@/lib/common/domain/format";
 
 // Et lead på sagsskærmen: klinik, status og det klinikken har svaret (13.4). Priser vises altid med kilde.
 type Props = { lead: PatientLeadDto; onBook: () => void; onMessages: () => void; onWithdraw: () => void; withdrawing?: boolean };

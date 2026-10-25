@@ -3,7 +3,7 @@ import { MIN_REVIEWS_FOR_PRICE_ACCURACY, PRICE_ACCURACY_LABEL } from "@/lib/book
 import type { PublicReviewDto, PublicReviewsDto } from "@/lib/booking/types/reviews";
 import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
-import { formatKr, formatMonth, formatPercent } from "~/utils/format";
+import { formatKr, formatMonth, formatPercent } from "@/lib/common/domain/format";
 import { StarRating, Stars } from "./star-rating";
 
 // Kun måned vises (ikke dato), så anmelderen ikke kan genkendes ud fra tidspunktet.

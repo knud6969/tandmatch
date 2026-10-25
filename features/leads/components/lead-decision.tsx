@@ -16,7 +16,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
 import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
-import { parseWholeKr } from "@/platform/ui-utils/format";
+import { parseWholeKr } from "@/lib/common/domain/format";
 import { useAction } from "@/platform/ui-utils/use-action";
 
 type Mode = "idle" | "comment" | "decline";
@@ -31,17 +31,17 @@ type LeadDecisionProps = {
   hasRequestedTime: boolean;
 };
 
-// Klinikkens beslutning (architecture 6.3): højst to tryk efter åbning. Accepter er ét tryk; Accepter med kommentar og Afvis
-// åbner en kort formular med ét tryk til at sende. clinic_left kan ikke vælges (sættes kun af systemet).
+// Klinikkens beslutning (features/clinics/README.md 6.3) i lead-kortets faste bjælke. Accepter er ét tryk; Kommentar og Afvis
+// åbner en kort formular i bjælken. Afvisningsårsagen er ikke forvalgt: klinikken vælger aktivt. clinic_left kan ikke vælges.
 export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: LeadDecisionProps) {
   const [mode, setMode] = useState<Mode>("idle");
   const [comment, setComment] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [reason, setReason] = useState<ClinicDeclineReason>("no_capacity");
+  const [reason, setReason] = useState<ClinicDeclineReason | "">("");
   const [note, setNote] = useState("");
   const [stale, setStale] = useState(false);
-  const [errors, setErrors] = useState<{ comment?: string; price?: string; note?: string }>({});
+  const [errors, setErrors] = useState<{ comment?: string; price?: string; reason?: string; note?: string }>({});
   const action = useAction();
 
   async function post(payload: unknown): Promise<boolean> {
@@ -89,6 +89,10 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
 
   async function submitDecline(event: FormEvent) {
     event.preventDefault();
+    if (reason === "") {
+      setErrors({ reason: "Vælg en årsag." });
+      return;
+    }
     const trimmed = note.trim();
     const payload = { decision: "decline" as const, reason, ...(trimmed === "" ? {} : { note: trimmed }) };
     const parsed = leadDecisionSchema.safeParse(payload);
@@ -107,15 +111,11 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
   }
 
   return (
-    <section aria-labelledby="beslutning" className="flex flex-col gap-4" data-testid="beslutning">
-      <h2 id="beslutning" className="text-xl font-semibold text-ink">
-        Dit svar til patienten
-      </h2>
-
+    <section aria-label="Dit svar til patienten" className="flex flex-col gap-2" data-testid="beslutning">
       {stale && (
         <Alert tone="warning" role="alert">
-          <p>Henvendelsen er allerede besvaret eller trukket tilbage. Genindlæs for at se den nyeste status.</p>
-          <Button variant="secondary" className="mt-3" onClick={onStale}>
+          <p>Henvendelsen er allerede besvaret eller trukket tilbage.</p>
+          <Button variant="secondary" className="mt-2" onClick={onStale}>
             Genindlæs
           </Button>
         </Alert>
@@ -123,42 +123,47 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
       {!stale && <StatusMessage message={action.message} />}
 
       {mode === "idle" && (
-        <div className="flex flex-col gap-3">
-          <Button onClick={acceptPlain} disabled={action.busy}>
-            Accepter
-          </Button>
-          <Button variant="secondary" onClick={() => open("comment")} disabled={action.busy}>
-            Accepter med kommentar
-          </Button>
-          <Button variant="danger-outline" onClick={() => open("decline")} disabled={action.busy}>
-            Afvis
-          </Button>
-          <p className="text-sm text-ink-muted">
-            {hasRequestedTime ? "Tiden bliver booket, når du accepterer." : "Når du accepterer, kan patienten booke en tid i din kalender."}
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <Button onClick={acceptPlain} disabled={action.busy} className="px-2">
+              Accepter
+            </Button>
+            <Button variant="secondary" onClick={() => open("comment")} disabled={action.busy} className="px-2" aria-label="Accepter med kommentar">
+              <span className="sm:hidden">Kommentar</span>
+              <span className="hidden sm:inline">Accepter med kommentar</span>
+            </Button>
+            <Button variant="danger-outline" onClick={() => open("decline")} disabled={action.busy} className="px-2">
+              Afvis
+            </Button>
+          </div>
+          <p className="text-xs text-ink-muted">
+            {hasRequestedTime ? "Tiden bliver booket, når du accepterer." : "Ved accept kan patienten booke en tid hos jer."}
           </p>
-        </div>
+        </>
       )}
 
       {mode === "comment" && (
-        <form onSubmit={submitComment} className="flex flex-col gap-4" noValidate aria-label="Accepter med kommentar">
+        <form onSubmit={submitComment} className="flex flex-col gap-3" noValidate aria-label="Accepter med kommentar">
           <TextArea
             label="Kommentar til patienten"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             maxLength={LEAD_COMMENT_MAX_CHARS}
             error={errors.comment}
-            hint="Patienten kan læse kommentaren."
+            rows={3}
+            className="min-h-20"
+            autoFocus
           />
           <fieldset className="flex flex-col gap-2">
             <legend className="text-sm font-semibold text-ink">Præciseret pris (valgfri)</legend>
-            <p className="text-sm text-ink-muted">Angiv kun en pris, hvis du kan sige noget mere præcist end prislisten. Prisen er dit overslag, før du ser patienten.</p>
             <div className="grid grid-cols-2 gap-3">
-              <TextField label="Laveste pris (kr.)" inputMode="numeric" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} />
-              <TextField label="Højeste pris (kr.)" inputMode="numeric" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} />
+              <TextField label="Fra (kr.)" inputMode="numeric" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} />
+              <TextField label="Til (kr.)" inputMode="numeric" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} />
             </div>
             {errors.price && <p className="text-sm font-medium text-danger-ink">{errors.price}</p>}
           </fieldset>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <p className="text-xs text-ink-muted">Patienten kan læse kommentaren og prisen.</p>
+          <div className="grid grid-cols-2 gap-2">
             <Button type="submit" disabled={action.busy}>
               {action.busy ? "Sender …" : "Send og accepter"}
             </Button>
@@ -170,8 +175,18 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
       )}
 
       {mode === "decline" && (
-        <form onSubmit={submitDecline} className="flex flex-col gap-4" noValidate aria-label="Afvis henvendelsen">
-          <SelectField label="Årsag" value={reason} onChange={(e) => setReason(e.target.value as ClinicDeclineReason)}>
+        <form onSubmit={submitDecline} className="flex flex-col gap-3" noValidate aria-label="Afvis henvendelsen">
+          <SelectField
+            label="Årsag"
+            value={reason}
+            onChange={(e) => setReason(e.target.value as ClinicDeclineReason | "")}
+            error={errors.reason}
+            required
+            autoFocus
+          >
+            <option value="" disabled>
+              Vælg årsag
+            </option>
             {LEAD_CLINIC_DECLINE_REASONS.map((value) => (
               <option key={value} value={value}>
                 {LEAD_DECLINE_REASON_LABEL[value]}
@@ -184,10 +199,11 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
             onChange={(e) => setNote(e.target.value)}
             maxLength={LEAD_DECLINE_NOTE_MAX_CHARS}
             error={errors.note}
-            hint="Patienten kan se både årsagen og noten. Skriv ikke noget, du ikke vil have patienten til at læse."
-            className="min-h-24"
+            rows={2}
+            className="min-h-16"
           />
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <p className="text-xs text-ink-muted">Patienten ser årsagen og noten.</p>
+          <div className="grid grid-cols-2 gap-2">
             <Button type="submit" variant="danger" disabled={action.busy}>
               {action.busy ? "Sender …" : "Send afvisning"}
             </Button>

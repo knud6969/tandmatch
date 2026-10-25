@@ -77,3 +77,26 @@ export const refreshSchema = z
     refreshToken: z.string().min(1, "Angiv refresh-token.").max(512),
   })
   .strict();
+
+// Glemt adgangskode: POST /api/auth/password/forgot. Strict: redirect-URL'en bygges kun af serveren (architecture 10.2).
+export const forgotPasswordSchema = z.object({ email: emailSchema }).strict();
+
+// Koden fra e-maillinket: `code` (PKCE, Supabase' standardskabelon) eller `tokenHash` (skabelon med token_hash).
+const recoveryCodeSchema = z.string().trim().min(8, "Linket er ufuldstændigt.").max(512, "Linket er ugyldigt.");
+export const passwordRecoverySchema = z.union([
+  z.object({ code: recoveryCodeSchema }).strict(),
+  z.object({ tokenHash: recoveryCodeSchema }).strict(),
+]);
+
+// Ny adgangskode efter et recovery-link: POST /api/auth/password/reset. Samme krav som ved oprettelse.
+export const resetPasswordSchema = z.object({ password: passwordSchema }).strict();
+
+const currentPasswordSchema = z.string().min(1, "Angiv din nuværende adgangskode.").max(72);
+
+// Skift login-e-mail: POST /api/auth/account/email.
+export const changeEmailSchema = z.object({ email: emailSchema, currentPassword: currentPasswordSchema }).strict();
+
+// Skift adgangskode: POST /api/auth/account/password.
+export const changePasswordSchema = z
+  .object({ currentPassword: currentPasswordSchema, newPassword: passwordSchema })
+  .strict();

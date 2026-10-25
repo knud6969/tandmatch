@@ -28,3 +28,6 @@ export type AuthResultDto = AuthUserDto & { session?: MobileSessionDto };
 
 // Svar fra POST /api/terms/accept. `termsToken` er kun med for appen.
 export type TermsAcceptResultDto = TermsAcceptedDto & { termsToken?: string };
+
+// Svar fra GET /api/auth/account (architecture 10.2): kun login-e-mailen.
+export type AccountDto = { email: string };

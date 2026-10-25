@@ -1,5 +1,7 @@
 import type { ZodError } from "zod";
 
+// Zod-fejl som én besked pr. felt. Ren kode, delt af klinik-weben og patient-appen (architecture 2.1).
+
 export type FieldErrors<K extends string> = {
   fields: Partial<Record<K, string>>;
   // Fejl der ikke kan knyttes til et felt (fx valg af rolle).

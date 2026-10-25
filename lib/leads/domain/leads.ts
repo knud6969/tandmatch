@@ -1,7 +1,7 @@
-import { LEAD_ACTIVE_STATUSES } from "@/lib/leads/constants/leads";
+import { LEAD_ACTIVE_STATUSES, LEAD_SUMMARY_EXCERPT_CHARS } from "@/lib/leads/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE, MAX_TOTAL_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import type { CaseRecordDto } from "@/lib/cases/types/cases";
-import type { LeadStatus } from "@/lib/leads/types/leads";
+import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/leads/types/leads";
 
 // Tæller leadet med i de højst 3 aktive pr. sag? (Spejler is_lead_active_status() i databasen.)
 export function isActiveLead(status: LeadStatus): boolean {
@@ -41,4 +41,22 @@ export function canSendCase(
     serviceCount > 0 &&
     canSendMoreLeads(activeLeadCount, totalLeadCount)
   );
+}
+
+// "Kræver handling" i klinikkens indbakke (features/clinics/README.md 6.3): ubesvaret eller med ulæste beskeder fra patienten.
+// Et tilbagetrukket lead kræver aldrig handling.
+export function leadNeedsAction(lead: Pick<ClinicLeadListItemDto, "status" | "unreadMessages">): boolean {
+  if (lead.status === "withdrawn") return false;
+  return lead.status === "sent" || lead.unreadMessages > 0;
+}
+
+// Uddrag af opsummeringen til indbakkens række: højst `max` tegn (inkl. "…"), afkortet ved et ord, hvis det er muligt.
+// Mellemrum og linjeskift samles til ét mellemrum.
+export function summaryExcerpt(text: string | null, max = LEAD_SUMMARY_EXCERPT_CHARS): string {
+  const clean = (text ?? "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  const base = space >= max / 2 ? cut.slice(0, space) : cut;
+  return `${base.replace(/[\s.,;:!?-]+$/, "")}…`;
 }

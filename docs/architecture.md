@@ -132,7 +132,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 
 | Domæne | Ansvar | Ruter |
 |---|---|---|
-| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning | `/login`, `/opret`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me` |
+| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning | `/login`, `/opret`, `/glemt-adgangskode`, `/nulstil-adgangskode`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me` |
 | `cases` | sager, AI-chat, opsummering, sagsbilleder, AI-reglerne | `/api/cases/*` |
 | `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/api/clinics/*`, `/api/services` |
 | `leads` | leads, klinikkens indbakke og lead-kort, beskeder, akutvejen | `/klinik`, `/klinik/lead/*`, `/api/leads/*`, `/api/emergency-leads` |

@@ -5,8 +5,11 @@ import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/platform/db/config";
 import { TERMS_COOKIE, verifyCurrentTermsCookie } from "@/platform/middleware/termsCookie";
 import { safeInternalPath } from "@/lib/common/navigation/paths";
 
-// Sider der altid er tilgængelige uden vilkårs-accept (architecture 2.5, 6.1).
-const TERMS_EXEMPT_PREFIXES = ["/vilkaar", "/privatliv"];
+// Sider der altid er tilgængelige uden vilkårs-accept (architecture 2.5, 6.1). Klinikkernes indgang (forsiden, oprettelse
+// og glemt adgangskode) er undtaget, så oprettelse ikke har et ekstra trin: /opret/klinik indhenter selv accepten, og
+// signup-API'et kræver den stadig.
+const TERMS_EXEMPT_PREFIXES = ["/vilkaar", "/privatliv", "/opret", "/glemt-adgangskode", "/nulstil-adgangskode"];
+const TERMS_EXEMPT_EXACT = ["/"];
 // Områder der kræver login (grov redirect; rollen tjekkes i layouts og API).
 const LOGIN_REQUIRED_PREFIXES = ["/klinik", "/admin"];
 
@@ -30,7 +33,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  const isTermsExempt = TERMS_EXEMPT_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+  const isTermsExempt =
+    TERMS_EXEMPT_EXACT.includes(pathname) || TERMS_EXEMPT_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
   if (!isTermsExempt) {
     const terms = await verifyCurrentTermsCookie(request.cookies.get(TERMS_COOKIE)?.value);
     if (!terms) {

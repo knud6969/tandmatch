@@ -238,14 +238,12 @@ Alle andre kolonner skrives kun af triggers og funktionerne i 5.3.
 ### 5.2 Hjælpefunktioner
 
 ```sql
-auth_role()                           -> user_role
 is_admin()                            -> boolean
 is_permanent_user()                   -> boolean     -- JWT-claim is_anonymous = false
 has_active_consent(type consent_type) -> boolean     -- seneste række af typen er ikke trukket tilbage og har en
                                                      -- ikke-pensioneret tekstversion (4.3; versionsdelen fra 20261028000500)
 auth_clinic_id()                      -> uuid        -- clinics.id hvor owner_id = auth.uid(), ellers null (undtagelse, 5.1 regel 4)
 is_clinic_owner(clinic_id)            -> boolean
-is_verified_clinic_owner()            -> boolean     -- kaldende ejer en klinik med status 'verified'
 is_case_owner(case_id)                -> boolean
 is_lead_participant(lead_id)          -> boolean     -- ejer af sagen ELLER ejer af leadets klinik, når klinikken er 'verified',
 is_lead_patient(lead_id)              -> boolean     -- brugeren er patient på leadets sag (bruges i messages-policyerne)

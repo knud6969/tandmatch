@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Alert } from "@/components/ui/alert";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Card } from "@/components/ui/card";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
 import { DeleteAccount } from "@/features/clinics/components/delete-account";
+import { AccountCredentials } from "@/features/identity/ui";
 import { LoadState } from "@/components/ui/load-state";
 import { LogoUpload } from "@/features/clinics/components/logo-upload";
 import { SaveBar } from "@/components/ui/save-bar";
@@ -13,7 +14,7 @@ import { useLoad } from "@/platform/ui-utils/use-load";
 import { VerificationBanner } from "@/features/clinics/components/verification-banner";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadClinic } from "@/features/clinics/utils/clinic-loaders";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { CLINIC_DESCRIPTION_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { patchClinicSchema } from "@/lib/clinics/schemas/clinics";
@@ -148,10 +149,9 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
 
         <Card className="flex flex-col gap-5">
           <h2 className="text-xl font-semibold text-ink">Trustpilot</h2>
-          <Alert tone="info">
-            Vi henter ikke noget fra Trustpilot. Du angiver selv linket, scoren og antallet af anmeldelser, og vi viser
-            dem på profilen som “angivet af klinikken” med link til din Trustpilot-side.
-          </Alert>
+          <InfoTip summary="Du angiver selv link, score og antal; vi henter intet fra Trustpilot.">
+            Vi viser dem på profilen som “angivet af klinikken” med link til din Trustpilot-side.
+          </InfoTip>
           <TextField label="Link til din Trustpilot-side" name="trustpilotUrl" type="url" inputMode="url" placeholder="https://dk.trustpilot.com/review/…" value={values.trustpilotUrl} onChange={set("trustpilotUrl")} error={errors.fields.trustpilotUrl} />
           <div className="grid grid-cols-2 gap-4">
             <TextField label="Score (1,0-5,0)" name="trustpilotScore" inputMode="decimal" value={values.trustpilotScore} onChange={set("trustpilotScore")} error={errors.fields.trustpilotScore} />
@@ -162,6 +162,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
         <SaveBar {...saveState.props} label="Gem profil" />
       </form>
 
+      <AccountCredentials />
       <DeleteAccount clinicName={clinic.name} />
     </div>
   );

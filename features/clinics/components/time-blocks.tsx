@@ -9,7 +9,7 @@ import { LoadState } from "@/components/ui/load-state";
 import { useLoad } from "@/platform/ui-utils/use-load";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { useAction } from "@/platform/ui-utils/use-action";
-import { formatDateTime, fromDateTimeLocal } from "@/platform/ui-utils/format";
+import { formatDateTime, fromDateTimeLocal } from "@/lib/common/domain/format";
 import { TIME_BLOCK_NOTE_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { createTimeBlockSchema } from "@/lib/clinics/schemas/clinics";
 import type { TimeBlockDto } from "@/lib/clinics/types/clinics";
@@ -66,9 +66,7 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
     <Card className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-semibold text-ink">Blokerede tider</h2>
-        <p className="text-base text-ink-muted">
-          Luk af til ferie, kurser eller tider, der er booket i et andet system. Patienter kan ikke booke i blokerede tider.
-        </p>
+        <p className="text-sm text-ink-muted">Fx ferie eller kurser. Patienter kan ikke booke i blokerede tider.</p>
       </div>
 
       <form onSubmit={onAdd} noValidate className="grid gap-4 sm:grid-cols-2">

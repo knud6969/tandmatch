@@ -5,12 +5,14 @@ import { Badge, Button, Card } from "~/components/ui";
 import { canCancelBooking, canReviewBooking } from "~/utils/case-actions";
 import { colors, type } from "~/theme";
 import { bookingTone } from "~/utils/case-view";
-import { formatDateTime } from "~/utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
+import { patientCancellationText } from "@/lib/booking/domain/bookings";
 
 type Props = { booking: PatientBookingDto; onCancel?: () => void; cancelling?: boolean; onReview?: () => void };
 
-// En booking: tidspunkt, klinik, behandling og status. "Aflys" og "Skriv anmeldelse" vises kun, når serveren tillader det og skærmen giver handlingen.
+// En booking: tidspunkt, klinik, behandling, status og ved en aflysning én linje om hvem (og klinikkens evt. grund). "Aflys" og "Skriv anmeldelse" vises kun, når serveren tillader det og skærmen giver handlingen.
 export function BookingCard({ booking, onCancel, cancelling = false, onReview }: Props) {
+  const cancellation = patientCancellationText(booking);
   return (
     <Card>
       <Badge label={BOOKING_STATUS_LABEL[booking.status]} tone={bookingTone(booking.status)} />
@@ -19,6 +21,11 @@ export function BookingCard({ booking, onCancel, cancelling = false, onReview }:
       <Text style={styles.muted}>
         {booking.clinic.name}, {booking.clinic.address}, {booking.clinic.city}
       </Text>
+      {cancellation ? (
+        <Text style={styles.muted} testID="booking-cancellation">
+          {cancellation}
+        </Text>
+      ) : null}
       {onReview && canReviewBooking(booking) ? (
         <Button label="Skriv anmeldelse" accessibilityLabel={`Skriv anmeldelse af ${booking.clinic.name}`} onPress={onReview} />
       ) : null}

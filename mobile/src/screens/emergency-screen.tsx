@@ -32,7 +32,7 @@ import {
   type EmergencyField,
 } from "~/utils/emergency-form";
 import type { FieldErrors } from "~/utils/field-errors";
-import { formatDateTime } from "~/utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
 
 type Loaded = { services: ServiceDto[]; clinics: ClinicListItemDto[]; name: string; phone: string; consent: boolean };
 

@@ -3,8 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { Badge, Button } from "~/components/ui";
 import { colors, radius, spacing, type } from "~/theme";
-import { BASIC_CLINIC_LABEL, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
-import { formatKm, formatPriceRange } from "~/utils/format";
+import { BASIC_CLINIC_LABEL, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
+import { formatKm, formatPriceRange } from "@/lib/common/domain/format";
 
 type Props = {
   clinic: ClinicListItemDto;

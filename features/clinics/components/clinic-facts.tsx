@@ -1,7 +1,8 @@
 import { FIRST_AVAILABLE_SEARCH_DAYS } from "@/lib/booking/constants/bookings";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
-import { PRICE_SOURCE, PriceWithSource } from "@/components/ui/price-with-source";
-import { formatKm, formatPercent, formatShortDateTime } from "@/platform/ui-utils/format";
+import { NO_REVIEWS_TEXT, PRICE_SOURCE } from "@/lib/clinics/constants/clinic-texts";
+import { PriceWithSource } from "@/components/ui/price-with-source";
+import { formatKm, formatPercent, formatShortDateTime } from "@/lib/common/domain/format";
 import { StarRating } from "@/features/clinics/components/star-rating";
 import { TrustpilotLine } from "@/features/clinics/components/trustpilot-block";
 
@@ -33,7 +34,7 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
               )}
             </>
           ) : (
-            "Ingen verificerede anmeldelser endnu"
+            NO_REVIEWS_TEXT
           )}
         </p>
       )}

@@ -10,3 +10,7 @@ export function anonymousExpiresAt(lastActiveAtIso: string): string {
 export const MOBILE_CLIENT_HEADER = "X-TandMatch-Client";
 export const MOBILE_CLIENT_VALUE = "mobile";
 export const TERMS_TOKEN_HEADER = "X-Terms-Token";
+
+// Et link til at nulstille adgangskoden giver en recovery-session; den nye adgangskode skal sættes inden for dette vindue
+// (architecture 10.2, POST /api/auth/password/reset).
+export const PASSWORD_RECOVERY_WINDOW_MINUTES = 15;

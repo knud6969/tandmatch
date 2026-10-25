@@ -3,11 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import {
   BOOKING_HORIZON_DAYS,
+  CANCEL_REASON_INVALID,
   CLINIC_BOOKINGS_DEFAULT_PAST_DAYS,
   MAX_BOOKINGS_RANGE_DAYS,
 } from "@/lib/booking/constants/bookings";
 import { DAY_MS } from "@/lib/common/domain/time";
-import type { bookingsQuerySchema, bookSlotSchema, leadAvailabilityQuerySchema } from "@/lib/booking/schemas/bookings";
+import type { bookingsQuerySchema, bookSlotSchema, cancelBookingSchema, leadAvailabilityQuerySchema } from "@/lib/booking/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
@@ -23,6 +24,7 @@ import { AvailabilityService } from "@/features/clinics";
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type LeadAvailabilityQuery = z.infer<typeof leadAvailabilityQuerySchema>;
 type BookingsQuery = z.infer<typeof bookingsQuerySchema>;
+type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type BookingsDeps = {
@@ -117,11 +119,13 @@ export class BookingsController {
     return this.bookings.listForClinic(from, to);
   }
 
-  // Aflyser egen booking før starttid (409 BOOKING_NOT_CANCELLABLE). Svaret er den opdaterede booking set fra rollen.
-  async cancel(bookingId: string): Promise<PatientBookingDto | ClinicBookingDto> {
+  // Aflyser egen booking før starttid (409 BOOKING_NOT_CANCELLABLE). Klinikken kan give en kort grund, som patienten ser;
+  // en patient med en grund får 400. Svaret er den opdaterede booking set fra rollen.
+  async cancel(bookingId: string, input: CancelBookingInput = {}): Promise<PatientBookingDto | ClinicBookingDto> {
     const role = this.role;
+    if (role === "patient" && input.reason) throw new ApiError(400, "VALIDATION_ERROR", CANCEL_REASON_INVALID);
     if (role === "clinic") await this.clinics.requireOwnVerified(this.session.userId);
-    await this.bookings.cancel(bookingId); // fremmed booking giver NOT_FOUND (404)
+    await this.bookings.cancel(bookingId, role === "clinic" ? input.reason : undefined); // fremmed booking giver NOT_FOUND (404)
     return role === "patient" ? this.bookings.requireForPatient(bookingId) : this.bookings.requireForClinic(bookingId);
   }
 

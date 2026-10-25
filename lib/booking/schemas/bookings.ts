@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTACT_NAME_MAX_CHARS, CONTACT_NAME_MIN_CHARS } from "@/lib/booking/constants/bookings";
+import { CANCEL_REASON_MAX_CHARS, CONTACT_NAME_MAX_CHARS, CONTACT_NAME_MIN_CHARS } from "@/lib/booking/constants/bookings";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 
 const isoDateTime = z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." });
@@ -31,5 +31,12 @@ export const bookingsQuerySchema = z
   .object({ from: isoDateTime.optional(), to: isoDateTime.optional() })
   .strict();
 
-// POST .../cancel og .../no-show har tom body.
+// POST /api/bookings/{id}/cancel: klinikken kan give en kort grund (tom = ingen). Patientens grund afvises i controlleren.
+export const cancelBookingSchema = z
+  .object({
+    reason: z.string().trim().max(CANCEL_REASON_MAX_CHARS, `Grunden må højst være ${CANCEL_REASON_MAX_CHARS} tegn.`).optional(),
+  })
+  .strict();
+
+// POST .../no-show har tom body.
 export const emptyBookingActionSchema = z.object({}).strict();

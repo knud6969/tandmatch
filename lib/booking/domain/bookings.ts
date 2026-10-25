@@ -1,5 +1,5 @@
-import { NO_SHOW_GRACE_HOURS } from "@/lib/booking/constants/bookings";
-import type { BookingStatus } from "@/lib/booking/types/bookings";
+import { CLINIC_CANCEL_REASON_PREFIX, NO_SHOW_GRACE_HOURS, PATIENT_CANCELLED_BY_LABEL } from "@/lib/booking/constants/bookings";
+import type { BookingCanceller, BookingStatus } from "@/lib/booking/types/bookings";
 
 // Regler for, hvad en booking kan bruges til lige nu (architecture 4.2, 10.10). Statussen er altid den effektive fra
 // databasen. Reglerne spejler cancel_booking(), mark_booking_no_show() og effective_booking_status(); databasen er vogteren,
@@ -43,4 +43,17 @@ export function pickLeadBooking<T extends { status: BookingStatus; createdAt: st
     }
   }
   return best;
+}
+
+// Hvem der aflyste (10.10): kun for en aflyst booking. Databasens cancelled_by er null, når en reservation udløb.
+export function bookingCanceller(status: BookingStatus, cancelledBy: "patient" | "clinic" | null | undefined): BookingCanceller | null {
+  if (status !== "cancelled" || cancelledBy === undefined) return null;
+  return cancelledBy ?? "system";
+}
+
+// Den ene linje patienten ser om en aflysning (appens bookingkort): klinikkens grund, hvis der er en, ellers hvem der aflyste.
+export function patientCancellationText(booking: { cancelledBy: BookingCanceller | null; cancelReason: string | null }): string | null {
+  if (!booking.cancelledBy) return null;
+  if (booking.cancelledBy === "clinic" && booking.cancelReason) return `${CLINIC_CANCEL_REASON_PREFIX} ${booking.cancelReason}`;
+  return PATIENT_CANCELLED_BY_LABEL[booking.cancelledBy];
 }

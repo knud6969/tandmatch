@@ -21,8 +21,8 @@ import { BackLink, Badge, Button, Card, LoadState, Screen, StatusMessage } from 
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, spacing } from "~/theme";
-import { PRICE_SOURCE } from "~/utils/clinic-texts";
-import { formatPriceRange } from "~/utils/format";
+import { PRICE_SOURCE } from "@/lib/clinics/constants/clinic-texts";
+import { formatPriceRange } from "@/lib/common/domain/format";
 import { clearSelection, clinicsWord, parseClinicIds, SEND_BLOCK_TEXT, sendBlockReason } from "~/utils/lead-selection";
 
 // Alt skærmen skal bruge, hentes samlet så den kan vises i ét hug.

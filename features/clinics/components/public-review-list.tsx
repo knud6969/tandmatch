@@ -7,7 +7,7 @@ import { LoadState } from "@/components/ui/load-state";
 import { ReviewDetails, ReviewReply } from "@/features/booking/ui";
 import { StarRating } from "@/features/clinics/components/star-rating";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { formatPercent } from "@/platform/ui-utils/format";
+import { formatPercent } from "@/lib/common/domain/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 function ReviewItem({ review }: { review: PublicReviewDto }) {

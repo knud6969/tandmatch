@@ -1,4 +1,4 @@
-import { canCancel, canMarkNoShow } from "@/lib/booking/domain/bookings";
+import { bookingCanceller, canCancel, canMarkNoShow } from "@/lib/booking/domain/bookings";
 import type { BookingStatus, ClinicBookingDto } from "@/lib/booking/types/bookings";
 import type { TrustpilotInfo } from "@/lib/common/types/common";
 
@@ -43,6 +43,9 @@ export type ClinicBookingFields = {
   contactName: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
+  // Valgfri: clinic_bookings()/clinic_booking() giver dem; clinic_lead_detail() gør ikke (endnu), og så er de null i DTO'en.
+  cancelledBy?: "patient" | "clinic" | null;
+  cancelReason?: string | null;
 };
 
 // Klinikkens booking. Kontaktfelterne følger databasens regel (kun booked/completed, architecture 5.5); mapperen
@@ -63,5 +66,7 @@ export function toClinicBookingDto(fields: ClinicBookingFields, now: Date = new 
     canMarkNoShow: canMarkNoShow(fields.status, fields.startsAt, fields.endsAt, now),
     canCancel: canCancel(fields.status, fields.startsAt, now),
     holdExpiresAt: isoOrNull(fields.holdExpiresAt),
+    cancelledBy: bookingCanceller(fields.status, fields.cancelledBy),
+    cancelReason: fields.status === "cancelled" ? (fields.cancelReason ?? null) : null,
   };
 }

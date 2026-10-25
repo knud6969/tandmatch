@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toClinicDate } from "@/lib/common/domain/time";
-import { BOOKING_STATUS_LABEL, CLINIC_BOOKINGS_DEFAULT_PAST_DAYS, BOOKING_HORIZON_DAYS, NO_SHOW_GRACE_HOURS } from "@/lib/booking/constants/bookings";
+import {
+  BOOKING_STATUS_LABEL,
+  CANCEL_REASON_MAX_CHARS,
+  CLINIC_BOOKINGS_DEFAULT_PAST_DAYS,
+  CLINIC_CANCELLED_BY_LABEL,
+  BOOKING_HORIZON_DAYS,
+  NO_SHOW_GRACE_HOURS,
+} from "@/lib/booking/constants/bookings";
 import type { ClinicBookingDto } from "@/lib/booking/types/bookings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,13 +18,15 @@ import { NotVerifiedNote } from "@/features/clinics/ui";
 import { Card } from "@/components/ui/card";
 import { cx } from "@/components/ui/cx";
 import { LoadState } from "@/components/ui/load-state";
+import { InfoTip } from "@/components/ui/info-tip";
 import { StatusMessage } from "@/components/ui/status-message";
+import { TextArea } from "@/components/ui/text-area";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { BOOKING_STATUS_TONE } from "@/features/booking/utils/booking-status";
 import { clinicLeadHref } from "@/features/leads/ui";
-import { formatDay, formatShortDateTime, formatTime } from "@/platform/ui-utils/format";
+import { formatDay, formatShortDateTime, formatTime } from "@/lib/common/domain/format";
 import { groupByDay } from "@/platform/ui-utils/group-by-day";
-import { phoneHref } from "@/platform/ui-utils/links";
+import { phoneHref } from "@/lib/common/domain/links";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
@@ -30,30 +39,48 @@ type Pending = "cancel" | "no-show" | null;
 
 function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChanged: () => void }) {
   const [pending, setPending] = useState<Pending>(null);
+  const [reason, setReason] = useState("");
   const action = useAction();
-  const inactive = booking.status === "cancelled" || booking.status === "completed" || booking.status === "no_show";
+  const cancelled = booking.status === "cancelled";
+  const inactive = cancelled || booking.status === "completed" || booking.status === "no_show";
 
   async function run(kind: "cancel" | "no-show") {
+    const trimmed = reason.trim();
+    const body = kind === "cancel" && trimmed ? { reason: trimmed } : {};
     const ok = await action.run(async () => {
-      await apiRequest(`/api/bookings/${booking.id}/${kind}`, { method: "POST", body: {} });
+      await apiRequest(`/api/bookings/${booking.id}/${kind}`, { method: "POST", body });
     });
     setPending(null);
-    if (ok) onChanged();
+    if (ok) {
+      setReason("");
+      onChanged();
+    }
   }
 
   return (
     <li
-      className={cx("flex flex-col gap-2 rounded-control border border-line p-3 sm:p-4", inactive ? "bg-surface-muted" : "bg-surface")}
+      className={cx(
+        "flex flex-col gap-2 rounded-control border p-3 sm:p-4",
+        inactive ? "bg-surface-muted" : "bg-surface",
+        cancelled ? "border-dashed border-line" : "border-line",
+      )}
       data-testid="kalender-booking"
       data-status={booking.status}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-lg font-semibold text-ink">
+        <span className={cx("text-lg font-semibold", cancelled ? "text-ink-muted line-through" : "text-ink")}>
           {formatTime(booking.startsAt)}–{formatTime(booking.endsAt)}
         </span>
         <Badge tone={BOOKING_STATUS_TONE[booking.status]}>{BOOKING_STATUS_LABEL[booking.status]}</Badge>
       </div>
-      <p className="text-base text-ink">{booking.service.name}</p>
+      <p className={cx("text-base", cancelled ? "text-ink-muted" : "text-ink")}>{booking.service.name}</p>
+
+      {cancelled && booking.cancelledBy && (
+        <p className="text-sm text-ink-muted" data-testid="aflyst-af">
+          <span className="font-semibold">{CLINIC_CANCELLED_BY_LABEL[booking.cancelledBy]}</span>
+          {booking.cancelReason ? <span className="break-words">. Grund: {booking.cancelReason}</span> : null}
+        </p>
+      )}
 
       {booking.status === "held" && (
         <p className="text-sm text-ink-muted" data-testid="reservation">
@@ -86,11 +113,30 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
               ? "Patienten får tiden aflyst, og tiden bliver ledig igen."
               : "Patienten markeres som udeblevet. Det kan ikke fortrydes."}
           </p>
+          {pending === "cancel" && (
+            <TextArea
+              label="Kort grund til patienten (valgfri)"
+              hint={`Patienten ser grunden i appen. Højst ${CANCEL_REASON_MAX_CHARS} tegn (${CANCEL_REASON_MAX_CHARS - reason.length} tilbage).`}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={CANCEL_REASON_MAX_CHARS}
+              rows={2}
+              className="min-h-20"
+              disabled={action.busy}
+            />
+          )}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="danger" onClick={() => run(pending)} disabled={action.busy}>
               {action.busy ? "Gemmer …" : pending === "cancel" ? "Ja, aflys tiden" : "Ja, marker udeblevet"}
             </Button>
-            <Button variant="ghost" onClick={() => setPending(null)} disabled={action.busy}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPending(null);
+                setReason("");
+              }}
+              disabled={action.busy}
+            >
               Fortryd
             </Button>
           </div>
@@ -120,14 +166,12 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
 // efter sluttid, så der er ingen knap til det.
 export function ClinicCalendar() {
   const { data, loading, error, errorCode, reload } = useLoad(loadBookings, { pollMs: BOOKINGS_POLL_MS });
-  const [showCancelled, setShowCancelled] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [today] = useState(() => toClinicDate(new Date()));
 
-  const { upcoming, past, cancelledCount } = useMemo(() => {
-    const all = data ?? [];
-    const visible = all.filter((b) => showCancelled || b.status !== "cancelled");
-    const sorted = [...visible].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  // Aflyste tider vises dæmpet i dagslisten med hvem der aflyste (10.10), så klinikken kan se, hvorfor en tid blev ledig.
+  const { upcoming, past } = useMemo(() => {
+    const sorted = [...(data ?? [])].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     const grouped = groupByDay(sorted, (b) => b.startsAt);
     const future = grouped.filter(([key]) => key >= today);
     // Listen starter ved i dag; dagens kort vises også uden bookinger.
@@ -135,9 +179,8 @@ export function ClinicCalendar() {
     return {
       upcoming,
       past: grouped.filter(([key]) => key < today),
-      cancelledCount: all.filter((b) => b.status === "cancelled").length,
     };
-  }, [data, showCancelled, today]);
+  }, [data, today]);
 
   if (errorCode === "CLINIC_NOT_VERIFIED") return <NotVerifiedNote sentence="Din kalender bliver tilgængelig, når TandMatch har verificeret klinikken." />;
   if (!data) return <LoadState loading={loading} error={error} onRetry={reload} />;
@@ -147,22 +190,17 @@ export function ClinicCalendar() {
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm text-ink-muted">
-        Viser de næste {BOOKING_HORIZON_DAYS} dage og de seneste {CLINIC_BOOKINGS_DEFAULT_PAST_DAYS} dage. Udeblivelse kan registreres fra
-        starttidspunktet og op til {NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut. Besøg bliver automatisk gennemført efter den frist.
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        {past.length > 0 && (
+      <InfoTip summary={`De næste ${BOOKING_HORIZON_DAYS} dage og de seneste ${CLINIC_BOOKINGS_DEFAULT_PAST_DAYS} dage.`}>
+        Udeblivelse kan registreres fra starttidspunktet og op til {NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut. Derefter bliver
+        besøget automatisk gennemført.
+      </InfoTip>
+      {past.length > 0 && (
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button variant="secondary" onClick={() => setShowPast((v) => !v)} aria-pressed={showPast}>
             {showPast ? "Skjul tidligere dage" : `Vis tidligere dage (${past.length})`}
           </Button>
-        )}
-        {cancelledCount > 0 && (
-          <Button variant="ghost" onClick={() => setShowCancelled((v) => !v)} aria-pressed={showCancelled}>
-            {showCancelled ? "Skjul aflyste tider" : `Vis aflyste tider (${cancelledCount})`}
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
       {!hasBookings && (
         <p className="text-base text-ink-muted" data-testid="ingen-bookinger">
           Der er ingen bookinger i perioden. Når en patient booker en tid efter en accepteret henvendelse, dukker den op her.

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
@@ -8,7 +9,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/features/identity/components/session-provider";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { AREA_HOME } from "@/lib/common/navigation/areas";
 import { safeInternalPath } from "@/lib/common/navigation/paths";
 import { loginSchema } from "@/lib/identity/schemas/auth";
@@ -16,13 +17,7 @@ import type { AuthUserDto } from "@/lib/identity/types/auth";
 
 type LoginField = "email" | "password";
 
-type LoginFormProps = {
-  naeste: string | null;
-  // Med onDone bliver brugeren på siden (fx /akut) i stedet for at blive sendt til sin forside.
-  onDone?: () => void | Promise<void>;
-};
-
-export function LoginForm({ naeste, onDone }: LoginFormProps) {
+export function LoginForm({ naeste }: { naeste: string | null }) {
   const router = useRouter();
   const { refresh } = useSession();
   const [values, setValues] = useState({ email: "", password: "" });
@@ -41,10 +36,6 @@ export function LoginForm({ naeste, onDone }: LoginFormProps) {
     try {
       const user = await apiRequest<AuthUserDto>("/api/auth/login", { method: "POST", body: parsed.data });
       await refresh();
-      if (onDone) {
-        await onDone();
-        return;
-      }
       router.replace(safeInternalPath(naeste ?? undefined) ?? (user.role === "clinic" ? AREA_HOME.clinic : "/"));
       router.refresh();
     } catch (error) {
@@ -81,17 +72,18 @@ export function LoginForm({ naeste, onDone }: LoginFormProps) {
         error={errors.fields.password}
         required
       />
+      <Link href="/glemt-adgangskode" className="-mt-2 self-start py-2 text-base font-semibold text-brand-700 underline underline-offset-4">
+        Glemt adgangskode?
+      </Link>
       <Button type="submit" fullWidth disabled={pending}>
         {pending ? "Logger ind …" : "Log ind"}
       </Button>
-      {!onDone && (
-        <p className="text-center text-base text-ink-muted">
-          Har du ikke en konto endnu?{" "}
-          <LinkButton href="/opret" variant="ghost" className="min-h-11 px-2">
-            Opret konto
-          </LinkButton>
-        </p>
-      )}
+      <p className="text-center text-base text-ink-muted">
+        Ny klinik på TandMatch?{" "}
+        <LinkButton href="/opret/klinik" variant="ghost" className="min-h-11 px-2">
+          Opret klinik
+        </LinkButton>
+      </p>
     </form>
   );
 }

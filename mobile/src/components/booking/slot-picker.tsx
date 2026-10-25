@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Chip } from "~/components/ui";
 import { colors, fontSize, spacing } from "~/theme";
 import type { SlotDay } from "~/utils/booking-form";
-import { formatTime } from "~/utils/format";
+import { formatTime } from "@/lib/common/domain/format";
 
 type Props = { days: SlotDay[]; selectedStartsAt: string | null; onSelect: (startsAt: string) => void; error?: string | null };
 

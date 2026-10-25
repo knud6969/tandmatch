@@ -6,8 +6,17 @@ import type { NavItem } from "@/lib/common/navigation/areas";
 import { cx } from "@/components/ui/cx";
 
 // Områdets faner (architecture 6.3). På mobil ruller listen vandret: den aktive fane rulles ind i synsfeltet ved sideskift,
-// og der vises en fade i den kant, hvor der er flere faner skjult. Fra xl har alle faner plads, og fade skjules.
-export function AreaTabs({ items, activeHref }: { items: NavItem[]; activeHref: string | undefined }) {
+// og der vises en fade i den kant, hvor der er flere faner skjult. Fra xl skjules fade.
+// `counts`: et lille tal på en fane (fx antal henvendelser, der kræver handling), med en skærmlæsertekst. 0 vises ikke.
+export function AreaTabs({
+  items,
+  activeHref,
+  counts,
+}: {
+  items: NavItem[];
+  activeHref: string | undefined;
+  counts?: Record<string, { value: number; label: string }>;
+}) {
   const listRef = useRef<HTMLUListElement>(null);
   const activeRef = useRef<HTMLAnchorElement>(null);
   const [fade, setFade] = useState({ left: false, right: false });
@@ -21,6 +30,13 @@ export function AreaTabs({ items, activeHref }: { items: NavItem[]; activeHref: 
   // Rul den aktive fane ind i synsfeltet. `nearest` rører ikke ved listen, hvis fanen allerede er helt synlig.
   useEffect(() => {
     activeRef.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    // Første og sidste fane rulles helt til kanten, så listens indre luft ikke står som en skjult rest (og en falsk fade).
+    const list = listRef.current;
+    const li = activeRef.current?.parentElement;
+    if (list && li) {
+      if (!li.previousElementSibling) list.scrollLeft = 0;
+      else if (!li.nextElementSibling) list.scrollLeft = list.scrollWidth;
+    }
     updateFade();
   }, [activeHref, updateFade]);
 
@@ -34,6 +50,7 @@ export function AreaTabs({ items, activeHref }: { items: NavItem[]; activeHref: 
       <ul ref={listRef} onScroll={updateFade} className="mx-auto flex max-w-wide gap-1 overflow-x-auto px-2 sm:px-4">
         {items.map((item) => {
           const active = item.href === activeHref;
+          const count = counts?.[item.href];
           return (
             <li key={item.href}>
               <Link
@@ -46,6 +63,12 @@ export function AreaTabs({ items, activeHref }: { items: NavItem[]; activeHref: 
                 )}
               >
                 {item.label}
+                {count && count.value > 0 && (
+                  <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-pill bg-brand-600 px-1.5 text-xs font-bold text-on-brand" data-testid="fane-antal">
+                    <span aria-hidden="true">{count.value}</span>
+                    <span className="sr-only">, {count.label}</span>
+                  </span>
+                )}
               </Link>
             </li>
           );

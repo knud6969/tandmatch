@@ -17,7 +17,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
 import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { formatShortDateTime } from "@/platform/ui-utils/format";
+import { formatShortDateTime } from "@/lib/common/domain/format";
 import { useAction } from "@/platform/ui-utils/use-action";
 import { usePolling } from "@/platform/ui-utils/use-polling";
 
@@ -110,21 +110,21 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
         </Alert>
       )}
       {messages === null && !loadError && (
-        <p role="status" className="text-base text-ink-muted">
+        <p role="status" className="text-sm text-ink-muted">
           Henter beskeder …
         </p>
       )}
-      {messages !== null && messages.length === 0 && <p className="text-base text-ink-muted">Der er ingen beskeder endnu.</p>}
+      {messages !== null && messages.length === 0 && <p className="text-sm text-ink-muted">Ingen beskeder endnu.</p>}
       {messages !== null && messages.length > 0 && (
-        <ul ref={listRef} aria-label="Beskeder" className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1">
+        <ul ref={listRef} aria-label="Beskeder" className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
           {messages.map((message) => (
             <li key={message.id} className={cx("flex flex-col gap-1", message.fromMe ? "items-end" : "items-start")} data-testid="besked">
-              <p className="text-sm font-semibold text-ink-muted">
+              <p className="text-xs font-semibold text-ink-muted">
                 {message.fromMe ? OWN_SENDER_LABEL : otherLabel} · <span className="font-normal">{formatShortDateTime(message.createdAt)}</span>
               </p>
               <p
                 className={cx(
-                  "max-w-[90%] whitespace-pre-line break-words rounded-card px-4 py-2.5 text-base leading-relaxed",
+                  "max-w-[90%] whitespace-pre-line break-words rounded-card px-3 py-2 text-sm leading-relaxed",
                   message.fromMe ? "bg-brand-600 text-on-brand" : "bg-surface-muted text-ink",
                 )}
               >
@@ -136,18 +136,18 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
       )}
 
       {threadClosed ? (
-        <p className="text-base text-ink-muted" data-testid="traad-lukket">
+        <p className="text-sm text-ink-muted" data-testid="traad-lukket">
           {THREAD_CLOSED_TEXT}
         </p>
       ) : (
-        <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
+        <form onSubmit={submit} className="flex flex-col gap-2" noValidate>
           <TextArea
             label="Skriv en besked"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             maxLength={MESSAGE_MAX_CHARS}
-            rows={3}
-            className="min-h-24"
+            rows={2}
+            className="min-h-16"
             hint={hint}
           />
           <StatusMessage message={send.message} />

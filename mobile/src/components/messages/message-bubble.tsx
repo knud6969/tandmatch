@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { MessageDto } from "@/lib/leads/types/messages";
 import { colors, fontSize, radius, spacing, type } from "~/theme";
-import { formatShortDateTime } from "~/utils/format";
+import { formatShortDateTime } from "@/lib/common/domain/format";
 import { senderLabel } from "~/utils/message-view";
 
 // Én besked i tråden. Patientens egne står til højre i blåt, klinikkens til venstre; afsender og tid står over teksten.

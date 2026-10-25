@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { TextField } from "@/components/ui/text-field";
 import { ServiceGroupPicker } from "@/features/clinics/components/service-group-picker";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { loadServiceGroups } from "@/features/clinics/utils/clinic-loaders";
-import { parseWholeKr } from "@/platform/ui-utils/format";
+import { parseWholeKr } from "@/lib/common/domain/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { PRICE_NOTE_MAX_CHARS, SERVICE_DURATION_MAX_MINUTES, SERVICE_DURATION_MIN_MINUTES } from "@/lib/clinics/constants/clinics";
@@ -155,10 +156,9 @@ function PriceEditor({ groups, initialGroupIds, initialPrices }: EditorProps) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-8">
-      <Alert tone="info">
-        Patienter ser priserne mærket “ifølge klinikkens prisliste”, og varigheden bruges til at finde ledige tider. Du kan
-        altid rette senere.
-      </Alert>
+      <InfoTip summary="Patienter ser priserne “ifølge klinikkens prisliste”.">
+        Varigheden bruges til at finde ledige tider. Du kan altid rette senere.
+      </InfoTip>
 
       <ServiceGroupPicker
         groups={groups}

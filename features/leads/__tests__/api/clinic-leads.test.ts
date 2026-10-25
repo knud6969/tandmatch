@@ -154,6 +154,7 @@ describe("klinikkens leads: liste og detalje", () => {
     const [leadId] = await send(p, [k]);
     const list = await k.c.get("/api/leads");
     assert.equal(list.status, 200);
+    assert.equal(list.headers.get("cache-control"), "no-store", "helbredsdata caches ikke");
     const item = list.body.leads[0];
     assert.equal(item.id, leadId);
     assert.equal(item.status, "sent");
@@ -162,6 +163,11 @@ describe("klinikkens leads: liste og detalje", () => {
     assert.equal(item.area.postalCode, "2100");
     assert.ok(item.serviceNames.length > 0);
     assert.equal(item.isEmergency, false);
+    // Indbakkens række (10.9, migration 20261101000200): uddrag, listepris (ingen prisliste her) og ingen akut-frist.
+    assert.equal(item.summaryExcerpt, "Jeg vil gerne have en tjekup.");
+    assert.ok("listPrice" in item);
+    assert.equal(item.listPrice, null);
+    assert.equal(item.holdExpiresAt, null);
     const text = JSON.stringify(list.body);
     for (const secret of [p.userId, p.email, "Lea", p.caseId, "patientId", "caseId"]) assert.ok(!text.includes(secret), `lækker ${secret}`);
     assert.equal((await k.c.get("/api/leads?status=sent")).body.leads.length, 1);
@@ -197,6 +203,7 @@ describe("klinikkens leads: liste og detalje", () => {
     const k = await clinic();
     const [leadId] = await send(p, [k]);
     const detail = await k.c.get(`/api/leads/${leadId}`);
+    assert.equal(detail.headers.get("cache-control"), "no-store", "signerede URL'er caches ikke");
     assert.equal(detail.body.imageCount, 1);
     assert.equal(detail.body.images.length, 1);
     const image = detail.body.images[0];
@@ -333,6 +340,9 @@ describe("klinikkens beslutning", () => {
     assert.deepEqual(item.serviceNames, []);
     assert.equal(item.area.city, null);
     assert.equal(item.unreadMessages, 0);
+    assert.equal(item.summaryExcerpt, "");
+    assert.equal(item.listPrice, null);
+    assert.equal(item.holdExpiresAt, null);
     assert.ok(item.sentAt && item.withdrawnAt);
   });
 });

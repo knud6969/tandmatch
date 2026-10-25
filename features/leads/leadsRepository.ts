@@ -1,6 +1,6 @@
 import "server-only";
 import type { z } from "zod";
-import { isActiveLead } from "@/lib/leads/domain/leads";
+import { isActiveLead, summaryExcerpt } from "@/lib/leads/domain/leads";
 import { priceEstimate } from "@/lib/booking/domain/reviews";
 import {
   MAX_ACTIVE_LEADS_PER_CASE,
@@ -31,7 +31,7 @@ import {
 } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
-import { toClinicBookingDto } from "@/platform/db/mappers";
+import { isoOrNull, toClinicBookingDto } from "@/platform/db/mappers";
 import { PublicMediaStorage } from "@/features/clinics";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
@@ -75,13 +75,15 @@ type ClinicLeadListRow = {
   seen_at: string | null;
   withdrawn_at: string | null;
   unread_messages: number | null;
+  list_price_min: number | null;
+  list_price_max: number | null;
 };
+// Kun i clinic_leads() (migration 20261101000200): uddraget (121 tegn) og en reserveret akuttids udløb.
+type ClinicLeadListOnlyRow = ClinicLeadListRow & { summary_excerpt: string | null; hold_expires_at: string | null };
 type ClinicLeadDetailRow = Omit<ClinicLeadListRow, "service_names"> & {
   services: ClinicLeadServiceDto[] | null;
   summary_text: string | null;
   summary_ai_assisted: boolean | null;
-  list_price_min: number | null;
-  list_price_max: number | null;
   responded_at: string | null;
   clinic_comment: string | null;
   quoted_price_min: number | null;
@@ -382,7 +384,11 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
   }
   // ---- Klinikkens visning (architecture 5.7, 10.9). Kun gennem clinic_*-funktionerne, aldrig patient_id eller sags-id. ----
 
-  private toClinicListItem(row: ClinicLeadListRow): ClinicLeadListItemDto {
+  // Fælles for listen og detaljen. Uddraget og akut-fristen kommer fra hver sin kolonne, så de gives med.
+  private toClinicListItem(
+    row: ClinicLeadListRow,
+    extra: { summary: string | null; holdExpiresAt: string | null },
+  ): ClinicLeadListItemDto {
     return {
       id: row.lead_id,
       status: row.status,
@@ -397,6 +403,9 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
       seenAt: row.seen_at,
       withdrawnAt: row.withdrawn_at,
       unreadMessages: row.unread_messages ?? 0,
+      summaryExcerpt: summaryExcerpt(extra.summary),
+      listPrice: priceRange(row.list_price_min, row.list_price_max),
+      holdExpiresAt: isoOrNull(extra.holdExpiresAt),
     };
   }
 
@@ -420,8 +429,8 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
 
   // Klinikkens leads (clinic_leads), evt. filtreret på status. Tom liste for en klinik, der ikke er verificeret.
   async listForClinic(status?: LeadStatus): Promise<ClinicLeadListItemDto[]> {
-    const rows = await this.rpc<ClinicLeadListRow[]>("clinic_leads", status ? { p_status: status } : {});
-    return (rows ?? []).map((row) => this.toClinicListItem(row));
+    const rows = await this.rpc<ClinicLeadListOnlyRow[]>("clinic_leads", status ? { p_status: status } : {});
+    return (rows ?? []).map((row) => this.toClinicListItem(row, { summary: row.summary_excerpt, holdExpiresAt: row.hold_expires_at }));
   }
 
   // Sætter seen_at første gang. Gør intet for et fremmed eller tilbagetrukket lead.
@@ -436,11 +445,13 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     const row = this.requireRow(rows?.[0]);
     const services = row.services ?? [];
     return {
-      ...this.toClinicListItem({ ...row, service_names: services.map((service) => service.name) }),
+      ...this.toClinicListItem(
+        { ...row, service_names: services.map((service) => service.name) },
+        { summary: row.summary_text, holdExpiresAt: row.booking_status === "held" ? row.booking_hold_expires_at : null },
+      ),
       services,
       summaryText: row.summary_text ?? "",
       summaryAiAssisted: row.summary_ai_assisted ?? false,
-      listPrice: priceRange(row.list_price_min, row.list_price_max),
       decision:
         row.responded_at !== null
           ? {

@@ -26,9 +26,9 @@ export const LEAD_DECLINE_REASON_LABEL = {
   clinic_left: "Klinikken er ikke længere på TandMatch",
 } as const satisfies Record<(typeof LEAD_DECLINE_REASONS)[number], string>;
 
-// Klinikkens indbakke (architecture 6.3): statusnavne set fra klinikken og filtrene, nye først.
+// Klinikkens indbakke (features/clinics/README.md 6.3): statusnavne set fra klinikken og filtrene.
 export const CLINIC_LEAD_STATUS_LABEL = {
-  sent: "Venter på dit svar",
+  sent: "Venter på svar",
   accepted: "Accepteret",
   declined: "Afvist",
   booked: "Tid booket",
@@ -43,3 +43,6 @@ export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";
 
 // Konsekvensen af at trække en henvendelse tilbage, som patienten ser før bekræftelsen.
 export const WITHDRAW_LEAD_CONSEQUENCE = "Klinikken ser kun, at henvendelsen er trukket tilbage, ikke din beskrivelse. Du kan vælge en anden klinik i stedet.";
+
+// Klinikkens indbakke: længden på opsummeringens uddrag i rækken (clinic_leads() returnerer et tegn mere).
+export const LEAD_SUMMARY_EXCERPT_CHARS = 120;

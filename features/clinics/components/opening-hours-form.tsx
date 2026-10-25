@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Alert } from "@/components/ui/alert";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckboxField } from "@/components/ui/checkbox-field";
@@ -104,10 +104,9 @@ function HoursEditor({ initial }: { initial: OpeningHoursDto[] }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-      <Alert tone="info" title="Akutvindue">
-        Sæt flueben ved “Akut”, hvis tidsrummet kun er til akutte patienter. Akutbehandlinger kan også bookes i de almindelige
-        åbningstider. Dage uden tidsrum er lukket.
-      </Alert>
+      <InfoTip summary="“Akut” = tidsrummet er kun til akutte patienter. Dage uden tidsrum er lukket.">
+        Akutbehandlinger kan også bookes i de almindelige åbningstider.
+      </InfoTip>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button variant="secondary" onClick={fillWorkdays}>

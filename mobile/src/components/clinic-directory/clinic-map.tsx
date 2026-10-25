@@ -5,7 +5,7 @@ import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { colors, radius, spacing, type } from "~/theme";
 import { Button } from "~/components/ui";
 import { RadiusSlider } from "~/components/clinic-directory/radius-slider";
-import { BASIC_CLINIC_LABEL, VERIFIED_CLINIC_LABEL } from "~/utils/clinic-texts";
+import { BASIC_CLINIC_LABEL, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
 import { clinicsWithLocation, regionForClinics, regionForRadius, regionKey, type LatLng } from "~/utils/map-region";
 
 type Props = {

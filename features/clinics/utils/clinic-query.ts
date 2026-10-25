@@ -2,7 +2,6 @@ import { CLINIC_SORTS, DEFAULT_MAX_DISTANCE_KM } from "@/lib/clinics/constants/c
 import { postalCodeSchema, servicesParamSchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicSort } from "@/lib/clinics/types/clinics";
 import { buildClinicQuery, buildClinicQueryParams, hasClinicOrigin } from "@/lib/clinics/domain/clinic-query";
-import { isUuid } from "@/features/clinics/utils/ids";
 
 // Patientens filtre i klinikoversigten (architecture 6.6, 10.7). De spejles i URL'en (2.8, B16), så genindlæsning, profil
 // og tilbage samt deling bevarer dem.
@@ -42,22 +41,14 @@ const buildParams = buildClinicQueryParams;
 
 export const isPostalCode = (value: string) => postalCodeSchema.safeParse(value).success;
 
-// Filtrene som adresselinje til siden selv: samme nøgler som API'et, men akut er `?akut=1`. `?sag=` bevares.
+// Filtrene som adresselinje til siden selv: samme nøgler som API'et, men akut er `?akut=1`.
 // Positionen ("Brug min position") kommer aldrig i adressen, kun i komponentens tilstand (besluttet, architecture 6.1).
-export function filtersToSearch(filters: DirectoryFilters, caseId: string | null): string {
+export function filtersToSearch(filters: DirectoryFilters): string {
   const params = buildParams({ ...filters, position: null });
   params.delete("emergency");
   if (filters.emergency) params.set("akut", "1");
-  if (caseId) {
-    params.set("sag", caseId);
-    // Med en sag er "kun klinikker, der kan kontaktes" slået til som standard, så fravalget skal stå i adressen.
-    if (!filters.contactableOnly) params.set("contactableOnly", "false");
-  }
   return params.toString();
 }
-
-// Standardfiltrene: med en sag (?sag=) er "kun klinikker, der kan kontaktes" slået til.
-export const defaultFilters = (caseId: string | null): DirectoryFilters => ({ ...DEFAULT_FILTERS, contactableOnly: caseId !== null });
 
 // Links mellem oversigten og profilen. Profilen får oversigtens filtre med, så "Alle klinikker" fører tilbage til dem.
 export const clinicProfileHref = (clinicId: string, search: string) => `/klinikker/${clinicId}${search ? `?${search}` : ""}`;
@@ -89,8 +80,7 @@ export function filtersFromSearch(params: URLSearchParams): DirectoryFilters {
     maxPrice: price !== null && price >= 0 && serviceSlugs.length > 0 ? price : null,
     minStars: stars !== null && stars >= 1 && stars <= 5 ? stars : null,
     emergency,
-    // Med en sag er "kun klinikker, der kan kontaktes" slået til, medmindre adressen siger andet.
-    contactableOnly: params.has("contactableOnly") ? params.get("contactableOnly") === "true" : isUuid(params.get("sag")),
+    contactableOnly: params.get("contactableOnly") === "true",
     sort,
   };
 }

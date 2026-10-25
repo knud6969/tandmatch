@@ -33,9 +33,7 @@ export function ServiceGroupPicker({ groups, selectedIds, onToggle, confirmation
   return (
     <fieldset className="flex flex-col gap-3" disabled={disabled}>
       <legend className="text-xl font-semibold text-ink">1. Hvilke kategorier tilbyder du?</legend>
-      <p className="text-base text-ink-muted">
-        Vælg de kategorier, klinikken arbejder med. Under hver valgt kategori kan du derefter sætte pris på behandlingerne.
-      </p>
+      <p className="text-sm text-ink-muted">Under hver valgt kategori sætter du pris på behandlingerne.</p>
 
       {!open ? (
         <div className="flex flex-col gap-3 rounded-card border border-line bg-surface-muted p-4">

@@ -1,4 +1,5 @@
 import type { MeDto } from "@/lib/identity/types/auth";
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 
 // Klientens eneste adgang til backend: fetch mod /api/* (architecture 2.1). Ingen Supabase i browseren.
 export class ApiRequestError extends Error {
@@ -59,7 +60,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiRequestError(
       response.status,
       error?.code ?? "UNKNOWN",
-      error?.message ?? "Der opstod en fejl. Prøv igen om lidt.",
+      error?.message ?? GENERIC_ERROR_TEXT,
     );
   }
   return data as T;

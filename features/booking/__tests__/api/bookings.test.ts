@@ -419,6 +419,58 @@ describe("aflysning", () => {
     const twice = await p.c.post(`/api/bookings/${booked.body.id}/cancel`);
     assert.equal(twice.status, 409);
     assert.equal(code(twice), "BOOKING_NOT_CANCELLABLE");
+    // Hvem der aflyste (10.10): patienten, uden grund; klinikkens kalender viser det også.
+    assert.equal(r.body.cancelledBy, "patient");
+    assert.equal(r.body.cancelReason, null);
+    const inCalendar = (await k.c.get("/api/bookings")).body.bookings.find((b: { id: string }) => b.id === booked.body.id);
+    assert.equal(inCalendar.status, "cancelled");
+    assert.equal(inCalendar.cancelledBy, "patient");
+    assert.equal(inCalendar.cancelReason, null);
+    assert.equal(inCalendar.contact, null);
+  });
+
+  it("klinikken kan aflyse med en kort grund, som patienten ser; en booket tid har ingen cancelledBy", async () => {
+    const k = await clinic();
+    const { p, leadId } = await acceptedLead(k);
+    const slot = await firstSlot(p, leadId);
+    const booked = await p.c.post(`/api/leads/${leadId}/booking`, bookBody(p, slot.startsAt));
+    assert.equal(booked.body.cancelledBy, null);
+    assert.equal(booked.body.cancelReason, null);
+    const before = (await k.c.get("/api/bookings")).body.bookings.find((b: { id: string }) => b.id === booked.body.id);
+    assert.equal(before.cancelledBy, null);
+    // For lang grund afvises, og tiden er stadig booket.
+    const tooLong = await k.c.post(`/api/bookings/${booked.body.id}/cancel`, { reason: "x".repeat(201) });
+    assert.equal(tooLong.status, 400);
+    assert.equal(code(tooLong), "VALIDATION_ERROR");
+    // Ukendte felter afvises (strict).
+    assert.equal((await k.c.post(`/api/bookings/${booked.body.id}/cancel`, { note: "x" })).status, 400);
+    const r = await k.c.post(`/api/bookings/${booked.body.id}/cancel`, { reason: "  Tandlægen er syg  " });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.status, "cancelled");
+    assert.equal(r.body.cancelledBy, "clinic");
+    assert.equal(r.body.cancelReason, "Tandlægen er syg");
+    assert.equal(r.body.contact, null);
+    const mine = (await p.c.get("/api/bookings")).body.bookings.find((b: { id: string }) => b.id === booked.body.id);
+    assert.equal(mine.cancelledBy, "clinic");
+    assert.equal(mine.cancelReason, "Tandlægen er syg");
+  });
+
+  it("en tom grund gemmes ikke, og patienten kan ikke give en grund", async () => {
+    const k = await clinic();
+    const first = await acceptedLead(k);
+    const slot = await firstSlot(first.p, first.leadId);
+    const booked = await first.p.c.post(`/api/leads/${first.leadId}/booking`, bookBody(first.p, slot.startsAt));
+    const byPatient = await first.p.c.post(`/api/bookings/${booked.body.id}/cancel`, { reason: "Jeg kan ikke" });
+    assert.equal(byPatient.status, 400);
+    assert.equal(code(byPatient), "VALIDATION_ERROR");
+    assert.equal((await first.p.c.get("/api/bookings")).body.bookings[0].status, "booked");
+    const empty = await k.c.post(`/api/bookings/${booked.body.id}/cancel`, { reason: "   " });
+    assert.equal(empty.status, 200, JSON.stringify(empty.body));
+    assert.equal(empty.body.cancelledBy, "clinic");
+    assert.equal(empty.body.cancelReason, null);
+    // Databasen gemmer heller ingen grund.
+    const { data } = await admin.from("bookings").select("cancel_reason, cancelled_by").eq("id", booked.body.id).single();
+    assert.deepEqual(data, { cancel_reason: null, cancelled_by: "clinic" });
   });
 
   it("hverken patient eller klinik kan aflyse efter starttid", async () => {
@@ -576,6 +628,8 @@ describe("reserveret akuttid (held)", () => {
     await insertBooking(leadId, k, p, starts, { status: "held", holdExpiresAt: new Date(Date.now() - MINUTE) });
     const mine = (await p.c.get("/api/bookings")).body.bookings[0];
     assert.equal(mine.status, "cancelled", "effektiv status");
+    assert.equal(mine.cancelledBy, "system", "en udløbet reservation er aflyst af systemet");
+    assert.equal(mine.cancelReason, null);
     assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.booking.status, "cancelled");
     const second = await acceptedLead(k);
     const slot = quarter(starts.getTime()).toISOString();

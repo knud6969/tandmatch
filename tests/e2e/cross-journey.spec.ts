@@ -52,6 +52,8 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await expect(x.page.getByTestId("ubesvarede")).toHaveText("1 henvendelse venter på svar");
       await expect(x.page.getByTestId("lead-raekke")).toContainText("Blegning");
       await expect.poll(() => x.page.title()).toBe(`(1) ${title}`);
+      // Tallet på fanen Henvendelser (samme delte hentning som indbakken).
+      await expect(x.page.getByRole("navigation", { name: "Områdenavigation" }).getByRole("link", { name: /^Henvendelser\s*, 1 kræver handling$/ })).toBeVisible();
       await expectNoHorizontalScroll(x.page);
       // Klinik Y ser intet (efter samme ventetid som X).
       await expect(y.page.getByTestId("lead-raekke")).toHaveCount(0);
@@ -182,6 +184,8 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await expect(x.page.getByTestId("ubesvarede")).toHaveText("2 henvendelser venter på svar");
       await expect(x.page.getByTestId("lead-raekke").first()).toContainText("Akut");
       await expect(x.page.getByTestId("lead-raekke").last()).not.toContainText("Akut");
+      // Akut-fristen for den reserverede tid står i rækken.
+      await expect(x.page.getByTestId("lead-raekke").first().getByTestId("akut-frist")).toHaveText(/^Svar inden kl\. \d{2}\.\d{2}$/);
       await expectNoHorizontalScroll(x.page);
       // Klinikken ser hverken navn eller telefon, før tiden er booket.
       expect(await x.page.locator("main").innerText()).not.toContain(PATIENT_NAME);

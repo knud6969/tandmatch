@@ -4,7 +4,7 @@ import type { CaseListItemDto } from "@/lib/cases/types/cases";
 import { Badge } from "~/components/ui";
 import { colors, radius, spacing, type } from "~/theme";
 import { caseStatusLine, caseTitle, leadTone } from "~/utils/case-view";
-import { formatDateTime } from "~/utils/format";
+import { formatDateTime } from "@/lib/common/domain/format";
 
 // En sag i listen: behandlinger, status pr. klinik og sagens næste booking.
 export function CaseListItem({ item, onPress }: { item: CaseListItemDto; onPress: () => void }) {

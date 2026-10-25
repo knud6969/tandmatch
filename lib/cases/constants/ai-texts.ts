@@ -16,7 +16,7 @@ export const AI_BOUNDARY_TEXT =
 
 // Mærkat ved enhver foreløbig vurdering (architecture 7.3).
 // MDR-TILPASNING: vises kun, når AI_RULES.allowPreliminaryAssessment er true.
-export const PRELIMINARY_ASSESSMENT_LABEL = "Foreløbig vurdering fra AI. Klinikken laver den endelige vurdering.";
+export const PRELIMINARY_ASSESSMENT_LABEL = "Foreløbig – klinikken vurderer endeligt";
 
 // Vises når patienten spørger om pris (architecture 7.3).
 export const PRICE_NOTICE_TEXT =
@@ -31,7 +31,7 @@ export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
   clinic_recommendation: CLINIC_RECOMMENDATION_NOTICE_TEXT,
 };
 
-// Fast akut-henvisning ved emergency (architecture 7.3). UI viser den i akut-blokken med link til EMERGENCY_HREF (/akut, lib/common/navigation/entries.ts).
+// Fast akut-henvisning ved emergency (architecture 7.3). Appen viser den i akut-blokken med knappen "Jeg har ondt" (akutvejen).
 export const EMERGENCY_REFERRAL_TEXT =
   "Det, du beskriver, kan kræve hurtig hjælp. Tryk på “Jeg har ondt” for at se klinikker med en ledig akuttid, og søg hjælp så hurtigt som muligt.";
 
@@ -67,6 +67,3 @@ export const CHAT_UNAVAILABLE_TEXT =
 // Når samtalen er lukket ved loftet (architecture 7.9). Kortene fortsætter.
 export const CHAT_LIMIT_REACHED_TEXT =
   "Samtalen er slut. Du kan stadig vælge behandlinger og godkende din beskrivelse nedenfor.";
-
-// Fast besked, appen sender efter et vellykket billedupload, så AI'en ser billedet (architecture 7.9).
-export const IMAGE_ADDED_CHAT_MESSAGE = "Jeg har tilføjet et billede.";

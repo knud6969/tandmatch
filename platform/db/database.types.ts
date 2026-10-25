@@ -158,13 +158,13 @@ isOneToOne: false
                   ]
                 },"bookings": {
                   Row: {
-                    "cancelled_at": string | null,"cancelled_by": Database["public"]['Enums']["booking_actor"] | null,"clinic_id": string,"completed_at": string | null,"contact_email": string,"contact_name": string,"contact_phone": string,"created_at": string,"ends_at": string,"hold_expires_at": string | null,"id": string,"lead_id": string,"no_show_at": string | null,"patient_id": string,"service_id": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": Database["public"]['Enums']["booking_actor"] | null,"clinic_id": string,"completed_at": string | null,"contact_email": string,"contact_name": string,"contact_phone": string,"created_at": string,"ends_at": string,"hold_expires_at": string | null,"id": string,"lead_id": string,"no_show_at": string | null,"patient_id": string,"service_id": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
                   }
                   Insert: {
-                    "cancelled_at"?: string | null,"cancelled_by"?: Database["public"]['Enums']["booking_actor"] | null,"clinic_id": string,"completed_at"?: string | null,"contact_email": string,"contact_name": string,"contact_phone": string,"created_at"?: string,"ends_at": string,"hold_expires_at"?: string | null,"id"?: string,"lead_id": string,"no_show_at"?: string | null,"patient_id": string,"service_id": string,"starts_at": string,"status"?: Database["public"]['Enums']["booking_status"]
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: Database["public"]['Enums']["booking_actor"] | null,"clinic_id": string,"completed_at"?: string | null,"contact_email": string,"contact_name": string,"contact_phone": string,"created_at"?: string,"ends_at": string,"hold_expires_at"?: string | null,"id"?: string,"lead_id": string,"no_show_at"?: string | null,"patient_id": string,"service_id": string,"starts_at": string,"status"?: Database["public"]['Enums']["booking_status"]
                   }
                   Update: {
-                    "cancelled_at"?: string | null,"cancelled_by"?: Database["public"]['Enums']["booking_actor"] | null,"clinic_id"?: string,"completed_at"?: string | null,"contact_email"?: string,"contact_name"?: string,"contact_phone"?: string,"created_at"?: string,"ends_at"?: string,"hold_expires_at"?: string | null,"id"?: string,"lead_id"?: string,"no_show_at"?: string | null,"patient_id"?: string,"service_id"?: string,"starts_at"?: string,"status"?: Database["public"]['Enums']["booking_status"]
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: Database["public"]['Enums']["booking_actor"] | null,"clinic_id"?: string,"completed_at"?: string | null,"contact_email"?: string,"contact_name"?: string,"contact_phone"?: string,"created_at"?: string,"ends_at"?: string,"hold_expires_at"?: string | null,"id"?: string,"lead_id"?: string,"no_show_at"?: string | null,"patient_id"?: string,"service_id"?: string,"starts_at"?: string,"status"?: Database["public"]['Enums']["booking_status"]
                   }
                   Relationships: [
                     {
@@ -763,9 +763,6 @@ isOneToOne: false
 "auth_clinic_id":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
-"auth_role":
-{ Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["user_role"]
-                           },
 "book_slot":
 { Args: { "p_contact_name": string,"p_contact_phone": string,"p_lead_id": string,"p_service_id": string,"p_starts_at": string }; Returns: string
                            },
@@ -773,19 +770,19 @@ isOneToOne: false
 { Args: { "p_booking_id": string }; Returns: boolean
                            },
 "cancel_booking":
-{ Args: { "p_booking_id": string }; Returns: undefined
+{ Args: { "p_booking_id": string,"p_reason"?: string }; Returns: undefined
                            },
 "claim_anonymous_case":
 { Args: { "p_token": string }; Returns: Json
                            },
 "clinic_booking":
 { Args: { "p_booking_id": string }; Returns: {
-              "booking_id": string,"can_mark_no_show": boolean,"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+              "booking_id": string,"can_mark_no_show": boolean,"cancel_reason": string,"cancelled_by": Database["public"]['Enums']["booking_actor"],"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
             }[]
                            },
 "clinic_bookings":
 { Args: { "p_from": string,"p_to": string }; Returns: {
-              "booking_id": string,"can_mark_no_show": boolean,"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+              "booking_id": string,"can_mark_no_show": boolean,"cancel_reason": string,"cancelled_by": Database["public"]['Enums']["booking_actor"],"contact_email": string,"contact_name": string,"contact_phone": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
             }[]
                            },
 "clinic_decide_lead":
@@ -890,9 +887,6 @@ isOneToOne: false
 "is_valid_phone":
 { Args: { "p_phone": string }; Returns: boolean
                            },
-"is_verified_clinic_owner":
-{ Args: Record<PropertyKey, never>; Returns: boolean
-                           },
 "issue_claim_token":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -904,7 +898,7 @@ isOneToOne: false
                            },
 "patient_bookings":
 { Args: { "p_booking_id"?: string }; Returns: {
-              "booking_id": string,"clinic_address": string,"clinic_city": string,"clinic_id": string,"clinic_name": string,"created_at": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"reviewed": boolean,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
+              "booking_id": string,"cancel_reason": string,"cancelled_by": Database["public"]['Enums']["booking_actor"],"clinic_address": string,"clinic_city": string,"clinic_id": string,"clinic_name": string,"created_at": string,"ends_at": string,"hold_expires_at": string,"lead_id": string,"reviewed": boolean,"service_id": string,"service_name": string,"starts_at": string,"status": Database["public"]['Enums']["booking_status"]
             }[]
                            },
 "patient_lead_clinics":

@@ -1,27 +1,35 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/features/identity/components/session-provider";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
-import { fieldErrorsFrom, type FieldErrors } from "@/platform/ui-utils/field-errors";
+import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { AREA_HOME } from "@/lib/common/navigation/areas";
+import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
 import { signupSchema } from "@/lib/identity/schemas/auth";
-import type { AuthUserDto } from "@/lib/identity/types/auth";
+import type { AuthUserDto, TermsAcceptedDto } from "@/lib/identity/types/auth";
 
-type ClinicField = "clinicName" | "cvr" | "address" | "postalCode" | "city" | "phone" | "email" | "password";
+type ClinicField = "clinicName" | "cvr" | "address" | "postalCode" | "city" | "phone" | "email" | "password" | "terms";
+
+const TERMS_REQUIRED_TEXT = "Du skal acceptere vilkårene for at oprette klinikken.";
+const legalLink = "font-semibold text-brand-700 underline underline-offset-4";
 
 const EMPTY = { clinicName: "", cvr: "", address: "", postalCode: "", city: "", phone: "", email: "", password: "" };
 
 // Opretter en klinikkonto (architecture 10.2). Klinikken starter som "afventer verificering" og kan sætte alt op med det samme.
+// Siden er undtaget fra vilkårs-gaten; accepten indhentes her (ikke forudafkrydset) og gemmes før signup (identity 2.5).
 export function ClinicSignupForm() {
   const router = useRouter();
   const { state, refresh } = useSession();
   const [values, setValues] = useState(EMPTY);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<ClinicField>>({ fields: {}, general: null });
   const [pending, setPending] = useState(false);
 
@@ -40,16 +48,6 @@ export function ClinicSignupForm() {
       </Alert>
     );
   }
-  if (me?.isAnonymous) {
-    return (
-      <Alert tone="warning" title="Du har en anonym samtale i gang">
-        <p>
-          Klinikker kan ikke oprettes fra en anonym patientsamtale. Log ud eller åbn siden i et privat browservindue, og
-          prøv igen.
-        </p>
-      </Alert>
-    );
-  }
 
   const set = (field: ClinicField) => (event: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -57,13 +55,18 @@ export function ClinicSignupForm() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const parsed = signupSchema.safeParse({ role: "clinic", ...values });
-    if (!parsed.success) {
-      setErrors(fieldErrorsFrom<ClinicField>(parsed.error));
+    if (!parsed.success || !termsAccepted) {
+      const next = parsed.success ? { fields: {}, general: null } : fieldErrorsFrom<ClinicField>(parsed.error);
+      setErrors(termsAccepted ? next : { ...next, fields: { ...next.fields, terms: TERMS_REQUIRED_TEXT } });
       return;
     }
     setErrors({ fields: {}, general: null });
     setPending(true);
     try {
+      await apiRequest<TermsAcceptedDto>("/api/terms/accept", {
+        method: "POST",
+        body: { termsVersion: TERMS_VERSION, privacyVersion: PRIVACY_VERSION },
+      });
       await apiRequest<AuthUserDto>("/api/auth/signup", { method: "POST", body: parsed.data });
       await refresh();
       router.replace(AREA_HOME.clinic);
@@ -76,10 +79,6 @@ export function ClinicSignupForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      <p className="text-base leading-relaxed text-ink-muted">
-        Du kan sætte profil, prisliste, åbningstider og tandlæger op med det samme. TandMatch verificerer klinikken,
-        før patienter kan sende henvendelser.
-      </p>
       {errors.general && (
         <Alert tone="danger" role="alert">
           {errors.general}
@@ -101,9 +100,34 @@ export function ClinicSignupForm() {
         <TextField label="E-mail" name="email" type="email" inputMode="email" autoComplete="email" value={values.email} onChange={set("email")} error={errors.fields.email} required />
         <TextField label="Adgangskode" name="password" type="password" autoComplete="new-password" hint="Mindst 8 tegn." value={values.password} onChange={set("password")} error={errors.fields.password} required />
       </fieldset>
+      <CheckboxField
+        name="terms"
+        checked={termsAccepted}
+        selected={termsAccepted}
+        onChange={(e) => setTermsAccepted(e.target.checked)}
+        error={errors.fields.terms}
+        label={
+          <>
+            Jeg accepterer{" "}
+            <Link href="/vilkaar" target="_blank" className={legalLink}>
+              brugervilkårene
+            </Link>{" "}
+            og har læst{" "}
+            <Link href="/privatliv" target="_blank" className={legalLink}>
+              privatlivspolitikken
+            </Link>
+          </>
+        }
+      />
       <Button type="submit" fullWidth disabled={pending}>
         {pending ? "Opretter klinik …" : "Opret klinik"}
       </Button>
+      <p className="text-center text-base text-ink-muted">
+        Har du allerede en konto?{" "}
+        <LinkButton href="/login" variant="ghost" className="min-h-11 px-2">
+          Log ind
+        </LinkButton>
+      </p>
     </form>
   );
 }
