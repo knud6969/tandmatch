@@ -93,8 +93,8 @@ test.describe("klinikkernes indgang", () => {
     await page.getByRole("checkbox", { name: /accepterer brugervilkårene/ }).check();
     await page.getByRole("button", { name: "Opret klinik" }).click();
     await page.waitForURL((url) => url.pathname === "/klinik");
-    await expect(page.getByText("Afventer verificering", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Kontakt os" })).toHaveAttribute("href", "/kontakt");
+    // [PROTOTYPE] Klinikken er verificeret ved oprettelse, så der er intet verificeringsbanner.
+    await expect(page.getByText("Afventer verificering", { exact: true })).toHaveCount(0);
 
     // Kontoen: skift adgangskode med forkert nuværende adgangskode viser en fejl.
     await page.goto("/klinik/profil");

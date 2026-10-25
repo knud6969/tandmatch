@@ -42,6 +42,8 @@ async function clinic(verified = true): Promise<Clinic> {
   createdUserIds.add(r.body.userId);
   const me = await c.get("/api/me");
   const id = me.body.clinic.id as string;
+  // [PROTOTYPE] Nye klinikker auto-verificeres ved oprettelse; en ikke-verificeret testklinik sættes eksplicit til registered.
+  if (!verified) assert.ifError((await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "registered" })).error);
   if (verified) {
     const { error } = await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "verified" });
     assert.ifError(error);

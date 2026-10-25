@@ -23,7 +23,7 @@ const legalLink = "font-semibold text-brand-700 underline underline-offset-4";
 
 const EMPTY = { clinicName: "", cvr: "", address: "", postalCode: "", city: "", phone: "", email: "", password: "" };
 
-// Opretter en klinikkonto (architecture 10.2). Klinikken starter som "afventer verificering" og kan sætte alt op med det samme.
+// Opretter en klinikkonto (architecture 10.2). [PROTOTYPE] Klinikken verificeres automatisk ved oprettelse (docs/beslutninger.md) og kan sætte alt op med det samme.
 // Siden er undtaget fra vilkårs-gaten; accepten indhentes her (ikke forudafkrydset) og gemmes før signup (identity 2.5).
 export function ClinicSignupForm() {
   const router = useRouter();

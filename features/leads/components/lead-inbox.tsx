@@ -83,7 +83,7 @@ export function LeadInbox({ selectedId }: { selectedId?: string }) {
   if (errorCode === "CLINIC_NOT_VERIFIED") {
     return (
       <p className="text-base text-ink-muted" data-testid="henvendelser-ikke-verificeret">
-        Der er ingen henvendelser, før klinikken er verificeret.
+        Klinikken kan ikke modtage henvendelser endnu.
       </p>
     );
   }

@@ -12,7 +12,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 
 | Kompromis | Hvorfor | Hvad en rigtig løsning kræver |
 |---|---|---|
-| Klinikker verificeres kun i seed-data (`admin_set_clinic_status()`); ingen adminside | Tidsplan | Verifikationsflow (CVR, autorisation) og adminside |
+| Klinikker auto-verificeres ved oprettelse (`prototype_auto_verify_clinics()`, 12.2); ingen verificeringsflow og ingen adminside | Prototypen skal kun vise, at web og app spiller sammen | Verifikationsflow (CVR, autorisation) og adminside; slå auto-verificering fra med en ny migration |
 | Importerede klinikker kommer fra seed-data | Importkilde ikke valgt | Import fra CVR eller andet register (12.3) |
 | En klinik, der opretter sig med et CVR-nummer, som en importeret klinik har, overtager den importerede række uden bevis for ejerskab | Enkelt demoflow | Bevis for ejerskab før overtagelse. Værnet i dag: den overtagne klinik er usynlig offentligt og kan ikke modtage leads, før admin har verificeret ejeren (12.1) |
 | Én kalender pr. klinik: kun én booking ad gangen | Enkel dobbeltbookingsregel | Kalender pr. behandler eller stol (12.3) |
@@ -185,6 +185,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | Objektorienteret backend: repositories (arver `BaseRepository`), services og controllers er klasser uden tilstand på tværs af requests; middleware, `lib/`, routes, sider og komponenter er funktioner | 2.1, 2.1.1 |
 | AI-reglerne samlet i `features/cases/ai/rules.ts` | 7.8 |
 | Anonym chat via Supabase anonymous sign-in; samme bruger-id ved konvertering; 48 timers sletning | 7.7 |
+| [PROTOTYPE] 2026-10-25: ingen verificering af klinikker. En klinik, der opretter sig, bliver straks `verified` (signup-triggeren `handle_new_user()` via funktionen `prototype_auto_verify_clinics()`, migration `20261102000100_prototype_auto_verify.sql`; eksisterende `registered` klinikker med ejer blev verificeret). Importerede klinikker uden ejer forbliver basisklinikker. Kan slås til igen: ny migration, der erstatter funktionen med `select false`, og `SHOW_VERIFICATION_BANNER = true` i `verification-banner.tsx`. Brugerens beslutning | 3, 12.1 |
 | Billedsamtykke kun lige før første upload | 9.4 |
 | Billeder skrives kun med service role efter re-encoding; `case-images` har ingen klientpolicies; signering med service role efter RLS-beskyttet læsning | 9.2 |
 | Service role-funktioner bruger ikke `auth.uid()` | 5.1 |

@@ -439,11 +439,6 @@ const VERIFIED: VerifiedSpec[] = [
     ] },
 ];
 
-const REGISTERED = {
-  cvr: '90002001', name: 'Demo Tandlægehuset Roskilde', address: 'Kladdevej 50', postalCode: '4000', city: 'Roskilde', phone: '+45 00 00 20 01',
-  email: 'klinik-registreret@demo.tandmatch.test',
-};
-
 const PATIENTS = [
   { firstName: 'Mette', postalCode: '2200', phone: '+45 00 00 20 01', fullName: 'Mette Eksempel' },
   { firstName: 'Jonas', postalCode: '8000', phone: '+45 00 00 20 02', fullName: 'Jonas Demo' },
@@ -542,14 +537,6 @@ async function seed(config: Config): Promise<void> {
       ), 'åbningstider (importeret)');
     }
   }
-
-  // --- Oprettet (registered) klinik ---------------------------------------------------------------------
-  log('Opretter en oprettet klinik ...');
-  await createUser(admin, REGISTERED.email, password, {
-    role: 'clinic', cvr: REGISTERED.cvr, clinic_name: REGISTERED.name, address: REGISTERED.address,
-    postal_code: REGISTERED.postalCode, city: REGISTERED.city, phone: REGISTERED.phone,
-  });
-  mustOk(await admin.from('clinics').update({ import_source: SEED_SOURCE }).eq('cvr', REGISTERED.cvr), 'markér registreret klinik');
 
   // --- Verificerede klinikker ---------------------------------------------------------------------------
   log('Opretter verificerede klinikker med prisliste, åbningstider, tandlæger og portefølje ...');
@@ -859,7 +846,7 @@ async function seed(config: Config): Promise<void> {
   log(`  Rækker: ${Object.entries(counts).map(([t, n]) => `${t}=${n}`).join(', ')}`);
   log(`  Adgangskode til alle demo-brugere (vises kun nu): ${password}`);
   log(`  Patienter:  patient1..patient5${DEMO_EMAIL_SUFFIX}`);
-  log(`  Klinikker:  klinik-v0..klinik-v7${DEMO_EMAIL_SUFFIX} (verificerede), klinik-registreret${DEMO_EMAIL_SUFFIX}`);
+  log(`  Klinikker:  klinik-v0..klinik-v7${DEMO_EMAIL_SUFFIX} (verificerede)`);
   log('  Demo-rejser:');
   log('    patient1 (Mette, 2200): hovedforløb med billeder, beskedtråd, accepteret lead (v0) med kommende booking, afvist (v1) og tilbagetrukket (v7) lead, ubesvaret hos v3.');
   log('    patient2 (Jonas, 8000): accepteret lead uden booking og et ubesvaret lead.');

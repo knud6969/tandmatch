@@ -35,6 +35,8 @@ async function clinic(verified = true): Promise<Clinic> {
   assert.equal(r.status, 201, JSON.stringify(r.body));
   createdUserIds.add(r.body.userId);
   const id = (await c.get("/api/me")).body.clinic.id as string;
+  // [PROTOTYPE] Nye klinikker auto-verificeres ved oprettelse; en ikke-verificeret testklinik sættes eksplicit til registered.
+  if (!verified) assert.ifError((await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "registered" })).error);
   if (verified) {
     assert.ifError((await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "verified" })).error);
     const hours = [1, 2, 3, 4, 5, 6, 7].flatMap((weekday) => [

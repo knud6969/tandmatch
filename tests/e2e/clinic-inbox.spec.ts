@@ -57,7 +57,8 @@ async function verifiedClinic(browser: Browser, testInfo: TestInfo, label: strin
   });
   expect(signup.status(), await signup.text()).toBe(201);
   const me = (await (await page.request.get("/api/me")).json()) as { clinic: { id: string } };
-  if (verify) sql(`select public.admin_set_clinic_status('${me.clinic.id}', 'verified')`);
+  // [PROTOTYPE] Nye klinikker auto-verificeres ved oprettelse; verify=false sætter dem eksplicit tilbage til 'registered'.
+  sql(`select public.admin_set_clinic_status('${me.clinic.id}', '${verify ? "verified" : "registered"}')`);
   return { page, id: me.clinic.id, name };
 }
 
@@ -295,20 +296,14 @@ test.describe("klinikkens indbakke og lead-kort", () => {
     }
   });
 
-  test("en ikke-verificeret klinik ser én forklaring (banneret) og en kort tekst i indbakken, ikke en fejl", async ({ browser }, testInfo) => {
+  test("en ikke-verificeret klinik ser en kort tekst i indbakken, ikke en fejl, og intet banner [PROTOTYPE]", async ({ browser }, testInfo) => {
     const x = await verifiedClinic(browser, testInfo, "u", false);
     try {
       await x.page.goto("/klinik");
-      await expect(x.page.getByText("Afventer verificering", { exact: true })).toHaveCount(1);
-      await expect(x.page.getByTestId("henvendelser-ikke-verificeret")).toContainText("før klinikken er verificeret");
+      await expect(x.page.getByText("Afventer verificering", { exact: true })).toHaveCount(0);
+      await expect(x.page.getByTestId("henvendelser-ikke-verificeret")).toContainText("kan ikke modtage henvendelser endnu");
       await expect(x.page.getByTestId("ingen-henvendelser")).toHaveCount(0);
-      // Banneret står øverst, lige under sideintroen og før indbakken.
-      const banner = (await x.page.getByText("Afventer verificering", { exact: true }).boundingBox())!;
-      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true, level: 2 }).boundingBox())!;
-      expect(banner.y).toBeLessThan(inbox.y);
       await expect(x.page.getByText("forespørgsler")).toHaveCount(0);
-      await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toHaveCount(0);
-      await expect(x.page.getByRole("status").filter({ hasText: /verific/i })).toHaveCount(1);
       await expectNoHorizontalScroll(x.page);
     } finally {
       await cleanup(null, [x]);

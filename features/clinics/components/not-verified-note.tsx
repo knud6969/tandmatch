@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 // Kaldet sender hele første sætning, så grammatikken ligger hos kalderen.
 export function NotVerifiedNote({ sentence }: { sentence: string }) {
   return (
-    <Alert tone="info" title="Afventer verificering">
+    <Alert tone="info" title="Ikke tilgængelig endnu">
       <p data-testid="ikke-verificeret">
         {sentence} Du kan sætte profil, prisliste, åbningstider og tandlæger op imens.
       </p>

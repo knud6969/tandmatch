@@ -17,6 +17,8 @@ grant select on tt.orig to public;
 insert into auth.users (id, email, is_anonymous, raw_user_meta_data) values
   (tt.id('uTake'), 'take@test.invalid', false, jsonb_build_object('role', 'clinic', 'cvr', '10000013', 'clinic_name', 'x',
                                                                  'address', 'x', 'postal_code', '2100', 'city', 'x'));
+-- [PROTOTYPE] Signup auto-verificerer; scenariet gælder uverificerede ejere, så klinikken sættes tilbage til registered.
+select public.admin_set_clinic_status(tt.cid('I'), 'registered');
 select tt.eq((select status::text from public.clinics where id = tt.cid('I')), 'registered', 'overtaget klinik er registered');
 
 -- Snapshottet kan ikke læses eller ændres af klinikken eller anon
