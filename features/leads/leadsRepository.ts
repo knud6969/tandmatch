@@ -31,7 +31,7 @@ import {
 } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
-import { toClinicBookingDto } from "@/platform/db/mappers";
+import { isoOrNull, toClinicBookingDto } from "@/platform/db/mappers";
 import { PublicMediaStorage } from "@/features/clinics";
 
 type LeadDecisionInput = z.infer<typeof leadDecisionSchema>;
@@ -405,7 +405,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
       unreadMessages: row.unread_messages ?? 0,
       summaryExcerpt: summaryExcerpt(extra.summary),
       listPrice: priceRange(row.list_price_min, row.list_price_max),
-      holdExpiresAt: extra.holdExpiresAt,
+      holdExpiresAt: isoOrNull(extra.holdExpiresAt),
     };
   }
 
