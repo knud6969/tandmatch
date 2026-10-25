@@ -41,5 +41,24 @@ export const BOOKING_STATUS_LABEL = {
   cancelled: "Aflyst",
 } as const satisfies Record<(typeof BOOKING_STATUSES)[number], string>;
 
+// Klinikkens valgfri grund ved aflysning (SQL: bookings.cancel_reason og cancel_booking(), højst 200 tegn).
+export const CANCEL_REASON_MAX_CHARS = 200;
+export const CANCEL_REASON_INVALID = `Grunden må højst være ${CANCEL_REASON_MAX_CHARS} tegn, og kun klinikken kan skrive en grund.`;
+
+// Hvem der aflyste, som klinikken ser det i kalenderen (10.10).
+export const CLINIC_CANCELLED_BY_LABEL = {
+  patient: "Aflyst af patienten",
+  clinic: "Aflyst af klinikken",
+  system: "Reservationen udløb",
+} as const;
+
+// Hvem der aflyste, som patienten ser det i appen (10.10). Har klinikken skrevet en grund, vises "Klinikken aflyste: <grund>".
+export const PATIENT_CANCELLED_BY_LABEL = {
+  patient: "Du aflyste tiden",
+  clinic: "Aflyst af klinikken",
+  system: "Reservationen udløb",
+} as const;
+export const CLINIC_CANCEL_REASON_PREFIX = "Klinikken aflyste:";
+
 // Konsekvensen af at aflyse en booking, som patienten ser før bekræftelsen. Klinikken får ingen notifikation.
 export const CANCEL_BOOKING_CONSEQUENCE = "Tiden frigives, og klinikken ser aflysningen i sin kalender. Du kan booke en ny tid, hvis henvendelsen stadig er åben.";

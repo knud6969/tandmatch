@@ -41,9 +41,8 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-// Offentlig klinikprofil (architecture 6.1, 6.6). Fuldt niveau (verificeret) viser alt; basisniveau viser grunddata,
-// åbningstider og Trustpilot og siger tydeligt, at klinikken ikke er på TandMatch endnu. Ukendte, oprettede og slettede
-// klinikker giver 404.
+// Offentlig klinikprofil (architecture 6.1, 6.6). Henter profilen og viser den med ClinicProfileContent. Ukendte, oprettede
+// og slettede klinikker giver 404.
 export function ClinicProfileView({ clinicId }: { clinicId: string }) {
   const loader = useCallback(async (): Promise<Result> => {
     try {
@@ -54,7 +53,6 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
     }
   }, [clinicId]);
   const { data, loading, error, reload } = useLoad(loader);
-  const catalog = useLoad(loadServiceGroups);
   const searchParams = useSearchParams();
   // Oversigtens filtre ligger i profilens adresse og bevares på tilbagelinket.
   const backHref = directoryHref(searchParams.toString());
@@ -69,17 +67,40 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
     );
   }
 
-  const clinic = data.profile;
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+      <Link href={backHref} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
+        ← Alle klinikker
+      </Link>
+      <ClinicProfileContent clinic={data.profile} mode="public" />
+    </div>
+  );
+}
+
+// Klinikprofilens indhold (features/clinics 6.5). Samme sektioner og rækkefølge som appens klinikprofil
+// (mobile/src/screens/clinic-profile-screen.tsx): Om klinikken → Placering → Åbningstider → Prisliste → Anmeldelser →
+// Trustpilot. Fuldt niveau (verificeret) viser alt; basisniveau viser grunddata, åbningstider og Trustpilot og siger tydeligt,
+// at klinikken ikke er på TandMatch endnu.
+//  * mode "public": webprofilen. Har også e-mail, ledige tider og tandlæger, som appen ikke viser.
+//  * mode "preview": klinikkens forhåndsvisning af, hvad patienten ser i appen. `verified: false` (en `registered` klinik) viser
+//    tekst i stedet for første ledige tid og anmeldelser, som ikke findes offentligt før verificering.
+export function ClinicProfileContent({
+  clinic,
+  mode,
+  verified = true,
+}: {
+  clinic: ClinicProfileDto;
+  mode: "public" | "preview";
+  verified?: boolean;
+}) {
+  const catalog = useLoad(loadServiceGroups);
   const full = clinic.tier === "full";
+  const isPublic = mode === "public";
   const website = safeWebsiteHref(clinic.website);
   const stats = clinic.reviewStats;
 
   return (
-    <div className="mx-auto flex w-full max-w-wide flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
-      <Link href={backHref} className="inline-flex min-h-11 w-fit items-center font-semibold text-brand-700">
-        ← Alle klinikker
-      </Link>
-
+    <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-5 rounded-card border border-line bg-surface p-5 shadow-card sm:flex-row sm:items-center sm:p-8">
         <div className="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-card bg-brand-50 text-brand-700 sm:size-36">
           {full && clinic.logoUrl ? (
@@ -103,7 +124,9 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
           {full && (
             <p className="text-base text-ink">
               <span className="text-ink-muted">Første ledige tid (undersøgelse): </span>
-              {clinic.firstAvailableAt ? (
+              {!verified ? (
+                <span className="text-ink-muted">beregnes ud fra dine åbningstider og bookinger, når klinikken er verificeret</span>
+              ) : clinic.firstAvailableAt ? (
                 <span className="font-semibold">{formatShortDateTime(clinic.firstAvailableAt)}</span>
               ) : (
                 <span className="text-ink-muted">{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
@@ -116,7 +139,7 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
                 Ring: {clinic.phone}
               </a>
             )}
-            {clinic.email && (
+            {isPublic && clinic.email && (
               <a href={`mailto:${clinic.email}`} className="inline-flex min-h-11 items-center font-semibold text-brand-700">
                 {clinic.email}
               </a>
@@ -133,65 +156,74 @@ export function ClinicProfileView({ clinicId }: { clinicId: string }) {
             prisliste, ingen verificerede anmeldelser og ingen ledige tider, og du kan ikke kontakte klinikken via TandMatch. Ring eller
             skriv til klinikken direkte.
           </p>
-          <p className="mt-2">
-            Er det din klinik?{" "}
-            <Link href="/opret/klinik" className="font-semibold text-brand-700 underline">
-              Opret klinikken på TandMatch
-            </Link>{" "}
-            og bliv verificeret.
-          </p>
+          {isPublic && (
+            <p className="mt-2">
+              Er det din klinik?{" "}
+              <Link href="/opret/klinik" className="font-semibold text-brand-700 underline">
+                Opret klinikken på TandMatch
+              </Link>{" "}
+              og bliv verificeret.
+            </p>
+          )}
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
-          {full && clinic.description && (
-            <Section id="om-klinikken" title="Om klinikken">
-              <p className="whitespace-pre-line text-base leading-relaxed text-ink">{clinic.description}</p>
-            </Section>
-          )}
+      {full && clinic.description && (
+        <Section id="om-klinikken" title="Om klinikken">
+          <p className="whitespace-pre-line text-base leading-relaxed text-ink">{clinic.description}</p>
+        </Section>
+      )}
 
-          {full && (
+      {clinic.location && (
+        <Section id="placering" title="Placering">
+          <div role="region" aria-label={`Kort over ${clinic.name}`} className="isolate h-72 overflow-hidden rounded-card border border-line">
+            <ClinicMapLazy clinics={[clinic]} hasServices={false} emergency={false} popups={false} />
+          </div>
+          <ClinicWhere clinic={clinic} />
+        </Section>
+      )}
+
+      <Section id="aabningstider" title="Åbningstider">
+        <OpeningHours hours={clinic.openingHours} />
+      </Section>
+
+      {full && (
+        <>
+          <Section id="priser" title="Prisliste">
+            <PriceList prices={clinic.allPrices} groups={catalog.data} />
+          </Section>
+          {isPublic && (
             <>
-              <Section id="priser" title="Prisliste">
-                <PriceList prices={clinic.allPrices} groups={catalog.data} />
-              </Section>
               <Section id="ledige-tider" title="Ledige tider">
                 <AvailabilitySlots clinicId={clinic.id} prices={clinic.allPrices} />
               </Section>
               <Section id="tandlaeger" title="Tandlæger">
                 <DentistPortfolio dentists={clinic.dentists} />
               </Section>
-              <Section id="anmeldelser" title="Anmeldelser på TandMatch">
-                <PublicReviewList clinicId={clinic.id} />
-              </Section>
             </>
           )}
-
-          <Section id="trustpilot" title="Trustpilot (ekstern kilde)">
-            <TrustpilotBlock trustpilot={clinic.trustpilot} />
+          <Section id="anmeldelser" title="Anmeldelser på TandMatch">
+            {verified ? (
+              <PublicReviewList clinicId={clinic.id} />
+            ) : (
+              <p className="text-base text-ink-muted">
+                Her vises anmeldelser fra patienter, der har haft en tid hos klinikken via TandMatch. Anmeldelser og prisnøjagtighed
+                bliver synlige, når klinikken er verificeret.
+              </p>
+            )}
           </Section>
-        </div>
+        </>
+      )}
 
-        <aside className="flex min-w-0 flex-col gap-6" aria-label="Praktisk information">
-          <Section id="aabningstider" title="Åbningstider">
-            <OpeningHours hours={clinic.openingHours} />
-          </Section>
-          {clinic.location && (
-            <Section id="kort" title="Kort">
-              <div role="region" aria-label={`Kort over ${clinic.name}`} className="isolate h-72 overflow-hidden rounded-card border border-line">
-                <ClinicMapLazy clinics={[clinic]} hasServices={false} emergency={false} popups={false} />
-              </div>
-              <ClinicWhere clinic={clinic} />
-            </Section>
-          )}
-          {full && (
-            <LinkButton href="/klinikker" variant="secondary">
-              Sammenlign med andre klinikker
-            </LinkButton>
-          )}
-        </aside>
-      </div>
+      <Section id="trustpilot" title="Trustpilot (ekstern kilde)">
+        <TrustpilotBlock trustpilot={clinic.trustpilot} />
+      </Section>
+
+      {isPublic && full && (
+        <LinkButton href="/klinikker" variant="secondary" className="sm:w-fit">
+          Sammenlign med andre klinikker
+        </LinkButton>
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ export default function ClinicCalendarPage() {
   return (
     <Container size="wide">
       <PageIntro title="Kalender">
-        <p>Bookinger og reserverede akuttider. Patientens kontaktoplysninger vises, når tiden er booket.</p>
+        <p>Bookinger og reserverede akuttider.</p>
       </PageIntro>
       <ClinicCalendar />
     </Container>

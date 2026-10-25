@@ -33,6 +33,28 @@ describe("toClinicBookingDto: kontaktfelter (security trin 6, L1)", () => {
   });
 });
 
+describe("toClinicBookingDto: hvem der aflyste (10.10)", () => {
+  it("giver cancelledBy og klinikkens grund kun for en aflyst booking", () => {
+    const byClinic = toClinicBookingDto({ ...fields("cancelled"), cancelledBy: "clinic", cancelReason: "Tandlægen er syg" }, NOW);
+    expect(byClinic.cancelledBy).toBe("clinic");
+    expect(byClinic.cancelReason).toBe("Tandlægen er syg");
+    expect(byClinic.contact).toBeNull();
+    expect(toClinicBookingDto({ ...fields("cancelled"), cancelledBy: "patient", cancelReason: null }, NOW).cancelledBy).toBe("patient");
+    // En udløbet reservation har cancelled_by = null i databasen.
+    expect(toClinicBookingDto({ ...fields("cancelled"), cancelledBy: null, cancelReason: null }, NOW).cancelledBy).toBe("system");
+    // Andre statusser har aldrig cancelledBy eller grund, selv hvis rækken skulle have felterne.
+    const booked = toClinicBookingDto({ ...fields("booked"), cancelledBy: "clinic", cancelReason: "x" }, NOW);
+    expect(booked.cancelledBy).toBeNull();
+    expect(booked.cancelReason).toBeNull();
+  });
+
+  it("giver null, når kilden ikke kender felterne (clinic_lead_detail())", () => {
+    const dto = toClinicBookingDto(fields("cancelled"), NOW);
+    expect(dto.cancelledBy).toBeNull();
+    expect(dto.cancelReason).toBeNull();
+  });
+});
+
 describe("phoneSchema: mindst 8 cifre (security trin 6, L2)", () => {
   it("accepterer gyldige danske numre", () => {
     for (const phone of ["12345678", "12 34 56 78", "+45 12 34 56 78", "(+45) 1234-5678"]) expect(phoneSchema.safeParse(phone).success).toBe(true);

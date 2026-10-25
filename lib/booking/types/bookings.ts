@@ -3,6 +3,9 @@ import type { BOOKING_STATUSES } from "@/lib/booking/constants/bookings";
 // Bookinger (architecture 4.3, 10.10).
 export type BookingStatus = (typeof BOOKING_STATUSES)[number]; // altid effektiv status (4.2)
 
+// Hvem der aflyste en booking. "system": en reservation, der udløb (cancelled_by = null i databasen).
+export type BookingCanceller = "patient" | "clinic" | "system";
+
 // Patientens visning af en booking. Klinikken kommer fra patient_bookings() (patienten har ingen SELECT på clinics).
 export type PatientBookingDto = {
   id: string;
@@ -15,6 +18,8 @@ export type PatientBookingDto = {
   canCancel: boolean; // booked og før starttid
   canReview: boolean; // effektivt completed (ends_at + 24 t) og ikke anmeldt endnu
   holdExpiresAt: string | null; // kun held (akut)
+  cancelledBy: BookingCanceller | null; // kun cancelled
+  cancelReason: string | null; // klinikkens grund, kun når klinikken aflyste og skrev en
 };
 
 // Klinikkens visning af en booking. `contact` er kun udfyldt for booked/completed (architecture 5.5), aldrig for held.
@@ -29,6 +34,8 @@ export type ClinicBookingDto = {
   canMarkNoShow: boolean; // starts_at <= nu < ends_at + 24 t
   canCancel: boolean; // booked og før starttid
   holdExpiresAt: string | null; // kun held
+  cancelledBy: BookingCanceller | null; // kun cancelled. Ingen patientdata
+  cancelReason: string | null; // klinikkens egen grund, kun cancelled af klinikken
 };
 
 // Booking i dataeksporten (GDPR art. 15/20): patientens egne bookinger, med de kontaktoplysninger patienten selv har angivet.

@@ -1,7 +1,7 @@
 import "server-only";
 import type { z } from "zod";
-import type { BOOKING_ACTORS } from "@/lib/booking/constants/bookings";
-import { canCancel, canReview, pickLeadBooking } from "@/lib/booking/domain/bookings";
+import { CANCEL_REASON_INVALID, type BOOKING_ACTORS } from "@/lib/booking/constants/bookings";
+import { bookingCanceller, canCancel, canReview, pickLeadBooking } from "@/lib/booking/domain/bookings";
 import type { bookSlotSchema } from "@/lib/booking/schemas/bookings";
 import type { BookingExportDto, ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import {
@@ -27,10 +27,13 @@ type Functions = Database["public"]["Functions"];
 
 // Rækker fra patient_bookings() og clinic_bookings()/clinic_booking() (architecture 5.3, 5.7). De genererede typer markerer
 // ikke nullable kolonner; formen angives her.
-type PatientBookingRow = WithNulls<Functions["patient_bookings"]["Returns"][number], "hold_expires_at">;
+type PatientBookingRow = WithNulls<
+  Functions["patient_bookings"]["Returns"][number],
+  "hold_expires_at" | "cancelled_by" | "cancel_reason"
+>;
 type ClinicBookingRow = WithNulls<
   Functions["clinic_booking"]["Returns"][number],
-  "hold_expires_at" | "contact_name" | "contact_phone" | "contact_email"
+  "hold_expires_at" | "contact_name" | "contact_phone" | "contact_email" | "cancelled_by" | "cancel_reason"
 >;
 
 // Tabelrække til dataeksporten (RLS: patientens egne bookinger).
@@ -65,6 +68,7 @@ const BOOK_ERRORS = (): Record<string, ApiError> => ({
 
 const CANCEL_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
+  INVALID_REASON: new ApiError(400, "VALIDATION_ERROR", CANCEL_REASON_INVALID),
   BOOKING_NOT_CANCELLABLE: bookingNotCancellable(),
 });
 
@@ -96,6 +100,8 @@ export class BookingsRepository extends BaseRepository {
       canCancel: canCancel(row.status, row.starts_at, now),
       canReview: canReview(row.status, row.ends_at, row.reviewed, now),
       holdExpiresAt: isoOrNull(row.hold_expires_at),
+      cancelledBy: bookingCanceller(row.status, row.cancelled_by),
+      cancelReason: row.status === "cancelled" ? row.cancel_reason : null,
     };
   }
 
@@ -112,6 +118,8 @@ export class BookingsRepository extends BaseRepository {
       contactName: row.contact_name,
       contactPhone: row.contact_phone,
       contactEmail: row.contact_email,
+      cancelledBy: row.cancelled_by,
+      cancelReason: row.cancel_reason,
     });
   }
 
@@ -212,9 +220,10 @@ export class BookingsRepository extends BaseRepository {
 
   // ---- Begge ----
 
-  // cancel_booking(): patienten (ejer) eller klinikken (verificeret ejer), kun booked og før starttid.
-  async cancel(bookingId: string): Promise<void> {
-    await this.rpc("cancel_booking", { p_booking_id: bookingId }, CANCEL_ERRORS());
+  // cancel_booking(): patienten (ejer) eller klinikken (verificeret ejer), kun booked og før starttid. Kun klinikken kan give en
+  // grund (databasen afviser andres med INVALID_REASON); en tom grund gemmes som null.
+  async cancel(bookingId: string, reason?: string): Promise<void> {
+    await this.rpc("cancel_booking", { p_booking_id: bookingId, p_reason: reason ? reason : null }, CANCEL_ERRORS());
   }
 
   // mark_booking_no_show(): klinikken, fra starttid til 24 timer efter sluttid.
