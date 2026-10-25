@@ -1,6 +1,7 @@
 import "server-only";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 import type { MobileSessionDto } from "@/lib/identity/types/auth";
+import { RECOVERY_INVALID_TEXT, SAME_PASSWORD_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiError, unauthenticated } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import { isTransientAuthError } from "@/platform/db/authErrors";
@@ -10,6 +11,12 @@ const AUTH_LOOKUP_RETRIES = 2;
 
 const authUnavailable = () =>
   new ApiError(503, "AUTH_UNAVAILABLE", "Login-tjenesten svarer ikke lige nu. Prøv igen om lidt.");
+
+// Hvordan sessionen blev oprettet (JWT-claimet amr), fx { method: "password" } eller { method: "otp" } for et e-maillink.
+export type AuthMethod = { method: string; timestamp: number };
+
+// Koden fra et nulstillingslink (architecture 10.2): PKCE-kode eller token_hash.
+export type RecoveryCode = { code: string } | { tokenHash: string };
 
 // Brugerens id og, hvis klienten har en session i hukommelsen, tokens til appen.
 export type AuthResult = { userId: string; session: MobileSessionDto | null };
@@ -161,10 +168,88 @@ export class AuthRepository extends BaseRepository {
   // Scope "local" logger kun denne enhed ud (default "global" ville logge alle enheder ud).
   // En manglende session er ikke en fejl: brugeren er allerede logget ud.
   async signOutLocal(): Promise<void> {
-    const { error } = await this.db.auth.signOut({ scope: "local" });
+    await this.signOut("local");
+  }
+
+  // "global": alle brugerens sessioner (efter nulstilling); "others": alle undtagen denne (efter skift af adgangskode).
+  async signOut(scope: "local" | "global" | "others"): Promise<void> {
+    const { error } = await this.db.auth.signOut({ scope });
     if (error && error.name !== "AuthSessionMissingError") {
       throw new Error("signOut fejlede");
     }
+  }
+
+  // Beder Supabase sende et link til at vælge en ny adgangskode. Returnerer false ved enhver fejl, også når e-mailen ikke
+  // kan sendes; controlleren svarer ens uanset (ingen konto-opregning, architecture 10.2). Fejlen logges ikke her.
+  async requestPasswordReset(email: string, redirectTo: string): Promise<boolean> {
+    try {
+      const { error } = await this.db.auth.resetPasswordForEmail(email, { redirectTo });
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  // Bytter koden fra nulstillingslinket til en session (cookies sættes af server-klienten). Ugyldig, brugt eller udløbet
+  // kode, eller en PKCE-kode uden code verifier i denne browser: 400 RECOVERY_INVALID.
+  async startRecoverySession(input: RecoveryCode): Promise<void> {
+    const { error } =
+      "code" in input
+        ? await this.db.auth.exchangeCodeForSession(input.code)
+        : await this.db.auth.verifyOtp({ type: "recovery", token_hash: input.tokenHash });
+    if (error) {
+      if (isTransientAuthError(error)) throw authUnavailable();
+      throw new ApiError(400, "RECOVERY_INVALID", RECOVERY_INVALID_TEXT);
+    }
+  }
+
+  // Sessionens verificerede amr-claim (getClaims verificerer JWT'en). Ingen eller ugyldig session: tom liste.
+  async authMethods(): Promise<AuthMethod[]> {
+    const { data, error } = await this.db.auth.getClaims();
+    if (error) {
+      if (isTransientAuthError(error)) throw authUnavailable();
+      return [];
+    }
+    const amr = (data?.claims as { amr?: unknown } | undefined)?.amr;
+    if (!Array.isArray(amr)) return [];
+    return amr.filter(
+      (entry): entry is AuthMethod =>
+        typeof entry === "object" && entry !== null && typeof entry.method === "string" && typeof entry.timestamp === "number",
+    );
+  }
+
+  // Den indloggede brugers login-e-mail (verificeret hos Auth). Ingen session: null.
+  async currentEmail(): Promise<string | null> {
+    const {
+      data: { user },
+      error,
+    } = await this.db.auth.getUser();
+    if (error && isTransientAuthError(error)) throw authUnavailable();
+    return user?.email ?? null;
+  }
+
+  // Ny adgangskode for den indloggede bruger. Samme som før: 400 SAME_PASSWORD; for svag efter Supabase' regler: 400.
+  async updatePassword(password: string): Promise<void> {
+    const { error } = await this.db.auth.updateUser({ password });
+    if (!error) return;
+    if (error.code === "same_password") throw new ApiError(400, "SAME_PASSWORD", SAME_PASSWORD_TEXT);
+    if (error.code === "weak_password") {
+      throw new ApiError(400, "VALIDATION_ERROR", "Adgangskoden er for svag. Vælg en længere adgangskode.");
+    }
+    if (isTransientAuthError(error)) throw authUnavailable();
+    if (error.name === "AuthSessionMissingError" || error.status === 401) throw unauthenticated();
+    throw new Error("updateUser (adgangskode) fejlede");
+  }
+
+  // Starter et skift af login-e-mail; Supabase sender bekræftelseslinks. "exists": adressen har allerede en konto
+  // (controlleren svarer ens, architecture 10.2).
+  async requestEmailChange(email: string, redirectTo: string): Promise<"sent" | "exists"> {
+    const { error } = await this.db.auth.updateUser({ email }, { emailRedirectTo: redirectTo });
+    if (!error) return "sent";
+    if (error.code === "email_exists" || error.code === "user_already_exists") return "exists";
+    if (isTransientAuthError(error)) throw authUnavailable();
+    if (error.name === "AuthSessionMissingError" || error.status === 401) throw unauthenticated();
+    throw new Error("updateUser (e-mail) fejlede");
   }
 
   // Sletter auth-brugeren. Kun med admin-klienten. Rækkerne slettes via cascade (architecture 7.7, 9.4).

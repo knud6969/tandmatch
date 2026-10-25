@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/features/identity/components/session-provider";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
@@ -13,8 +11,6 @@ import type { TermsAcceptedDto } from "@/lib/identity/types/auth";
 
 // Vilkårs-gaten. Accepten er IKKE samtykke til helbredsdata (architecture 2.5). Ingen afkrydsninger her.
 export function TermsAcceptForm({ naeste }: { naeste: string | null }) {
-  const router = useRouter();
-  const { refresh } = useSession();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +22,9 @@ export function TermsAcceptForm({ naeste }: { naeste: string | null }) {
         method: "POST",
         body: { termsVersion: TERMS_VERSION, privacyVersion: PRIVACY_VERSION },
       });
-      await refresh();
-      router.replace(safeInternalPath(naeste ?? undefined) ?? "/");
-      router.refresh();
+      // Hård navigation: kom brugeren hertil via en klientnavigation fra en side uden gate (fx forsiden), har routeren
+      // cachet proxy'ens redirect hertil, og router.replace ville lande på gaten igen. En ny sideindlæsning henter også sessionen.
+      window.location.replace(safeInternalPath(naeste ?? undefined) ?? "/");
     } catch (err) {
       setError(apiErrorMessage(err));
       setPending(false);
