@@ -304,7 +304,7 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await expect(x.page.getByTestId("ingen-henvendelser")).toHaveCount(0);
       // Banneret står øverst, lige under sideintroen og før indbakken.
       const banner = (await x.page.getByText("Afventer verificering", { exact: true }).boundingBox())!;
-      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true }).boundingBox())!;
+      const inbox = (await x.page.getByRole("heading", { name: "Henvendelser", exact: true, level: 2 }).boundingBox())!;
       expect(banner.y).toBeLessThan(inbox.y);
       await expect(x.page.getByText("forespørgsler")).toHaveCount(0);
       await expect(x.page.getByText("Indbakken åbner, når klinikken er verificeret")).toHaveCount(0);

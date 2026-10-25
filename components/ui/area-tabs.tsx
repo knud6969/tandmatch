@@ -30,6 +30,13 @@ export function AreaTabs({
   // Rul den aktive fane ind i synsfeltet. `nearest` rører ikke ved listen, hvis fanen allerede er helt synlig.
   useEffect(() => {
     activeRef.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    // Første og sidste fane rulles helt til kanten, så listens indre luft ikke står som en skjult rest (og en falsk fade).
+    const list = listRef.current;
+    const li = activeRef.current?.parentElement;
+    if (list && li) {
+      if (!li.previousElementSibling) list.scrollLeft = 0;
+      else if (!li.nextElementSibling) list.scrollLeft = list.scrollWidth;
+    }
     updateFade();
   }, [activeHref, updateFade]);
 

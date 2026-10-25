@@ -33,11 +33,15 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
       expect(Math.abs(first.y - second.y)).toBeLessThan(2);
 
       // Bjælken bliver stående ved rulning: i bunden på mobil, i toppen fra lg.
-      await x.page.mouse.wheel(0, 2000);
+      // På mobil er bjælken sticky i artiklen: midt i siden ligger den i bunden af skærmen, og helt nede (ved sidefoden) lander den
+      // efter artiklens sidste indhold, men er stadig synlig.
+      await x.page.mouse.wheel(0, 150);
       await expect(accept).toBeInViewport({ ratio: 1 });
       const bar = (await x.page.getByTestId("svarbjaelke").boundingBox())!;
       if (width < 1024) expect(bar.y + bar.height).toBeGreaterThan(height - 4);
       else expect(bar.y).toBeLessThan(height / 2);
+      await x.page.mouse.wheel(0, 3000);
+      await expect(accept).toBeInViewport({ ratio: 1 });
 
       // Lightbox: åbner stort, Esc lukker, og fokus vender tilbage til miniaturen.
       await x.page.evaluate(() => window.scrollTo(0, 0));
@@ -109,7 +113,7 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
       const [lead2] = await sendTo(p2, [x]); // nyest, så den står først
       await x.page.goto("/klinik");
       const nav = x.page.getByRole("navigation", { name: "Områdenavigation" });
-      await expect(nav.getByRole("link", { name: /^Henvendelser, 2 kræver handling$/ })).toBeVisible();
+      await expect(nav.getByRole("link", { name: /^Henvendelser\s*, 2 kræver handling$/ })).toBeVisible();
       await expect(x.page.getByRole("button", { name: "Kræver handling (2)" })).toHaveAttribute("aria-pressed", "true");
       const rows = x.page.getByTestId("lead-raekke");
       await expect(rows).toHaveCount(2);
@@ -134,7 +138,7 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
       const next = x.page.getByRole("link", { name: "Næste henvendelse (1 tilbage)" });
       await expect(next).toBeVisible();
       await expect(next).toBeInViewport();
-      await expect(nav.getByRole("link", { name: /^Henvendelser, 1 kræver handling$/ })).toBeVisible({ timeout: 10_000 });
+      await expect(nav.getByRole("link", { name: /^Henvendelser\s*, 1 kræver handling$/ })).toBeVisible({ timeout: 10_000 });
       if (x.page.viewportSize()!.width >= 1024) {
         // Listen står ved siden af, og det åbne lead er markeret.
         await expect(x.page.locator(`[data-testid=lead-raekke][aria-current=page]`)).toHaveAttribute("href", `/klinik/lead/${lead2}`);

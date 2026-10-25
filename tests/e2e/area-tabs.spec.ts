@@ -15,9 +15,10 @@ test.describe("områdefaner", () => {
       await page.goto("/klinik/tandlaeger");
       const nav = page.getByRole("navigation", { name: "Områdenavigation" });
       await expect(nav.getByRole("link")).toHaveText(["Henvendelser", "Kalender", "Anmeldelser", "Klinikprofil"]);
+      // ratio 0.99: scrollIntoView runder scrollLeft til hele pixels, så fanen kan mangle en brøkdel af en pixel.
       const tab = nav.getByRole("link", { name: "Klinikprofil", exact: true });
       await expect(tab).toHaveAttribute("aria-current", "page");
-      await expect(tab).toBeInViewport({ ratio: 1 });
+      await expect(tab).toBeInViewport({ ratio: 0.99 });
       // Undernavigationen på Klinikprofil.
       const sub = page.getByRole("navigation", { name: "Klinikprofil" });
       await expect(sub.getByRole("link", { name: "Tandlæger" })).toHaveAttribute("aria-current", "page");
@@ -34,7 +35,7 @@ test.describe("områdefaner", () => {
       await nav.getByRole("link", { name: "Henvendelser", exact: true }).click();
       await page.waitForURL((url) => url.pathname === "/klinik");
       const first = nav.getByRole("link", { name: "Henvendelser", exact: true });
-      await expect(first).toBeInViewport({ ratio: 1 });
+      await expect(first).toBeInViewport({ ratio: 0.99 });
       await expect(page.getByTestId("faner-fade-venstre")).toBeHidden();
       await expectNoHorizontalScroll(page);
 

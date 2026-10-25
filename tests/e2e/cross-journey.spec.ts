@@ -53,7 +53,7 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await expect(x.page.getByTestId("lead-raekke")).toContainText("Blegning");
       await expect.poll(() => x.page.title()).toBe(`(1) ${title}`);
       // Tallet på fanen Henvendelser (samme delte hentning som indbakken).
-      await expect(x.page.getByRole("navigation", { name: "Områdenavigation" }).getByRole("link", { name: "Henvendelser, 1 kræver handling" })).toBeVisible();
+      await expect(x.page.getByRole("navigation", { name: "Områdenavigation" }).getByRole("link", { name: /^Henvendelser\s*, 1 kræver handling$/ })).toBeVisible();
       await expectNoHorizontalScroll(x.page);
       // Klinik Y ser intet (efter samme ventetid som X).
       await expect(y.page.getByTestId("lead-raekke")).toHaveCount(0);
