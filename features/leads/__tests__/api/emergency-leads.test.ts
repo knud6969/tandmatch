@@ -110,6 +110,14 @@ describe("POST /api/emergency-leads", () => {
     assert.equal(detail.body.isEmergency, true);
     assert.equal(detail.body.booking.status, "held");
     assert.equal(detail.body.booking.contact, null);
+    // Akut-fristen (10.9, migration 20261101000200): listen og detaljen viser reservationens udløb, uden kontaktfelter.
+    assert.equal(detail.body.holdExpiresAt, detail.body.booking.holdExpiresAt);
+    const listed = (await k.c.get("/api/leads")).body.leads.find((l: { id: string }) => l.id === r.body.lead.id);
+    assert.equal(listed.holdExpiresAt, detail.body.booking.holdExpiresAt);
+    assert.equal(listed.summaryExcerpt.length > 0, true);
+    for (const secret of ["Lea Testesen", "+45 12 34 56 78", r.body.caseId]) {
+      assert.ok(!JSON.stringify(listed).includes(secret), `listen lækker ${secret}`);
+    }
     for (const secret of ["Lea Testesen", "+45 12 34 56 78", r.body.caseId]) {
       assert.ok(!JSON.stringify(detail.body).includes(secret), `lækker ${secret}`);
     }
@@ -183,6 +191,10 @@ describe("POST /api/emergency-leads", () => {
     assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
     assert.equal(accepted.body.status, "booked");
     assert.equal(accepted.body.booking.status, "booked");
+    // Efter accept er tiden booket, og der er ingen frist længere.
+    assert.equal(accepted.body.holdExpiresAt, null);
+    const acceptedItem = (await k.c.get("/api/leads")).body.leads.find((l: { id: string }) => l.id === one.body.lead.id);
+    assert.equal(acceptedItem.holdExpiresAt, null);
     const mine = (await p1.get(`/api/cases/${one.body.caseId}/leads`)).body.leads[0];
     assert.equal(mine.status, "booked");
     assert.equal(mine.booking.status, "booked");

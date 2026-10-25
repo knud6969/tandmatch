@@ -13,3 +13,6 @@ export const BASIC_CLINIC_PROFILE_TEXT =
   "Grunddata er offentligt tilgængelige. Ingen prisliste, anmeldelser eller ledige tider, og klinikken kan ikke kontaktes via TandMatch. Ring eller skriv direkte.";
 
 export const NO_REVIEWS_TEXT = "Ingen verificerede anmeldelser endnu";
+
+// Mærket på klinikkens forhåndsvisning af sin profil (/klinik/profil/forhaandsvisning, features/clinics 6.5).
+export const PROFILE_PREVIEW_LABEL = "Forhåndsvisning – sådan ser patienter din profil i appen";

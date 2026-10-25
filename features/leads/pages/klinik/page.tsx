@@ -3,14 +3,12 @@ import { ClinicHome } from "@/features/leads/components/clinic-home";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 
-export const metadata: Metadata = { title: "Din klinik" };
+export const metadata: Metadata = { title: "Henvendelser" };
 
 export default function ClinicHomePage() {
   return (
-    <Container>
-      <PageIntro title="Din klinik">
-        <p>Her svarer du på henvendelser fra patienter og ser, hvor langt opsætningen er.</p>
-      </PageIntro>
+    <Container size="wide">
+      <PageIntro title="Henvendelser" />
       <ClinicHome />
     </Container>
   );

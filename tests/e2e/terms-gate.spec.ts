@@ -8,7 +8,18 @@ test.describe("vilkårs-gate", () => {
     await expect(page).not.toHaveURL(/\/vilkaar\/accepter/);
   });
 
-  test("forsiden har ingen horisontal scroll efter accept", async ({ page }) => {
+  test("klinikkernes indgang er undtaget; resten er bag gaten (identity 2.5)", async ({ page }) => {
+    for (const path of ["/", "/opret/klinik", "/glemt-adgangskode", "/nulstil-adgangskode"]) {
+      await page.goto(path);
+      await expect(page, path).not.toHaveURL(/\/vilkaar\/accepter/);
+    }
+    for (const path of ["/login", "/klinikker", "/for-klinikker"]) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(/\/vilkaar\/accepter/);
+    }
+  });
+
+  test("forsiden har ingen horisontal scroll", async ({ page }) => {
     await page.goto("/");
     if (/\/vilkaar\/accepter/.test(page.url())) {
       await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,10 +156,9 @@ function PriceEditor({ groups, initialGroupIds, initialPrices }: EditorProps) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-8">
-      <Alert tone="info">
-        Patienter ser priserne mærket “ifølge klinikkens prisliste”, og varigheden bruges til at finde ledige tider. Du kan
-        altid rette senere.
-      </Alert>
+      <InfoTip summary="Patienter ser priserne “ifølge klinikkens prisliste”.">
+        Varigheden bruges til at finde ledige tider. Du kan altid rette senere.
+      </InfoTip>
 
       <ServiceGroupPicker
         groups={groups}

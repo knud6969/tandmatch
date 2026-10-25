@@ -62,6 +62,12 @@ export type ClinicLeadListItemDto = {
   seenAt: string | null;
   withdrawnAt: string | null;
   unreadMessages: number;
+  // Højst 120 tegn af den godkendte opsummering (afkortet ved et ord med "…"); "" ved withdrawn.
+  summaryExcerpt: string;
+  // Listepris-snapshot, som patienten så ved afsendelse.
+  listPrice: PriceRange | null;
+  // Udløb for en reserveret akuttid ("Svar inden kl. HH:MM"); kun mens bookingen er held.
+  holdExpiresAt: string | null;
 };
 
 // Ydelsen, som klinikken ser den på et lead (clinic_lead_detail() returnerer ikke varighed og kategori-id).
@@ -72,7 +78,6 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
   summaryText: string;
   summaryAiAssisted: boolean;
   images: (ImageDto & { approvedDescription: string | null })[];
-  listPrice: PriceRange | null;
   decision: {
     comment: string | null;
     quotedPrice: PriceRange | null;

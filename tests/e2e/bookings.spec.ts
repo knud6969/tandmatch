@@ -58,6 +58,24 @@ function width(page: Page): number {
 }
 
 test.describe("klinikkens kalender", () => {
+  test("en tid, patienten aflyser, vises dæmpet med \"Aflyst af patienten\"", async ({ browser }, testInfo) => {
+    const clinic = await bookableClinic(browser, testInfo, "patientaflys");
+    const patient = await patientWithCase(browser, testInfo);
+    try {
+      const leadId = await acceptedLead(patient, clinic);
+      const booked = await bookViaApi(patient, leadId);
+      expect((await patient.page.request.post(`/api/bookings/${booked.id}/cancel`, { data: {} })).status()).toBe(200);
+      await clinic.page.goto("/klinik/kalender");
+      const row = clinic.page.getByTestId("kalender-booking");
+      await expect(row).toHaveAttribute("data-status", "cancelled");
+      await expect(row.getByTestId("aflyst-af")).toHaveText("Aflyst af patienten");
+      await expect(row.getByTestId("kalender-kontakt")).toHaveCount(0);
+      if (width(clinic.page) <= 390) await expectNoHorizontalScroll(clinic.page);
+    } finally {
+      await cleanup(patient, [clinic]);
+    }
+  });
+
   test.setTimeout(180_000);
 
   test("efter en booking ser klinikken kontakten i kalenderen og på lead-kortet", async ({ browser }, testInfo) => {
@@ -106,16 +124,27 @@ test.describe("klinikkens kalender", () => {
       await clinic.page.getByRole("button", { name: "Fortryd" }).click();
       await expect(clinic.page.getByTestId("kalender-booking")).toHaveAttribute("data-status", "booked");
       await clinic.page.getByRole("button", { name: "Aflys", exact: true }).click();
+      // Valgfri kort grund til patienten (højst 200 tegn).
+      const reason = clinic.page.getByLabel("Kort grund til patienten (valgfri)");
+      await expect(reason).toHaveAttribute("maxlength", "200");
+      await reason.fill("Tandlægen er syg");
+      if (width(clinic.page) <= 390) await expectNoHorizontalScroll(clinic.page);
       await clinic.page.getByRole("button", { name: "Ja, aflys tiden" }).click();
-      await expect(clinic.page.getByTestId("kalender-booking")).toHaveCount(0);
-      await clinic.page.getByRole("button", { name: /Vis aflyste tider/ }).click();
-      await expect(clinic.page.getByTestId("kalender-booking")).toContainText("Aflyst");
+      // Den aflyste tid bliver stående dæmpet i dagslisten med hvem der aflyste og grunden (ingen vis/skjul-knap).
+      const row = clinic.page.getByTestId("kalender-booking");
+      await expect(row).toHaveAttribute("data-status", "cancelled");
+      await expect(row.getByTestId("aflyst-af")).toHaveText("Aflyst af klinikken. Grund: Tandlægen er syg");
+      await expect(clinic.page.getByRole("button", { name: /Vis aflyste tider/ })).toHaveCount(0);
+      await expect(row.getByRole("button", { name: "Aflys", exact: true })).toHaveCount(0);
 
-      // Patienten ser aflysningen i sine bookinger (API'et, som appen bruger).
+      // Patienten ser aflysningen og grunden i sine bookinger (API'et, som appen bruger).
       const res = await patient.page.request.get("/api/bookings");
       expect(res.ok(), await res.text()).toBeTruthy();
-      const { bookings } = (await res.json()) as { bookings: { id: string; status: string }[] };
-      expect(bookings.find((b) => b.id === booked.id)?.status).toBe("cancelled");
+      const { bookings } = (await res.json()) as { bookings: { id: string; status: string; cancelledBy: string | null; cancelReason: string | null }[] };
+      const mine = bookings.find((b) => b.id === booked.id);
+      expect(mine?.status).toBe("cancelled");
+      expect(mine?.cancelledBy).toBe("clinic");
+      expect(mine?.cancelReason).toBe("Tandlægen er syg");
     } finally {
       await cleanup(patient, [clinic]);
     }

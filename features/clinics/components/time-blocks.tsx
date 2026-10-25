@@ -66,9 +66,7 @@ function BlockEditor({ initial }: { initial: TimeBlockDto[] }) {
     <Card className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-semibold text-ink">Blokerede tider</h2>
-        <p className="text-base text-ink-muted">
-          Luk af til ferie, kurser eller tider, der er booket i et andet system. Patienter kan ikke booke i blokerede tider.
-        </p>
+        <p className="text-sm text-ink-muted">Fx ferie eller kurser. Patienter kan ikke booke i blokerede tider.</p>
       </div>
 
       <form onSubmit={onAdd} noValidate className="grid gap-4 sm:grid-cols-2">

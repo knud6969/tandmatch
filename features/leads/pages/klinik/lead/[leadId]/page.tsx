@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { InboxLayout } from "@/features/leads/components/inbox-layout";
 import { LeadCard } from "@/features/leads/components/lead-card";
 import { Container } from "@/components/ui/container";
 
@@ -8,7 +9,9 @@ export default async function ClinicLeadPage({ params }: { params: Promise<{ lea
   const { leadId } = await params;
   return (
     <Container size="wide">
-      <LeadCard leadId={leadId} />
+      <InboxLayout selectedId={leadId}>
+        <LeadCard key={leadId} leadId={leadId} />
+      </InboxLayout>
     </Container>
   );
 }

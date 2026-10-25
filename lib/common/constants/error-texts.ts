@@ -26,6 +26,14 @@ export const LEAD_NOT_ACCEPTED_TEXT = "Klinikken har ikke accepteret din henvend
 export const ALREADY_REVIEWED_TEXT = "Du har allerede anmeldt dette besøg.";
 export const ALREADY_REPLIED_TEXT = "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.";
 
+// Adgangskode og login-e-mail (identity 10.2).
+export const INVALID_CURRENT_PASSWORD_TEXT = "Den nuværende adgangskode er forkert.";
+export const SAME_PASSWORD_TEXT = "Den nye adgangskode skal være en anden end den nuværende.";
+export const SAME_EMAIL_TEXT = "Det er allerede din login-e-mail.";
+export const RECOVERY_INVALID_TEXT = "Linket er ugyldigt, brugt eller udløbet. Bed om et nyt link, og åbn det i samme browser.";
+export const RECOVERY_REQUIRED_TEXT = "Linket til at vælge en ny adgangskode er udløbet. Bed om et nyt link.";
+export const WEB_ONLY_TEXT = "Det kan kun gøres på TandMatch' webside.";
+
 export const API_ERROR_TEXTS: Record<string, string> = {
   INVALID_CREDENTIALS: "E-mail eller adgangskode er forkert. Tjek oplysningerne og prøv igen.",
   EMAIL_EXISTS: "Der findes allerede en konto med denne e-mail. Prøv at logge ind i stedet.",
@@ -88,6 +96,11 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   ALREADY_REPLIED: ALREADY_REPLIED_TEXT,
   CLAIM_INVALID: "Din tidligere samtale kunne ikke hentes over på kontoen. Den kan være udløbet eller allerede overført.",
   NOT_ANONYMOUS: "Der er ingen anonym samtale at overføre.",
+  INVALID_CURRENT_PASSWORD: INVALID_CURRENT_PASSWORD_TEXT,
+  SAME_PASSWORD: SAME_PASSWORD_TEXT,
+  SAME_EMAIL: SAME_EMAIL_TEXT,
+  RECOVERY_INVALID: RECOVERY_INVALID_TEXT,
+  RECOVERY_REQUIRED: RECOVERY_REQUIRED_TEXT,
 };
 
 // Neutrale tekster, når serverens besked ikke kan vises som den står.

@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { cleanup, verifiedClinic } from "./helpers/inbox";
+import { PROFILE_PREVIEW_LABEL } from "../../lib/clinics/constants/clinic-texts";
 
 // Patientens vej gennem klinikoversigten (arbejdsplan 2.5, 2.6): oversigt, filter, kort, profil. Demodata
 // seedes af tests/e2e/run.sh (`npm run seed:demo`) med både verificerede og importerede klinikker. Kører i begge viewports (390 og 1280 px).
@@ -215,5 +217,51 @@ test.describe("klinikoversigt og profil", () => {
     // Ukendt klinik (samme svar som oprettede og slettede): 404-siden.
     await visit(page, "/klinikker/00000000-0000-4000-8000-000000000000");
     await expect(page.getByText(/findes ikke|kunne ikke finde/i).first()).toBeVisible();
+  });
+});
+
+// Klinikkens forhåndsvisning af sin profil (features/clinics 6.5): samme sektioner og rækkefølge som appens klinikprofil,
+// også for en registered klinik, og kun for ejeren.
+test.describe("forhåndsvisning af klinikkens profil", () => {
+  const APP_ORDER = ["Om klinikken", "Placering", "Åbningstider", "Prisliste", "Anmeldelser på TandMatch", "Trustpilot (ekstern kilde)"];
+
+  test("en registered klinik ser sin profil som i appen; andre kan ikke se den", async ({ browser }, testInfo) => {
+    const own = await verifiedClinic(browser, testInfo, "forhaand", false);
+    const other = await verifiedClinic(browser, testInfo, "forhaand-anden");
+    try {
+      const patch = await own.page.request.patch("/api/clinics/me", { data: { description: "Vi er en fiktiv testklinik." } });
+      expect(patch.ok(), await patch.text()).toBeTruthy();
+
+      await visit(own.page, "/klinik/profil");
+      await own.page.getByRole("link", { name: "Se din profil som patienten ser den" }).click();
+      await own.page.waitForURL((url) => url.pathname === "/klinik/profil/forhaandsvisning");
+      await expect(own.page.getByText(PROFILE_PREVIEW_LABEL)).toBeVisible();
+      await expect(own.page.getByText(/afventer verificering/)).toBeVisible();
+
+      const preview = own.page.getByTestId("profil-forhaandsvisning");
+      await expect(preview.getByRole("heading", { level: 1, name: own.name })).toBeVisible();
+      await expect(preview.getByText("Vi er en fiktiv testklinik.")).toBeVisible();
+      await expect(preview.getByRole("heading", { name: "Trustpilot (ekstern kilde)" })).toBeVisible();
+      // Samme rækkefølge som appen (Placering kun med en kendt placering), og intet appen ikke viser.
+      const headings = await preview.getByRole("heading", { level: 2 }).allTextContents();
+      expect(headings).toEqual(APP_ORDER.filter((h) => h !== "Placering" || headings.includes("Placering")));
+      await expect(preview.getByRole("heading", { name: "Tandlæger" })).toHaveCount(0);
+      await expect(preview.getByRole("heading", { name: "Ledige tider" })).toHaveCount(0);
+      if ((own.page.viewportSize()?.width ?? 1280) <= 390) await expectNoHorizontalScroll(own.page);
+
+      // En anden klinik ser kun sin egen forhåndsvisning og får 404 på den uverificerede profil.
+      expect((await other.page.request.get(`/api/clinics/${own.id}`)).status()).toBe(404);
+      await visit(other.page, "/klinik/profil/forhaandsvisning");
+      await expect(other.page.getByTestId("profil-forhaandsvisning").getByRole("heading", { level: 1, name: other.name })).toBeVisible();
+      await expect(other.page.getByText(own.name)).toHaveCount(0);
+
+      // Uden login sendes man væk fra siden.
+      const anon = await browser.newPage({ baseURL: testInfo.project.use.baseURL });
+      await anon.goto("/klinik/profil/forhaandsvisning");
+      expect(new URL(anon.url()).pathname).not.toBe("/klinik/profil/forhaandsvisning");
+      await anon.close();
+    } finally {
+      await cleanup(null, [own, other]);
+    }
   });
 });

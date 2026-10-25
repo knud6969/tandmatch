@@ -80,7 +80,7 @@ Alle kræver, at den kaldende ejer klinikken. Leads og bookinger kræver desuden
 
 Alle funktionerne returnerer kun leads med `sent_at >= clinics.owner_since` (og det, der hænger på dem). For leads med status `withdrawn` returnerer de kun id, status, `sent_at` og `withdrawn_at`; intet sagsindhold, ingen billeder, ingen beskeder. Beskeder læses via `clinic_lead_messages()` og markeres læst via `clinic_mark_messages_read()` (5.3).
 
-- `clinic_leads(p_status)`: egne leads, evt. filtreret på status, med status, ydelsesnavne, område, afstand, ønsket tidsrum, akutmarkering, ønsket akuttid, antal billeder, `sent_at`, `seen_at`, ulæste beskeder. Ingen `patient_id`, ingen `case_id`.
+- `clinic_leads(p_status)`: egne leads, evt. filtreret på status, med status, ydelsesnavne, område, afstand, ønsket tidsrum, akutmarkering, ønsket akuttid, antal billeder, `sent_at`, `seen_at`, ulæste beskeder. Ingen `patient_id`, ingen `case_id`. Fra migration `20261101000200_clinic_leads_overview` også `summary_excerpt` (de første 121 tegn af den godkendte `summary_text`, så serveren kan se, om den er afkortet), `list_price_min`/`list_price_max` (listepris-snapshot) og `hold_expires_at` (udløb for leadets reserverede akuttid, kun når den nyeste aktive booking har effektiv status `held`; samme booking-valg som `clinic_lead_detail()`). Alle tre er `null` for et tilbagetrukket lead. Ingen kontaktfelter (kontakt står kun i `clinic_lead_detail()` og `clinic_bookings()`, 5.5). RLS og adgangsreglen er uændrede (ejer, `verified`, `sent_at >= owner_since`).
 - `clinic_lead_detail(lead_id)`: sagens godkendte indhold (ydelser, `summary_text`, `summary_ai_assisted`, ønsket tidsrum, område, akut), listepris-snapshot, egen beslutning, antal ulæste beskeder fra patienten (`unread_messages`, migration `20261025000100`) og den aktive eller seneste booking med `contact_*` efter reglen i 5.5.
 - `clinic_leads()` sorterer ubesvarede først, derefter akut (kun for leads, der ikke er trukket tilbage, så rækkefølgen ikke afslører akut-status for et tilbagetrukket lead; migration `20261025000100`), derefter nyeste.
 - `clinic_lead_images(lead_id)`: billedstier og godkendte beskrivelser, kun med aktivt `image_upload`-samtykke. Serveren signerer stierne (9.2).
@@ -127,6 +127,10 @@ export type ClinicLeadListItemDto = {
   imageCount: number;
   sentAt: string; seenAt: string | null; withdrawnAt: string | null;
   unreadMessages: number;
+  // Fra 2026-10-24 (migration 20261101000200), til indbakkens række og akut-fristen:
+  summaryExcerpt: string;              // højst 120 tegn af den godkendte opsummering, afkortet ved et ord med "…"; "" ved withdrawn
+  listPrice: PriceRange | null;        // listepris-snapshot (flyttet hertil fra ClinicLeadDetailDto, som arver det)
+  holdExpiresAt: string | null;        // "Svar inden kl. HH:MM": udløb for en reserveret akuttid (kun effektiv status held)
 };
 
 export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
@@ -134,7 +138,6 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
   summaryText: string; summaryAiAssisted: boolean;
   // view og quality er null (AI'ens billedvurdering deles ikke med klinikken); description = approvedDescription, som kan være null
   images: (ImageDto & { approvedDescription: string | null })[];
-  listPrice: PriceRange | null;
   decision: { comment: string | null; quotedPrice: PriceRange | null; declineReason: LeadDeclineReason | null; declineNote: string | null; respondedAt: string } | null;
   booking: ClinicBookingDto | null;
 };
@@ -146,7 +149,7 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
 | GET `/api/leads/{id}` | klinik (ejer) | | `ClinicLeadDetailDto`. Sætter `seen_at` via `clinic_mark_lead_seen()` (pragmatisk sideeffekt) |
 | POST `/api/leads/{id}/decision` | klinik (ejer, verificeret) | `{ decision: "accept", comment?, quotedPriceMin?, quotedPriceMax? }` eller `{ decision: "decline", reason (alle undtagen "clinic_left"), note? }` | `ClinicLeadDetailDto`; 409 hvis ikke `sent` (fx trukket tilbage). Accept af akut-lead inden for reservationen gør tiden til en booking; efter udløb bliver leadet `accepted` uden booking, og patienten booker selv |
 
-`unreadMessages` på `GET /api/leads/{id}` kommer fra `clinic_lead_detail()` (ét kald pr. RPC, 2.1). For et lead med status `withdrawn` returnerer `GET /api/leads` og `GET /api/leads/{id}` kun `id`, `status`, `sentAt` og `withdrawnAt`; øvrige felter er tomme værdier (`false`, `[]`, `null`, `0`, `""`) (5.7).
+`unreadMessages` på `GET /api/leads/{id}` kommer fra `clinic_lead_detail()` (ét kald pr. RPC, 2.1). `summaryExcerpt` beregnes i `LeadsRepository` med `summaryExcerpt()` (`lib/leads/domain/leads.ts`, ren funktion) fra `summary_excerpt` i listen og fra `summary_text` i detaljen; `holdExpiresAt` er i detaljen det samme som `booking.holdExpiresAt`. **Kræver handling** (klinikkens standardfilter og tallet på fanen, 6.3) = `leadNeedsAction(lead)`: status `sent` eller `unreadMessages > 0`, aldrig `withdrawn`; beregnes i klienten af listen, intet eget endpoint. For et lead med status `withdrawn` returnerer `GET /api/leads` og `GET /api/leads/{id}` kun `id`, `status`, `sentAt` og `withdrawnAt`; øvrige felter er tomme værdier (`false`, `[]`, `null`, `0`, `""`) (5.7).
 
 Bygget i 5.1: `LeadsController` (`listForClinic`, `getForClinic`, `decide`) og `LeadsRepository`. En ikke-verificeret klinik får 403 `CLINIC_NOT_VERIFIED` på alle tre routes; ukendt eller fremmed lead giver 404, beslutning på et lead, der ikke er `sent`, 409 `LEAD_NOT_PENDING`. `GET /api/leads/{id}` sætter `seen_at` før detaljen læses. `ClinicBookingDto` og `BookingStatus` ligger i `lib/booking/types/bookings.ts`, som blev udvidet i 6.1 (10.10).
 

@@ -146,10 +146,9 @@ test.describe("booking: supplerende dækning (6.6)", () => {
       const cal = await (await clinic.page.request.get("/api/bookings")).text();
       expect(cal).not.toContain(email);
 
-      // Efter booking: synlig.
+      // Efter booking: synlig uden genindlæsning (lead-kortet henter igen hvert 20. sekund, features/clinics/README.md 6.3).
       await bookViaApi(patient, leadId);
-      await clinic.page.reload();
-      await expect(clinic.page.getByTestId("patient-kontakt")).toContainText("Lea Hansen");
+      await expect(clinic.page.getByTestId("patient-kontakt")).toContainText("Lea Hansen", { timeout: 30_000 });
       await expect(clinic.page.getByTestId("kontakt-skjult")).toHaveCount(0);
 
       // Aflyses tiden, skjules kontakten igen.

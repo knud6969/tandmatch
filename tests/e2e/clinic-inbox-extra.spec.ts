@@ -18,7 +18,12 @@ test.describe("klinikkens indbakke: supplerende dækning (5.4)", () => {
         const text = await x.page.locator("main").innerText();
         expect(text).not.toMatch(/undefined|null|Error|stack|uuid|invalid input/i);
         await expect(x.page.getByRole("button", { name: "Accepter", exact: true })).toHaveCount(0);
-        await expect(x.page.locator("main").getByRole("link", { name: /Henvendelser/ }).first()).toBeVisible();
+        // Vejen tilbage: tilbagelinket på mobil, listen ved siden af fra lg.
+        if (x.page.viewportSize()!.width < 1024) {
+          await expect(x.page.locator("main").getByRole("link", { name: /Henvendelser/ }).first()).toBeVisible();
+        } else {
+          await expect(x.page.getByRole("heading", { name: "Henvendelser", level: 2 })).toBeVisible();
+        }
         await expectNoHorizontalScroll(x.page);
         await shot(x.page, "lead-ukendt-id");
       }

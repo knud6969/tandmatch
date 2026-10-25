@@ -1,14 +1,19 @@
+import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
 import type { ClinicStatus } from "@/lib/clinics/types/clinics";
 
-// Forklarer, at en ny klinik først modtager henvendelser, når TandMatch har verificeret den (architecture 6.3). Vises kun ved
-// status "registered": for en verificeret klinik viser statusbadgen i oversigten allerede, hvordan det står til.
+// Forklarer kort, hvad der sker, og hvornår en ny klinik kan modtage henvendelser (architecture 6.3). Vises kun ved status
+// "registered": for en verificeret klinik viser statusbadgen i oversigten allerede, hvordan det står til.
 export function VerificationBanner({ status }: { status: ClinicStatus }) {
   if (status !== "registered") return null;
   return (
     <Alert tone="warning" title="Afventer verificering">
-      Du kan sætte profil, prisliste, åbningstider og tandlæger op nu. Indbakke og kalender er tomme, og patienter
-      kan ikke sende dig henvendelser, før TandMatch har verificeret klinikken.
+      TandMatch tjekker klinikkens CVR og kontaktoplysninger, normalt inden for et par hverdage. Sæt profil og prisliste
+      op imens. Når klinikken er verificeret, bliver den synlig for patienter og kan modtage henvendelser. Spørgsmål?{" "}
+      <Link href="/kontakt" className="font-semibold underline underline-offset-4">
+        Kontakt os
+      </Link>
+      .
     </Alert>
   );
 }

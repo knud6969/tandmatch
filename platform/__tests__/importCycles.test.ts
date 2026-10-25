@@ -1,7 +1,7 @@
 // Sikrer, at der ikke opstår importcykler mellem modulerne (docs/architecture.md 2.1). Domænerne må gerne bruge hinanden
 // via index.ts, men en cykel gennem barrels kan give udefinerede klasser ved opstart. Type-imports tæller ikke med.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -11,7 +11,8 @@ const RUNTIME_IMPORT = /^(?:import|export)\s+(?!type\b)[^;]*?from\s+["']([^"']+)
 
 function sourceFiles(): string[] {
   const out = execFileSync("git", ["ls-files", "app", "features", "platform", "components", "lib"], { cwd: ROOT, encoding: "utf8" });
-  return out.split("\n").filter((f) => /\.tsx?$/.test(f) && !f.includes("__tests__"));
+  // Filer, der er slettet, men endnu ikke committet, springes over.
+  return out.split("\n").filter((f) => /\.tsx?$/.test(f) && !f.includes("__tests__") && existsSync(path.join(ROOT, f)));
 }
 
 function importGraph(files: string[]): Map<string, string[]> {
