@@ -7,11 +7,12 @@ import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const MAP_MAX_ZOOM = 19;
 
-// Kreditering, der altid skal være synlig (OpenFreeMap, OpenMapTiles og OpenStreetMaps licens).
+// Kreditering, der altid skal være synlig (OpenFreeMap, OpenMapTiles og OpenStreetMaps licens). Kort form, så den kan stå på
+// én linje på profilens lille kort ved 390 px; "© OpenStreetMap" med link er tilladt efter OSM's retningslinjer.
 export const MAP_ATTRIBUTION =
   '<a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> ' +
   '© <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> ' +
-  'Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-bidragydere</a>';
+  'Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>';
 
 // Danmark som udgangsvisning, når der ingen markører er (appens DENMARK_REGION).
 export const DENMARK_CENTER: [number, number] = [56.0, 10.5];

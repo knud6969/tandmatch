@@ -94,7 +94,7 @@ test.describe("klinikoversigt og profil", () => {
     // Kortet: samme antal markører som kort i listen, kreditering synlig, ingen CSP-brud.
     await showMap(page);
     await expect(page.locator(".leaflet-marker-icon")).toHaveCount(count);
-    await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap-bidragydere");
+    await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap");
     // Baggrundskortet er OpenFreeMap-vektorfliser tegnet af MapLibre GL (clinics 6.6).
     await expect(page.locator(".leaflet-tile-pane canvas.maplibregl-canvas").first()).toBeAttached();
     await expect(page.locator(".leaflet-control-attribution")).toContainText("OpenFreeMap");
@@ -123,7 +123,7 @@ test.describe("klinikoversigt og profil", () => {
     await expect(page.getByRole("heading", { name: "Trustpilot (ekstern kilde)" })).toBeVisible();
     await expect(page.getByText("ifølge klinikkens prisliste").first()).toBeVisible();
     await expect(page.getByText("Noget gik galt")).toHaveCount(0);
-    await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap-bidragydere");
+    await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap");
     const placering = page.locator("section[aria-labelledby='placering']");
     await expectDirectionsLinks(placering, (await page.getByRole("heading", { level: 1 }).textContent())!.trim());
     await expectNoHorizontalScroll(page);
