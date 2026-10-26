@@ -42,8 +42,22 @@ Rækker oprettes **kun** af `send_leads()` og ændres kun af `clinic_decide_lead
 | lead_id | uuid FK leads on delete cascade | Tråden er én patient og én klinik |
 | sender_id | uuid null FK profiles `on delete set null` | Afsenderen. Slettes klinikkontoen, bevares beskeden i patientens tråd uden afsender (besluttet, 12.3 punkt 30; migration i 5.2) |
 | sender_role | `message_sender_role` (`patient` \| `clinic`) not null | Sættes af serveren/funktionen ved indsættelse og afgør `fromMe` og visningen ("Klinikken"), også når `sender_id` er null |
-| body | text not null | max 2000 tegn |
+| body | text not null | max 2000 tegn. Må være tom (`''`), når beskeden har mindst ét billede (`message_images`); en besked uden billeder skal have 1-2000 tegn (RLS-policyen ved direkte indsættelse og `send_message_with_images()`, migration `20261103000100`) |
 | read_at | timestamptz null | |
+
+#### `message_images` (billeder i beskedtråden, migration `20261103000100`)
+| Felt | Type | Note |
+|---|---|---|
+| id | uuid PK | Også filnavnet i stien |
+| message_id | uuid FK messages on delete cascade | Beskeden, billedet hører til |
+| lead_id | uuid FK leads on delete cascade | Redundant (= beskedens lead), for enkel RLS og stien |
+| position | smallint not null | 0-2, rækkefølgen i beskeden. `UNIQUE (message_id, position)` |
+| consent_id | uuid null FK consents on delete cascade | Det `image_upload`-samtykke, der var aktivt, da **patienten** sendte billedet. `null` for klinikkens billeder (klinikken giver intet samtykke) |
+| storage_path | text not null unique | `messages/{lead_id}/{id}.jpg` i den private bucket `case-images` (9.2). Check-constraint håndhæver formatet. Ingen `case_id` eller `patient_id` i stien |
+| width, height, bytes | integer not null | Efter genkodning |
+| created_at | timestamptz not null default now() | |
+
+Højst `MESSAGE_MAX_IMAGES` (3) billeder pr. besked og `MESSAGE_IMAGES_MAX_PER_DAY` (30) pr. afsender pr. døgn (rullende 24 timer; `lib/common/constants/limits.ts`, samme tal i SQL). Rækker skrives **kun** af `send_message_with_images()` (service role, efter serverens tjek) og slettes kun via cascade, `withdraw_consent()` (patientens billeder ved tilbagetrækning af `image_upload`) eller kontosletning. Patienten læser sine tråde direkte (RLS `is_lead_patient(lead_id)`); klinikken har ingen SELECT og læser via `clinic_lead_message_images()` (5.7).
 
 Tråden er åben, mens leadet er aktivt (`sent`, `accepted`, `booked`), så klinikken kan stille et afklarende spørgsmål før accept. Ved `declined` og `withdrawn` er den lukket for nye beskeder; eksisterende beskeder kan stadig læses af begge, undtagen at klinikken mister adgangen ved `withdrawn` (5.7). Kontakt går gennem tråden; platformen fjerner ikke kontaktoplysninger, som patienten selv skriver, men patientens profiloplysninger deles ikke før booking.
 
@@ -54,7 +68,8 @@ Tråden er åben, mens leadet er aktivt (`sent`, `accepted`, `booked`), så klin
 | Lead `sent`/`accepted`/`declined` (og en `held` akuttid) | Bekræftede ydelser, godkendt opsummering (`summary_text`, `summary_ai_assisted`), godkendte billedbeskrivelser, billeder (kun med aktivt `image_upload`-samtykke), ønsket tidsrum, område (postnummer og by), afstand, listepris-snapshot, akutmarkering og ønsket akuttid | Navn, e-mail, telefon, `patient_id`, AI-chatten, andre klinikkers leads, om sagen er sendt til andre |
 | Booking `booked` eller `completed` (effektiv status) | Det samme plus `contact_name`, `contact_phone` og `contact_email` **for den booking** | `patient_id`, AI-chatten |
 | Booking `cancelled` eller `no_show` | Kontaktfelterne skjules igen | |
-| Lead `withdrawn` | Kun at leadet er trukket tilbage, og hvornår | Alt sagsindhold, billeder og beskeder |
+| Beskedtråden (lead ikke `withdrawn`) | Trådens beskeder og billeder, også dem patienten har vedhæftet i tråden (`message_images`) | `sender_id`, patientens profiloplysninger |
+| Lead `withdrawn` | Kun at leadet er trukket tilbage, og hvornår | Alt sagsindhold, billeder, beskeder og beskedbilleder |
 
 Klinikker har ingen SELECT-adgang til `cases`, `case_services`, `case_images`, `bookings`, `patients` eller `ai_*`. De læser kun via `clinic_*`-funktionerne (5.7), som aldrig returnerer `patient_id` og kun returnerer kontaktfelterne, når bookingens status er `booked` eller `completed`. Klinikker har heller ingen direkte SELECT på `leads` (migration `20261024000100`); status for et lead slås op med `clinic_lead_status()`.
 
@@ -68,6 +83,7 @@ Klinikker har ingen SELECT-adgang til `cases`, `case_services`, `case_images`, `
 
 - `leads` SELECT direkte har én vej ind: *du ejer sagen*. Klinikken læser kun sine egne leads via `clinic_*`-funktionerne og `clinic_lead_status()` (ejer, `verified`, `sent_at >= owner_since`), som aldrig returnerer `case_id`. At have et lead på samme sag giver **ikke** adgang til andre leads på sagen.
 - `messages` læses af klinikker kun via `clinic_lead_messages()`, som kræver `is_lead_participant` (verificeret klinik, lead efter `owner_since`, ikke `withdrawn`) og aldrig returnerer `sender_id`.
+- `message_images` læses af klinikker kun via `clinic_lead_message_images()` med samme regel (egen verificeret klinik via `is_my_clinic_lead`, ikke `withdrawn`). En anden klinik får ingen rækker, og stien indeholder kun leadets id, som klinikken i forvejen kender.
 - Overtager en ny ejer en klinik (fx via CVR), ser den intet fra før `owner_since`: ingen leads, beskeder, bookinger eller kontaktoplysninger (5.1 regel 16).
 - Ingen funktion, view eller route returnerer noget om andre leads på en sag til en klinik (fx antal, status, priser). `send_leads` returnerer kun antal til patienten.
 - **Kontaktoplysninger** ligger kun i `bookings.contact_*` (og `patients.phone`, som kun patienten selv kan læse). Klinikken har ingen SELECT på `bookings` eller `patients`. `clinic_bookings()` og `clinic_lead_detail()` returnerer `contact_*` kun, når bookingen tilhører klinikken og har effektiv status `booked` eller `completed`. En reserveret akuttid (`held`) viser ingen kontakt, før klinikken har accepteret. Det er dermed databasen, ikke UI, der skjuler navn og kontakt.
@@ -84,6 +100,7 @@ Alle funktionerne returnerer kun leads med `sent_at >= clinics.owner_since` (og 
 - `clinic_lead_detail(lead_id)`: sagens godkendte indhold (ydelser, `summary_text`, `summary_ai_assisted`, ønsket tidsrum, område, akut), listepris-snapshot, egen beslutning, antal ulæste beskeder fra patienten (`unread_messages`, migration `20261025000100`) og den aktive eller seneste booking med `contact_*` efter reglen i 5.5.
 - `clinic_leads()` sorterer ubesvarede først, derefter akut (kun for leads, der ikke er trukket tilbage, så rækkefølgen ikke afslører akut-status for et tilbagetrukket lead; migration `20261025000100`), derefter nyeste.
 - `clinic_lead_images(lead_id)`: billedstier og godkendte beskrivelser, kun med aktivt `image_upload`-samtykke. Serveren signerer stierne (9.2).
+- `clinic_lead_message_images(lead_id)`: trådens billeder (`id`, `message_id`, `position`, `storage_path`, `width`, `height`), kun for egen verificeret klinik og aldrig for et `withdrawn` lead. Serveren signerer stierne (9.2). Migration `20261103000100`.
 - `clinic_bookings(from, to)`: kalenderen: egne bookinger med ydelse, tider, status, `lead_id` og `contact_*` efter reglen i 5.5.
 - `clinic_booking(p_booking_id)`: én af klinikkens egne bookinger med samme kolonner og regler som `clinic_bookings()` (bruges til svaret efter aflysning og udeblivelse; migration `20261026000100`). En anden klinik får ingen række.
 - `clinic_reviews()`: godkendte anmeldelser af egen klinik + eget svar og dets status.
@@ -183,10 +200,23 @@ Lag: `app/api/emergency-leads/route.ts` → `new LeadsController(gate.supabase, 
 
 ### 10.12 Beskeder
 
+```ts
+// lib/leads/types/messages.ts
+export type MessageImageDto = { id: string; url: string; width: number; height: number };   // url: signeret, 5 min
+export type MessageDto = { id: string; fromMe: boolean; senderRole: MessageSenderRole; body: string;   // body kan være "" ved et rent billede
+                           createdAt: string; readAt: string | null; images: MessageImageDto[] };      // images i rækkefølge (position)
+```
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| GET `/api/leads/{id}/messages` | deltager | | `{ messages: MessageDto[] }` (markerer modtagne som læst). Patient: direkte læsning og `read_at`-opdatering med RLS. Klinik: `clinic_lead_messages()` og `clinic_mark_messages_read()` |
-| POST `/api/leads/{id}/messages` | deltager, lead `sent`/`accepted`/`booked` | `{ body }` (1-2000) | 201 `MessageDto`; 409 `THREAD_CLOSED` ved `declined`/`withdrawn` |
+| GET `/api/leads/{id}/messages` | deltager | | `{ messages: MessageDto[] }` (markerer modtagne som læst). Patient: direkte læsning og `read_at`-opdatering med RLS, billeder fra `message_images` med RLS. Klinik: `clinic_lead_messages()`, `clinic_lead_message_images()` og `clinic_mark_messages_read()` |
+| POST `/api/leads/{id}/messages` | deltager, lead `sent`/`accepted`/`booked` | JSON `{ body }` (1-2000) **eller** `multipart/form-data` med `file` 1-3 gange (`MESSAGE_MAX_IMAGES`) og valgfrit tekstfelt `body` (0-2000) | 201 `MessageDto`; 409 `THREAD_CLOSED` ved `declined`/`withdrawn` |
 
-`MessageDto = { id, fromMe, senderRole, body, createdAt, readAt }` (`senderRole` viser "Klinikken", også når afsenderen er slettet). GET læser først og markerer derefter modtagne som læst, så svaret viser, hvad der var nyt; klinikken får en tom liste ved `withdrawn`. POST: 429 `MESSAGE_LIMIT` ved døgnloftet (200). Anonyme og admin får 403. Bygget i 5.2 (`MessagesController`, `MessagesRepository`, `lib/{types,schemas,constants}/messages.ts`). Polling hvert 15. sekund på åben tråd. Klinikkens statusopslag (åben eller lukket tråd) går via `clinic_lead_status()`, ikke direkte på `leads` (5.5; migration `20261024000100`). Afvises en indsættelse af RLS, kaster `MessagesRepository` en navngiven fejl, og `MessagesController` slår status op igen via `LeadsRepository` (repositories ejer ikke hinanden, 2.1.1): lukket tråd giver 409 `THREAD_CLOSED`, ellers 429 `MESSAGE_LIMIT`. Indsættelsen returnerer kun kolonnerne i `MessageDto` (ingen `sender_id`). Patienten får rækken direkte fra insert; klinikken har ingen SELECT på `messages`, så den indsatte besked hentes via `clinic_lead_messages()` (hele tråden; acceptabelt i prototypen). Beskedroutene kræver `requireRole(["patient", "clinic"])`.
+`MessageDto = { id, fromMe, senderRole, body, createdAt, readAt, images }` (`senderRole` viser "Klinikken", også når afsenderen er slettet). GET læser først og markerer derefter modtagne som læst, så svaret viser, hvad der var nyt; klinikken får en tom liste ved `withdrawn`. POST: 429 `MESSAGE_LIMIT` ved døgnloftet (200). Anonyme og admin får 403. Bygget i 5.2 (`MessagesController`, `MessagesRepository`, `lib/{types,schemas,constants}/messages.ts`). Polling hvert 15. sekund på åben tråd. Klinikkens statusopslag (åben eller lukket tråd) går via `clinic_lead_status()`, ikke direkte på `leads` (5.5; migration `20261024000100`). Afvises en indsættelse af RLS, kaster `MessagesRepository` en navngiven fejl, og `MessagesController` slår status op igen via `LeadsRepository` (repositories ejer ikke hinanden, 2.1.1): lukket tråd giver 409 `THREAD_CLOSED`, ellers 429 `MESSAGE_LIMIT`. Indsættelsen returnerer kun kolonnerne i `MessageDto` (ingen `sender_id`). Patienten får rækken direkte fra insert; klinikken har ingen SELECT på `messages`, så den indsatte besked hentes via `clinic_lead_messages()` (hele tråden; acceptabelt i prototypen). Beskedroutene kræver `requireRole(["patient", "clinic"])`.
+
+**Billeder i beskeder** (besluttet og bygget 2026-10-26, migration `20261103000100`). Både patient og klinik kan vedhæfte op til 3 billeder pr. besked; teksten er valgfri, når der er mindst ét billede. Billederne er helbredsdata (GDPR art. 9).
+- **Upload-flow (multipart):** routen kræver `Content-Length` (411 `LENGTH_REQUIRED`) og højst `MESSAGE_MAX_IMAGES × MAX_IMAGE_UPLOAD_BYTES` (+64 KB) (413 `FILE_TOO_LARGE`) og har IP-grænsen `enforceIpRateLimit("message-image-upload", req)` (10 pr. time, som øvrige billeduploads; 429 `RATE_LIMITED`). Controlleren tjekker i rækkefølge: deltager (404), åben tråd (409 `THREAD_CLOSED`), døgnloftet for beskeder (429 `MESSAGE_LIMIT`) og for **patienten** det gældende `image_upload`-samtykke med `ConsentsRepository.requireCurrentActive()` (403 `CONSENT_REQUIRED`; samme samtykke som i AI-chatten, 9.4). Klinikken behøver intet samtykke. Først derefter læses formularen (`messageImagesFormReader`): 400 `MISSING_FILE` uden billede, 400 `IMAGE_LIMIT` ved flere end 3, 400 `VALIDATION_ERROR` ved for lang tekst, 400 `INVALID_IMAGE` ved forkert filtype (magic bytes: JPEG, PNG, HEIC), 413 `FILE_TOO_LARGE`. Hvert billede genkodes med `ImageProcessingService` (sharp: JPEG, EXIF fjernes, maks. 2048 px).
+- **Lagring:** filerne skrives med service role til `case-images` under `messages/{lead_id}/{image_id}.jpg` (`MessageImageStorage`, 2.3 c), og derefter indsætter `send_message_with_images(p_user_id, p_lead_id, p_message_id, p_body, p_images)` (kun service role, 5.3) beskeden og billedrækkerne i én transaktion. Funktionen tjekker selv deltager, permanent konto, åben tråd, døgnlofterne (200 beskeder, 30 billeder; 429 `MESSAGE_LIMIT`/`MESSAGE_IMAGE_LIMIT`) og for patienten det gældende `image_upload`-samtykke, som gemmes i `consent_id`. Fejler indsættelsen, slettes de uploadede filer igen.
+- **Læsning:** stierne hentes altid gennem en RLS-beskyttet læsning (patient: `message_images` med RLS; klinik: `clinic_lead_message_images()`), og først derefter signerer serveren dem med service role (TTL 5 min, 2.3 e). Signerede URL'er logges ikke. Ved `withdrawn` ser klinikken hverken beskeder eller billeder.
+- **Sletning:** rækkerne følger beskeden og leadet (cascade). Tilbagetrækning af `image_upload` sletter **patientens** beskedbilleder (rækker i `withdraw_consent()`, filer via `deleted_image_paths` som sagsbillederne); beskedteksten bliver stående, og en besked uden tekst og billeder vises som "Billedet er slettet". Kontosletning af patienten sletter mapperne `messages/{lead_id}/` for alle patientens leads (`AccountDeletionService`) og rækkerne via cascade. Slettes klinikkontoen, bevares klinikkens billeder i patientens tråd ligesom beskederne (12.3 punkt 30). Anonyme har ingen leads, så oprydningsjobbet for anonyme berøres ikke.
+- **Klienterne:** weben (`message-thread.tsx`) har en knap "Vedhæft billeder", forhåndsvisning med fjern-knap før afsendelse, miniaturer i boblerne og stort billede i en lightbox (`image-lightbox.tsx`, delt med `lead-images.tsx`). Appen genbruger chattens billedvælger (kamera/bibliotek, nedskalering) og samtykkekort (`ConsentGate`), sender multipart som færdigbyggede bytes (`buildMultipartParts`, fordi `expo/fetch` ikke understøtter `{ uri }`-FormData) og viser miniaturer i boblerne og billedet i fuld skærm ved tryk. Begge beholder en signeret URL pr. billede i op til 4 minutter på tværs af polling (`keepImageUrls()`, `lib/leads/domain/messages.ts`), så billederne ikke hentes igen hvert 15. sekund.

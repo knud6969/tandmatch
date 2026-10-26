@@ -245,6 +245,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | Chatbeskeder pr. IP pr. time | `CHAT_IP_LIMIT_PER_HOUR` (120) | 429 |
 | Opsummeringer pr. IP pr. time | 20 | 429 |
 | Beskeder i tråden | 2000 tegn, 200 pr. afsender pr. døgn | 400 / 429 `MESSAGE_LIMIT` |
+| Billeder i tråden (leads 10.12) | 3 pr. besked, max 4 MB hver; 30 pr. afsender pr. døgn (`MESSAGE_MAX_IMAGES`, `MESSAGE_IMAGES_MAX_PER_DAY`); 10 uploads pr. IP pr. time (scope `message-image-upload`) | 400 `IMAGE_LIMIT` / 413 / 429 `MESSAGE_IMAGE_LIMIT` / 429 `RATE_LIMITED` |
 | Bookinger | 1 aktiv pr. lead; højst 5 bookinger i alt pr. lead (også aflyste), så book og aflys ikke kan gentages i det uendelige (security trin 6, M1; migration `20261027000100`). Bookinger aflyst af klinikken tæller ikke (besluttet 2026-10-18, security kompromis 20) (bygget i 7.1) | 409 / 409 `BOOKING_LIMIT` |
 | Akut-henvendelser pr. IP pr. time (`POST /api/emergency-leads`) | Samme scope og grænse som afsendelse af leads (`leads-send`, 30) | 429 `RATE_LIMITED` |
 | Bookinger pr. IP pr. time (`POST /api/leads/{id}/booking`, scope `booking`) | 30 | 429 `RATE_LIMITED` |
@@ -414,7 +415,7 @@ Reglerne i 7.3 gælder uændret: ingen priser, ingen klinikanbefaling, foreløbi
 
 ### 9.2 `case-images`: sti og adgang
 
-Sti: `{case_id}/{image_id}.jpg`. Ingen `patient_id` i stien.
+Sti: `{case_id}/{image_id}.jpg`. Ingen `patient_id` i stien. Billeder i beskedtråden (`message_images`, leads 10.12) ligger i samme private bucket under præfikset `messages/{lead_id}/{image_id}.jpg`, så de får samme regler (ingen policies, service role kun til upload, sletning og signering efter en RLS-beskyttet læsning) og samme oprydning ved tilbagetrækning af samtykket. Sags-id'er er uuid'er, så præfikset kan ikke støde sammen med en sagsmappe.
 
 - **Ingen policies for `authenticated` eller `anon`** på `storage.objects` for denne bucket: hverken SELECT, INSERT, UPDATE eller DELETE.
 - Upload, sletning og rækkeinsert sker kun med service role efter serverens tjek (9.3).
@@ -434,8 +435,8 @@ Bygget for forespørgsler; tilpasses til sager.
 ### 9.4 Samtykke og sletning
 
 - Samtykke gemmes server-side med `granted_at` og kendt `text_version` **før** upload; hvert billede peger på sit samtykke. Billedsamtykket gives særskilt lige før første upload, aldrig på `/start` og aldrig sammen med AI-samtykke eller vilkår.
-- Tilbagetrækning af `image_upload` sletter patientens billeder (filer og rækker), også på sendte sager; klinikkerne mister dermed adgangen.
-- Kontosletning sletter billedmapperne for alle patientens sager, alle rækker (cascade, herunder leads, bookinger og anmeldelser) og auth-brugeren.
+- Tilbagetrækning af `image_upload` sletter patientens billeder (filer og rækker), også på sendte sager og de billeder, patienten har sendt i beskedtråde (`message_images` med patientens `consent_id`; migration `20261103000100`); klinikkerne mister dermed adgangen.
+- Kontosletning sletter billedmapperne for alle patientens sager og beskedtråde (`messages/{lead_id}/`), alle rækker (cascade, herunder leads, beskeder, bookinger og anmeldelser) og auth-brugeren.
 - Anonyme billeder slettes 48 timer efter seneste aktivitet.
 - Opbevaringsperiode for kontodata: [UDSKUDT].
 
