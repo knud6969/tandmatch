@@ -35,8 +35,10 @@ case "$DB_URL" in
   *) echo "Afviser: TEST_DB_URL peger ikke på lokal database." >&2; exit 2 ;;
 esac
 
-# Frisk Next-cache før hver kørsel: en stor eller forældet .next kan få dev-serveren til at genindlæse i ring.
-node scripts/clean-next-cache.mjs --force
+# Testserveren bygger i sin egen mappe (.next-test), så den aldrig deler cache med `npm run dev`, der kører mod et andet
+# miljø; delt cache fik Next til at genindlæse siderne i ring. Mappen ryddes, hvis den er vokset over 1 GB.
+export NEXT_DIST_DIR=.next-test
+node scripts/clean-next-cache.mjs
 
 LOG="${TMPDIR:-/tmp}/tandmatch-e2e-server.log"
 npx next dev -p "$PORT" -H 127.0.0.1 >"$LOG" 2>&1 &

@@ -17,6 +17,9 @@ export default defineConfig({
   projects: [
     { name: "mobil", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    // Safari (WebKit) gemmer ikke Secure-cookies over http://localhost, som Chrome gør. Vilkårs- og login-cookien testes
+    // derfor også her, så en cookie, der kun virker i Chrome, opdages (2026-10-26: klinikoprettelse fejlede i Safari).
+    { name: "safari", testMatch: ["clinic-entry.spec.ts", "terms-gate.spec.ts"], use: { ...devices["Desktop Safari"], viewport: { width: 1280, height: 800 } } },
   ],
   outputDir: "test-results",
 });

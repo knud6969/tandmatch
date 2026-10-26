@@ -44,6 +44,9 @@ function contentSecurityPolicy(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Testene (tests/api/run.sh, tests/e2e/run.sh) bygger i deres egen mappe (.next-test). Deler en testserver cache med
+  // `npm run dev`, der kører mod et andet miljø (.env.local), genbygger og genindlæser Next siden i ring (2026-10-26).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   async headers() {
     return [
       {
