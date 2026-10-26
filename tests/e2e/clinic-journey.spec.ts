@@ -1,5 +1,6 @@
 import { deflateSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
+import { acceptTerms } from "./helpers/terms";
 
 // Klinikrejsen (arbejdsplan 1.8): opret klinik, profil, prisliste, åbningstider, blokeret tid, tandlæge med portræt og
 // porteføljebillede, og sletning af kontoen. Kun fiktive data og genererede pladsholderbilleder.
@@ -46,7 +47,7 @@ function uniqueCvr(): string {
 
 async function acceptTermsIfAsked(page: Page) {
   if (/\/vilkaar\/accepter/.test(page.url())) {
-    await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+    await acceptTerms(page);
     await page.waitForURL((url) => !url.pathname.startsWith("/vilkaar/accepter"));
   }
 }
@@ -101,7 +102,7 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Adgangskode").fill("Test-kodeord-1234");
     // /opret/klinik er undtaget fra vilkårs-gaten; accepten gives i formularen (identity 2.5).
-    await page.getByRole("checkbox", { name: /accepterer brugervilkårene/ }).check();
+    await acceptTerms(page);
     if (mobile) await expectNoHorizontalScroll(page, "/opret/klinik");
     await page.getByRole("button", { name: "Opret klinik" }).click();
     await page.waitForURL((url) => url.pathname === "/klinik");

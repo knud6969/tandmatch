@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { CONSENT_TEXT_VERSIONS } from "../../lib/identity/constants/consents";
+import { acceptTerms } from "./helpers/terms";
 
 // Klinikkens indbakke og lead-kort (arbejdsplan 5.3): klinik ser lead -> stiller spørgsmål -> patienten ser og svarer -> klinikken
 // accepterer med kommentar og pris -> patienten ser status og pris. Desuden: klinik Y kan ikke åbne X's lead (UI og API), patientens
@@ -31,7 +32,7 @@ async function newPage(browser: Browser, testInfo: TestInfo): Promise<Page> {
   const page = await context.newPage();
   await page.goto("/klinikker");
   if (/\/vilkaar\/accepter/.test(page.url())) {
-    await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+    await acceptTerms(page);
     await page.waitForURL((url) => !url.pathname.startsWith("/vilkaar/accepter"));
   }
   return page;

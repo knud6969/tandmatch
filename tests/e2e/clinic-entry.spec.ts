@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoHorizontalScroll, fakeIp } from "./helpers/inbox";
+import { acceptTerms } from "./helpers/terms";
 
 // Klinikkernes indgang (features/site 6.1, identity 2.5 og 10.2): forside, oprettelse, login og glemt adgangskode, ved
 // 390 og 1280 px (projekterne "mobil" og "desktop"). Kun fiktive data. Nulstillingslinket laves med admin.generateLink,
@@ -90,7 +91,7 @@ test.describe("klinikkernes indgang", () => {
     await expect(page.getByText("Du skal acceptere vilkårene for at oprette klinikken.")).toBeVisible();
     await expect(page).toHaveURL(/\/opret\/klinik$/);
 
-    await page.getByRole("checkbox", { name: /accepterer brugervilkårene/ }).check();
+    await acceptTerms(page);
     await page.getByRole("button", { name: "Opret klinik" }).click();
     await page.waitForURL((url) => url.pathname === "/klinik");
     // [PROTOTYPE] Klinikken er verificeret ved oprettelse, så der er intet verificeringsbanner.
@@ -117,7 +118,7 @@ test.describe("klinikkernes indgang", () => {
       await page.goto("/");
       await page.getByRole("banner").getByRole("link", { name: "Log ind" }).click();
       await page.waitForURL(/\/vilkaar\/accepter/);
-      await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+      await acceptTerms(page);
       await page.waitForURL((url) => url.pathname === "/login");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Log ind som klinik");
       await expect(page.getByText("Er du patient? Brug TandMatch-appen.")).toBeVisible();
@@ -152,7 +153,7 @@ test.describe("klinikkernes indgang", () => {
       await page.getByRole("button", { name: "Gem ny adgangskode" }).click();
       await page.waitForURL((url) => url.pathname.startsWith("/login") || url.pathname.startsWith("/vilkaar"));
       if (page.url().includes("/vilkaar/accepter")) {
-        await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+        await acceptTerms(page);
         await page.waitForURL((url) => url.pathname === "/login");
       }
       await expect(page.getByText("Din adgangskode er skiftet. Log ind med den nye.")).toBeVisible();
