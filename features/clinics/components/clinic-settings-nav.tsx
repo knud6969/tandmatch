@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui/cx";
 
 // Undersiderne under fanen Klinikprofil (features/clinics/README.md 6.3). URL'erne er de samme som før.
-export const CLINIC_SETTINGS_PAGES = [
+const CLINIC_SETTINGS_PAGES = [
   { href: "/klinik/profil", label: "Profil" },
   { href: "/klinik/prisliste", label: "Prisliste" },
   { href: "/klinik/aabningstider", label: "Åbningstider" },

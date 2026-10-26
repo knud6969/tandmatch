@@ -5,7 +5,7 @@ import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
 
 // Max kant på billeder, der sendes til AI'en (architecture 7.2).
-export const AI_IMAGE_MAX_DIMENSION = 1024;
+const AI_IMAGE_MAX_DIMENSION = 1024;
 
 // Gør sagens billeder klar til modellen: filen hentes fra den private bucket, re-encodes (EXIF fjernet, max 1024 px) og
 // gives som base64. Signerede URL'er sendes aldrig. Kalderen har tjekket ejer og image_upload-samtykke. Indhold logges ikke.

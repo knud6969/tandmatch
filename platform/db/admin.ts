@@ -8,7 +8,7 @@ import { getSupabaseConfig } from "@/platform/db/config";
 // Aldrig til at læse data på brugerens vegne. Klienten må aldrig sendes til browseren.
 //
 // Må kun kaldes herfra (via lazyAdminClient) og fra scripts/. Controllere og services kalder den aldrig direkte.
-export function createSupabaseAdminClient(): SupabaseClient {
+function createSupabaseAdminClient(): SupabaseClient {
   const { url } = getSupabaseConfig();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {

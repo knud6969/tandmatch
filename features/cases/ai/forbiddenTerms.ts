@@ -147,7 +147,7 @@ const DEFINITIVE_PATTERNS: RegExp[] = [
 
 // ---------- Strenge MDR-ord (kun når rules.strictMdrMode) ----------
 // MDR-TILPASNING: listen aktiveres af strictMdrMode i rules.ts. Den er diagnose- og alvorlighedsordene fra den tidligere model.
-export const mdrStrictTerms: RegExp[] = [
+const mdrStrictTerms: RegExp[] = [
   rx(String.raw`karies|caries|paradentos|parodont|periodont|gingivit|pulpit|abces|infektion|inflammation|betænd|sygdom|diagnos|(?:(?<!${L})|(?<=tand|rod))revn|fraktur|overbid|underbid|malokklusion|bidfejl|nerveskade|rodspids|cyste|tandsten|plaque`),
   rx(word(String.raw`hul|huller|hullet|hulrum|byld|bylder`)),
   rx(String.raw`alvorlig|severe|severity|urgent|kritisk|slemt|farlig|ufarlig|usund|unormal|skadet|bekymrende|erosion|misfarv`),

@@ -192,7 +192,7 @@ export const anonymousNotAllowed = () =>
   new ApiError(403, "ANONYMOUS_NOT_ALLOWED", "Opret en konto for at fortsætte.");
 
 // Konflikt med tilstanden (409). Alle 409-fejl bygges her, så formen er den samme overalt.
-export const conflict = (code: string, message: string) => new ApiError(409, code, message);
+const conflict = (code: string, message: string) => new ApiError(409, code, message);
 
 // Sagen er ikke længere en kladde (architecture 10.5): kun kladder kan ændres.
 export const notDraft = () => conflict("NOT_DRAFT", "Sagen er sendt og kan ikke ændres.");

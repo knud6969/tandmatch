@@ -19,11 +19,11 @@ export const AI_BOUNDARY_TEXT =
 export const PRELIMINARY_ASSESSMENT_LABEL = "Foreløbig – klinikken vurderer endeligt";
 
 // Vises når patienten spørger om pris (architecture 7.3).
-export const PRICE_NOTICE_TEXT =
+const PRICE_NOTICE_TEXT =
   "AI-assistenten kender ikke priserne. Priserne kommer fra klinikkernes egne prislister i oversigten, og når du har sendt din sag, kan klinikken præcisere prisen. Du kan sortere klinikkerne efter pris i oversigten.";
 
 // Vises når patienten spørger, hvilken klinik der er bedst.
-export const CLINIC_RECOMMENDATION_NOTICE_TEXT =
+const CLINIC_RECOMMENDATION_NOTICE_TEXT =
   "AI-assistenten anbefaler ikke bestemte klinikker. Anmeldelser, pris, afstand og første ledige tid ser du for hver klinik i oversigten, hvor du selv kan sortere og sammenligne.";
 
 export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {

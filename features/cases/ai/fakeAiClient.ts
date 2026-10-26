@@ -62,7 +62,7 @@ function userMessageCount(params: StructuredCallParams): number {
 //   test_scenario_<n> realistiske forslag pr. scenarie (se FAKE_SCENARIOS), klar til opsummering
 //   (ingen markør)    spørgsmål 1 og 2 med hurtigsvar, fra den tredje patientbesked forslaget undersoegelse
 // Realistiske forslag pr. scenarie (kun tests): slugs som en rigtig AI ville vælge fra kataloget.
-export const FAKE_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
+const FAKE_SCENARIOS: Readonly<Record<string, readonly string[]>> = {
   tandpine_koldt: ["undersoegelse", "fyldning"],
   skaeve_taender: ["tandregulering_konsultation", "tandreguleringsskinner"],
   bloedende_tandkoed: ["tandkoedsundersoegelse", "tandrensning"],

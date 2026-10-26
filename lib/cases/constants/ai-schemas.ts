@@ -7,7 +7,7 @@ import { z } from "zod";
 import { IMAGE_QUALITIES, IMAGE_VIEWS, OUT_OF_SCOPE_TOPICS } from "@/lib/cases/constants/ai";
 import { MAX_CONFIRMED_SERVICES_PER_CASE } from "@/lib/common/constants/limits";
 
-export const SLUG_PATTERN = /^[a-z0-9_]{2,60}$/;
+const SLUG_PATTERN = /^[a-z0-9_]{2,60}$/;
 
 export const aiSlugListSchema = z.array(z.string().regex(SLUG_PATTERN)).max(MAX_CONFIRMED_SERVICES_PER_CASE);
 export const aiTopicsSchema = z.array(z.enum(OUT_OF_SCOPE_TOPICS)).max(OUT_OF_SCOPE_TOPICS.length);
