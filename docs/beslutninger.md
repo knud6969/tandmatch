@@ -25,7 +25,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 | Signerede billed-URL'er til klinikken indeholder `case_id` i stien (security trin 5, M1) | Ingen patientidentitet; enkel lagring | Sti uden sags-id med opslag i `case_images` (4.4, 9.2) |
 | Patienten kan sætte `read_at` på klinikkens beskeder til en vilkårlig værdi (security trin 5, L2) | Påvirker kun visningen | Funktion i stedet for direkte update |
 | Ingen IP-grænse på klinikkens GET-routes for leads og beskeder (security trin 5, L3) | Polling hvert 15. sekund; ingen datalæk | Rate limit pr. bruger på GET |
-| Kortfliser hentes fra CARTOs gratis basiskort (Voyager, OpenStreetMap-data) | Gratis, pænere end OSM-standard og uden nøgle | Egen eller betalt fliseudbyder (CARTOs vilkår for gratis brug, clinics 6.6) |
+| Kortfliser hentes fra OpenStreetMaps offentlige server, dæmpet med et CSS-filter (CARTOs gratis basiskort kræver nu en API-nøgle) | Gratis og enkelt | Vektorfliser (fx OpenFreeMap med MapLibre GL) eller egen/betalt fliseudbyder (OSM's brugspolitik, clinics 6.6) |
 | Klinikadresser slås op med OpenStreetMap Nominatims offentlige server (højst 1 kald/s, kun ved oprettelse og adresseændring) | Gratis og uden nøgle; DAWA er lukket | Datafordeleren (DAR) eller betalt geokodning (clinics 4.3) |
 | Brugervilkår, privatlivspolitik og samtykketekster er pladsholdere (`v0-prototype`, delingssamtykket `v1-klinikker`) | Juridisk tekst ikke skrevet | Skrevne og gennemgåede tekster (12.4) |
 | Sletning af en patientkonto sletter også patientens leads, kommende bookinger og anmeldelser hos klinikkerne (cascade) | Enkel og fuldstændig sletning | Aflysning af kommende tider og anonymisering af anmeldelser (12.3 punkt 35) |

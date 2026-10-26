@@ -27,7 +27,7 @@ function contentSecurityPolicy(): string {
     // UNDTAGELSE: Tailwind/Next og React style-attributter kræver inline styles.
     "style-src": ["'self'", "'unsafe-inline'"],
     // Billeder: egne, data:/blob: (forhåndsvisning af valgte filer) og Supabase (public-media, signerede URL'er).
-    // Kortfliser fra OpenStreetMap (klinikoversigten, architecture 6.6). Ingen andre eksterne billedkilder.
+    // Kortfliser fra OpenStreetMap (klinikoversigten og profilen, clinics 6.6). Ingen andre eksterne billedkilder.
     "img-src": ["'self'", "data:", "blob:", "https://tile.openstreetmap.org", ...(supabase ? [supabase] : [])],
     "font-src": ["'self'"],
     // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse).
