@@ -23,6 +23,22 @@ async function visit(page: Page, path: string) {
   if (!page.url().endsWith(path)) await page.goto(path);
 }
 
+// Vejvisning under "Placering" (clinics 6.3): Google Maps og Apple Maps i ny fane, med klinikkens koordinater.
+async function expectDirectionsLinks(scope: ReturnType<Page["locator"]>, name: string) {
+  const google = scope.getByRole("link", { name: /Vejvisning i Google Maps/ });
+  const apple = scope.getByRole("link", { name: /Vejvisning i Apple Maps/ });
+  await expect(google).toHaveAttribute("href", /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=-?\d+(\.\d+)?,-?\d+(\.\d+)?$/);
+  await expect(apple).toHaveAttribute("href", new RegExp(`^https://maps\\.apple\\.com/\\?daddr=-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?&dirflg=d&q=${encodeURIComponent(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
+  for (const link of [google, apple]) {
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  }
+  // Begge links peger på samme punkt.
+  const googlePoint = new URL((await google.getAttribute("href"))!).searchParams.get("destination");
+  const applePoint = new URL((await apple.getAttribute("href"))!).searchParams.get("daddr");
+  expect(googlePoint).toBe(applePoint);
+}
+
 async function expectNoHorizontalScroll(page: Page) {
   expect(await page.evaluate(HORIZONTAL_SCROLL)).toBeLessThanOrEqual(0);
 }
@@ -82,11 +98,17 @@ test.describe("klinikoversigt og profil", () => {
     await expect(page.locator("img.leaflet-tile").first()).toBeAttached();
     await expectNoHorizontalScroll(page);
 
-    // Klik på en markør viser nøgleoplysninger og et link til profilen.
-    await page.locator(".leaflet-marker-icon").first().click();
+    // Klik på en markør viser nøgleoplysninger og et link til profilen, og markøren bliver valgt (større, som i appen).
+    const marker = page.locator(".leaflet-marker-icon").first();
+    const title = (await marker.getAttribute("title"))!;
+    const sizeBefore = (await marker.boundingBox())!.width;
+    await marker.click();
     const popup = page.locator(".leaflet-popup");
     await expect(popup).toBeVisible();
     await expect(popup).toContainText("Verificeret klinik");
+    // Leaflet udskifter ikonet, så markøren findes igen på titlen.
+    const selected = page.locator(`.leaflet-marker-icon[title="${title.replace(/"/g, '\\"')}"]`);
+    await expect.poll(async () => (await selected.boundingBox())?.width ?? 0).toBeGreaterThan(sizeBefore);
     await popup.getByRole("link", { name: "Se profil" }).click();
 
     // Profilen (fuldt niveau).
@@ -100,6 +122,8 @@ test.describe("klinikoversigt og profil", () => {
     await expect(page.getByText("ifølge klinikkens prisliste").first()).toBeVisible();
     await expect(page.getByText("Noget gik galt")).toHaveCount(0);
     await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap-bidragydere");
+    const placering = page.locator("section[aria-labelledby='placering']");
+    await expectDirectionsLinks(placering, (await page.getByRole("heading", { level: 1 }).textContent())!.trim());
     await expectNoHorizontalScroll(page);
 
     // Egne anmeldelser er markeret som verificerede og vises adskilt fra Trustpilot. Markøren ovenfor kan høre til en
@@ -246,6 +270,8 @@ test.describe("forhåndsvisning af klinikkens profil", () => {
       // Samme rækkefølge som appen (Placering kun med en kendt placering), og intet appen ikke viser.
       const headings = await preview.getByRole("heading", { level: 2 }).allTextContents();
       expect(headings).toEqual(APP_ORDER.filter((h) => h !== "Placering" || headings.includes("Placering")));
+      // Placeringen (postnummerets midtpunkt; "Testvej" findes ikke i det falske adresseopslag) har vejvisning.
+      if (headings.includes("Placering")) await expectDirectionsLinks(preview.locator("section[aria-labelledby='placering']"), own.name);
       await expect(preview.getByRole("heading", { name: "Tandlæger" })).toHaveCount(0);
       await expect(preview.getByRole("heading", { name: "Ledige tider" })).toHaveCount(0);
       if ((own.page.viewportSize()?.width ?? 1280) <= 390) await expectNoHorizontalScroll(own.page);

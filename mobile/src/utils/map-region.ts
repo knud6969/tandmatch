@@ -1,5 +1,6 @@
 import { MAX_RADIUS_KM, MIN_RADIUS_KM } from "@/lib/clinics/constants/clinics";
 import type { ClinicListDto, ClinicListItemDto } from "@/lib/clinics/types/clinics";
+import { appleMapsDirectionsUrl } from "@/lib/clinics/domain/directions";
 
 // Grænserne ligger i lib, så rodens API-test kan læse clinic-filters.ts; genudstilles her for appens skærme.
 export { MAX_RADIUS_KM, MIN_RADIUS_KM };
@@ -55,10 +56,9 @@ export function regionForClinic(location: LatLng): MapRegion {
   return { latitude: location.lat, longitude: location.lng, latitudeDelta: 0.012, longitudeDelta: 0.012 };
 }
 
-// Vejvisning i telefonens kortapp (Apple Maps på iOS). Adressen følger med som navn.
-export function directionsUrl(location: LatLng, name: string): string {
-  return `https://maps.apple.com/?daddr=${location.lat},${location.lng}&dirflg=d&q=${encodeURIComponent(name)}`;
-}
+// Vejvisning i telefonens kortapp (Apple Maps på iOS). Klinikkens navn følger med. Samme URL-bygger som webprofilens link
+// "Vejvisning i Apple Maps" (lib/clinics/domain/directions.ts, clinics 6.3).
+export const directionsUrl: (location: LatLng, name: string) => string = appleMapsDirectionsUrl;
 
 // Radius på kortet: 1 til 50 km i hele kilometer.
 
