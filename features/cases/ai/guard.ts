@@ -30,9 +30,9 @@ import { SUMMARY_RETRY_REMINDER } from "./prompts/summary.v2";
 import type { AiRules } from "./rules";
 import { chatTurnSchema, summaryModelSchema } from "./schemas";
 
-export const MAX_AI_ATTEMPTS = 2;
+const MAX_AI_ATTEMPTS = 2;
 // Højst så mange forslag i en chat-tur (prompten beder om det samme). Overskydende kasseres, de mest relevante står først.
-export const MAX_CHAT_SUGGESTIONS = 3;
+const MAX_CHAT_SUGGESTIONS = 3;
 
 // Kaldes med null ved første forsøg og med en påmindelse ved andet forsøg.
 export type ModelCall = (retryReminder: string | null) => Promise<unknown>;

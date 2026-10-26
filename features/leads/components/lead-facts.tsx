@@ -7,17 +7,17 @@ import { LEAD_STATUS_TONE } from "@/features/leads/utils/lead-status";
 
 // Fælles for indbakkens rækker og lead-kortet: det klinikken skal bruge for at vurdere en henvendelse. Ingen patientidentitet.
 
-export function leadAreaText(lead: Pick<ClinicLeadListItemDto, "area">): string | null {
+function leadAreaText(lead: Pick<ClinicLeadListItemDto, "area">): string | null {
   const text = [lead.area.postalCode, lead.area.city].filter(Boolean).join(" ");
   return text === "" ? null : text;
 }
 
-export function leadDistanceText(lead: Pick<ClinicLeadListItemDto, "distanceKm">): string | null {
+function leadDistanceText(lead: Pick<ClinicLeadListItemDto, "distanceKm">): string | null {
   return lead.distanceKm === null ? null : formatKm(lead.distanceKm);
 }
 
 // Den rene tid: akut-leads har en konkret ønsket tid; øvrige har et tidsrum.
-export function leadTimeText(lead: Pick<ClinicLeadListItemDto, "requestedStartsAt" | "preferredTimeframe">): string | null {
+function leadTimeText(lead: Pick<ClinicLeadListItemDto, "requestedStartsAt" | "preferredTimeframe">): string | null {
   if (lead.requestedStartsAt) return `Ønsker tid ${formatShortDateTime(lead.requestedStartsAt)}`;
   return lead.preferredTimeframe ? CASE_TIMEFRAME_LABEL[lead.preferredTimeframe] : null;
 }
@@ -27,7 +27,7 @@ export function leadImagesText(count: number): string | null {
   return formatCount(count, "billede", "billeder");
 }
 
-export function leadListPriceText(lead: Pick<ClinicLeadListItemDto, "listPrice">): string | null {
+function leadListPriceText(lead: Pick<ClinicLeadListItemDto, "listPrice">): string | null {
   return lead.listPrice ? `Listepris ${formatPriceRange(lead.listPrice.min, lead.listPrice.max)}` : null;
 }
 
@@ -44,11 +44,11 @@ export function leadFactLine(lead: ClinicLeadListItemDto, extra: (string | null)
 }
 
 // "Ikke åbnet" = klinikken har ikke åbnet leadet endnu.
-export function isUnopenedLead(lead: Pick<ClinicLeadListItemDto, "seenAt" | "status">): boolean {
+function isUnopenedLead(lead: Pick<ClinicLeadListItemDto, "seenAt" | "status">): boolean {
   return lead.seenAt === null && lead.status !== "withdrawn";
 }
 
-export function UnopenedDot() {
+function UnopenedDot() {
   return (
     <span className="inline-flex items-center" data-testid="ikke-aabnet">
       <span aria-hidden="true" className="size-2.5 rounded-full bg-brand-600" />
@@ -57,7 +57,7 @@ export function UnopenedDot() {
   );
 }
 
-export function DeadlineBadge({ holdExpiresAt }: { holdExpiresAt: string | null }) {
+function DeadlineBadge({ holdExpiresAt }: { holdExpiresAt: string | null }) {
   const text = leadDeadlineText(holdExpiresAt);
   if (!text) return null;
   return (

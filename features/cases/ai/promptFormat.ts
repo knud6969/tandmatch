@@ -18,7 +18,7 @@ export function wrapPatientInput(text: string): string {
 }
 
 // Tidligere svar fra assistenten sendes som data og escapes, så en ændret række ikke kan indsætte instruktioner.
-export function wrapAssistantText(text: string): string {
+function wrapAssistantText(text: string): string {
   return `<assistant_text>\n${escapeForPrompt(text)}\n</assistant_text>`;
 }
 

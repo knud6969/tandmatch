@@ -70,7 +70,7 @@ export function serviceSelectionSection(): string {
 
 // BILLEDTUR (7.9c): patienten har lige uploadet billeder og har ikke skrevet noget. Teksten er kun et afsnit i prompten;
 // den system-genererede besked, der udløser turen, står i aiChatService.ts.
-export function imageTurnSection(): string {
+function imageTurnSection(): string {
   return [
     "BILLEDTUR: Hvis den sidste besked fortæller, at patienten lige har uploadet nye billeder (og ikke har skrevet noget), er det en billedtur. Så gælder:",
     "- Kvittér kort i reply (1-2 sætninger): sig, at du har set billedet, og brug det til at stille ÉT relevant spørgsmål (med hurtigsvar) eller, hvis du allerede har nok, til at gentage eller opdatere forslagene som ellers. Beskriv kun, hvad der er synligt (fx hvilket område), aldrig hvad det kan skyldes, ingen diagnoseord, ingen alvorsvurdering. Ingen priser og ingen klinikker.",
@@ -79,7 +79,7 @@ export function imageTurnSection(): string {
   ].join("\n");
 }
 
-export function emergencySection(rules: AiRules): string {
+function emergencySection(rules: AiRules): string {
   const def =
     "AKUT er KUN reelt akutte tegn: hævelse i ansigt, kind eller hals, feber sammen med hævelse, besvær med at trække vejret eller synke, kraftig blødning der ikke stopper, traume eller en tand slået ud eller knækket efter slag, eller ulidelige smerter, som smertestillende ikke dæmper. " +
     "Mild tandpine, \"ondt i en tand\", \"lidt ondt\", følsomhed for koldt eller varmt og \"lidt hævet tandkød\" er IKKE akut: sæt emergency til false og spørg ind som normalt. Sæt kun emergency til true, når patienten selv skriver om et af de reelt akutte tegn.";

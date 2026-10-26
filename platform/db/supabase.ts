@@ -5,8 +5,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { MOBILE_CLIENT_HEADER, MOBILE_CLIENT_VALUE } from "@/lib/identity/constants/sessions";
 import { AUTH_COOKIE_OPTIONS, getSupabaseConfig } from "@/platform/db/config";
 
-export { AUTH_COOKIE_OPTIONS, getSupabaseConfig };
-
 export type AuthTransport = "cookie" | "bearer";
 
 // Klienten for ét kald og hvordan sessionen blev fundet (architecture 2.4).
@@ -15,7 +13,7 @@ export type AuthTransport = "cookie" | "bearer";
 export type RequestClient = { supabase: SupabaseClient; transport: AuthTransport; accessToken: string | null };
 
 // Læser et bearer-token fra Authorization. Returnerer null uden header og "" ved en header i forkert format.
-export function parseBearer(authorization: string | null): string | null {
+function parseBearer(authorization: string | null): string | null {
   if (authorization === null) return null;
   const match = /^Bearer ([^\s]+)$/i.exec(authorization.trim());
   return match ? match[1] : "";
@@ -32,7 +30,7 @@ export function createSupabaseStatelessClient(accessToken?: string): SupabaseCli
 }
 
 // Server-klient med brugerens JWT fra cookies. Al databaseadgang går gennem den, så RLS gælder.
-export async function createSupabaseServerClient() {
+async function createSupabaseServerClient() {
   const { url, anonKey } = getSupabaseConfig();
   const cookieStore = await cookies();
 

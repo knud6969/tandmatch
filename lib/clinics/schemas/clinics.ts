@@ -273,7 +273,7 @@ export const servicesParamSchema = z.preprocess(
 );
 
 // `?ids=uuid,uuid`: højst 3 klinikker (afsendelsessiden henter kun de valgte).
-export const clinicIdsParamSchema = z.preprocess(
+const clinicIdsParamSchema = z.preprocess(
   (value) => (typeof value === "string" ? value.split(",").map((id) => id.trim()).filter((id) => id !== "") : value),
   z
     .array(z.uuid("Ugyldigt klinik-id."))

@@ -8,13 +8,13 @@ import {
 } from "@/lib/clinics/schemas/clinics";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 
-export const emailSchema = z
+const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
   .pipe(z.email("Angiv en gyldig e-mailadresse.").max(254, "E-mailadressen er for lang."));
 
-export const passwordSchema = z
+const passwordSchema = z
   .string()
   .min(8, "Adgangskoden skal være mindst 8 tegn.")
   .max(72, "Adgangskoden må højst være 72 tegn.");
