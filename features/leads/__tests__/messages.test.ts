@@ -221,3 +221,19 @@ describe("beskedregler i lib/leads/domain/messages.ts", async () => {
     expect([...third.cache.keys()]).toEqual(["i1"]);
   });
 });
+
+// Security (beskedbilleder H1): en lead-id med store bogstaver i URL'en må ikke give en storage-sti, der afviger fra
+// databasens (uuid::text er altid små bogstaver), ellers ligger filen uden for sletningens præfiks.
+describe("beskedbilleders sti og id med store bogstaver", async () => {
+  const { MessageImageStorage } = await import("@/features/leads/messageImageStorage");
+  const { parseId } = await import("@/platform/middleware/http");
+  const upper = "8F14E45F-CEEA-467A-9AF4-6C3B2B7E1A2D";
+
+  it("parseId normaliserer til små bogstaver", () => {
+    expect(parseId(upper)).toBe(upper.toLowerCase());
+  });
+
+  it("stien bruger altid små bogstaver", () => {
+    expect(MessageImageStorage.pathFor(upper, upper)).toBe(`messages/${upper.toLowerCase()}/${upper.toLowerCase()}.jpg`);
+  });
+});

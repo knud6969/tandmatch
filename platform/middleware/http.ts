@@ -210,11 +210,13 @@ export async function readImageForm<T>(
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 // Ugyldigt id og manglende id giver 404 (architecture 2.4: vi skelner ikke, for ikke at lække eksistens).
+// Id'et returneres med små bogstaver som Postgres' uuid::text, så storage-stier bygget af det altid matcher stierne i
+// databasen (ellers ville fx messages/{LEAD}/… ligge uden for sletningens præfiks; security, beskedbilleder H1).
 export function parseId(value: string): string {
   if (!UUID_RE.test(value)) {
     throw notFound();
   }
-  return value;
+  return value.toLowerCase();
 }
 
 // Fælles fejl (architecture 2.4). Brug disse i stedet for at bygge ApiError med samme tekst igen.

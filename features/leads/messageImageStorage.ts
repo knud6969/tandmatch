@@ -7,12 +7,14 @@ import { BaseStorage } from "@/platform/base/baseStorage";
 export class MessageImageStorage extends BaseStorage {
   protected readonly bucket = "case-images";
 
+  // Små bogstaver som uuid::text i databasen: send_message_with_images() bygger stien selv af lead- og billed-id'et, så en
+  // sti med store bogstaver ville efterlade filen uden for sletningen (kontosletning, tilbagetrukket samtykke).
   static pathFor(leadId: string, imageId: string): string {
-    return `messages/${leadId}/${imageId}.jpg`;
+    return `messages/${leadId.toLowerCase()}/${imageId.toLowerCase()}.jpg`;
   }
 
   // Sletter alle billeder i en tråd (kontosletning).
   removeLead(leadId: string): Promise<void> {
-    return this.removePrefix(`messages/${leadId}`);
+    return this.removePrefix(`messages/${leadId.toLowerCase()}`);
   }
 }
