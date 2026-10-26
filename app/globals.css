@@ -114,3 +114,20 @@
   font-size: 0.75rem;
   color: var(--color-ink);
 }
+/* Udgangspunkt og afstandsgrænse som i appen (clinics 6.6). CSS vinder over Leaflets SVG-attributter. */
+.leaflet-container path.map-radius {
+  stroke: var(--color-brand-200);
+  fill: var(--color-brand-600);
+  fill-opacity: 0.06;
+}
+.leaflet-container path.map-origin {
+  stroke: var(--color-on-brand);
+  fill: var(--color-brand-700);
+  fill-opacity: 1;
+}
+.leaflet-container .leaflet-bar.leaflet-control-zoom {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}

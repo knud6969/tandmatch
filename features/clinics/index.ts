@@ -3,6 +3,7 @@
 export * from "./availabilityRepository";
 export * from "./availabilityService";
 export * from "./clinicDirectoryRepository";
+export * from "./clinicLocationService";
 export * from "./clinicsRepository";
 export * from "./publicMediaStorage";
 export * from "./servicesRepository";

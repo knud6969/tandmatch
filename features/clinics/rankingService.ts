@@ -1,13 +1,14 @@
 import { CLINIC_SORT_LABEL, EMERGENCY_FILTER_HOURS } from "@/lib/clinics/constants/clinics";
 import type { ClinicListItemDto, ClinicPriceDto, ClinicSort } from "@/lib/clinics/types/clinics";
 import type { PriceRange } from "@/lib/common/types/common";
+import { haversineKm, type LatLng } from "@/lib/clinics/domain/location";
 
 // Rangering og filtrering af klinikker efter faste, synlige kriterier (architecture 6.6). Ren kode uden I/O: ingen
 // models, ingen Supabase, ingen AI. Klinikkerne er allerede bygget som ClinicListItemDto (afstand, pris for valget og
 // første ledige tid er sat af controlleren), så servicen kun sorterer og filtrerer. Alle værdier uden for kriteriet
 // ("null") sorteres sidst, og ved lighed afgør navnet.
 
-export type LatLng = { lat: number; lng: number };
+export type { LatLng };
 
 export type RankingFilters = {
   maxDistanceKm?: number; // sættes kun, når patienten har en position; klinikker uden afstand falder så fra
@@ -20,10 +21,6 @@ export type RankingFilters = {
 
 export type RankingOptions = { sort: ClinicSort; filters?: RankingFilters };
 
-const EARTH_RADIUS_KM = 6371;
-
-const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
 type Direction = "asc" | "desc";
 type SortKey = { value: (clinic: ClinicListItemDto) => number | null; direction: Direction };
 
@@ -35,12 +32,7 @@ export class RankingService {
 
   // Afstand i km (Haversine), afrundet til én decimal.
   distanceKm(from: LatLng, to: LatLng): number {
-    const dLat = toRadians(to.lat - from.lat);
-    const dLng = toRadians(to.lng - from.lng);
-    const a =
-      Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(dLng / 2) ** 2;
-    const km = 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
-    return Math.round(km * 10) / 10;
+    return Math.round(haversineKm(from, to) * 10) / 10;
   }
 
   // Summen af priserne for de valgte ydelser. Kun verificerede klinikker (niveau "fuld") med pris for ALLE valgte

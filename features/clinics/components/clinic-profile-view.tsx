@@ -12,6 +12,7 @@ import { LoadState } from "@/components/ui/load-state";
 import { AvailabilitySlots } from "@/features/clinics/components/availability-slots";
 import { ClinicMapLazy } from "@/features/clinics/components/clinic-map-loader";
 import { ClinicWhere } from "@/features/clinics/components/clinic-facts";
+import { DirectionsLinks } from "@/features/clinics/components/directions-links";
 import { DentistPortfolio } from "@/features/clinics/components/dentist-portfolio";
 import { ExternalLink } from "@/features/clinics/components/external-link";
 import { OpeningHours } from "@/features/clinics/components/opening-hours";
@@ -176,10 +177,11 @@ export function ClinicProfileContent({
 
       {clinic.location && (
         <Section id="placering" title="Placering">
-          <div role="region" aria-label={`Kort over ${clinic.name}`} className="isolate h-72 overflow-hidden rounded-card border border-line">
-            <ClinicMapLazy clinics={[clinic]} hasServices={false} emergency={false} popups={false} />
+          <div role="region" aria-label={`Kort over ${clinic.name}`} className="isolate h-48 overflow-hidden rounded-card border border-line sm:h-64">
+            <ClinicMapLazy clinics={[clinic]} hasServices={false} emergency={false} variant="profile" />
           </div>
           <ClinicWhere clinic={clinic} />
+          <DirectionsLinks name={clinic.name} location={clinic.location} />
         </Section>
       )}
 

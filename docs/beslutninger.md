@@ -25,7 +25,8 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 | Signerede billed-URL'er til klinikken indeholder `case_id` i stien (security trin 5, M1) | Ingen patientidentitet; enkel lagring | Sti uden sags-id med opslag i `case_images` (4.4, 9.2) |
 | Patienten kan sætte `read_at` på klinikkens beskeder til en vilkårlig værdi (security trin 5, L2) | Påvirker kun visningen | Funktion i stedet for direkte update |
 | Ingen IP-grænse på klinikkens GET-routes for leads og beskeder (security trin 5, L3) | Polling hvert 15. sekund; ingen datalæk | Rate limit pr. bruger på GET |
-| Kortfliser hentes fra OpenStreetMaps offentlige server | Gratis og enkelt | Egen eller betalt fliseudbyder (OSM's brugspolitik) |
+| Kortet bruger OpenFreeMaps offentlige vektorfliser (stilen positron) uden aftale | Gratis, ingen nøgle, pænere end OSM-rasterfliser (CARTO kræver nu nøgle) | Selvhostet OpenFreeMap eller fliseudbyder med aftale (clinics 6.6) |
+| Klinikadresser slås op med OpenStreetMap Nominatims offentlige server (højst 1 kald/s, kun ved oprettelse og adresseændring) | Gratis og uden nøgle; DAWA er lukket | Datafordeleren (DAR) eller betalt geokodning (clinics 4.3) |
 | Brugervilkår, privatlivspolitik og samtykketekster er pladsholdere (`v0-prototype`, delingssamtykket `v1-klinikker`) | Juridisk tekst ikke skrevet | Skrevne og gennemgåede tekster (12.4) |
 | Sletning af en patientkonto sletter også patientens leads, kommende bookinger og anmeldelser hos klinikkerne (cascade) | Enkel og fuldstændig sletning | Aflysning af kommende tider og anonymisering af anmeldelser (12.3 punkt 35) |
 | Akutteksterne nævner kun Akuttelefonen 1813, som gælder i Region Hovedstaden; for andre regioner står der "lægevagten i din region" uden nummer (`lib/leads/constants/emergency.ts`, 6.1) | Demoen foregår i Storkøbenhavn | Nummer pr. region ud fra patientens postnummer, gennemgået af en fagperson (12.3 punkt 36) |
@@ -205,7 +206,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 10. *Afklaret:* klinikken ser både telefon og e-mail efter booking (4.4). Oprettede, men ikke verificerede klinikker er usynlige offentligt (ændret ved securitygennemgangen af trin 1, H1; 3, 5.1).
 11. **Porteføljebilleder:** krav til samtykket (skriftligt, opbevares af klinikken), og må billeder vise ansigt?
 12. **Standardsortering:** afstand med position, ellers første ledige tid. Ønsker gruppen en anden standard?
-13. **Præcis geokodning** af klinikadresser (i dag postnummerets centrum, hvis importen ikke har koordinater).
+13. *Afklaret (2026-10-26):* **præcis geokodning** af klinikadresser: adressen slås op med OpenStreetMap Nominatim ved oprettelse og adresseændring; findes den ikke, bruges postnummerets midtpunkt (clinics 4.3 "Placering ud fra adressen"). Skift til Datafordeleren (DAR) senere er [UDSKUDT].
 14. *Afklaret (2026-10-18):* demoen kører **lokalt** på en bærbar som produktionsbuild (`npm run build && npm start`) mod det fælles Supabase-projekt; cron kører ikke, og det er uden betydning (effektiv status, 4.2). HSTS tjekkes i den lokale produktionsbuild med `curl -sI` (2.3). *Afklaret (2026-10-19):* appen afleveres ca. 2026-10-26 som kildekode og live demo på iPhone mod serveren på brugerens computer (13.8). **Stadig åbent:** hosting efter afleveringen.
 15. **Ønsket tidsrum:** er de fire faste valg (hurtigst muligt, inden for 2 uger, inden for 3 måneder, fleksibel) nok, eller ønskes konkrete datoer?
 16. *Afklaret:* klinikken har 24 timer efter sluttid til at markere `no_show`; først derefter er bookingen effektivt `completed`, og først derefter kan der anmeldes (4.2, 5.3, 8.1).

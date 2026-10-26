@@ -206,12 +206,15 @@ export function ClinicDirectory() {
                   hasServices={hasServices}
                   emergency={filters.emergency}
                   highlightedId={hoveredId}
+                  origin={data.origin}
+                  radiusKm={data.origin && hasOrigin(filters) ? filters.maxDistanceKm : null}
                   profileSearch={directorySearch}
                 />
               </div>
               <p className="text-sm text-ink-muted">
-                <span className="font-semibold text-brand-700">Blå markør med hak:</span> verificeret klinik.{" "}
-                <span className="font-semibold text-ink">Lille hvid markør:</span> klinik, der endnu ikke er på TandMatch.
+                <span className="font-semibold text-brand-700">Blå markør:</span> verificeret klinik.{" "}
+                <span className="font-semibold text-ink">Hvid markør med stiplet kant:</span> klinik, der endnu ikke er på TandMatch.
+                {data.origin && " Den mørkeblå prik er dit udgangspunkt, og cirklen viser den valgte afstand."}
                 {withoutLocation > 0 &&
                   ` ${withoutLocation} klinik${withoutLocation === 1 ? "" : "ker"} uden kortplacering vises kun i listen.`}
               </p>

@@ -116,6 +116,16 @@ Gennemgået `git diff main..HEAD` på `feat/klinik-web` (migrationer `2026103100
 - **Lead-routes** (`GET /api/leads`, `GET /api/leads/[id]`) svarer nu med `Cache-Control: no-store` (helbredsdata og signerede billed-URL'er).
 - **Driftskrav (Supabase-dashboard):** Site URL = produktionsdomænet; Redirect URLs kun eksakte egne adresser (ingen `*.vercel.app`-wildcards); custom SMTP (EU, med DPA); "Secure email change" til; "Secure password change" fra (serveren tjekker selv den nuværende adgangskode); nulstillingsskabelonen bør linke til `{{ .SiteURL }}/nulstil-adgangskode?token_hash={{ .TokenHash }}&type=recovery`. Sæt `SITE_URL` i produktion.
 
+## Kort, placering og vejvisning (security, 2026-10-26)
+
+Gennemgået `git diff main..HEAD` på `feat/kort-og-vejvisning` (migration `20261104000100`, lokalt `supabase db reset`).
+
+- **`set_clinic_location(lat, lng)`:** security definer med `search_path = ''`; ingen klinik-id som parameter (kun klinikken med `owner_id = auth.uid()`), kræver permanent konto, kun `authenticated` har EXECUTE; en `removed` klinik har ingen ejer og rammes ikke. Fordi en klinik kan kalde funktionen direkte med sin egen session, skal punktet ligge i Danmark **og højst 25 km fra klinikkens postnummers midtpunkt** (samme grænse i `GeocodingService`); en klinik kan altså ikke flytte sig vilkårligt i afstandssorteringen. Inden for 25 km kan en klinik stadig snyde med præcisionen [PROTOTYPE]; i drift bør placeringen komme fra DAWA/Datafordeleren på serveren uden en klient-RPC. RLS-test 58.
+- **`clinics_guard()`:** eneste ændring er, at ny adresse (ikke kun nyt postnummer) nulstiller placeringen til midtpunktet; de øvrige regler er uændrede.
+- **Nominatim:** fast host og sti, brugerinput kun som URL-encodede query-parametre (ingen SSRF); 4 s timeout, ingen gentagelser, fejl fanges, så signup og gem aldrig fejler; kun vej, postnummer og by sendes; kun fejlnavnet logges. `GEOCODING_FAKE` virker kun uden for `NODE_ENV=production`. Delt tidsplads (1 kald/s pr. proces, max 2 s ventetid).
+- **CSP:** `connect-src 'self' https://tiles.openfreemap.org`, `worker-src 'self'` (blob: fjernet; MapLibres worker ligger på egen oprindelse). Ingen tredjepartsscripts.
+- **Vejvisning:** koordinater er tal fra databasen, kliniknavnet `encodeURIComponent`-encodes, links har `rel="noopener noreferrer"`.
+
 ## Hvem har adgang
 
 - **Patient:** egne data. Kan eksportere og slette konto, sager og billeder og trække samtykker tilbage.
@@ -131,6 +141,7 @@ Gennemgået `git diff main..HEAD` på `feat/klinik-web` (migrationer `2026103100
 | Supabase | Hosting af database, Auth og filer (EU) | Databehandleraftale (DPA) skal accepteres i Supabase-kontoen før rigtige data. **[ÅBEN]** |
 | OpenAI | AI-chat og opsummering. Modtager aldrig navn, e-mail, telefon, adresse, postnummer, `patient_id` eller priser; tekst PII-maskeres; billeder re-encodes uden EXIF | DPA skal underskrives, og det skal verificeres i kontoen, at API-data ikke bruges til træning (standard), og om zero data retention kan fås. **[ÅBEN]** |
 | Hosting af Next.js | Server-routes | Ikke valgt; skal være EU-region og have DPA. **[ÅBEN]** |
+| OpenStreetMap Nominatim (adresseopslag) og OpenFreeMap (kortfliser) | Nominatim modtager kun klinikkens erhvervsadresse (vej, postnummer, by) fra serveren ved oprettelse og adresseændring; aldrig patientdata. OpenFreeMap modtager browserens fliseforespørgsler (IP-adresse og kortudsnit), som ved enhver kortvisning; ingen patientdata i forespørgslerne | Offentlige tjenester uden aftale [PROTOTYPE]; i tests slået fra (`GEOCODING_FAKE=1`). Skift til Datafordeleren og en fliseudbyder med DPA før drift. **[ÅBEN]** |
 | SMTP-udbyder (Supabase Auth-mails) | Sender nulstillings- og e-mailskift-links til klinikkernes login-e-mail | Ikke valgt; skal være EU-baseret og have DPA. **[ÅBEN]** |
 
 ## Kendte kompromiser i prototypen
