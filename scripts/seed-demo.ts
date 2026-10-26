@@ -118,8 +118,9 @@ async function removePrefix(admin: SupabaseClient, bucket: string, prefix: strin
 
 export type CleanupSummary = { users: number; clinics: number; files: number };
 
-// Sletter alle demodata. Rækkefølge: patientbrugere (cascade: sager, leads, bookinger, anmeldelser), klinikker,
-// klinikbrugere. Rækker uden for demoen røres ikke.
+// Sletter alle demodata. Rækkefølge: patientbrugere (cascade: sager, leads, bookinger, anmeldelser), leads fra andre
+// patienter til demoklinikkerne (cascade: beskeder, bookinger, anmeldelser), klinikker, klinikbrugere. Andre brugere og
+// deres sager bevares; kun deres henvendelser til demoklinikkerne forsvinder, fordi klinikkerne slettes.
 export async function cleanupDemo(admin: SupabaseClient, dryRun: boolean): Promise<CleanupSummary> {
   const users = await listDemoUsers(admin);
   const userIds = users.map((u) => u.id);
@@ -156,7 +157,14 @@ export async function cleanupDemo(admin: SupabaseClient, dryRun: boolean): Promi
     if (error) throw new Error(`deleteUser (patient): ${error.message}`);
   }
   if (clinicRows.length) {
-    mustOk(await admin.from('clinics').delete().in('id', clinicRows.map((c) => c.id)), 'delete clinics');
+    const clinicIds = clinicRows.map((c) => c.id);
+    const otherLeads = must(await admin.from('leads').select('id').in('clinic_id', clinicIds), 'leads til demoklinikker') as { id: string }[];
+    for (const l of otherLeads) summary.files += await removePrefix(admin, 'case-images', `messages/${l.id}`);
+    if (otherLeads.length) {
+      log(`Sletter ${otherLeads.length} henvendelser fra andre konti til demoklinikkerne ...`);
+      mustOk(await admin.from('leads').delete().in('id', otherLeads.map((l) => l.id)), 'delete leads til demoklinikker');
+    }
+    mustOk(await admin.from('clinics').delete().in('id', clinicIds), 'delete clinics');
   }
   for (const id of clinicUserIds) {
     const { error } = await admin.auth.admin.deleteUser(id);
