@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
-import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import type { ImageDto } from "@/lib/common/types/common";
@@ -9,23 +8,13 @@ import { ApiRequestError } from "~/api/client";
 import { deleteCaseImage, uploadCaseImage } from "~/api/images";
 import { confirmAction } from "~/components/ui";
 import { deleteLocalFiles, multipartForImage } from "~/utils/local-files";
-import { bytesFromBase64, chatImageItems, resizeFor, slotsLeft, uploadErrorText, UPLOAD_JPEG_QUALITY, UPLOAD_MAX_EDGE, withinSizeLimit, type LocalImage } from "~/utils/chat-images";
+import { chatImageItems, slotsLeft, uploadErrorText, withinSizeLimit, type LocalImage } from "~/utils/chat-images";
+import { prepareForUpload } from "~/utils/prepare-upload";
 
 export type ImageSource = "camera" | "library";
 
 const SIZE_TEXT = "Billedet er for stort. Prøv et andet billede.";
 const PERMISSION_TEXT = "TandMatch har ikke adgang. Du kan give adgang under Indstillinger på telefonen.";
-
-// Nedskalerer og komprimerer på telefonen. Genindkodningen fjerner også EXIF og lokation (billedet gemmes som nyt JPEG).
-async function prepare(asset: { uri: string; width: number; height: number }): Promise<{ uri: string; bytes: number }> {
-  const resize = resizeFor(asset.width, asset.height, UPLOAD_MAX_EDGE);
-  const result = await ImageManipulator.manipulateAsync(asset.uri, resize ? [{ resize }] : [], {
-    compress: UPLOAD_JPEG_QUALITY,
-    format: ImageManipulator.SaveFormat.JPEG,
-    base64: true, // kun for at kende filstørrelsen; teksten bruges ikke videre
-  });
-  return { uri: result.uri, bytes: bytesFromBase64(result.base64 ?? "") };
-}
 
 // Billeder i chatten (architecture 9.3, 9.4): samtykke først, derefter tag/vælg, komprimér og upload. Intet uploades uden samtykke.
 // Når en upload-batch er færdig (mindst ét billede gemt, ingen i gang), kaldes onBatchUploaded: så starter billedturen (7.9c).
@@ -106,7 +95,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
       originals.current.set(key, asset.uri);
       setLocal((current) => [...current, { key, uri: asset.uri, status: "uploading", error: null }]);
       try {
-        const file = await prepare(asset);
+        const file = await prepareForUpload(asset);
         if (!withinSizeLimit(file.bytes)) {
           prepared.current.set(key, file.uri);
           cleanup(key);

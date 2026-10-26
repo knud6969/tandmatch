@@ -463,13 +463,13 @@ describe("beskedtråd pr. lead", () => {
     assert.equal((await p.c.post(path, { body: "Spørgsmål" })).status, 201);
     const sent = await k.c.post(path, { body: "Svar" });
     assert.equal(sent.status, 201, JSON.stringify(sent.body));
-    assert.deepEqual(Object.keys(sent.body).sort(), ["body", "createdAt", "fromMe", "id", "readAt", "senderRole"]);
+    assert.deepEqual(Object.keys(sent.body).sort(), ["body", "createdAt", "fromMe", "id", "images", "readAt", "senderRole"]);
     const thread = await k.c.get(path);
     assert.equal(thread.body.messages.length, 2);
     assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.unreadMessages, 0, "læst ved GET");
     // Patientens svar fra insert har samme form og ingen sender_id
     const fromPatient = await p.c.post(path, { body: "Tak" });
-    assert.deepEqual(Object.keys(fromPatient.body).sort(), ["body", "createdAt", "fromMe", "id", "readAt", "senderRole"]);
+    assert.deepEqual(Object.keys(fromPatient.body).sort(), ["body", "createdAt", "fromMe", "id", "images", "readAt", "senderRole"]);
     assert.equal((await k.c.get(`/api/leads/${leadId}`)).body.unreadMessages, 1);
   });
 

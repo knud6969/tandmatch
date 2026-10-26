@@ -9,7 +9,11 @@ export type MessageDto = {
   id: string;
   fromMe: boolean;
   senderRole: MessageSenderRole;
-  body: string;
+  body: string; // kan være "" ved en besked med kun billeder
   createdAt: string;
   readAt: string | null;
+  images: MessageImageDto[]; // i beskedens rækkefølge; tom liste ved en ren tekstbesked
 };
+
+// Billede i en besked (10.12). `url` er signeret og lever 5 minutter (SIGNED_URL_TTL_SECONDS); bredde og højde efter genkodning.
+export type MessageImageDto = { id: string; url: string; width: number; height: number };

@@ -29,4 +29,15 @@ export class CleanupRepository extends BaseRepository<IdRow, string> {
       ),
     );
   }
+
+  // Leads på patientens sager: beskedbillederne ligger under messages/{lead_id}/ (features/leads/README.md 10.12).
+  async listLeadIdsForCases(caseIds: readonly string[]): Promise<string[]> {
+    if (caseIds.length === 0) return [];
+    return this.toDtos(
+      await this.runList<IdRow>(
+        this.db.from("leads").select("id").in("case_id", [...caseIds]),
+        "leads: kunne ikke læses til oprydning",
+      ),
+    );
+  }
 }

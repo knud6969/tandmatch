@@ -11,6 +11,12 @@ const PHONE = "12 34 56 78";
 const REVIEW_TEXT = "Rolig og professionel behandling, og vi fik god forklaring undervejs.";
 const POLL_TIMEOUT = 30_000;
 
+// Et lille, ægte JPEG-billede til vedhæftning (64 x 64 px).
+async function testJpeg(): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
+  return sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 200, g: 60, b: 60 } } }).jpeg().toBuffer();
+}
+
 async function bookableClinic(browser: Browser, testInfo: TestInfo, label: string, emergency = false): Promise<ClinicHandle> {
   const clinic = await verifiedClinic(browser, testInfo, label);
   addListPrice(clinic.id);
@@ -85,6 +91,43 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       expect(reply.status, JSON.stringify(reply.body)).toBe(201);
       await expect(x.page.getByTestId("besked")).toHaveCount(2, { timeout: POLL_TIMEOUT });
       await expect(x.page.getByTestId("besked").nth(1)).toContainText("Ja, for et halvt år siden.");
+
+      // Billeder begge veje (10.12): klinikken vedhæfter et billede med forhåndsvisning; patienten (appen) ser det.
+      const jpeg = await testJpeg();
+      await x.page.getByTestId("vedhaeft-input").setInputFiles({ name: "eksempel.jpg", mimeType: "image/jpeg", buffer: jpeg });
+      await expect(x.page.getByTestId("vedhaeftede-billeder").getByRole("img")).toHaveCount(1);
+      await expect(x.page.getByRole("button", { name: "Vedhæft billeder (1/3)" })).toBeVisible();
+      await expectNoHorizontalScroll(x.page);
+      await x.page.getByRole("button", { name: "Send besked" }).click();
+      await expect(x.page.getByTestId("besked")).toHaveCount(3);
+      await expect(x.page.getByTestId("besked").nth(2).getByTestId("besked-billede")).toHaveCount(1);
+      await expect(x.page.getByTestId("vedhaeftede-billeder")).toHaveCount(0);
+      const withImage = await patient.get(`/api/leads/${leadId}/messages`);
+      expect(withImage.body.messages[2]).toMatchObject({ senderRole: "clinic", body: "", images: [{ width: 64, height: 64 }] });
+      expect((await fetch(withImage.body.messages[2].images[0].url)).status).toBe(200);
+
+      // Patienten giver billedsamtykke og sender to billeder fra appen; klinikken ser miniaturerne og åbner et stort.
+      const imageConsent = await patient.post("/api/consents", { type: "image_upload", textVersion: "image_upload@v1-ai-disclosure" });
+      expect(imageConsent.status, JSON.stringify(imageConsent.body)).toBe(201);
+      const imageForm = new FormData();
+      imageForm.set("body", "Her kan I se det.");
+      for (let i = 0; i < 2; i += 1) imageForm.append("file", new Blob([new Uint8Array(jpeg)], { type: "image/jpeg" }), `billede-${i + 1}.jpg`);
+      const sentImages = await patient.postForm(`/api/leads/${leadId}/messages`, imageForm);
+      expect(sentImages.status, JSON.stringify(sentImages.body)).toBe(201);
+      await expect(x.page.getByTestId("besked")).toHaveCount(4, { timeout: POLL_TIMEOUT });
+      const patientMessage = x.page.getByTestId("besked").nth(3);
+      await expect(patientMessage).toContainText("Her kan I se det.");
+      await expect(patientMessage.getByTestId("besked-billede")).toHaveCount(2);
+      await patientMessage.getByTestId("besked-billede").first().click();
+      const lightbox = x.page.getByTestId("billede-lightbox");
+      await expect(lightbox).toBeVisible();
+      await expect(lightbox.getByRole("img")).toHaveJSProperty("complete", true);
+      await lightbox.getByRole("button", { name: "Næste" }).click();
+      await lightbox.getByRole("button", { name: "Luk" }).click();
+      await expect(lightbox).toBeHidden();
+      await expectNoHorizontalScroll(x.page);
+      // Klinik Y kan hverken læse tråden eller billederne.
+      expect([403, 404]).toContain((await y.page.request.get(`/api/leads/${leadId}/messages`)).status());
 
       // Booking som appen: ledige tider, derefter booking med navn og telefon.
       const serviceId = await patient.serviceId("blegning");

@@ -1,35 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ClinicLeadDetailDto } from "@/lib/leads/types/leads";
-import { Button } from "@/components/ui/button";
+import { ImageLightbox } from "@/features/leads/components/image-lightbox";
 
 type LeadImage = ClinicLeadDetailDto["images"][number];
 
 const altText = (image: LeadImage, index: number) => image.approvedDescription ?? `Billede ${index + 1} fra patienten`;
 
 // Patientens billeder på lead-kortet (features/clinics/README.md 6.3): én vandret række af miniaturer. Et tryk åbner billedet
-// stort i en native <dialog> (fokus flyttes ind, Esc og "Luk" lukker, fokus vender tilbage til miniaturen). Den signerede URL
-// kan også åbnes i en ny fane.
+// stort i lightboxen (image-lightbox.tsx); fokus vender tilbage til miniaturen, når den lukkes.
 export function LeadImages({ images }: { images: LeadImage[] }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (openIndex !== null && !dialog.open) dialog.showModal();
-    if (openIndex === null && dialog.open) dialog.close();
-  }, [openIndex]);
-
-  function onClose() {
-    const index = openIndex;
+  function onClose(index: number | null) {
     setOpenIndex(null);
     if (index !== null) triggerRefs.current[index]?.focus();
   }
-
-  const current = openIndex !== null ? images[openIndex] : null;
 
   return (
     <section aria-labelledby="billeder" className="flex flex-col gap-2">
@@ -55,44 +43,12 @@ export function LeadImages({ images }: { images: LeadImage[] }) {
         ))}
       </ul>
 
-      <dialog
-        ref={dialogRef}
+      <ImageLightbox
+        images={images.map((image, index) => ({ id: image.id, url: image.url, alt: altText(image, index), description: image.approvedDescription }))}
+        openIndex={openIndex}
+        onChange={setOpenIndex}
         onClose={onClose}
-        onClick={(event) => {
-          // Klik på baggrunden (selve dialog-elementet uden for indholdet) lukker.
-          if (event.target === dialogRef.current) dialogRef.current?.close();
-        }}
-        aria-label={current ? altText(current, openIndex ?? 0) : "Billede"}
-        className="m-auto max-h-[95dvh] w-[min(64rem,95vw)] rounded-card bg-surface p-0 text-ink shadow-raised backdrop:bg-black/70"
-      >
-        {current && openIndex !== null && (
-          <div className="flex flex-col gap-3 p-3 sm:p-4">
-            {/* eslint-disable-next-line @next/next/no-img-element -- Signeret URL fra storage. */}
-            <img src={current.url} alt={altText(current, openIndex)} className="max-h-[75dvh] w-full rounded-control object-contain" />
-            {current.approvedDescription && <p className="text-sm text-ink-muted">{current.approvedDescription}</p>}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <a href={current.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-700">
-                Åbn i ny fane
-              </a>
-              <div className="flex gap-2">
-                {images.length > 1 && (
-                  <>
-                    <Button variant="secondary" onClick={() => setOpenIndex((openIndex + images.length - 1) % images.length)}>
-                      Forrige
-                    </Button>
-                    <Button variant="secondary" onClick={() => setOpenIndex((openIndex + 1) % images.length)}>
-                      Næste
-                    </Button>
-                  </>
-                )}
-                <Button onClick={() => dialogRef.current?.close()} autoFocus>
-                  Luk
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </dialog>
+      />
     </section>
   );
 }

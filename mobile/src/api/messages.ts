@@ -14,3 +14,9 @@ export async function listMessages(leadId: string): Promise<MessageDto[]> {
 export function sendMessage(leadId: string, input: z.infer<typeof sendMessageSchema>): Promise<MessageDto> {
   return apiRequest<MessageDto>(`/api/leads/${encodeURIComponent(leadId)}/messages`, { method: "POST", json: input });
 }
+
+// Besked med 1-3 billeder og valgfri tekst (10.12). Kroppen er færdigbygget multipart som bytes (kendt længde), fordi
+// expo/fetch ikke understøtter { uri }-FormData. 403 CONSENT_REQUIRED, hvis billedsamtykket mangler.
+export function sendMessageWithImages(leadId: string, multipart: { body: Uint8Array; contentType: string }): Promise<MessageDto> {
+  return apiRequest<MessageDto>(`/api/leads/${encodeURIComponent(leadId)}/messages`, { method: "POST", rawBody: multipart });
+}

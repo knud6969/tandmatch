@@ -51,7 +51,7 @@ beforeEach(async () => {
 
 const UUID = "11111111-1111-4111-8111-111111111111";
 const clinic = { id: "k", name: "K", city: "By", logoUrl: null, removed: false };
-const msg = (id: string, createdAt: string, fromMe = true): MessageDto => ({ id, fromMe, senderRole: fromMe ? "patient" : "clinic", body: id, createdAt, readAt: null });
+const msg = (id: string, createdAt: string, fromMe = true): MessageDto => ({ id, fromMe, senderRole: fromMe ? "patient" : "clinic", body: id, createdAt, readAt: null, images: [] });
 
 describe("10.3 anmeldelse", () => {
   const valid = { ...EMPTY_REVIEW, stars: 4, text: "Rolig modtagelse og klar information.", priceAccuracy: "as_quoted" as const };
