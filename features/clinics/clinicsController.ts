@@ -15,6 +15,7 @@ import { ApiError } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/features/clinics/availabilityRepository";
 import { ClinicDentistsRepository } from "@/features/clinics/clinicDentistsRepository";
+import { ClinicLocationService } from "@/features/clinics/clinicLocationService";
 import { ClinicsRepository } from "@/features/clinics/clinicsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/features/clinics/portfolioRepository";
@@ -38,6 +39,7 @@ export type ClinicsDeps = {
   portfolio: PortfolioRepository;
   services: ServicesRepository;
   images: ImageProcessingService;
+  location: ClinicLocationService;
   admin: () => SupabaseClient;
 };
 
@@ -50,6 +52,7 @@ export class ClinicsController {
   private readonly portfolio: PortfolioRepository;
   private readonly services: ServicesRepository;
   private readonly images: ImageProcessingService;
+  private readonly location: ClinicLocationService;
   // Service role-klienten (architecture 2.3, 2.1.1). Gives kun videre til public-media, logo-stien og kontosletningen.
   private readonly admin: () => SupabaseClient;
 
@@ -64,6 +67,7 @@ export class ClinicsController {
     this.portfolio = deps.portfolio ?? new PortfolioRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.images = deps.images ?? new ImageProcessingService();
+    this.location = deps.location ?? new ClinicLocationService(this.clinics);
     this.admin = deps.admin ?? lazyAdminClient();
   }
 
@@ -133,7 +137,10 @@ export class ClinicsController {
       throw new ApiError(400, "TRUSTPILOT_URL_REQUIRED", "Angiv linket til din Trustpilot-side sammen med scoren.");
     }
     const updated = await this.clinics.update(current.id, input);
-    return this.buildProfile(updated);
+    // Ny adresse eller nyt postnummer: rækken har nu postnummerets midtpunkt (clinics_guard), og adressen slås op
+    // (clinics 4.3). Opslaget kan ikke få gemningen til at fejle.
+    const moved = updated.address !== current.address || updated.postalCode !== current.postalCode;
+    return this.buildProfile(moved ? await this.location.locate(updated) : updated);
   }
 
   // Sletter kontoen (architecture 10.8). Bekræftelsen ("SLET") er valideret i routen. En selvoprettet klinik bliver

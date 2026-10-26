@@ -6,6 +6,7 @@ import { ApiError, clinicNotVerified } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
 import { trustpilotFromColumns } from "@/platform/db/mappers";
+import type { LatLng } from "@/lib/clinics/domain/location";
 
 type ClinicPatch = z.infer<typeof patchClinicSchema>;
 
@@ -90,7 +91,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
   }
 
   // Opdaterer de felter, der er sendt. Klinikken kan kun ændre kolonnerne i kolonne-grants; triggeren
-  // clinics_guard() sætter placering ud fra postnummeret og trustpilot_entered_by = 'clinic'.
+  // clinics_guard() sætter postnummerets midtpunkt ved ny adresse eller nyt postnummer og trustpilot_entered_by = 'clinic'.
   async update(clinicId: string, patch: ClinicPatch): Promise<ClinicRecordDto> {
     const row = await this.patchRow(
       patch,
@@ -133,6 +134,12 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
     );
     this.requireRow(row);
     return version;
+  }
+
+  // Gemmer placeringen fundet ud fra adressen på brugerens egen klinik (set_clinic_location, kun i Danmark; clinics 4.3).
+  // lat/lng er ikke i kolonne-grants, så det sker altid via funktionen.
+  async setOwnLocation(location: LatLng): Promise<void> {
+    await this.rpc("set_clinic_location", { p_lat: location.lat, p_lng: location.lng });
   }
 
   // De valgte kategorier (kun ejeren kan læse dem, RLS).

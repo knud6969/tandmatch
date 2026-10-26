@@ -9,7 +9,7 @@ import type { AuthResult } from "@/features/identity/authRepository";
 import type { TermsPayload } from "@/platform/middleware/termsCookie";
 import { AuthRepository } from "@/features/identity/authRepository";
 import { PatientsRepository } from "@/features/identity/patientsRepository";
-import { ClinicsRepository } from "@/features/clinics";
+import { ClinicLocationService, ClinicsRepository } from "@/features/clinics";
 import { ProfilesRepository } from "@/features/identity/profilesRepository";
 import { TermsRepository } from "@/features/identity/termsRepository";
 
@@ -22,6 +22,7 @@ export type AuthDeps = {
   auth: AuthRepository;
   profiles: ProfilesRepository;
   clinics: ClinicsRepository;
+  clinicLocation: ClinicLocationService;
   patients: PatientsRepository;
   terms: TermsRepository;
 };
@@ -30,6 +31,7 @@ export class AuthController {
   private readonly auth: AuthRepository;
   private readonly profiles: ProfilesRepository;
   private readonly clinics: ClinicsRepository;
+  private readonly clinicLocation: ClinicLocationService;
   private readonly patients: PatientsRepository;
   private readonly terms: TermsRepository;
 
@@ -41,6 +43,7 @@ export class AuthController {
     this.auth = deps.auth ?? new AuthRepository(supabase);
     this.profiles = deps.profiles ?? new ProfilesRepository(supabase);
     this.clinics = deps.clinics ?? new ClinicsRepository(supabase);
+    this.clinicLocation = deps.clinicLocation ?? new ClinicLocationService(this.clinics);
     this.patients = deps.patients ?? new PatientsRepository(supabase);
     this.terms = deps.terms ?? new TermsRepository(supabase);
   }
@@ -98,7 +101,21 @@ export class AuthController {
     if (terms) {
       await this.terms.upsertAcceptance(created.userId, terms);
     }
+    if (input.role === "clinic") {
+      await this.locateClinic(created.userId);
+    }
     return this.result(created, input.role, mobile);
+  }
+
+  // Ny klinik: triggeren har sat postnummerets midtpunkt; nu slås adressen op med den nye sessions klient, og et fund
+  // gemmes (clinics 4.3). Kontoen er oprettet, så intet her må få signup til at fejle.
+  private async locateClinic(userId: string): Promise<void> {
+    try {
+      const clinic = await this.clinics.findOwn(userId);
+      if (clinic) await this.clinicLocation.locate(clinic);
+    } catch (error) {
+      console.warn(`Klinikkens placering blev ikke slået op (${error instanceof Error ? error.name : "ukendt fejl"}).`);
+    }
   }
 
   // Metadata, som signup-triggeren handle_new_user() opretter rækkerne ud fra (architecture 4.3).
