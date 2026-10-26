@@ -16,15 +16,41 @@ function safeFilename(name: string): string {
   return name.replace(/["\r\n\\/]/g, "_");
 }
 
-export function buildMultipart(file: MultipartFile, boundary: string = createBoundary()): { body: Uint8Array; contentType: string } {
+// Et tekstfelt i formularen (fx beskedens tekst ved siden af billederne).
+export type MultipartField = { field: string; value: string };
+
+// Feltnavn uden tegn, der kan bryde headeren.
+function safeName(name: string): string {
+  return name.replace(/["\r\n]/g, "_");
+}
+
+// Bygger hele kroppen af tekstfelter og filer i den givne rækkefølge (fx en besked med op til 3 billeder, 10.12).
+export function buildMultipartParts(parts: readonly (MultipartFile | MultipartField)[], boundary: string = createBoundary()): { body: Uint8Array; contentType: string } {
   const encoder = new TextEncoder();
-  const head = encoder.encode(
-    `--${boundary}\r\nContent-Disposition: form-data; name="${file.field}"; filename="${safeFilename(file.filename)}"\r\nContent-Type: ${file.type}\r\n\r\n`,
-  );
-  const tail = encoder.encode(`\r\n--${boundary}--\r\n`);
-  const body = new Uint8Array(head.length + file.bytes.length + tail.length);
-  body.set(head, 0);
-  body.set(file.bytes, head.length);
-  body.set(tail, head.length + file.bytes.length);
+  const chunks: Uint8Array[] = [];
+  for (const part of parts) {
+    if ("bytes" in part) {
+      chunks.push(
+        encoder.encode(
+          `--${boundary}\r\nContent-Disposition: form-data; name="${safeName(part.field)}"; filename="${safeFilename(part.filename)}"\r\nContent-Type: ${part.type}\r\n\r\n`,
+        ),
+        part.bytes,
+        encoder.encode("\r\n"),
+      );
+    } else {
+      chunks.push(encoder.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${safeName(part.field)}"\r\n\r\n${part.value}\r\n`));
+    }
+  }
+  chunks.push(encoder.encode(`--${boundary}--\r\n`));
+  const body = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.length;
+  }
   return { body, contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
+export function buildMultipart(file: MultipartFile, boundary: string = createBoundary()): { body: Uint8Array; contentType: string } {
+  return buildMultipartParts([file], boundary);
 }

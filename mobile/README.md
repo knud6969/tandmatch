@@ -88,7 +88,7 @@ Fanerne: **Forside**, **Klinikker**, **Mine sager**, **Konto**.
 | Send | `/sag/[caseId]/send` | `/api/auth/signup` eller `/convert`, `POST /api/consents` (`health_data_sharing`), `POST /api/cases/{id}/leads` | `/start/[caseId]/send` | P1 |
 | Mine sager | `(tabs)/sager` | `GET /api/cases` | `/patient` | P1 |
 | Sag | `/sag/[caseId]` | `GET /api/cases/{id}`, `GET /api/cases/{id}/leads`, `POST /api/leads/{id}/withdraw`, `POST /api/cases/{id}/close` | `/patient/sag/[caseId]` | P1: leads med status, klinikkens kommentar og pris, "Book tid". P2: "Træk tilbage", "Luk sag" (`CLOSE_CASE_CONSEQUENCE`), "Kontakt flere klinikker" |
-| Beskeder | `/sag/[caseId]/beskeder/[leadId]` | `GET/POST /api/leads/{id}/messages` | beskedtråden på sagen | P2 |
+| Beskeder | `/sag/[caseId]/beskeder/[leadId]` | `GET/POST /api/leads/{id}/messages` | beskedtråden på sagen; fra 2026-10-26 med op til 3 billeder pr. besked (kamera/bibliotek, samtykkekort som i chatten, miniaturer og fuld skærm; leads 10.12) | P2 |
 | Book tid | `/sag/[caseId]/book/[leadId]` | `GET /api/leads/{id}/availability`, `POST /api/leads/{id}/booking`, `GET /api/patients/me` | `/patient/sag/[caseId]/book/[leadId]` | P1 |
 | Bookinger | `/bookinger` (fra Mine sager) | `GET /api/bookings`, `POST /api/bookings/{id}/cancel` | `/patient/bookinger` | P1: liste. P2: aflys |
 | Anmeld | `/anmeld/[bookingId]`, `/anmeldelser` | `GET /api/reviews/eligible`, `POST /api/reviews`, `GET /api/reviews/mine` | `/patient/anmeld/[bookingId]`, `/patient/anmeldelser` | P1: skriv anmeldelse fra en gennemført booking. P2: mine anmeldelser |

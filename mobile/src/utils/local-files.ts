@@ -1,5 +1,5 @@
 import { File } from "expo-file-system";
-import { buildMultipart } from "./multipart";
+import { buildMultipart, buildMultipartParts, type MultipartField, type MultipartFile } from "./multipart";
 import { uploadFilePart } from "./chat-images";
 
 // Billeder af munden er helbredsdata: de lokale filer (fra vælger/kamera og fra komprimering) slettes, når de ikke skal bruges mere.
@@ -25,4 +25,14 @@ export async function readLocalBytes(uri: string): Promise<Uint8Array> {
 export async function multipartForImage(uri: string, index: number): Promise<{ body: Uint8Array; contentType: string }> {
   const part = uploadFilePart(uri, index);
   return buildMultipart({ field: "file", filename: part.name, type: part.type, bytes: await readLocalBytes(uri) });
+}
+
+// Beskedens multipart-krop (10.12): valgfri tekst og 1-3 komprimerede billeder som `file`.
+export async function multipartForMessage(uris: readonly string[], body: string): Promise<{ body: Uint8Array; contentType: string }> {
+  const parts: (MultipartFile | MultipartField)[] = body.trim() !== "" ? [{ field: "body", value: body.trim() }] : [];
+  for (const [index, uri] of uris.entries()) {
+    const part = uploadFilePart(uri, index);
+    parts.push({ field: "file", filename: part.name, type: part.type, bytes: await readLocalBytes(uri) });
+  }
+  return buildMultipartParts(parts);
 }
