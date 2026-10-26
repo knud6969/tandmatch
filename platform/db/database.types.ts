@@ -1010,6 +1010,9 @@ isOneToOne: false
 "service_duration_min":
 { Args: { "p_clinic_id": string,"p_service_id": string }; Returns: number
                            },
+"set_clinic_location":
+{ Args: { "p_lat": number,"p_lng": number }; Returns: undefined
+                           },
 "set_clinic_service_groups":
 { Args: { "p_group_ids": (string)[] }; Returns: (string)[]
                            },
