@@ -62,7 +62,8 @@ export class ConsentsController {
 
     if (result.deletedImagePaths.length > 0) {
       try {
-        // 2.3 (c): billedfiler i case-images fjernes efter tilbagetrækning af image_upload.
+        // 2.3 (c): billedfiler i case-images fjernes efter tilbagetrækning af image_upload (sagsbilleder og patientens
+        // beskedbilleder under messages/, som ligger i samme bucket; features/leads/README.md 10.12).
         await new CaseImageStorage(this.admin()).remove(result.deletedImagePaths);
         await this.consents.confirmCleanup(consentId);
       } catch (err) {

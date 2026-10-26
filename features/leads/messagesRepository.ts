@@ -38,6 +38,7 @@ export class MessagesRepository extends BaseRepository<MessageRow> {
       body: row.body,
       createdAt: row.created_at,
       readAt: row.read_at,
+      images: [],
     };
   }
 
@@ -49,10 +50,11 @@ export class MessagesRepository extends BaseRepository<MessageRow> {
       body: row.body,
       createdAt: row.created_at,
       readAt: row.read_at,
+      images: [],
     };
   }
 
-  // Trådens beskeder, ældste først. Tom liste for klinikken, hvis leadet er trukket tilbage.
+  // Trådens beskeder (uden billeder; dem hæfter controlleren på fra MessageImagesRepository), ældste først. Tom liste for klinikken, hvis leadet er trukket tilbage.
   async list(role: MessageSenderRole, leadId: string): Promise<MessageDto[]> {
     if (role === "clinic") {
       const rows = await this.rpc<ClinicMessageRow[]>("clinic_lead_messages", { p_lead_id: leadId });

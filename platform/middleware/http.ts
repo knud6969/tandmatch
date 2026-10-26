@@ -134,6 +134,43 @@ export function imageFileReader(req: Request, field: string, maxBytes: number): 
   };
 }
 
+// Returnerer en funktion, der læser 1-`maxFiles` billeder (samme felt gentaget) og tekstfelterne fra en multipart-body (fx en
+// besked med billeder, features/leads/README.md 10.12). Som imageFileReader kaldes den først efter controllerens tjek.
+// Tekstfelterne valideres af kalderen.
+export function imagesFormReader(
+  req: Request,
+  field: string,
+  maxFiles: number,
+  maxBytes: number,
+): () => Promise<{ files: File[]; fields: Record<string, string> }> {
+  return async () => {
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      throw new ApiError(400, "INVALID_FORM", "Billedet kunne ikke læses.");
+    }
+    const files: File[] = [];
+    const fields: Record<string, string> = {};
+    for (const [key, value] of form.entries()) {
+      if (key === field) {
+        if (!(value instanceof File)) throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+        files.push(value);
+      } else if (typeof value === "string") {
+        fields[key] = value;
+      }
+    }
+    if (files.length === 0) throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+    if (files.length > maxFiles) {
+      throw new ApiError(400, "IMAGE_LIMIT", `Du kan højst vedhæfte ${maxFiles} billeder ad gangen.`);
+    }
+    if (files.some((file) => file.size > maxBytes)) {
+      throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+    }
+    return { files, fields };
+  };
+}
+
 // Læser en multipart-body med ét billede og tekstfelter (fx porteføljebillede, architecture 10.8). Felterne valideres
 // med zod, før noget behandles; manglende bekræftelse giver dermed 400, før billedet røres.
 export async function readImageForm<T>(
