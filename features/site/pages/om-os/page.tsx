@@ -48,7 +48,7 @@ export default function AboutPage() {
         <p>
           Postnumre og koordinater: <a className="underline" href="https://www.geonames.org" rel="noopener noreferrer">GeoNames</a>{" "}
           (<a className="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer">CC BY 4.0</a>).
-          Kort og adresseopslag: © OpenStreetMap-bidragydere (fliser og Nominatim).
+          Kort: OpenFreeMap © OpenMapTiles, data © OpenStreetMap-bidragydere. Adresseopslag: OpenStreetMap Nominatim.
         </p>
       </InfoSection>
     </Container>

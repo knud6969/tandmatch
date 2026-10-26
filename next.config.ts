@@ -27,12 +27,14 @@ function contentSecurityPolicy(): string {
     // UNDTAGELSE: Tailwind/Next og React style-attributter kræver inline styles.
     "style-src": ["'self'", "'unsafe-inline'"],
     // Billeder: egne, data:/blob: (forhåndsvisning af valgte filer) og Supabase (public-media, signerede URL'er).
-    // Kortfliser fra OpenStreetMap (klinikoversigten og profilen, clinics 6.6). Ingen andre eksterne billedkilder.
-    "img-src": ["'self'", "data:", "blob:", "https://tile.openstreetmap.org", ...(supabase ? [supabase] : [])],
+    // Ingen eksterne billedkilder ud over Supabase. Kortet (clinics 6.6) henter sine vektorfliser med fetch (connect-src).
+    "img-src": ["'self'", "data:", "blob:", ...(supabase ? [supabase] : [])],
     "font-src": ["'self'"],
-    // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse).
-    // Supabase kaldes kun fra serveren, aldrig fra browseren.
-    "connect-src": ["'self'"],
+    // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse) og OpenFreeMap (kortets
+    // stil, vektorfliser, skrifttyper og ikoner, clinics 6.6). Supabase kaldes kun fra serveren, aldrig fra browseren.
+    "connect-src": ["'self'", "https://tiles.openfreemap.org"],
+    // MapLibre GL tegner kortet i web workers (egen fil eller blob:).
+    "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],

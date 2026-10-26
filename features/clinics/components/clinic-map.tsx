@@ -1,10 +1,11 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import L from "leaflet";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AttributionControl, Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from "react-leaflet";
+import { AttributionControl, Circle, CircleMarker, MapContainer, Marker, Popup, ZoomControl, useMap } from "react-leaflet";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { LatLng } from "@/lib/clinics/domain/location";
 import { BASIC_CLINIC_LABEL, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
@@ -14,13 +15,12 @@ import { clinicProfileHref } from "@/features/clinics/utils/clinic-query";
 import {
   DENMARK_CENTER,
   DENMARK_ZOOM,
-  MAP_ATTRIBUTION,
   MAX_FIT_ZOOM,
   SINGLE_CLINIC_ZOOM,
-  TILE_MAX_ZOOM,
-  TILE_URL,
+  MAP_MAX_ZOOM,
   mapPoints,
 } from "@/features/clinics/utils/map";
+import { createVectorBaseLayer } from "@/features/clinics/utils/vector-base-layer";
 
 // Markørerne er HTML med Tailwind-klasser fra temaet (ingen rå farver) og ligner appens (clinic-map.tsx i mobile/):
 // runde med et kors; verificeret = udfyldt blå med hvid kant, basis = hvid med stiplet grå kant og gråt kors. Den valgte
@@ -55,6 +55,20 @@ const PROFILE_PIN = L.divIcon({
   iconSize: [28, 40],
   iconAnchor: [14, 39],
 });
+
+// Baggrundskortet: OpenFreeMap-vektorfliser tegnet af MapLibre GL i Leaflets flisepanel (clinics 6.6). Krediteringen vises
+// af Leaflets egen attributionskontrol.
+function VectorBaseLayer() {
+  const map = useMap();
+  useEffect(() => {
+    const layer = createVectorBaseLayer();
+    layer.addTo(map);
+    return () => {
+      layer.remove();
+    };
+  }, [map]);
+  return null;
+}
 
 // Tilpasser udsnittet til markørerne (og udgangspunktet) og holder kortet i takt med sin beholder (fx når det vises efter
 // et skift på mobil). Som appens regionForClinics: alle punkter med luft omkring.
@@ -134,11 +148,12 @@ export default function ClinicMap({
       doubleClickZoom={!isProfile}
       boxZoom={!isProfile}
       keyboard={!isProfile}
+      maxZoom={MAP_MAX_ZOOM}
       zoomControl={false}
       attributionControl={false}
       className="size-full min-h-40 rounded-card"
     >
-      <TileLayer url={TILE_URL} maxZoom={TILE_MAX_ZOOM} attribution={MAP_ATTRIBUTION} />
+      <VectorBaseLayer />
       <AttributionControl prefix={false} position="bottomright" />
       {!isProfile && <ZoomControl position="topright" zoomInTitle="Zoom ind" zoomOutTitle="Zoom ud" />}
       <MapController points={points} />

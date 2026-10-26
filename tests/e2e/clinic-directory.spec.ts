@@ -95,7 +95,9 @@ test.describe("klinikoversigt og profil", () => {
     await showMap(page);
     await expect(page.locator(".leaflet-marker-icon")).toHaveCount(count);
     await expect(page.locator(".leaflet-control-attribution")).toContainText("© OpenStreetMap-bidragydere");
-    await expect(page.locator("img.leaflet-tile").first()).toBeAttached();
+    // Baggrundskortet er OpenFreeMap-vektorfliser tegnet af MapLibre GL (clinics 6.6).
+    await expect(page.locator(".leaflet-tile-pane canvas.maplibregl-canvas").first()).toBeAttached();
+    await expect(page.locator(".leaflet-control-attribution")).toContainText("OpenFreeMap");
     await expectNoHorizontalScroll(page);
 
     // Klik på en markør viser nøgleoplysninger og et link til profilen, og markøren bliver valgt (større, som i appen).
