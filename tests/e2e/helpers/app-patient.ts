@@ -19,8 +19,11 @@ export class AppPatient {
     const headers: Record<string, string> = { "x-forwarded-for": this.ip, "X-TandMatch-Client": "mobile", Accept: "application/json" };
     if (this.accessToken) headers.Authorization = `Bearer ${this.accessToken}`;
     if (this.termsToken) headers["X-Terms-Token"] = this.termsToken;
-    if (body !== undefined) headers["content-type"] = "application/json";
-    const res = await fetch(BASE + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual" });
+    // Multipart (billeder): fetch sætter selv content-type med boundary og content-length.
+    const isForm = body instanceof FormData;
+    if (body !== undefined && !isForm) headers["content-type"] = "application/json";
+    const payload = body === undefined ? undefined : isForm ? body : JSON.stringify(body);
+    const res = await fetch(BASE + path, { method, headers, body: payload, redirect: "manual" });
     const text = await res.text();
     let parsed: unknown = null;
     try {
@@ -35,6 +38,9 @@ export class AppPatient {
   }
   post(path: string, body: unknown = {}) {
     return this.request("POST", path, body);
+  }
+  postForm(path: string, form: FormData) {
+    return this.request("POST", path, form);
   }
 
   // Vilkår og patientkonto som appen (tokens kun i svaret, ingen cookies).
