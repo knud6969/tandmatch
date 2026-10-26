@@ -488,6 +488,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"message_images": {
+                  Row: {
+                    "bytes": number,"consent_id": string | null,"created_at": string,"height": number,"id": string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
+                  }
+                  Insert: {
+                    "bytes": number,"consent_id"?: string | null,"created_at"?: string,"height": number,"id"?: string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
+                  }
+                  Update: {
+                    "bytes"?: number,"consent_id"?: string | null,"created_at"?: string,"height"?: number,"id"?: string,"lead_id"?: string,"message_id"?: string,"position"?: number,"storage_path"?: string,"width"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "message_images_consent_id_fkey"
+      columns: ["consent_id"]
+isOneToOne: false
+      referencedRelation: "consents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "message_images_lead_id_fkey"
+      columns: ["lead_id"]
+isOneToOne: false
+      referencedRelation: "leads"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "message_images_message_id_fkey"
+      columns: ["message_id"]
+isOneToOne: false
+      referencedRelation: "messages"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"messages": {
                   Row: {
                     "body": string,"created_at": string,"id": string,"lead_id": string,"read_at": string | null,"sender_id": string | null,"sender_role": Database["public"]['Enums']["message_sender_role"]
@@ -798,6 +829,11 @@ isOneToOne: false
               "approved_description": string,"height": number,"image_id": string,"storage_path": string,"width": number
             }[]
                            },
+"clinic_lead_message_images":
+{ Args: { "p_lead_id": string }; Returns: {
+              "height": number,"id": string,"message_id": string,"position": number,"storage_path": string,"width": number
+            }[]
+                           },
 "clinic_lead_messages":
 { Args: { "p_lead_id": string }; Returns: {
               "body": string,"created_at": string,"from_me": boolean,"id": string,"read_at": string
@@ -808,7 +844,7 @@ isOneToOne: false
                            },
 "clinic_leads":
 { Args: { "p_status"?: Database["public"]['Enums']["lead_status"] }; Returns: {
-              "city": string,"distance_km": number,"image_count": number,"is_emergency": boolean,"lead_id": string,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"requested_starts_at": string,"seen_at": string,"sent_at": string,"service_names": (string)[],"status": Database["public"]['Enums']["lead_status"],"unread_messages": number,"withdrawn_at": string
+              "city": string,"distance_km": number,"hold_expires_at": string,"image_count": number,"is_emergency": boolean,"lead_id": string,"list_price_max": number,"list_price_min": number,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"requested_starts_at": string,"seen_at": string,"sent_at": string,"service_names": (string)[],"status": Database["public"]['Enums']["lead_status"],"summary_excerpt": string,"unread_messages": number,"withdrawn_at": string
             }[]
                            },
 "clinic_mark_lead_seen":
@@ -906,6 +942,9 @@ isOneToOne: false
               "city": string,"clinic_id": string,"lead_id": string,"logo_path": string,"logo_updated_at": string,"name": string,"removed": boolean
             }[]
                            },
+"prototype_auto_verify_clinics":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "public_busy_intervals":
 { Args: { "p_clinic_ids": (string)[],"p_from": string,"p_to": string }; Returns: {
               "clinic_id": string,"ends_at": string,"starts_at": string
@@ -964,6 +1003,9 @@ isOneToOne: false
                            },
 "send_leads":
 { Args: { "p_case_id": string,"p_clinic_ids": (string)[],"p_contact_name"?: string,"p_contact_phone"?: string,"p_requested_service_id"?: string,"p_requested_starts_at"?: string }; Returns: number
+                           },
+"send_message_with_images":
+{ Args: { "p_body": string,"p_images": Json,"p_lead_id": string,"p_message_id": string,"p_user_id": string }; Returns: string
                            },
 "service_duration_min":
 { Args: { "p_clinic_id": string,"p_service_id": string }; Returns: number
