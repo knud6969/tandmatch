@@ -2,7 +2,8 @@
 -- (1) clinics_guard(): som i 20261016000100, men postnummerets midtpunkt sættes nu også, når klinikken ændrer adressen
 --     (før kun ved nyt postnummer). Så står en gammel præcis placering aldrig ved en ny adresse, hvis opslaget fejler.
 -- (2) set_clinic_location(p_lat, p_lng): serveren gemmer den fundne placering med klinikkens egen session (ejer,
---     permanent konto). lat/lng kommer ikke i kolonne-grants (platform 5.1 regel 12).
+--     permanent konto). lat/lng kommer ikke i kolonne-grants (platform 5.1 regel 12). Punktet skal ligge i Danmark og
+--     højst 25 km fra postnummerets midtpunkt (MAX_POSTAL_CENTER_DISTANCE_KM i geocodingService.ts).
 
 create or replace function public.clinics_guard()
 returns trigger
@@ -116,14 +117,16 @@ $$;
 revoke all on function public.clinics_guard() from public, anon, authenticated;
 
 -- Sætter placeringen på den kaldendes egen klinik. Ingen klinik-id som parameter; ejerskabet afgøres af auth.uid().
--- Kun punkter i Danmark (inkl. Bornholm og Ertholmene). clinics_guard() kører som ved enhver opdatering (fx afvises en
--- 'removed' klinik med CLINIC_REMOVED).
+-- Kun punkter i Danmark (inkl. Bornholm og Ertholmene) og højst 25 km fra postnummerets midtpunkt. clinics_guard() kører
+-- som ved enhver opdatering (fx afvises en 'removed' klinik med CLINIC_REMOVED).
 create or replace function public.set_clinic_location(p_lat double precision, p_lng double precision)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 declare
   v_clinic_id uuid;
+  v_center_lat double precision;
+  v_center_lng double precision;
 begin
   if not public.is_permanent_user() then
     raise exception 'Kræver en konto' using errcode = '42501';
@@ -133,9 +136,19 @@ begin
      or p_lat not between 54.4 and 57.9 or p_lng not between 7.9 and 15.3 then
     raise exception 'Placeringen skal ligge i Danmark' using errcode = '22023';
   end if;
-  select c.id into v_clinic_id from public.clinics c where c.owner_id = (select auth.uid());
+  select c.id, pc.lat, pc.lng into v_clinic_id, v_center_lat, v_center_lng
+  from public.clinics c
+  left join public.postal_codes pc on pc.postal_code = c.postal_code
+  where c.owner_id = (select auth.uid());
   if v_clinic_id is null then
     raise exception 'Ingen klinik' using errcode = 'P0002';
+  end if;
+  -- Funktionen kan kaldes direkte med klinikkens egen session (PostgREST). Punktet skal derfor ligge højst 25 km fra
+  -- klinikkens postnummers midtpunkt, så en klinik ikke kan flytte sig vilkårligt i afstandssorteringen væk fra sin
+  -- adresse (security 2026-10-26). Ukendt postnummer: ingen placering.
+  if v_center_lat is null or v_center_lng is null
+     or public.haversine_km(v_center_lat, v_center_lng, p_lat, p_lng) > 25 then
+    raise exception 'Placeringen passer ikke til postnummeret' using errcode = '22023';
   end if;
   update public.clinics set lat = p_lat, lng = p_lng where id = v_clinic_id;
 end;

@@ -33,8 +33,9 @@ function contentSecurityPolicy(): string {
     // Browseren kalder kun egne /api-ruter (og i udvikling websocket til HMR på samme oprindelse) og OpenFreeMap (kortets
     // stil, vektorfliser, skrifttyper og ikoner, clinics 6.6). Supabase kaldes kun fra serveren, aldrig fra browseren.
     "connect-src": ["'self'", "https://tiles.openfreemap.org"],
-    // MapLibre GL tegner kortet i web workers (egen fil eller blob:).
-    "worker-src": ["'self'", "blob:"],
+    // MapLibre GL tegner kortet i web workers. Workerfilen ligger på egen oprindelse (setWorkerUrl i vector-base-layer.ts),
+    // så blob: er ikke nødvendig (MapLibre bruger kun blob:-workers til en worker-URL på en anden oprindelse).
+    "worker-src": ["'self'"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],

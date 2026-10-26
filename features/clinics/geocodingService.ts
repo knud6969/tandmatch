@@ -13,6 +13,10 @@ export type GeocodeHit = LatLng & { postalCode: string | null };
 // Et træf med et andet postnummer godtages kun, hvis det ligger så tæt på postnummerets midtpunkt.
 export const MAX_GEOCODE_DISTANCE_KM = 15;
 
+// Et træf godtages aldrig længere end dette fra postnummerets midtpunkt, heller ikke med samme postnummer. Samme grænse
+// håndhæves i set_clinic_location() (migration 20261104000100), som klinikken kan kalde direkte med sin egen session.
+export const MAX_POSTAL_CENTER_DISTANCE_KM = 25;
+
 export abstract class GeocodingService {
   // Slår adressen op. Må kaste (timeout, netværk, ugyldigt svar); `locate()` fanger det. null = ikke fundet.
   protected abstract lookup(query: AddressQuery): Promise<GeocodeHit | null>;
@@ -29,8 +33,10 @@ export abstract class GeocodingService {
       return null;
     }
     if (!hit || !isInDenmark(hit)) return null;
+    const distance = near !== null ? haversineKm(near, hit) : null;
+    if (distance !== null && distance > MAX_POSTAL_CENTER_DISTANCE_KM) return null;
     const samePostalCode = hit.postalCode === query.postalCode;
-    const close = near !== null && haversineKm(near, hit) <= MAX_GEOCODE_DISTANCE_KM;
+    const close = distance !== null && distance <= MAX_GEOCODE_DISTANCE_KM;
     return samePostalCode || close ? { lat: hit.lat, lng: hit.lng } : null;
   }
 }

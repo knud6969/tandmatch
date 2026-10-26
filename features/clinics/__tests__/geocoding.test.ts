@@ -121,6 +121,13 @@ describe("NominatimGeocodingService", () => {
     });
   });
 
+  it("afviser et træf med samme postnummer, når det ligger over 25 km fra midtpunktet (som set_clinic_location)", async () => {
+    // Skagen med postnummer 2200 (fx et forkert postnummer i kilden).
+    const fetchMock = vi.fn(async () => jsonResponse(nominatimHit("57.7209", "10.5839", "2200")));
+    const { service } = nominatim(fetchMock);
+    await expect(service.locate(QUERY, MIDPOINT_2200)).resolves.toBeNull();
+  });
+
   it("afviser punkter uden for Danmark", async () => {
     const fetchMock = vi.fn(async () => jsonResponse(nominatimHit("52.52", "13.405", "2200")));
     const { service } = nominatim(fetchMock);

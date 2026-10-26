@@ -39,6 +39,12 @@ select tt.denied('select public.set_clinic_location(52.52, 13.405)', 'Berlin afv
 select tt.denied('select public.set_clinic_location(55.7, 20.0)', 'lng øst for Bornholm afvises', '22023');
 select tt.denied('select public.set_clinic_location(''NaN''::double precision, 12.5)', 'NaN afvises', '22023');
 select tt.denied('select public.set_clinic_location(null, 12.5)', 'null afvises', '22023');
+-- I Danmark, men langt fra klinikkens postnummer (Aarhus for en klinik i 8000 er ok; Skagen er ikke).
+select tt.denied('select public.set_clinic_location(57.7209, 10.5839)', 'punkt langt fra postnummeret afvises', '22023');
+select public.set_clinic_location(56.1500, 10.2100);
+select tt.as_postgres();
+select tt.eq((select lat from public.clinics where id = tt.cid('X')), 56.15::double precision, 'punkt nær postnummeret gemt');
+select tt.as_user(tt.id('uX'));
 
 -- Kolonnerne kan stadig ikke opdateres direkte.
 select tt.denied(format('update public.clinics set lat = 55.0 where id = %L', tt.cid('X')), 'lat kan ikke opdateres direkte', '42501');
