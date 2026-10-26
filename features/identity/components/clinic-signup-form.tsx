@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
-import { CheckboxField } from "@/components/ui/checkbox-field";
 import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/features/identity/components/session-provider";
+import { TermsDialog } from "@/features/identity/components/terms-dialog";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
@@ -19,17 +18,18 @@ import type { AuthUserDto, TermsAcceptedDto } from "@/lib/identity/types/auth";
 type ClinicField = "clinicName" | "cvr" | "address" | "postalCode" | "city" | "phone" | "email" | "password" | "terms";
 
 const TERMS_REQUIRED_TEXT = "Du skal acceptere vilkårene for at oprette klinikken.";
-const legalLink = "font-semibold text-brand-700 underline underline-offset-4";
 
 const EMPTY = { clinicName: "", cvr: "", address: "", postalCode: "", city: "", phone: "", email: "", password: "" };
 
 // Opretter en klinikkonto (architecture 10.2). [PROTOTYPE] Klinikken verificeres automatisk ved oprettelse (docs/beslutninger.md) og kan sætte alt op med det samme.
-// Siden er undtaget fra vilkårs-gaten; accepten indhentes her (ikke forudafkrydset) og gemmes før signup (identity 2.5).
-export function ClinicSignupForm() {
+// Siden er undtaget fra vilkårs-gaten; accepten indhentes her i vilkårs-dialogen (læst til bunden, ikke forudvalgt) og gemmes
+// før signup (identity 2.5). legalText er vilkår og privatlivspolitik, renderet på serveren af siden.
+export function ClinicSignupForm({ legalText }: { legalText: ReactNode }) {
   const router = useRouter();
   const { state, refresh } = useSession();
   const [values, setValues] = useState(EMPTY);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<ClinicField>>({ fields: {}, general: null });
   const [pending, setPending] = useState(false);
 
@@ -100,25 +100,40 @@ export function ClinicSignupForm() {
         <TextField label="E-mail" name="email" type="email" inputMode="email" autoComplete="email" value={values.email} onChange={set("email")} error={errors.fields.email} required />
         <TextField label="Adgangskode" name="password" type="password" autoComplete="new-password" hint="Mindst 8 tegn." value={values.password} onChange={set("password")} error={errors.fields.password} required />
       </fieldset>
-      <CheckboxField
-        name="terms"
-        checked={termsAccepted}
-        selected={termsAccepted}
-        onChange={(e) => setTermsAccepted(e.target.checked)}
-        error={errors.fields.terms}
-        label={
-          <>
-            Jeg accepterer{" "}
-            <Link href="/vilkaar" target="_blank" className={legalLink}>
-              brugervilkårene
-            </Link>{" "}
-            og har læst{" "}
-            <Link href="/privatliv" target="_blank" className={legalLink}>
-              privatlivspolitikken
-            </Link>
-          </>
-        }
-      />
+      <div className="flex flex-col gap-1.5">
+        {termsAccepted ? (
+          <div className="flex min-h-12 items-start gap-3 rounded-control border border-brand-500 bg-brand-50 p-4 text-base">
+            <span aria-hidden="true" className="font-semibold text-brand-700">✓</span>
+            <p className="flex-1">
+              Du har accepteret brugervilkårene og læst privatlivspolitikken.{" "}
+              <button type="button" onClick={() => setTermsOpen(true)} className="font-semibold text-brand-700 underline underline-offset-4">
+                Læs igen
+              </button>
+            </p>
+          </div>
+        ) : (
+          <Button variant="secondary" fullWidth onClick={() => setTermsOpen(true)} aria-describedby={errors.fields.terms ? "terms-error" : undefined}>
+            Læs og accepter vilkårene
+          </Button>
+        )}
+        {errors.fields.terms && (
+          <p id="terms-error" className="text-sm font-medium text-danger-ink">
+            {errors.fields.terms}
+          </p>
+        )}
+      </div>
+      <TermsDialog
+        open={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        onAccept={() => {
+          setTermsAccepted(true);
+          setTermsOpen(false);
+          setErrors((e) => ({ ...e, fields: { ...e.fields, terms: undefined } }));
+        }}
+        acceptLabel="Jeg accepterer vilkårene"
+      >
+        {legalText}
+      </TermsDialog>
       <Button type="submit" fullWidth disabled={pending}>
         {pending ? "Opretter klinik …" : "Opret klinik"}
       </Button>

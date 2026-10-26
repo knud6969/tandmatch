@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { cleanup, verifiedClinic } from "./helpers/inbox";
 import { PROFILE_PREVIEW_LABEL } from "../../lib/clinics/constants/clinic-texts";
+import { acceptTerms } from "./helpers/terms";
 
 // Patientens vej gennem klinikoversigten (arbejdsplan 2.5, 2.6): oversigt, filter, kort, profil. Demodata
 // seedes af tests/e2e/run.sh (`npm run seed:demo`) med både verificerede og importerede klinikker. Kører i begge viewports (390 og 1280 px).
@@ -11,7 +12,7 @@ const HORIZONTAL_SCROLL = () => document.documentElement.scrollWidth - document.
 
 async function acceptTermsIfAsked(page: Page) {
   if (/\/vilkaar\/accepter/.test(page.url())) {
-    await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+    await acceptTerms(page);
     await page.waitForURL((url) => !url.pathname.startsWith("/vilkaar/accepter"));
   }
 }

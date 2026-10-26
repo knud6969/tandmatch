@@ -22,8 +22,10 @@ export OPENAI_API_KEY="sk-test-not-used"
 export AI_FAKE_CLIENT=1
 export NEXT_TELEMETRY_DISABLED=1
 
-# Frisk Next-cache før hver kørsel: en stor eller forældet .next kan få dev-serveren til at genindlæse i ring.
-node scripts/clean-next-cache.mjs --force
+# Testserveren bygger i sin egen mappe (.next-test), så den aldrig deler cache med `npm run dev`, der kører mod et andet
+# miljø; delt cache fik Next til at genindlæse siderne i ring. Mappen ryddes, hvis den er vokset over 1 GB.
+export NEXT_DIST_DIR=.next-test
+node scripts/clean-next-cache.mjs
 
 LOG="${TMPDIR:-/tmp}/tandmatch-test-server.log"
 # next dev skriver sin egen blok i CLAUDE.md. Filen gemmes, som den er (også med ucommittede ændringer), og lægges

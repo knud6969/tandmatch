@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LegalText } from "@/features/identity/components/legal-text";
 import { TermsAcceptForm } from "@/features/identity/components/terms-accept-form";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -52,7 +53,7 @@ export default async function AcceptTermsPage({ searchParams }: { searchParams: 
           relevant, fx før du uploader billeder eller starter en samtale med AI-assistenten.
         </p>
 
-        <TermsAcceptForm naeste={safeInternalPath(naeste)} />
+        <TermsAcceptForm naeste={safeInternalPath(naeste)} legalText={<LegalText />} />
 
         <p className="text-sm text-ink-muted">
           Version: vilkår {TERMS_VERSION}, privatliv {PRIVACY_VERSION}

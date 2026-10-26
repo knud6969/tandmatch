@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { deflateSync } from "node:zlib";
 import { expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { CONSENT_TEXT_VERSIONS } from "../../../lib/identity/constants/consents";
+import { acceptTerms } from "./terms";
 
 // Fælles hjælpere til indbakke-testene (kopi af hjælperne i ../clinic-inbox.spec.ts, som bevares uændret).
 export const PASSWORD = "test-adgangskode-123";
@@ -28,7 +29,7 @@ export async function newPage(browser: Browser, testInfo: TestInfo): Promise<Pag
   const page = await context.newPage();
   await page.goto("/klinikker");
   if (/\/vilkaar\/accepter/.test(page.url())) {
-    await page.getByRole("button", { name: /Jeg accepterer vilkårene/ }).click();
+    await acceptTerms(page);
     await page.waitForURL((url) => !url.pathname.startsWith("/vilkaar/accepter"));
   }
   return page;

@@ -4,13 +4,15 @@
 //   node scripts/clean-next-cache.mjs          sletter kun, hvis .next er større end NEXT_CACHE_MAX_MB (standard 1000)
 //   node scripts/clean-next-cache.mjs --force  sletter altid (npm run clean)
 //
-// Køres automatisk før `npm run dev` (predev) og før API- og e2e-testene. Sletter aldrig, mens en Next-server kører,
-// fordi den deler mappen. .next er kun en cache: Next bygger den op igen ved næste start.
+// Køres automatisk før `npm run dev` (predev) og før API- og e2e-testene, der bygger i deres egen mappe
+// (NEXT_DIST_DIR=.next-test, se next.config.ts). Udviklingsmappen .next slettes aldrig, mens en Next-server kører.
+// Mappen er kun en cache: Next bygger den op igen ved næste start.
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, lstatSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const dir = resolve(import.meta.dirname, "..", ".next");
+const distDir = process.env.NEXT_DIST_DIR || ".next";
+const dir = resolve(import.meta.dirname, "..", distDir);
 const force = process.argv.includes("--force");
 const maxMb = Number(process.env.NEXT_CACHE_MAX_MB) || 1000;
 
@@ -53,10 +55,11 @@ if (!existsSync(dir)) process.exit(0);
 const mb = Math.round(sizeBytes(dir) / 1024 / 1024);
 if (!force && mb <= maxMb) process.exit(0);
 
-if (nextServerRunning()) {
+// Testmappen bruges kun af testserveren, som runneren starter bagefter; en kørende `npm run dev` bruger .next.
+if (distDir === ".next" && nextServerRunning()) {
   console.warn(`.next fylder ${mb} MB, men en Next-server kører. Stop den, og kør npm run clean.`);
   process.exit(0);
 }
 
 rmSync(dir, { recursive: true, force: true });
-console.log(`Ryddede .next (${mb} MB). Første side kompileres forfra.`);
+console.log(`Ryddede ${distDir} (${mb} MB). Første side kompileres forfra.`);

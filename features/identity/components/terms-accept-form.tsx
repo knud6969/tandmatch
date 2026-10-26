@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { TermsDialog } from "@/features/identity/components/terms-dialog";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
 import { safeInternalPath } from "@/lib/common/navigation/paths";
 import type { TermsAcceptedDto } from "@/lib/identity/types/auth";
 
-// Vilkårs-gaten. Accepten er IKKE samtykke til helbredsdata (architecture 2.5). Ingen afkrydsninger her.
-export function TermsAcceptForm({ naeste }: { naeste: string | null }) {
+// Vilkårs-gaten. Accepten er IKKE samtykke til helbredsdata (architecture 2.5). Ingen afkrydsninger her: accepten gives i
+// vilkårs-dialogen, når teksten er læst til bunden. legalText er vilkår og privatlivspolitik, renderet på serveren af siden.
+export function TermsAcceptForm({ naeste, legalText }: { naeste: string | null; legalText: ReactNode }) {
+  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,15 +35,29 @@ export function TermsAcceptForm({ naeste }: { naeste: string | null }) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {error && (
-        <Alert tone="danger" role="alert">
-          {error}
-        </Alert>
-      )}
-      <Button fullWidth onClick={accept} disabled={pending}>
-        {pending ? "Gemmer dit valg …" : "Jeg accepterer vilkårene og har læst privatlivspolitikken"}
+    <>
+      <Button fullWidth onClick={() => setOpen(true)}>
+        Læs og accepter vilkårene
       </Button>
-    </div>
+      <TermsDialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setError(null);
+        }}
+        onAccept={accept}
+        pending={pending}
+        acceptLabel={pending ? "Gemmer dit valg …" : "Jeg accepterer vilkårene og har læst privatlivspolitikken"}
+        error={
+          error && (
+            <Alert tone="danger" role="alert">
+              {error}
+            </Alert>
+          )
+        }
+      >
+        {legalText}
+      </TermsDialog>
+    </>
   );
 }
