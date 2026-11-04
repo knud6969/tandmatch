@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
+import { NotificationRouter } from "~/notifications/notification-router";
 import { SessionProvider, useSession } from "~/auth/session-context";
 import { colors } from "~/theme";
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
     <SessionProvider>
       <StatusBar style="dark" />
       <Guarded />
+      <NotificationRouter />
     </SessionProvider>
   );
 }

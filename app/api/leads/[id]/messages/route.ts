@@ -33,4 +33,4 @@ export const POST = withApi<Ctx>(async (req, { params }) => {
   }
   const input = await readJson(req, sendMessageSchema);
   return jsonResponse(await controller.send(leadId, input), 201);
-});
+}, { notify: true });

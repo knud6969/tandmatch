@@ -312,6 +312,25 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"clinic_notification_settings": {
+                  Row: {
+                    "clinic_id": string,"email_booking_changes": boolean,"email_booking_reminder": boolean,"email_new_lead": boolean,"email_new_message": boolean,"updated_at": string,"web_push_booking_changes": boolean,"web_push_booking_reminder": boolean,"web_push_new_lead": boolean,"web_push_new_message": boolean
+                  }
+                  Insert: {
+                    "clinic_id": string,"email_booking_changes"?: boolean,"email_booking_reminder"?: boolean,"email_new_lead"?: boolean,"email_new_message"?: boolean,"updated_at"?: string,"web_push_booking_changes"?: boolean,"web_push_booking_reminder"?: boolean,"web_push_new_lead"?: boolean,"web_push_new_message"?: boolean
+                  }
+                  Update: {
+                    "clinic_id"?: string,"email_booking_changes"?: boolean,"email_booking_reminder"?: boolean,"email_new_lead"?: boolean,"email_new_message"?: boolean,"updated_at"?: string,"web_push_booking_changes"?: boolean,"web_push_booking_reminder"?: boolean,"web_push_new_lead"?: boolean,"web_push_new_message"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "clinic_notification_settings_clinic_id_fkey"
+      columns: ["clinic_id"]
+isOneToOne: true
+      referencedRelation: "clinics"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"clinic_opening_hours": {
                   Row: {
                     "clinic_id": string,"closes_at": string,"created_at": string,"id": string,"is_emergency": boolean,"opens_at": string,"weekday": number
@@ -544,6 +563,43 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notification_outbox": {
+                  Row: {
+                    "attempts": number,"booking_id": string | null,"channel": Database["public"]['Enums']["notification_channel"],"clinic_id": string | null,"created_at": string,"dedup_key": string | null,"id": string,"last_error": string | null,"lead_id": string | null,"locked_until": string | null,"next_attempt_at": string,"payload": NonNullable<Json>,"recipient_user_id": string | null,"sent_at": string | null,"status": Database["public"]['Enums']["notification_status"],"type": Database["public"]['Enums']["notification_type"]
+                  }
+                  Insert: {
+                    "attempts"?: number,"booking_id"?: string | null,"channel": Database["public"]['Enums']["notification_channel"],"clinic_id"?: string | null,"created_at"?: string,"dedup_key"?: string | null,"id"?: string,"last_error"?: string | null,"lead_id"?: string | null,"locked_until"?: string | null,"next_attempt_at"?: string,"payload"?: NonNullable<Json>,"recipient_user_id"?: string | null,"sent_at"?: string | null,"status"?: Database["public"]['Enums']["notification_status"],"type": Database["public"]['Enums']["notification_type"]
+                  }
+                  Update: {
+                    "attempts"?: number,"booking_id"?: string | null,"channel"?: Database["public"]['Enums']["notification_channel"],"clinic_id"?: string | null,"created_at"?: string,"dedup_key"?: string | null,"id"?: string,"last_error"?: string | null,"lead_id"?: string | null,"locked_until"?: string | null,"next_attempt_at"?: string,"payload"?: NonNullable<Json>,"recipient_user_id"?: string | null,"sent_at"?: string | null,"status"?: Database["public"]['Enums']["notification_status"],"type"?: Database["public"]['Enums']["notification_type"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_outbox_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "bookings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notification_outbox_clinic_id_fkey"
+      columns: ["clinic_id"]
+isOneToOne: false
+      referencedRelation: "clinics"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notification_outbox_lead_id_fkey"
+      columns: ["lead_id"]
+isOneToOne: false
+      referencedRelation: "leads"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notification_outbox_recipient_user_id_fkey"
+      columns: ["recipient_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"patients": {
                   Row: {
                     "created_at": string,"first_name": string | null,"id": string,"phone": string | null,"postal_code": string | null
@@ -619,6 +675,25 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"push_tokens": {
+                  Row: {
+                    "created_at": string,"id": string,"last_seen_at": string,"platform": string,"token": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"last_seen_at"?: string,"platform": string,"token": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"last_seen_at"?: string,"platform"?: string,"token"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_tokens_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"rate_limits": {
                   Row: {
@@ -752,6 +827,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"web_push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"last_used_at": string,"p256dh": string,"user_id": string
+                  }
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"last_used_at"?: string,"p256dh": string,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"last_used_at"?: string,"p256dh"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "web_push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -805,6 +899,11 @@ isOneToOne: false
                            },
 "claim_anonymous_case":
 { Args: { "p_token": string }; Returns: Json
+                           },
+"claim_notifications":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempts": number,"channel": Database["public"]['Enums']["notification_channel"],"clinic_id": string,"id": string,"payload": Json,"push_tokens": (string)[],"recipient_user_id": string,"to_email": string,"type": Database["public"]['Enums']["notification_type"],"web_push_subscriptions": Json
+            }[]
                            },
 "clinic_booking":
 { Args: { "p_booking_id": string }; Returns: {
@@ -866,6 +965,9 @@ isOneToOne: false
               "completed": number,"released_holds": number
             }[]
                            },
+"complete_notification":
+{ Args: { "p_error_code"?: string,"p_id": string,"p_invalid_tokens"?: (string)[],"p_status": string }; Returns: undefined
+                           },
 "confirm_consent_cleanup":
 { Args: { "p_consent_id": string }; Returns: undefined
                            },
@@ -880,6 +982,9 @@ isOneToOne: false
                            },
 "effective_booking_status":
 { Args: { "p_ends_at": string,"p_hold_expires_at": string,"p_status": Database["public"]['Enums']["booking_status"] }; Returns: Database["public"]['Enums']["booking_status"]
+                           },
+"enqueue_booking_reminders":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "has_active_consent":
 { Args: { "p_type": Database["public"]['Enums']["consent_type"] }; Returns: boolean
@@ -929,6 +1034,12 @@ isOneToOne: false
 "mark_booking_no_show":
 { Args: { "p_booking_id": string }; Returns: undefined
                            },
+"notification_enqueue":
+{ Args: { "p_booking_id": string,"p_clinic_id": string,"p_dedup_key": string,"p_lead_id": string,"p_payload": Json,"p_throttle"?: boolean,"p_type": Database["public"]['Enums']["notification_type"],"p_user_id": string }; Returns: undefined
+                           },
+"notification_iso":
+{ Args: { "p_at": string }; Returns: string
+                           },
 "participant_messages_last_day":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -969,6 +1080,15 @@ isOneToOne: false
 { Args: { "p_clinic_id": string }; Returns: {
               "actual_price": number,"created_at": string,"lacked_transparency": boolean,"price_accuracy": Database["public"]['Enums']["price_accuracy"],"reply_created_at": string,"reply_text": string,"review_id": string,"stars": number,"text": string,"transparency_comment": string
             }[]
+                           },
+"purge_notifications":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"register_push_token":
+{ Args: { "p_platform": string,"p_token": string }; Returns: undefined
+                           },
+"register_web_push_subscription":
+{ Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string }; Returns: undefined
                            },
 "release_expired_holds":
 { Args: { "p_clinic_id": string }; Returns: number
@@ -1038,7 +1158,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "ai_message_role": "user"|"assistant","booking_actor": "patient"|"clinic","booking_status": "held"|"booked"|"completed"|"no_show"|"cancelled","case_status": "draft"|"submitted"|"closed","case_timeframe": "asap"|"within_2_weeks"|"within_3_months"|"flexible","clinic_status": "imported"|"registered"|"verified"|"removed","consent_type": "health_data_sharing"|"image_upload"|"ai_processing","conversation_status": "active"|"closed","image_quality": "ok"|"too_dark"|"blurry"|"wrong_angle"|"not_teeth","image_view": "front"|"upper"|"lower"|"side_left"|"side_right"|"unclear","lead_decline_reason": "no_capacity"|"not_offered"|"needs_referral"|"other"|"clinic_left","lead_status": "sent"|"accepted"|"declined"|"booked"|"withdrawn","message_sender_role": "patient"|"clinic","moderation_status": "pending"|"approved"|"rejected","out_of_scope_topic": "price"|"clinic_recommendation","price_accuracy": "as_quoted"|"slightly_higher"|"much_higher","service_category": "cosmetic"|"general"|"emergency","user_role": "patient"|"clinic"|"admin"
+            "ai_message_role": "user"|"assistant","booking_actor": "patient"|"clinic","booking_status": "held"|"booked"|"completed"|"no_show"|"cancelled","case_status": "draft"|"submitted"|"closed","case_timeframe": "asap"|"within_2_weeks"|"within_3_months"|"flexible","clinic_status": "imported"|"registered"|"verified"|"removed","consent_type": "health_data_sharing"|"image_upload"|"ai_processing","conversation_status": "active"|"closed","image_quality": "ok"|"too_dark"|"blurry"|"wrong_angle"|"not_teeth","image_view": "front"|"upper"|"lower"|"side_left"|"side_right"|"unclear","lead_decline_reason": "no_capacity"|"not_offered"|"needs_referral"|"other"|"clinic_left","lead_status": "sent"|"accepted"|"declined"|"booked"|"withdrawn","message_sender_role": "patient"|"clinic","moderation_status": "pending"|"approved"|"rejected","notification_channel": "email"|"push"|"web_push","notification_status": "pending"|"sending"|"sent"|"failed"|"skipped","notification_type": "clinic_new_lead"|"clinic_new_message"|"clinic_booking_created"|"clinic_booking_cancelled"|"clinic_booking_rescheduled"|"clinic_booking_reminder"|"patient_lead_answered"|"patient_new_message"|"patient_booking_confirmed"|"patient_booking_cancelled"|"patient_booking_reminder","out_of_scope_topic": "price"|"clinic_recommendation","price_accuracy": "as_quoted"|"slightly_higher"|"much_higher","service_category": "cosmetic"|"general"|"emergency","user_role": "patient"|"clinic"|"admin"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1158,7 +1278,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "ai_message_role": ["user", "assistant"],"booking_actor": ["patient", "clinic"],"booking_status": ["held", "booked", "completed", "no_show", "cancelled"],"case_status": ["draft", "submitted", "closed"],"case_timeframe": ["asap", "within_2_weeks", "within_3_months", "flexible"],"clinic_status": ["imported", "registered", "verified", "removed"],"consent_type": ["health_data_sharing", "image_upload", "ai_processing"],"conversation_status": ["active", "closed"],"image_quality": ["ok", "too_dark", "blurry", "wrong_angle", "not_teeth"],"image_view": ["front", "upper", "lower", "side_left", "side_right", "unclear"],"lead_decline_reason": ["no_capacity", "not_offered", "needs_referral", "other", "clinic_left"],"lead_status": ["sent", "accepted", "declined", "booked", "withdrawn"],"message_sender_role": ["patient", "clinic"],"moderation_status": ["pending", "approved", "rejected"],"out_of_scope_topic": ["price", "clinic_recommendation"],"price_accuracy": ["as_quoted", "slightly_higher", "much_higher"],"service_category": ["cosmetic", "general", "emergency"],"user_role": ["patient", "clinic", "admin"]
+            "ai_message_role": ["user", "assistant"],"booking_actor": ["patient", "clinic"],"booking_status": ["held", "booked", "completed", "no_show", "cancelled"],"case_status": ["draft", "submitted", "closed"],"case_timeframe": ["asap", "within_2_weeks", "within_3_months", "flexible"],"clinic_status": ["imported", "registered", "verified", "removed"],"consent_type": ["health_data_sharing", "image_upload", "ai_processing"],"conversation_status": ["active", "closed"],"image_quality": ["ok", "too_dark", "blurry", "wrong_angle", "not_teeth"],"image_view": ["front", "upper", "lower", "side_left", "side_right", "unclear"],"lead_decline_reason": ["no_capacity", "not_offered", "needs_referral", "other", "clinic_left"],"lead_status": ["sent", "accepted", "declined", "booked", "withdrawn"],"message_sender_role": ["patient", "clinic"],"moderation_status": ["pending", "approved", "rejected"],"notification_channel": ["email", "push", "web_push"],"notification_status": ["pending", "sending", "sent", "failed", "skipped"],"notification_type": ["clinic_new_lead", "clinic_new_message", "clinic_booking_created", "clinic_booking_cancelled", "clinic_booking_rescheduled", "clinic_booking_reminder", "patient_lead_answered", "patient_new_message", "patient_booking_confirmed", "patient_booking_cancelled", "patient_booking_reminder"],"out_of_scope_topic": ["price", "clinic_recommendation"],"price_accuracy": ["as_quoted", "slightly_higher", "much_higher"],"service_category": ["cosmetic", "general", "emergency"],"user_role": ["patient", "clinic", "admin"]
           }
         }
 } as const

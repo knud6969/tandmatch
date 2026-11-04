@@ -64,3 +64,23 @@ export function subscribeAuthChange(listener: Listener): () => void {
 export function notifyAuthChange(): Promise<void> {
   return Promise.all([...listeners].map((listener) => listener())).then(() => undefined);
 }
+
+// Push (mobile 13.10): det senest registrerede token (så logud kan afmelde det), om patienten har valgt "Ikke nu" til kortet,
+// og om patienten har slået notifikationer fra i Konto (så app-start ikke registrerer igen). Samme sted som sessionens tokens.
+const PUSH_TOKEN_KEY = "tm.pushToken";
+const PUSH_PROMPT_DISMISSED_KEY = "tm.pushPromptDismissed";
+const PUSH_DISABLED_KEY = "tm.pushDisabled";
+
+export const getPushToken = () => SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+export const savePushToken = (token: string) => SecureStore.setItemAsync(PUSH_TOKEN_KEY, token);
+export const clearPushToken = () => SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
+
+export async function getPushFlag(flag: "dismissed" | "disabled"): Promise<boolean> {
+  return (await SecureStore.getItemAsync(flag === "dismissed" ? PUSH_PROMPT_DISMISSED_KEY : PUSH_DISABLED_KEY)) === "1";
+}
+
+export async function setPushFlag(flag: "dismissed" | "disabled", value: boolean): Promise<void> {
+  const key = flag === "dismissed" ? PUSH_PROMPT_DISMISSED_KEY : PUSH_DISABLED_KEY;
+  if (value) await SecureStore.setItemAsync(key, "1");
+  else await SecureStore.deleteItemAsync(key);
+}

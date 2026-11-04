@@ -19,4 +19,4 @@ export const POST = withApi<Ctx>(async (req, { params }) => {
   const leadId = parseId((await params).id);
   const input = await readJson(req, bookSlotSchema);
   return jsonResponse(await new BookingsController(gate.supabase, session).book(leadId, input), 201);
-});
+}, { notify: true });

@@ -30,4 +30,4 @@ export const DELETE = withApi(async (req) => {
   await new ClinicsController(supabase, session).deleteAccount();
   await clearAuthCookies();
   return noContent();
-});
+}, { notify: true });

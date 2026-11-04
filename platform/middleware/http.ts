@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import type { ZodType } from "zod";
 import {
   ALREADY_REPLIED_TEXT,
@@ -49,11 +50,36 @@ function errorResponse(error: ApiError): Response {
   );
 }
 
+export type WithApiOptions = {
+  // Routes, der kan udløse en notifikation (platform 14.6): efter et 2xx-svar sendes det, der ligger i outboxen, uden at
+  // svaret venter. Glemmes det, sendes notifikationen ved næste flush eller af cron-jobbet; den går ikke tabt.
+  notify?: boolean;
+};
+
+// Sender outboxen efter svaret. Controlleren hentes dynamisk for at undgå en cirkulær import
+// (http.ts -> notificationController -> BaseRepository -> http.ts). Fejl fanges og logges kun med navnet.
+function flushNotificationsAfterResponse(): void {
+  try {
+    after(async () => {
+      try {
+        const { NotificationController } = await import("@/platform/notifications/notificationController");
+        await new NotificationController().flush();
+      } catch (err) {
+        console.error("Notifikationer: afsendelsen fejlede:", err instanceof Error ? err.name : "ukendt");
+      }
+    });
+  } catch {
+    // Uden for en request (fx i en enhedstest) er der ingen efterfølgende afsendelse; cron-jobbet tager den.
+  }
+}
+
 // Pakker en route-handler, så ApiError bliver til korrekt statuskode og alle andre fejl til 500 uden detaljer.
-export function withApi<C = unknown>(handler: (req: Request, ctx: C) => Promise<Response>) {
+export function withApi<C = unknown>(handler: (req: Request, ctx: C) => Promise<Response>, options: WithApiOptions = {}) {
   return async (req: Request, ctx: C): Promise<Response> => {
     try {
-      return await handler(req, ctx);
+      const response = await handler(req, ctx);
+      if (options.notify && response.status >= 200 && response.status < 300) flushNotificationsAfterResponse();
+      return response;
     } catch (err) {
       if (err instanceof ApiError) {
         return errorResponse(err);

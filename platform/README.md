@@ -1,6 +1,6 @@
 # Platform (`platform/`)
 
-Tværgående kode, som alle domæner bruger: middleware (`requireTerms`, `requireRole`, rate limit, områdevagt), databaseklienter og fejloversættelse (`db/`), basisklasser (`base/`), cron, billedbehandling og klientsikre UI-hjælpere (`ui-utils/`). platform/ kender ingen domæner, bortset fra cron og session-/vilkårsvagten, som bruger `features/identity` og `features/booking` via deres `index.ts`.
+Tværgående kode, som alle domæner bruger: middleware (`requireTerms`, `requireRole`, rate limit, områdevagt), databaseklienter og fejloversættelse (`db/`), basisklasser (`base/`), cron, billedbehandling, notifikationer (`notifications/`, afsnit 14, planlagt 2026-11-04) og klientsikre UI-hjælpere (`ui-utils/`). platform/ kender ingen domæner, bortset fra cron og session-/vilkårsvagten, som bruger `features/identity` og `features/booking` via deres `index.ts`. `platform/notifications/` kender heller ingen domæner: den læser kun outbox-tabellen og sender det, databasen har lagt i den.
 
 Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten). Numrene er bevaret, så henvisninger som "architecture 10.10" i koden stadig kan findes. Stier er opdateret til den nye struktur.
 
@@ -34,6 +34,7 @@ Lagene, mappestrukturen og grænserne mellem domænerne står i oversigten (`doc
 - Undtagelser:
   - `CronController` kaldes af planlagte jobs uden session: `constructor(deps: Partial<CronDeps> = {})`. Den har ingen brugerklient og bruger kun service role-klienten (2.3 g).
   - Controllere for offentlige routes, som også kan kaldes uden login, tager `session: Session | null`: `ServicesController` og `ClinicDirectoryController`. De bruger kun brugerens klient (anon-nøglen, når der ikke er en session) og aldrig service role.
+  - **Bygget (2026-11-04):** `NotificationController` (`platform/notifications/notificationController.ts`) sender det, der ligger i outboxen, og lægger påmindelser i den (14). Den kaldes af cron-routerne `/api/cron/notifications` og `/api/cron/booking-reminders` og efter svaret af routes med `withApi(handler, { notify: true })` (14.6). `constructor(deps: Partial<NotificationDeps> = {})` som `CronController`: ingen session, ingen brugerklient, kun service role-klienten (2.3 i).
   - Nye controllere uden session er ikke tilladt uden at blive beskrevet her.
 - `deps` bruges kun til at erstatte afhængigheder i tests.
 
@@ -70,12 +71,21 @@ Importreglerne og lagdelingen i 2.1 er uændrede, og ESLint håndhæver dem fort
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | server (og evt. klient) | Offentlig |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | server (og evt. klient) | Offentlig af design, beskyttet af RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | kun server, kun via `createSupabaseAdminClient()` | Må **kun** bruges til: (a) AI-skrivninger `append_assistant_message()` og `store_ai_summary()` (5.3), (b) `try_consume_anonymous_ai_call()` og `consume_rate_limit()` (5.3), (c) upload og sletning af billedfiler og `case_images`-rækker, også ved sletning af sag og tilbagetrækning af samtykke (9.2-9.4), samt upload af beskedbilleder og kaldet `send_message_with_images()` efter serverens deltager-, tråd- og samtykketjek (leads 10.12), (d) upload og sletning i den offentlige bucket `public-media` efter ejertjek (9.5), (e) signering af URL'er til `case-images` (også beskedbilleder), efter at stien er hentet gennem en RLS-beskyttet læsning (9.2; leads 10.12), (f) sletning af auth-bruger ved kontosletning, sletning af anonym session og sletning af den anonyme bruger efter overdragelse af kladden til en konto (`POST /api/session/claim`, identity 10.2), (g) de planlagte jobs: oprydning af anonyme sessioner (7.7) og `complete_due_bookings()` (5.3), (h) seed- og admin-scripts, herunder `admin_set_clinic_status()`. Aldrig til at læse data på brugerens vegne |
+| `SUPABASE_SERVICE_ROLE_KEY` | kun server, kun via `createSupabaseAdminClient()` | Må **kun** bruges til: (a) AI-skrivninger `append_assistant_message()` og `store_ai_summary()` (5.3), (b) `try_consume_anonymous_ai_call()` og `consume_rate_limit()` (5.3), (c) upload og sletning af billedfiler og `case_images`-rækker, også ved sletning af sag og tilbagetrækning af samtykke (9.2-9.4), samt upload af beskedbilleder og kaldet `send_message_with_images()` efter serverens deltager-, tråd- og samtykketjek (leads 10.12), (d) upload og sletning i den offentlige bucket `public-media` efter ejertjek (9.5), (e) signering af URL'er til `case-images` (også beskedbilleder), efter at stien er hentet gennem en RLS-beskyttet læsning (9.2; leads 10.12), (f) sletning af auth-bruger ved kontosletning, sletning af anonym session og sletning af den anonyme bruger efter overdragelse af kladden til en konto (`POST /api/session/claim`, identity 10.2), (g) de planlagte jobs: oprydning af anonyme sessioner (7.7) og `complete_due_bookings()` (5.3), (h) seed- og admin-scripts, herunder `admin_set_clinic_status()` og `scripts/create-admin.ts` (features/admin 6.4), (i) **planlagt (2026-11-04):** notifikationer: `claim_notifications()`, `complete_notification()`, `purge_notifications()` og `enqueue_booking_reminders()` (14.5, 14.8). Modtagerens e-mail og push-tokens hentes kun af `claim_notifications()` i databasen, aldrig med et separat opslag. Aldrig til at læse data på brugerens vegne |
 | `OPENAI_API_KEY` | kun server | |
 | `OPENAI_MODEL` | kun server | Model med vision + structured outputs. Falder tilbage til `DEFAULT_MODEL` i `features/cases/ai/openai.ts` |
 | `GEOCODING_FAKE` | kun server, kun tests | `1` giver en falsk adresseopslagsklient uden netværkskald (`FakeGeocodingService`, clinics 4.3), men kun når `NODE_ENV !== 'production'`. Sættes af `tests/api/run.sh` og `tests/e2e/run.sh`. Ellers bruges OpenStreetMap Nominatim (ingen nøgle) |
-| `CRON_SECRET` | kun server | Beskytter `/api/cron/cleanup-anonymous` og `/api/cron/complete-bookings` |
+| `CRON_SECRET` | kun server | Beskytter `/api/cron/cleanup-anonymous` og `/api/cron/complete-bookings`, og (bygget 2026-11-04) `/api/cron/notifications` og `/api/cron/booking-reminders` |
 | `TERMS_COOKIE_SECRET` | kun server | HMAC-nøgle til vilkårs-cookien (2.5) |
+| `RESEND_API_KEY` | kun server, kun `.env.local` | **Bygget (2026-11-04).** Nøgle til Resends HTTP API (14.6). Mangler den (eller `EMAIL_FROM`), bruges `ConsoleEmailService`, som kun logger type og modtager-id. Må aldrig have præfikset `NEXT_PUBLIC_` |
+| `EMAIL_FROM` | kun server | **Bygget (2026-11-04).** Afsender, fx `TandMatch <notifikationer@tandmatch.dk>`. Domænet skal være verificeret i Resend (beslutninger 12.3 punkt 48) |
+| `SITE_URL` | kun server | Findes (identity 10.2). **Fra 2026-11-04 også** basis for links i e-mails (`<SITE_URL>/klinik/lead/<id>`). Mangler den, bruges `http://localhost:3000` uden for produktion; i produktion springes e-mails over med fejlkoden `NO_SITE_URL` (14.5) |
+| `EXPO_ACCESS_TOKEN` | kun server, valgfri | **Bygget (2026-11-04).** Kun hvis "Enhanced push security" slås til i Expo-kontoen; sendes som `Authorization: Bearer` til Expos push-API (14.6) |
+| `NOTIFICATIONS_FAKE` | kun server, kun tests | **Bygget (2026-11-04).** `1` giver `FakeEmailService`, `FakePushService` og `FakeWebPushService` uden netværkskald, men kun når `NODE_ENV !== 'production'` (som `GEOCODING_FAKE`). Sættes af `tests/api/run.sh` og `tests/e2e/run.sh` |
+| `PUSH_LOG_ONLY` | kun server | **Bygget (2026-11-04).** `1` giver `ConsolePushService` i stedet for Expo (udvikling uden telefon): logger kun type, modtager-id og antal enheder |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | offentlig (må stå i browseren) | **Bygget (2026-11-04).** VAPID-nøglens offentlige del (RFC 8292, 65 byte som base64url). Bruges af serveren til `k=` i `Authorization`-headeren og af klinik-weben til `pushManager.subscribe({ applicationServerKey })`. Laves med `node scripts/generate-vapid-keys.mjs` |
+| `VAPID_PRIVATE_KEY` | kun server, kun `.env.local` | **Bygget (2026-11-04).** VAPID-nøglens private del (32 byte som base64url). Aldrig `NEXT_PUBLIC_`, aldrig i git eller logs. Mangler en af de tre VAPID-variabler, bruges `ConsoleWebPushService` |
+| `VAPID_SUBJECT` | kun server | **Bygget (2026-11-04).** Kontaktadresse i VAPID-tokenet (`sub`), fx `mailto:support@tandmatch.dk` |
 
 Patient-appen har kun én variabel, `EXPO_PUBLIC_API_URL` (API'ets base-URL, fx `http://192.168.1.20:3000` på LAN), i `mobile/.env` (committes ikke; `mobile/.env.example` committes). `EXPO_PUBLIC_*` bundles i appen og må derfor aldrig indeholde hemmeligheder; appen har hverken Supabase-nøgler eller OpenAI-nøgle (13.3).
 
@@ -162,6 +172,18 @@ postal_codes (opslag: postnummer → by, lat, lng)
 
 Anonyme patienter bruger de samme tabeller. Forskellen ligger i `profiles.is_anonymous` og i RLS/API-regler (5.1, 7.7).
 
+**Fra 2026-11-04** (tabellerne står i de nævnte README'er):
+
+```
+profiles 1─n push_tokens                              (patientens enheder; identity 4.3)
+clinics  1─0..1 clinic_notification_settings          (klinikkens e-mail- og browser-valg; clinics 4.3)
+profiles 1─n web_push_subscriptions                   (klinikejerens browsere til web push; 14.3)
+notification_outbox n─0..1 leads / bookings / clinics / profiles   (kun service role; 14.3)
+bookings 0..1─1 bookings via rescheduled_from_id      (flyttet tid; booking 4.3)
+patients n─n clinics via favorite_clinics             (gemte klinikker; clinics 4.3)
+profiles 1─n admin_actions                            (admins handlinger; features/admin 4.3)
+```
+
 ### 4.2 Enums
 
 ```sql
@@ -184,6 +206,15 @@ image_view           = 'front' | 'upper' | 'lower' | 'side_left' | 'side_right' 
 image_quality        = 'ok' | 'too_dark' | 'blurry' | 'wrong_angle' | 'not_teeth'
 price_accuracy       = 'as_quoted' | 'slightly_higher' | 'much_higher'   -- ja / lidt højere / langt højere
 moderation_status    = 'pending' | 'approved' | 'rejected'
+
+-- Bygget (2026-11-04), migration 20261105000200 (14.3):
+notification_channel = 'email' | 'push' | 'web_push'   -- email og web_push til klinikken, push (Expo) til patientens app
+notification_status  = 'pending' | 'sending' | 'sent' | 'failed' | 'skipped'
+notification_type    = 'clinic_new_lead' | 'clinic_new_message' | 'clinic_booking_created' | 'clinic_booking_cancelled'
+                     | 'clinic_booking_rescheduled' | 'clinic_booking_reminder'
+                     | 'patient_lead_answered' | 'patient_new_message' | 'patient_booking_confirmed'
+                     | 'patient_booking_cancelled' | 'patient_booking_reminder'
+                       -- 'clinic_booking_rescheduled' oprettes allerede i PR A, så PR B (flyt tid) ikke skal tilføje en enum-værdi
 ```
 
 Danske visningsnavne står i `lib/<domæne>/constants/<navn>.ts`.
@@ -319,13 +350,22 @@ withdraw_open_leads(...) -> integer
 | `try_consume_anonymous_ai_call(p_user_id)` | **kun service role** | Atomisk: tjekker at `p_user_id` er anonym, øger dagens tæller og returnerer `true` under loftet `ai_limits.anon_daily_ai_calls` (300). Bruger **ikke** `auth.uid()` (5.1 regel 8) |
 | `consume_rate_limit(key, limit)` | **kun service role** | Uændret. IP kun som hash |
 | `touch_last_active()` | `authenticated` | Uændret |
-| `moderate(kind, id, status, reason)` | admin | **[IKKE BYGGET]** (heller ikke planlagt i demoen). Seed-anmeldelser er forhåndsgodkendte |
+| `moderate(kind, id, status, reason)` | admin | **[IKKE BYGGET]**. Erstattes af `admin_moderate()` (planlagt 2026-11-04, nedenfor og features/admin 5.3). Seed-anmeldelser er forhåndsgodkendte |
 | `admin_set_clinic_status(clinic_id, status)` | **kun service role** (seed og admin-scripts) [PROTOTYPE] | Sætter `status` og `verified_at` via et transaktionsflag, som `clinics_guard()` kun accepterer fra denne funktion |
 | `clinic_leads(p_status lead_status default null)`, `clinic_lead_detail(lead_id)`, `clinic_lead_images(lead_id)`, `clinic_bookings(from, to)`, `clinic_booking(booking_id)`, `clinic_reviews()` | klinik | Læsefunktioner (5.7). `p_status = null` giver alle |
 | `public_clinics(p_service_ids uuid[], p_clinic_ids uuid[])` | alle, også `anon` | Kun synlige klinikker (5.1 regel 11): basisdata (inkl. Trustpilot) for `imported` uden ejer og for `verified`, plus fulde felter (logo, priser for de angivne ydelser, `has_emergency_hours`) for `verified`. `registered` returneres aldrig. Ingen `owner_id`, ingen `cvr` |
 | `public_clinic_profile(clinic_id)` | alle | Som ovenfor for én klinik, plus beskrivelse, hele prislisten, åbningstider, tandlæger og portefølje (kun `verified`) |
 | `public_busy_intervals(clinic_ids uuid[], from, to)` | alle | Optagede tidsrum (ikke-udløbne `held`- og `booked`-bookinger samt blokeringer) for verificerede klinikker. Kun `starts_at`/`ends_at`, ingen id'er, ingen typer. Grundlag for ledige tider (6.7) |
 | `public_reviews(clinic_id)`, `public_clinic_review_stats_many(clinic_ids)` | alle | Godkendte anmeldelser og godkendte svar; statistik (4.3, 8.3). Kun for verificerede klinikker |
+| `register_web_push_subscription(p_endpoint, p_p256dh, p_auth)` | klinik (permanent) | Clinics 10.19. Registrerer klinikejerens browser til web push (14.3): kræver `is_permanent_user()` og `profiles.role = 'clinic'` (ellers `42501`), et `https`-endpoint og nøgler af den rigtige længde (ellers `22023`), flytter et endpoint fra en anden bruger og beholder højst 10 abonnementer pr. bruger. Migration `20261105000200` |
+| `register_push_token(p_token, p_platform)` | patient (permanent) | Identity 4.3 `push_tokens`. Flytter et token fra en anden bruger til den kaldende (samme telefon, ny konto), opdaterer `last_seen_at` og beholder højst 5 tokens pr. bruger. Migration `20261105000100` |
+| Triggerne `notify_after_lead_change()`, `notify_after_message()`, `notify_after_booking_change()` | AFTER INSERT/UPDATE på `leads`, `messages`, `bookings` (ikke RPC'er) | Lægger rækker i `notification_outbox` i samme transaktion som handlingen (14.4). Fejl fanges (`exception when others` → `raise warning` uden indhold), så en notifikation aldrig ruller handlingen tilbage. Migration `20261105000200` |
+| `claim_notifications(p_limit)`, `complete_notification(p_id, p_status, p_error_code, p_invalid_tokens)`, `purge_notifications()` | **kun service role** | Afsendelsen (14.5). `claim` returnerer også modtagerens e-mail, push-tokens eller browser-abonnementer (`to_email`, `push_tokens`, `web_push_subscriptions`) og klinik-/bruger-id til logning; ingen andre veje til dem. Migration `20261105000200` |
+| `enqueue_booking_reminders()` | **kun service role** (`/api/cron/booking-reminders`) | Påmindelser dagen før (14.8). Idempotent via `dedup_key`. Bruger ikke `auth.uid()` |
+| **Planlagt (2026-11-04)** `reschedule_booking(p_booking_id, p_starts_at)` | patient (permanent, ejer) | Flyt tid i én transaktion (booking 10.16). Migration `20261106000100` |
+| **Planlagt (2026-11-04)** `is_public_clinic(p_clinic_id)` | policy-hjælper (`authenticated`) | `true` for `verified` og for `imported` uden ejer (samme regel som 5.1 regel 11). Returnerer kun boolean. Bruges af INSERT-policyen på `favorite_clinics` (clinics 4.3). Migration `20261106000200` |
+| **Planlagt (2026-11-04)** `clinic_stats(p_from, p_to)` | klinik (verificeret ejer) | Læsefunktion med tal for egen klinik (clinics 10.18). Migration `20261107000100` |
+| **Planlagt (2026-11-04)** `admin_change_clinic_status(p_clinic_id, p_status, p_reason)`, `admin_moderate(p_kind, p_id, p_status, p_reason)` | admin (`is_admin()` og permanent) | Features/admin 5.3. Migration `20261107000200` |
 
 Fjernet fra den gamle model og må ikke genskabes: `send_request`, `decide_response`, `dentist_*`, `public_dentists`, `public_dentist_review_stats*`, `demo_set_dentist_verification`, `responses_after_insert`, `is_editable_request_text`, `dentist_visits`.
 
@@ -356,6 +396,12 @@ Fjernet fra den gamle model og må ikke genskabes: `send_request`, `decide_respo
 | bookings | `patient_id = uid`. Klinikker **ingen** direkte; kun via `clinic_bookings()`/`clinic_lead_detail()` | ingen (kun `book_slot`) | ingen (kun `cancel_booking`, `complete_booking`) | ingen |
 | reviews | `patient_id = uid` eller `is_admin()`. Offentligt via `public_reviews()`, klinikken via `clinic_reviews()` | se 8.1 | ingen | ingen ([IKKE BYGGET]) |
 | review_replies | `clinic_id = auth_clinic_id()` eller `is_admin()`. Offentligt via `public_reviews()` | `review_is_for_my_clinic(review_id)` og `review_is_approved(review_id)` og `clinic_id = auth_clinic_id()` | ingen | ingen |
+| push_tokens | `user_id = uid` | **ingen** (kun `register_push_token()`) | ingen | `user_id = uid` |
+| web_push_subscriptions | `user_id = uid` | **ingen** (kun `register_web_push_subscription()`) | ingen | `user_id = uid` |
+| notification_outbox | **ingen** (kun service role og triggerne) | ingen | ingen | ingen |
+| clinic_notification_settings | `is_clinic_owner(clinic_id)` | `is_clinic_owner(clinic_id)` og `is_permanent_user()` | som insert (kolonne-grant: kun de otte `email_*`- og `web_push_*`-felter) | ingen |
+| **Planlagt (2026-11-04)** favorite_clinics | `patient_id = uid` | `patient_id = uid` og `is_permanent_user()` og `is_public_clinic(clinic_id)` (trigger: højst 200 pr. patient) | ingen | `patient_id = uid` |
+| **Planlagt (2026-11-04)** admin_actions | `is_admin()` | ingen (kun `admin_*`-funktionerne) | ingen | ingen |
 
 Note: indtil migration `20261024000100` havde klinikker direkte SELECT på hele `leads`-rækken, også `case_id` og felterne på tilbagetrukne leads (security trin 5, H1). Policyen er nu `leads_select_case_owner`; alt, klinikken læser om et lead, går gennem security definer-funktioner, der skjuler `case_id` og indholdet af tilbagetrukne leads.
 
@@ -416,6 +462,17 @@ SQL-scripts i `tests/rls/`, kørt mod lokal Supabase efter `supabase db reset`. 
 52. (Bygget i 7.12a.) (Fil `51_retired_consent_versions.sql`.) Hver `consent_type` har præcis én række i `consent_text_versions` med `retired_at is null`; `health_data_sharing@v0-prototype` er pensioneret. En permanent patient kan ikke indsætte et samtykke til en pensioneret version med sin egen JWT (policy, `42501`). En patient, hvis seneste delingssamtykke er v0 (indsat som fixture med service role), afvises af både `send_leads()` og `send_emergency_lead()` (`CONSENT_REQUIRED`) og kan sende efter at have givet v1. En patient med både v0 og v1, der trækker v1 tilbage, har bagefter intet aktivt delingssamtykke, og leads er trukket tilbage. Et v0-samtykke kan stadig trækkes tilbage.
 53. (Fil `57_message_images.sql`.) `message_images`: `authenticated` kan hverken indsætte, ændre eller slette rækker og kan ikke kalde `send_message_with_images()`; patienten ser kun billeder i egne tråde; klinik Y får intet fra `clinic_lead_message_images()` for X's lead; X får intet efter `withdrawn`; med service role afvises fremmed afsender, lukket tråd, flere end 3 billeder, tom besked uden billeder og patient uden gældende `image_upload`; klinikken kræver intet samtykke; tilbagetrækning af `image_upload` sletter patientens beskedbilleder (ikke klinikkens) og returnerer stierne; direkte indsættelse af en tom tekstbesked afvises.
 
+**Fra 2026-11-04** (trin 11, `docs/arbejdsplan.md`; punkt 54-56 og 61 er bygget i PR A, resten følger):
+
+54. (Fil `59_push_tokens.sql`.) En patient ser og sletter kun egne `push_tokens`; `authenticated` kan ikke indsætte eller ændre direkte; `register_push_token()` afviser anonym, klinik og admin (`42501`) og et token, der ikke matcher mønsteret (`22023`); samme token registreret af patient B fjernes fra patient A; den 6. registrering sletter den ældste; sletning af kontoen sletter tokens (cascade).
+55. (Fil `60_notification_outbox.sql`.) `anon` og `authenticated` (patient, klinik, admin) kan hverken læse, indsætte, ændre eller slette i `notification_outbox` og kan ikke kalde `claim_notifications()`, `complete_notification()`, `purge_notifications()` eller `enqueue_booking_reminders()`. Triggerne lægger præcis de rækker i outboxen, som 14.4 beskriver: nyt lead (også akut, med `holdExpiresAt`), patientbesked to gange inden for 15 minutter giver én række, klinikbesked, beslutning (accept og afvisning), `book_slot()`, aflysning af patienten og af klinikken, accept af akut-lead (`held → booked`) og sletning af klinikkonto. Ingen række ved `withdraw_lead()`, `close_case()` og en udløbet reservation. `payload` har kun nøglerne i 14.3 (ingen opsummering, ydelse, navn, telefon, e-mail eller beskedtekst). En slået-fra-indstilling giver ingen e-mailrække. `enqueue_booking_reminders()` kaldt to gange giver samme antal rækker. `claim_notifications()` giver ikke en e-mail for en klinik uden ejer, en ikke-verificeret klinik eller et lead fra før `owner_since`. En fejl i enqueue (fx simuleret med en ugyldig indstillingsrække) ruller ikke `book_slot()` tilbage.
+56. (Fil `61_clinic_notification_settings.sql`.) Kun ejeren kan læse, indsætte og ændre klinikkens række; en anden klinik og en patient får 0 rækker; `authenticated` kan ikke ændre `clinic_id`; standardværdierne (web push-påmindelse slået fra, resten til).
+57. (Fil `62_reschedule_booking.sql`, PR B.) `reschedule_booking()` kun for ejeren af en `booked` booking før starttid; afviser `held`, `cancelled`, en andens booking og samme tid; ved `SLOT_TAKEN` er den gamle booking stadig `booked` (atomisk); efter succes er den gamle `cancelled` (`cancelled_by = 'patient'`), den nye `booked` med `rescheduled_from_id`, leadet stadig `booked`, klinikken ser kontaktfelterne på den nye booking og ikke på den gamle, og outboxen har én `clinic_booking_rescheduled` og ingen `clinic_booking_cancelled`; `BOOKING_LIMIT` gælder.
+58. (Fil `63_favorite_clinics.sql`, PR B.) En patient ser kun egne favoritter; anonym og klinik kan ikke indsætte; en `registered` eller `removed` klinik kan ikke gemmes; den 201. afvises; sletning af kontoen sletter favoritterne.
+59. (Fil `64_clinic_stats.sql`, PR C.) `clinic_stats()` tæller kun egen kliniks leads og bookinger fra `owner_since`; klinik Y får aldrig X's tal; en ikke-verificeret klinik, en patient og `anon` afvises; et interval over 366 dage afvises.
+61. (Fil `66_web_push_subscriptions.sql`, bygget i PR A; nummeret ligger efter PR C's filer, fordi 62-65 er reserveret.) `web_push_subscriptions`: kun ejeren læser og sletter egne rækker; `authenticated` kan ikke indsætte eller ændre direkte; `register_web_push_subscription()` afviser patient, anonym, anon og admin (`42501`), `http`-endpoints og forkerte nøgler (`22023`), flytter et endpoint mellem konti og beholder højst 10 abonnementer; sletning af kontoen sletter dem (cascade). Outboxen får `web_push`-rækker kun for klinikker, hvis ejer har et abonnement og har valgt typen; beskeder dæmpes pr. kanal; `claim_notifications()` returnerer kun den nuværende ejers abonnementer; `complete_notification()` sletter kun ejerens ugyldige endpoints.
+60. (Fil `65_admin.sql`, PR C.) Patient, klinik og anonym kan ikke kalde `admin_change_clinic_status()` eller `admin_moderate()` (`42501`); admin kan; kun overgangene `registered ↔ verified` er tilladt; afvisning uden begrundelse afvises; hver handling skriver én række i `admin_actions`, som kun admin kan læse; admin kan stadig ikke læse `cases`, `leads`, `bookings`, `messages`, `notification_outbox` eller `push_tokens`.
+
 API-tests (obligatoriske): vilkårs-gaten (403 `TERMS_REQUIRED`, forfalsket cookie afvises, ny version kræver ny accept) og "vilkårs-accept giver ikke samtykke" (403 `CONSENT_REQUIRED` ved upload/chat).
 
 ## 6. Sider og routes (App Router)
@@ -428,10 +485,7 @@ Slugs er danske uden æøå. Alle sider er mobile-first og tjekkes ved 390 px og
 
 ### 6.4 Admin (`/admin`, rolle `admin`)
 
-| Route | Indhold |
-|---|---|
-| `/admin/moderation` | **[IKKE BYGGET]**, ikke planlagt i demoen. Kø af `pending` anmeldelser og svar |
-| `/admin/klinikker` | [UDSKUDT] Verifikation og import af klinikker. Demoen bruger `admin_set_clinic_status()` i seed |
+**Planlagt (2026-11-04):** flyttet til det nye domæne `features/admin` (`features/admin/README.md` 6.4). Indtil det er bygget, gælder: `/admin/moderation` og `/admin/klinikker` findes ikke, og demoen bruger `admin_set_clinic_status()` i seed.
 
 ### 6.5 Beskyttelse af sider
 
@@ -449,6 +503,8 @@ Status: begge buckets oprettes af migrationssættet (trin 0). Upload til `public
 |---|---|---|
 | `case-images` | **privat** | Patientens mundfotos (helbredsdata): sagsbilleder `{case_id}/…` og beskedbilleder fra patient og klinik `messages/{lead_id}/…` (leads 10.12; præfiks i samme bucket, så der ikke skal oprettes en ny bucket på det fælles projekt) |
 | `public-media` | offentlig | Kliniklogoer, tandlægeportrætter og porteføljebilleder |
+
+Notifikationer (14) sender aldrig billeder eller links til billeder.
 
 ## 10. API-kontrakter
 
@@ -484,6 +540,157 @@ export type ConsentType = "health_data_sharing" | "image_upload" | "ai_processin
 
 ### 10.14 Admin
 
-Hele admin-API'et er [IKKE BYGGET] og ikke planlagt i demoen: moderation (`/api/admin/moderation`) og klinikstatus (`/api/admin/clinics/{id}/status`) [UDSKUDT].
+**Planlagt (2026-11-04):** flyttet til `features/admin/README.md` 10.14 (moderation og klinikstatus). [IKKE BYGGET] indtil trin 11 (PR C).
 
 ---
+
+## 14. Notifikationer
+
+**Bygget (2026-11-04), trin 11, PR A** (`docs/arbejdsplan.md`; server, database og `lib/` er bygget, klinik-webbens UI og appens del følger i 11.7-11.8). Dækker e-mail og web push (browser) til klinikken, push i patient-appen og påmindelser dagen før en booket tid. Web push blev føjet til som en tredje kanal i samme outbox og samme migration (besluttet 2026-11-04), før nogen migration var kørt, så der ikke skal en ekstra migration til. Push-tokens står i identity (4.3 `push_tokens`, 10.15), klinikkens e-mailvalg i clinics (4.3 `clinic_notification_settings`, 10.19), og appens del i `mobile/README.md` 13.10.
+
+### 14.1 Valg: outbox i Postgres
+
+Den enkleste robuste løsning til prototypen er en **outbox-tabel** (`notification_outbox`) i den database, vi allerede har. Ingen ekstern kø, ingen Supabase-webhooks eller Edge Functions (princip 8).
+
+- **Rækker lægges af databasen**, i AFTER-triggere på `leads`, `messages` og `bookings` (14.4). De skrives i samme transaktion som handlingen, så en notifikation kun findes, hvis handlingen er committet, og forsvinder, hvis den rulles tilbage. Ingen kodevej kan glemme den, heller ikke `send_emergency_lead()`, `clinics_after_owner_removed()` eller en fremtidig funktion, der ændrer en booking.
+- **Fejl vælter aldrig handlingen.** Enqueue-delen i triggerne er pakket ind i `begin … exception when others then raise warning '…' end` (uden indhold i advarslen). Afsendelsen sker først efter commit og uden for requestens svar.
+- **Afsendelse** sker af `NotificationDispatcher` (14.6) på to måder: (a) lige efter svaret, med Next.js' `after()`, i de routes, der kan udløse en notifikation (`withApi(handler, { notify: true })`, 14.6); (b) som sikkerhedsnet hvert 5. minut via `/api/cron/notifications`. I demoen kører ingen cron (2.3), så (a) er det, der virker lokalt; (b) og påmindelserne (14.8) kræver hosting eller et manuelt kald.
+- **Intet sendes to gange:** `dedup_key` er unik (fx `clinic_new_lead:<lead_id>`), så samme hændelse kun kan ligge én gang. Afsendelsen tager rækker med `for update skip locked` og en lås på 2 minutter, så to samtidige afsendere aldrig tager samme række. Resend får outbox-rækkens id som `Idempotency-Key`, så et genforsøg efter et nedbrud mellem afsendelse og markering ikke giver en ekstra e-mail. Expos push-API har ingen idempotensnøgle; dør processen præcis mellem afsendelse og markering, kan en push i sjældne tilfælde komme to gange [PROTOTYPE].
+- **Fravalgt:** afsendelse direkte i controlleren (kan sende ved en rollback, gør svaret langsomt og kan vælte det), Supabase Database Webhooks/Edge Functions (ny infrastruktur, svært at teste lokalt) og en ekstern kø.
+
+### 14.2 Typer, modtagere og indhold
+
+Ingen notifikation indeholder helbredsdata, patientens navn eller kontaktoplysninger, opsummering, ydelser, beskedtekst, billeder eller links til billeder. E-mails indeholder kun en generisk tekst, evt. et tidspunkt og et link til klinik-weben, hvor klinikken skal være logget ind. Web push til klinikkens browser indeholder kun e-mailens emne som tekst og en intern sti. Push-beskeder indeholder kun en generisk tekst (ingen kliniknavn, ingen ydelse) og en intern sti i appen.
+
+| Type | Kanal | Modtager | Udløses af | Emne/tekst (dansk, `lib/common/constants/notifications.ts`) | Link/sti |
+|---|---|---|---|---|---|
+| `clinic_new_lead` | e-mail og web push | klinikken | nyt lead (`send_leads()`, også akut) | Emne "Ny henvendelse på TandMatch"; akut: "Ny henvendelse på TandMatch – svar inden kl. {HH.MM}". Tekst: "Du har en ny henvendelse på TandMatch. Se den og svar her:" | `<SITE_URL>/klinik/lead/<leadId>` |
+| `clinic_new_message` | e-mail og web push | klinikken | besked fra patienten (højst én pr. lead pr. 15 min) | "Ny besked på TandMatch" / "Du har en ny besked fra en patient på TandMatch. Læs den her:" | samme |
+| `clinic_booking_created` | e-mail og web push | klinikken | patienten booker (`book_slot()`) | "Ny booking på TandMatch" / "En patient har booket en tid hos jer {dag d. dato kl. HH.MM}. Se bookingen her:" | samme |
+| `clinic_booking_cancelled` | e-mail og web push | klinikken | patienten aflyser (`cancel_booking()`) | "Aflyst tid på TandMatch" / "En patient har aflyst tiden {dag d. dato kl. HH.MM}. Tiden er ledig igen i jeres kalender." | samme |
+| `clinic_booking_rescheduled` | e-mail og web push | klinikken | patienten flytter en tid (PR B, booking 10.16) | "Flyttet tid på TandMatch" / "En patient har flyttet en tid fra {gammel} til {ny}." | samme |
+| `clinic_booking_reminder` | e-mail og web push (hvis valgt) | klinikken | dagen før en booket tid (14.8) | "Påmindelse: booket tid i morgen" / "I har en booket tid via TandMatch {dag d. dato kl. HH.MM}." | samme |
+| `patient_lead_answered` | push | patienten | klinikken accepterer eller afviser (også systemets `clinic_left`) | Titel "TandMatch", tekst "Klinikken har svaret på din henvendelse." | `/sag/<caseId>` |
+| `patient_new_message` | push | patienten | besked fra klinikken (højst én pr. lead pr. 15 min) | "Du har en ny besked fra klinikken." | `/sag/<caseId>/beskeder/<leadId>` |
+| `patient_booking_confirmed` | push | patienten | klinikken accepterer et akut-lead, så den reserverede tid bliver booket (`held → booked`). Erstatter `patient_lead_answered` for den beslutning, så patienten kun får én push | "Klinikken har bekræftet din tid." | `/bookinger` |
+| `patient_booking_cancelled` | push | patienten | klinikken aflyser (også når klinikken sletter sin konto) | "Klinikken har aflyst din tid. Åbn appen for at se mere." | `/bookinger` |
+| `patient_booking_reminder` | push | patienten | dagen før en booket tid (14.8) | "Påmindelse: Du har en tandlægetid i morgen kl. {HH.MM}." | `/bookinger` |
+
+Alle e-mails slutter med: "Du får denne e-mail, fordi jeres klinik er oprettet på TandMatch. I kan slå e-mails fra under Klinikprofil → Notifikationer: `<SITE_URL>/klinik/profil#notifikationer`. Svar ikke på denne e-mail." Tidspunkter vises i `Europe/Copenhagen` med de eksisterende hjælpere i `lib/common/domain/time.ts`. E-mailen har både en tekst- og en simpel HTML-del (ingen billeder, ingen sporingspixel, ingen eksterne ressourcer).
+
+**Web push til klinikken (browseren):** samme `clinic_*`-typer som e-mailen, med titlen "TandMatch" og e-mailens emne som tekst (fx "Ny henvendelse på TandMatch", "Ny booking på TandMatch"; ingen tider, kun for akut lead står fristen i emnet). Stien er `/klinik/lead/<leadId>` for `clinic_new_lead` og `clinic_new_message` og `/klinik/kalender` for bookingtyperne (`clinicNotificationPath`, `isAllowedClinicNotificationPath`; service workeren åbner kun disse stier). Beskeden krypteres efter RFC 8291 og signeres med VAPID (RFC 8292) i `VapidWebPushService`; push-tjenesten (Google, Mozilla, Apple, Microsoft) ser kun den krypterede besked. Klinikken vælger typerne til og fra på `/klinik/profil` (clinics 10.19); standard er til for nyt lead, ny besked og ny/flyttet/aflyst tid, og fra for påmindelsen. Der lægges kun en `web_push`-række, hvis ejeren har mindst ét abonnement på det tidspunkt, rækken lægges.
+
+**Modtagere:**
+- **Klinikken:** login-e-mailen for klinikkens **nuværende** ejer (`auth.users.email`), slået op af `claim_notifications()` på afsendelsestidspunktet. Ingen e-mail, hvis klinikken ikke har en ejer, ikke er `verified`, eller leadet er sendt før `owner_since` (5.1 regel 16); rækken bliver `skipped`. Klinikkens offentlige `clinics.email` bruges ikke. Klinikken vælger typerne fra og til på `/klinik/profil` (clinics 10.19); valget tjekkes, når rækken lægges i outboxen.
+- **Klinikkens browsere:** de nuværende ejers `web_push_subscriptions` (højst 10), slået op af `claim_notifications()` efter samme regler som e-mailen (ejer, `verified`, lead sendt efter `owner_since`). Intet abonnement = `skipped`. Et abonnement slettes, når push-tjenesten svarer 404 eller 410, når ejeren logger ud i browseren (`DELETE /api/web-push-subscriptions`) og når kontoen slettes.
+- **Patienten:** alle patientens `push_tokens` (højst 5 enheder). Ingen tokens = `skipped`. Patienten styrer push med telefonens tilladelse og kontakten "Notifikationer" i appen (mobile 13.10).
+
+### 14.3 Datamodel: `notification_outbox`
+
+Migration `20261105000200_notification_outbox.sql`. RLS slået til uden policies: kun triggerne og service role-funktionerne rører tabellen (5.4).
+
+| Felt | Type | Note |
+|---|---|---|
+| id | uuid PK | Også `Idempotency-Key` hos Resend |
+| type | notification_type not null | 14.2 |
+| channel | notification_channel not null | `email`, `push` eller `web_push`. Check: `push` hvis og kun hvis typen er `patient_*`; `clinic_*` er `email` eller `web_push` |
+| clinic_id | uuid null FK clinics | Kun `email` og `web_push`. Ejeren slås op ved afsendelse |
+| recipient_user_id | uuid null FK profiles on delete cascade | Kun `push` (app): patientens bruger-id. Check: præcis én af `clinic_id` og `recipient_user_id` efter kanalen |
+| lead_id | uuid null FK leads on delete cascade | |
+| booking_id | uuid null FK bookings on delete cascade | Sletter patienten sin konto, forsvinder ventende rækker med bookingen |
+| payload | jsonb not null default '{}' | **Kun** nøglerne `caseId`, `leadId`, `bookingId`, `startsAt`, `previousStartsAt`, `holdExpiresAt` (id'er og ISO-tidspunkter). Check-constraint: `payload - array['caseId','leadId','bookingId','startsAt','previousStartsAt','holdExpiresAt'] = '{}'::jsonb` |
+| dedup_key | text null **unique** | Fx `clinic_new_lead:<lead_id>`, `patient_booking_reminder:<booking_id>`; web push-rækken har præfikset `web_push:` (`web_push:clinic_new_lead:<lead_id>`). `null` for beskeder (de dæmpes i stedet, 14.4) |
+| status | notification_status not null default 'pending' | `pending → sending → sent | failed | skipped`; `sending → pending` ved et genforsøg |
+| attempts | smallint not null default 0 | Højst `NOTIFY_MAX_ATTEMPTS` (5) |
+| next_attempt_at | timestamptz not null default now() | Udskydelse efter fejl: 1, 5, 15 og 60 minutter |
+| locked_until | timestamptz null | Sat ved `claim`; en `sending`-række med udløbet lås kan tages igen |
+| sent_at | timestamptz null | |
+| last_error | text null | Kun en fejlkode (store bogstaver, tal og understreg; fx `RESEND_429`, `EXPO_DEVICE_NOT_REGISTERED`, `WEBPUSH_410`, `NO_RECIPIENT`, `NO_SITE_URL`, `LOCK_EXPIRED`; `complete_notification()` gemmer intet andet), højst 100 tegn; aldrig svarets indhold, e-mailadresse eller token |
+| created_at | timestamptz not null default now() | |
+
+**`web_push_subscriptions`** (klinikejerens browsere; samme migration): `id`, `user_id` (FK profiles, cascade), `endpoint` (unique, `https`, højst 500 tegn), `p256dh` (87 tegn base64url), `auth` (22 tegn base64url), `created_at`, `last_used_at`. RLS: SELECT og DELETE kun `user_id = auth.uid()`; ingen INSERT/UPDATE for klientroller; rækker skrives kun af `register_web_push_subscription()` (5.3). Serveren sender kun til værter hos Google, Mozilla, Apple og Microsoft (`WEB_PUSH_ALLOWED_HOST_SUFFIXES`), både ved registrering og lige før afsendelsen (SSRF).
+
+Indeks: `(status, next_attempt_at)` og `(lead_id, type, created_at)` (dæmpning af beskeder). Rækker med `sent`, `failed` og `skipped` slettes efter 30 dage af `purge_notifications()` (kaldes af `/api/cron/notifications`). Tabellen indgår ikke i patientens dataeksport (den indeholder kun id'er og tidspunkter, som eksporten allerede har).
+
+Konstanterne står både i SQL og i `lib/common/constants/notifications.ts` og ændres samtidig (beslutninger 12.2): `NOTIFY_MESSAGE_THROTTLE_MIN = 15`, `NOTIFY_MAX_ATTEMPTS = 5`, `NOTIFY_LOCK_MINUTES = 2`, `NOTIFY_RETENTION_DAYS = 30`, `BOOKING_REMINDER_HOURS = 24`.
+
+### 14.4 Hvornår lægges en række (triggerne)
+
+Alle tre triggerfunktioner er `security definer`, `search_path = ''`, har ingen EXECUTE for klientroller (5.1 regel 13) og fanger egne fejl (14.1). De lægger rækkerne gennem hjælperen `notification_enqueue()` (samme begrænsninger), som læser `clinic_notification_settings` (manglende række = standardværdierne, clinics 4.3) og for hver `clinic_*`-type lægger en `email`-række og/eller en `web_push`-række efter klinikkens valg (web push kun hvis ejeren har et abonnement). Dæmpningen af beskeder gælder pr. lead, type og kanal.
+
+- **`leads` AFTER INSERT:** `clinic_new_lead` til leadets klinik, hvis `email_new_lead`. Akut (`requested_starts_at is not null`): `payload.holdExpiresAt = least(sent_at + interval '30 minutes', requested_starts_at)` (samme regel som `hold_expires_at`, 4.2; bookingen er ikke indsat endnu, når triggeren kører). `dedup_key = 'clinic_new_lead:' || id`.
+- **`leads` AFTER UPDATE:** når `responded_at` går fra `null` til en værdi: er den nye status `booked` (accept af et akut-lead inden for reservationen), `patient_booking_confirmed` (`payload = { caseId, leadId }`, `dedup_key = 'patient_booking_confirmed:' || id`); ellers `patient_lead_answered` til sagens patient, `payload = { caseId, leadId }`, `dedup_key = 'patient_lead_answered:' || id`.
+- **`messages` AFTER INSERT** (også beskeder med billeder fra `send_message_with_images()`): `sender_role = 'patient'` → `clinic_new_message` til leadets klinik, hvis `email_new_message`; `sender_role = 'clinic'` → `patient_new_message` til sagens patient (`payload = { caseId, leadId }`). **Dæmpning:** ingen ny række, hvis der findes en række af samme type for samme lead, oprettet inden for de seneste `NOTIFY_MESSAGE_THROTTLE_MIN` minutter.
+- **`bookings` AFTER INSERT:** `status = 'booked'` og `rescheduled_from_id is null` → `clinic_booking_created` (hvis `email_booking_changes`), `payload = { leadId, bookingId, startsAt }`. Fra PR B: `rescheduled_from_id is not null` → `clinic_booking_rescheduled` med også `previousStartsAt`. En `held`-booking (akut) giver ingen række her; klinikken får allerede `clinic_new_lead`.
+- **`bookings` AFTER UPDATE OF status:** `held → booked` giver ingen række her (den kommer fra `leads`-triggeren ovenfor). `booked → cancelled` med `cancelled_by = 'patient'` → `clinic_booking_cancelled` (hvis `email_booking_changes`), **undtagen** når transaktionsflaget `tm.rescheduling` er sat af `reschedule_booking()` (PR B). `booked → cancelled` med `cancelled_by = 'clinic'` → `patient_booking_cancelled`. `held → cancelled` (afvisning, tilbagetrækning, udløb) giver ingen række; afvisningen giver allerede `patient_lead_answered`. `dedup_key = '<type>:' || booking_id`.
+- **Ingen notifikation** ved `withdraw_lead()`, `close_case()`, tilbagetrækning af samtykke, udeblivelse, automatisk gennemførelse eller sletning af en patientkonto (12.3 punkt 35 er uændret).
+
+### 14.5 Afsendelse (funktionerne)
+
+Alle tre er `security definer`, `search_path = ''`, kun `service_role` (5.1 regel 7 og 8; ingen `auth.uid()`).
+
+- `claim_notifications(p_limit integer default 20)`: sætter `pending`-rækker med `next_attempt_at <= now()` og `sending`-rækker med udløbet lås til `sending`, `locked_until = now() + 2 min`, `attempts + 1` (`for update skip locked`, ældste først) og returnerer `id, type, channel, payload, attempts, clinic_id, recipient_user_id` (de to sidste kun til logning) plus **mål**: for `email` `to_email` (den nuværende ejers login-e-mail efter reglerne i 14.2, ellers `null`); for `push` `push_tokens text[]` (patientens tokens, evt. tom); for `web_push` `web_push_subscriptions jsonb` (liste af `{ endpoint, p256dh, auth }` for den nuværende ejer efter samme regler, evt. tom). En `sending`-række med udløbet lås og `attempts >= 5` bliver `failed` med `LOCK_EXPIRED` i stedet for at blive taget igen.
+- `complete_notification(p_id, p_status, p_error_code default null, p_invalid_tokens text[] default null)`: `p_status` er `sent`, `skipped`, `retry` eller `failed`. `retry` sætter `pending` og `next_attempt_at` efter udskydelsen, eller `failed` ved `attempts >= 5`. `p_invalid_tokens` slettes: for `push` fra patientens `push_tokens` (Expos `DeviceNotRegistered`), for `web_push` fra klinikkens nuværende ejers `web_push_subscriptions` (404/410). Kun modtagerens egne rækker røres. `p_error_code` gemmes kun, hvis det består af store bogstaver, tal og understreg (højst 100 tegn); alt andet kasseres.
+- `purge_notifications()`: sletter afsluttede rækker ældre end 30 dage; returnerer antal.
+
+### 14.6 Klasser og filer
+
+Alt i `platform/notifications/` (kender ingen domæner; lint som resten af `platform/`, og routes må kun importere `notificationController`). Arv kun fra de abstrakte basisklasser her og `BaseRepository` (2.1.1).
+
+| Fil | Klasse | Ansvar |
+|---|---|---|
+| `emailService.ts` | `EmailService` (abstrakt) | `send(message: EmailMessage): Promise<void>` med `EmailMessage = { to, subject, text, html, idempotencyKey }`. Validerer felterne og kalder underklassens `deliver()`. Fejl kastes som `NotificationDeliveryError(code, retryable)`, så dispatcheren kan vælge `retry` eller `failed` |
+| `resendEmailService.ts` | `ResendEmailService` | `fetch` til `POST https://api.resend.com/emails` (ingen npm-pakke) med `Authorization: Bearer ${RESEND_API_KEY}`, `Idempotency-Key`, `Content-Type: application/json` og body `{ from: EMAIL_FROM, to: [to], subject, text, html }`. Timeout 5 s (`AbortSignal.timeout`). 2xx = sendt; 429, 5xx, timeout og netværksfejl = `retryable`; andre 4xx = ikke `retryable`. Svarets body logges aldrig |
+| `consoleEmailService.ts` | `ConsoleEmailService` | Standard i udvikling (uden `RESEND_API_KEY`/`EMAIL_FROM`). Logger kun `[email] <type> til klinik <clinic_id> (outbox <id>)`; aldrig adresse, emne, tekst eller link |
+| `fakeEmailService.ts` | `FakeEmailService` | Tests: gemmer beskederne i et felt på instansen (ingen modul-tilstand, 2.1.1), kan sættes til at fejle med en given kode |
+| `pushService.ts` | `PushService` (abstrakt) | `send(messages: PushMessage[]): Promise<PushResult[]>` med `PushMessage = { to: string; title: string; body: string; data: { type: NotificationType; path: string } }` og pr. besked `ok`, `invalid_token` eller `error(retryable)` |
+| `expoPushService.ts` | `ExpoPushService` | `fetch` til `POST https://exp.host/--/api/v2/push/send` i bundter af højst 100, `sound: "default"`, evt. `Authorization: Bearer ${EXPO_ACCESS_TOKEN}`. Timeout 5 s. Billetstatus `error` med `details.error = "DeviceNotRegistered"` = `invalid_token`; HTTP 429/5xx = `retryable`. Kvitteringer (receipts) hentes ikke [UDSKUDT] |
+| `consolePushService.ts`, `fakePushService.ts` | | Som e-mail-udgaverne. Console logger kun type, modtager-id og antal tokens, aldrig tokens |
+| `webPushService.ts` | `WebPushService` (abstrakt) | `send(messages: WebPushMessage[]): Promise<DeliveryResult[]>` med `WebPushMessage = { to: { endpoint, p256dh, auth }, title, body, data: { type, path } }`. Samme mønster som `PushService`; pr. besked `ok`, `invalid_target` eller `error(retryable)` |
+| `vapidWebPushService.ts` | `VapidWebPushService` | `fetch` til abonnementets endpoint (kun værter i `WEB_PUSH_ALLOWED_HOST_SUFFIXES`; `redirect: "error"`) med krypteret body (RFC 8291) og `Authorization: vapid t=<jwt>, k=<offentlig nøgle>` (RFC 8292), `TTL: 86400`, `Content-Encoding: aes128gcm`. Timeout 5 s. 201 = sendt; 404 og 410 = `invalid_target` (abonnementet slettes); 429, 5xx, timeout og netværksfejl = `retryable`; andre 4xx = ikke. Svarets body læses og logges aldrig |
+| `webPushCrypto.ts` | (rene funktioner) | `encryptWebPushPayload()` (RFC 8291 med Nodes `crypto`: ECDH P-256, HKDF, AES-128-GCM; testet med bilag A), `createVapidPrivateKey()` og `createVapidAuthorization()` (JWT ES256 i rå r‖s-form). Ingen npm-pakke |
+| `consoleWebPushService.ts`, `fakeWebPushService.ts` | | Som de øvrige. Console logger kun type, klinik-id og antal browsere, aldrig endpoints, nøgler eller tekst |
+| `notificationServices.ts` | (funktioner) `createEmailService()`, `createPushService()`, `createWebPushService()` | Vælger: `NOTIFICATIONS_FAKE=1` uden for produktion → fakes; e-mail: Resend, hvis `RESEND_API_KEY` og `EMAIL_FROM` er sat, ellers Console (i produktion med en advarsel uden indhold); push: Expo (ingen nøgle nødvendig; `PUSH_LOG_ONLY=1` giver Console); web push: `VapidWebPushService`, hvis `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` og `VAPID_SUBJECT` er sat og gyldige, ellers Console |
+| `notificationOutboxRepository.ts` | `NotificationOutboxRepository extends BaseRepository` | `claim(limit)`, `complete(id, status, errorCode?, invalidTargets?)`, `purge()`, `enqueueBookingReminders()`; kun RPC'erne i 14.5 og 14.8 |
+| `notificationDispatcher.ts` | `NotificationDispatcher` | `flush(limit = 20)`: `claim` → bygger beskeden med de rene funktioner i `lib/common/domain/notifications.ts` → `EmailService`/`PushService`/`WebPushService` → `complete`. En fejl i én række påvirker ikke de andre. Returnerer `{ sent, failed, skipped, retried }` |
+| `notificationController.ts` | `NotificationController` | Session-løs (2.1.1). `flush()`, `sendBookingReminders()` (enqueue + flush) og `runScheduled()` (flush + purge). Service role via `lazyAdminClient()` med kommentaren `// 2.3 (i)` |
+
+**`withApi(handler, { notify: true })`** (`platform/middleware/http.ts`): når handleren har returneret et svar med status 2xx, kaldes `after(() => new NotificationController().flush())` (`after` fra `next/server`; læs `node_modules/next/dist/docs/` før brug). Fejl i flush fanges og logges kun med fejlnavnet. For at undgå en cirkulær import (`http.ts` → `notificationController` → `BaseRepository` → `http.ts`) hentes controlleren med `await import("@/platform/notifications/notificationController")` inde i `after`-callbacken. Routes med `notify: true`: `POST /api/cases/{id}/leads`, `POST /api/emergency-leads`, `POST /api/leads/{id}/decision`, `POST /api/leads/{id}/messages`, `POST /api/leads/{id}/booking`, `POST /api/bookings/{id}/cancel`, `DELETE /api/clinics/me` og (PR B) `POST /api/bookings/{id}/reschedule`. Glemmes det på en route, sendes notifikationen ved næste flush eller af cron-jobbet; den går ikke tabt.
+
+**Routes:**
+
+| Metode og route | Rolle | Output |
+|---|---|---|
+| GET og POST `/api/cron/notifications` | intern (`CRON_SECRET` som de andre cron-routes; undtaget fra vilkårs-gaten), hvert 5. minut | 200 `{ sent, failed, skipped, retried, purged }`; 401 `UNAUTHORIZED` uden gyldig hemmelighed |
+| GET og POST `/api/cron/booking-reminders` | intern (`CRON_SECRET`), hver time | 200 `{ enqueued, sent, failed, skipped, retried }`; 401 `UNAUTHORIZED` |
+
+Ingen persondata i svar eller logs.
+
+### 14.7 Delt kode i `lib/` og GDPR
+
+- `lib/common/types/notifications.ts`: `NotificationType` (fra `NOTIFICATION_TYPES` i `lib/common/constants/notifications.ts`), `NotificationPayload`, `PushData = { type: NotificationType; path: string }`, `NotificationChannel`.
+- `lib/common/constants/notifications.ts`: typerne, de danske tekster i 14.2, e-mailfoden og konstanterne i 14.3.
+- `lib/common/domain/notifications.ts` (rene funktioner, testes direkte): `renderClinicEmail(type, payload, siteUrl): { subject, text, html }` (HTML-escaper alt), `renderPatientPush(type, payload): { title, body }`, `patientNotificationPath(type, payload): string` og `isAllowedNotificationPath(path): boolean` (tilladte mønstre: `/sag/<uuid>`, `/sag/<uuid>/beskeder/<uuid>`, `/bookinger`). Appen bruger de to sidste (mobile 13.10).
+- **GDPR (helbredsdata, art. 9):** renderfunktionerne tager kun `NotificationPayload` (nøglerne i 14.3) og kan derfor ikke få opsummering, ydelser, beskedtekst eller navn med; en unit-test kører alle typer og tjekker, at teksterne kun indeholder de faste tekster, tidspunkter og links. Push-tekster nævner ikke klinikken (låseskærmen). E-mails går kun til klinikkens egen login-adresse. Udbyderne (Resend for e-mail, Expo og Apple Push Notification service for push) står i privatlivspolitikken (site 6.1) og i `docs/security.md` (databehandlere).
+
+### 14.8 Påmindelse dagen før en booket tid
+
+`enqueue_booking_reminders()` (kun service role) lægger to rækker pr. booking, der opfylder: effektiv status `booked` (4.2), `starts_at > now()`, `starts_at <= now() + interval '24 hours'` og `created_at <= starts_at - interval '24 hours'` (en tid, der er booket mindre end et døgn før, får ingen påmindelse). Rækkerne er `patient_booking_reminder` (push, `payload = { bookingId, startsAt }`) og `clinic_booking_reminder` (e-mail, hvis `email_booking_reminder`, `payload = { leadId, bookingId, startsAt }`). `dedup_key = '<type>:' || booking_id` med `on conflict do nothing`, så jobbet er idempotent og kan køres så tit, det skal. En flyttet tid (PR B) er en ny booking og får sin egen påmindelse; den gamle er aflyst og får ingen. Returnerer antal nye rækker.
+
+`/api/cron/booking-reminders` (hver time) kalder `NotificationController.sendBookingReminders()`. Med en kørsel i timen kommer påmindelsen 23-24 timer før tiden. I demoen kører ingen cron; påmindelsen vises ved at kalde routen manuelt med `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/booking-reminders`.
+
+### 14.9 Tests
+
+- **RLS:** punkt 54-56 og 61 i 5.6.
+- **Unit** (`platform/__tests__/notifications/`): `resendEmailService.test.ts` (`fetch` stubbes: URL, headere inkl. `Idempotency-Key`, body; 429/500/timeout er `retryable`, 400/422 ikke; svarets body logges ikke), `expoPushService.test.ts` (bundter af 100, `DeviceNotRegistered` → `invalid_token`), `notificationDispatcher.test.ts` (fakes og et falsk repository: `sent`, `retry` med udskydelse, `failed` efter 5 forsøg, `skipped` uden mål, én fejlende række stopper ikke de andre), `consoleServices.test.ts` (loggen indeholder hverken e-mailadresse, token eller tekst). `lib/common/__tests__/notifications.test.ts` eller tilsvarende: alle typer renderes, ingen pladsholdere tilbage, HTML escapes, `isAllowedNotificationPath` afviser fx `/klinik`, `https://…`, `/sag/../x` og `/sag/<uuid>?x=`.
+- **API** (`platform/__tests__/api/notifications.test.ts`, kører med `NOTIFICATIONS_FAKE=1`): cron-routerne giver 401 uden `CRON_SECRET`; efter et nyt lead, en booking og en aflysning gennem API'et ligger de forventede rækker i outboxen og bliver `sent` efter `POST /api/cron/notifications` (læst med service role i testen); `booking-reminders` to gange giver `enqueued: 0` anden gang; en klinik, der har slået `email_new_lead` fra, får ingen række.
+- **Manuelt (tester):** e-mail med `ConsoleEmailService` (loggen) og, hvis brugeren har en Resend-konto, én rigtig e-mail til en testadresse; push på en fysisk iPhone i Expo Go (mobile 13.10).
+
+Web push har desuden `webPushCrypto.test.ts` (RFC 8291 bilag A: den krypterede body er præcis den i bilaget; dekryptering med en tilfældig nøgle; VAPID-signaturen kan verificeres med den offentlige nøgle) og `vapidWebPushService.test.ts` (headere, generisk indhold, 404/410, retryable, ingen kald til værter uden for listen).
+
+### 14.10 Opsætning (gøres af brugeren, ikke i kode)
+
+1. Resend-konto, verificeret afsenderdomæne (SPF/DKIM) og en API-nøgle med kun "Sending access". `RESEND_API_KEY` og `EMAIL_FROM` i `.env.local` (12.3 punkt 48). Uden dem logges e-mails kun.
+2. Expo-projekt (`eas init`), så `extra.eas.projectId` står i `mobile/app.json`; uden projekt-id kan appen ikke få et Expo push-token (12.3 punkt 49).
+3. Ved hosting: cron for `/api/cron/notifications` (hvert 5. minut) og `/api/cron/booking-reminders` (hver time) med `CRON_SECRET`.
+4. Web push: kør `node scripts/generate-vapid-keys.mjs` og læg de tre linjer i `.env.local` (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). Den private nøgle må aldrig i git. Uden nøglerne logges web push kun. Ved hosting sættes de tre variabler hos udbyderen.

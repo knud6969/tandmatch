@@ -48,3 +48,7 @@ export const MIN_PHONE_DIGITS = 8;
 
 // Appen viser "Du har N beskeder tilbage", når så få eller færre er tilbage i samtalen (architecture 7.9).
 export const CHAT_LOW_MESSAGES_WARNING = 5;
+
+// Registrering af enheder til notifikationer pr. klient-IP pr. time (identity 10.15, clinics 10.19).
+export const PUSH_TOKEN_IP_LIMIT_PER_HOUR = 30;
+export const WEB_PUSH_IP_LIMIT_PER_HOUR = 30;

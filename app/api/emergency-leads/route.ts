@@ -17,4 +17,4 @@ export const POST = withApi(async (req) => {
   await enforceIpRateLimit("leads-send", req, LEADS_SEND_IP_LIMIT_PER_HOUR);
   const input = await readJson(req, emergencyLeadSchema);
   return jsonResponse(await new LeadsController(gate.supabase, session).sendEmergency(input), 201);
-});
+}, { notify: true });

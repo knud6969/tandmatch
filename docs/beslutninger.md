@@ -12,7 +12,8 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 
 | Kompromis | Hvorfor | Hvad en rigtig løsning kræver |
 |---|---|---|
-| Klinikker auto-verificeres ved oprettelse (`prototype_auto_verify_clinics()`, 12.2); ingen verificeringsflow og ingen adminside | Prototypen skal kun vise, at web og app spiller sammen | Verifikationsflow (CVR, autorisation) og adminside; slå auto-verificering fra med en ny migration |
+| Klinikker auto-verificeres ved oprettelse (`prototype_auto_verify_clinics()`, 12.2); ingen verificeringsflow og ingen adminside (en simpel adminside til klinikstatus og moderation er planlagt 2026-11-04, `features/admin`) | Prototypen skal kun vise, at web og app spiller sammen | Verifikationsflow (CVR, autorisation); slå auto-verificering fra med en ny migration |
+| Planlagt (2026-11-04): en push kan i sjældne tilfælde komme to gange, hvis serveren dør mellem afsendelse og markering (Expo har ingen idempotensnøgle; platform 14.1). Påmindelser kræver cron, som ikke kører i demoen | Enkel outbox uden ekstern kø | Expo-kvitteringer og hosting med cron |
 | Importerede klinikker kommer fra seed-data | Importkilde ikke valgt | Import fra CVR eller andet register (12.3) |
 | En klinik, der opretter sig med et CVR-nummer, som en importeret klinik har, overtager den importerede række uden bevis for ejerskab | Enkelt demoflow | Bevis for ejerskab før overtagelse. Værnet i dag: den overtagne klinik er usynlig offentligt og kan ikke modtage leads, før admin har verificeret ejeren (12.1) |
 | Én kalender pr. klinik: kun én booking ad gangen | Enkel dobbeltbookingsregel | Kalender pr. behandler eller stol (12.3) |
@@ -40,7 +41,7 @@ Bevidste prototype-kompromiser [PROTOTYPE]:
 
 | I demoen | [UDSKUDT] |
 |---|---|
-| Vilkårs-gate, login, roller (patient, klinik), navigation, design (hvid og blå) | Streaming af AI-svar, realtime, notifikationer (e-mail/SMS, push i appen) |
+| Vilkårs-gate, login, roller (patient, klinik), navigation, design (hvid og blå) | Streaming af AI-svar, realtime, SMS. (E-mail til klinikker og push i appen er planlagt i trin 11, 2026-11-04) |
 | Ydelseskatalog, klinikprofil med prisliste, åbningstider, tandlæger og portefølje (klinik-web) | Adminside til verifikation af klinikker og import |
 | Patient-appen (13): forside, klinikoversigt med liste, kort (Apple Maps via `react-native-maps`) og filtre, klinikprofil | Rigtig import af klinikker fra CVR |
 | AI-chat med billeder, forslag til ydelser, foreløbig vurdering, akut-henvisning, opsummering (i appen) | Kalender pr. behandler, synkronisering med klinikkens eget bookingsystem |
@@ -65,6 +66,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 | 6 | Booking i klinikkens kalender og anmeldelser efter besøget | Færdigt på `feat/omlaegning-trin-6` (6.1-6.5, kontrol 6.6, rettelser 6.7a-d; sidste commit `af065eb5`). Tests: RLS 46, API 249, unit 436, e2e 108 |
 | 7 | Akutvej, demodata og finpudsning | Bygget på `feat/omlaegning-trin-7` (fra `7a81a257`): 7.1-7.10, 7.15 og 7.16; slutkontrol 7.11 (sidste commit `68ec8360`) uden kritiske eller høje fund. Rettelserne 7.12a-b (kun backend og `lib/`: migration `20261028000500`, samtykketjek ét sted, akuttekster og andre delte tekster i `lib/<domæne>/constants/`, ét sletteskema) er bygget; derefter demo-tjeklisten 7.13. UI-rettelserne fra slutkontrollen for patientsiderne på weben bortfalder (siderne er sat på pause, 13.6). Opgaverne står i `docs/arbejdsplan.md` |
 | 8 | Mobilapp til patienter (13) | I gang (resten [IKKE BYGGET]). Planlagt 2026-10-19 på `feat/trin-8-mobilapp` (fra trin 7 efter 7.12); afleveres ca. 2026-10-26. Backend: bearer-auth, vilkårstoken og `POST /api/auth/refresh` (8.1, bygget), delte fejltekster i `lib/` (8.2); appen i `mobile/` (8.3-8.12). Opgaverne og hvad der skal med til afleveringen står i `docs/arbejdsplan.md` |
+| 11 (planlagt 2026-11-04) | Notifikationer (PR A), flyt tid, kalender og favoritter (PR B), klinikkens statistik og admin (PR C) | Planlagt; opgaverne står i `docs/arbejdsplan.md`. Nye migrationer `20261105000100`-`20261107000200`; ingen kørte migrationer ændres |
 | Infrastruktur | Vilkårs-gate, MVC-lag med ESLint og klasser (2.1.1), auth, anonym session, samtykker, billedbehandling, UI-komponenter | Bygget |
 
 **Migrationer:** det gamle sæt (27 filer) er slettet fra koden og erstattet af det samlede sæt nedenfor (bygget i trin 0). Det fælles Supabase-projekt er nulstillet og kører det nye sæt (0.8, udført 2026-10-12; tjek i 2.3.1). Der er nu 38 migrationer: de 12 i det samlede sæt, `20261013000100`, fem `20261014`-filer, to `20261015`-filer, to `20261016`-filer (securitys rettelser), `20261017000100` (trin 2), `20261018000100`, to `20261019`-filer og `20261020000100` (trin 3), `20261021000100`, `20261022000100` (trin 4), `20261023000100`, `20261024000100` og `20261025000100` (trin 5), `20261026000100` og `20261027000100` (trin 6) og `20261028000100`-`000400` (trin 7). 7.12a tilføjer den 39., `20261028000500`. De første 33 er kørt i det fælles projekt (senest `20261026000100` den 2026-10-18; brugeren kører dem). **`20261027000100` og alle trin 7-filerne er ikke kørt i det fælles projekt endnu**; brugeren kører dem med `supabase db push` før demoen (`docs/arbejdsplan.md` 7.13). Nye ændringer kommer som nye filer (2.6). Alle filer til og med `20261028000400` er låst og ændres ikke. Sættet:
@@ -241,16 +243,29 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 45. *Afklaret (2026-10-22): nej, kataloget forbliver på 53 behandlinger (9.10 udgår).* **Fem nye standardbehandlinger i kataloget** (`hjemmeblegning`, `vurdering_behandlingsplan`, `foelsomme_tandhalse`, `snorkeskinne`, `lattergas`; `features/clinics/README.md` 4.3). Architects forslag: med før afleveringen (én migration, ingen kodeændringer). Kræver brugerens godkendelse af listen; uden den springes 9.10 over, og demoprofilerne bruger kun de eksisterende behandlinger.
 46. *Architects forslag (6 beskeder) bruges, indtil brugeren siger andet.* **Grænsen for, hvornår behandlingskortet vises uden forslag** (`SERVICE_CARD_AFTER_USER_MESSAGES`, 7.9a): architects forslag er 6 patientbeskeder, og at AI'en højst stiller tre spørgsmål før forslag. Brugeren kan ønske et andet tal efter test.
 47. **Egne behandlinger pr. klinik (trin 10):** "Andet" pr. kategori i kataloget (B) eller tabellen `clinic_custom_services` (A), `features/clinics/README.md` 4.3. Architects forslag: B først. Kræver brugerens beslutning, før trin 10.9 bygges.
+
+Spørgsmålene 48-57 hører til trin 11 (planlagt 2026-11-04: notifikationer, flyt tid, kalender, favoritter, statistik og admin). Koden kan bygges uden svarene; architects forslag gælder, indtil brugeren siger andet.
+
+48. **Resend til e-mail (platform 14.6, 14.10).** Kræver en Resend-konto, et verificeret afsenderdomæne (SPF/DKIM, fx `tandmatch.dk`), `RESEND_API_KEY` og `EMAIL_FROM` i `.env.local`, og før rigtige klinikker en databehandleraftale og afklaring af overførsel til USA (Resend er et amerikansk firma). Uden eget domæne kan Resends testafsender `onboarding@resend.dev` kun sende til kontoens egen e-mail, hvilket rækker til en demo. Architects forslag: indtil kontoen findes, bruges `ConsoleEmailService` (logger kun type og modtager-id). Kræver brugerens handling.
+49. **Expo push (mobile 13.10, platform 14.10).** Kræver en Expo-konto og `eas init`, så `extra.eas.projectId` står i `mobile/app.json`. Om Expo Go med SDK 58 modtager push på iPhone, verificeres i første app-opgave; gør den ikke, kræver push en development build (EAS) og dermed en Apple-udviklerkonto. Architects forslag: prøv Expo Go først; ellers er push i appen [UDSKUDT], og resten af PR A (e-mail, tokens, outbox) bygges alligevel.
+50. **Standardvalg for klinikkens e-mails (clinics 10.19).** Architects forslag: alle fire typer slået til (ny henvendelse, ny besked, ny/flyttet/aflyst tid, påmindelse dagen før); beskeder højst én e-mail pr. henvendelse pr. 15 minutter. Brugeren kan ønske påmindelsen slået fra som standard.
+51. **Tekster i push og e-mail (platform 14.2).** Architects forslag: generiske tekster uden kliniknavn, behandling eller patientnavn i push (låseskærmen), og i e-mails kun tidspunkt og link. Ønsker brugeren kliniknavnet i patientens push (fx "Tandklinik Nørrebro har svaret"), er det ikke helbredsdata i sig selv, men viser på låseskærmen, at patienten er i kontakt med en tandklinik.
+52. **Kalenderbegivenhed (mobile 13.11).** Architects forslag: titel "Tandlægetid hos {klinik}" uden behandling, fordi kalendere ofte synkroniseres og deles. Alternativet er at tage behandlingen med i noterne.
+53. **Privatlivspolitik og version (site 6.1).** Afsnittet om notifikationer og udbyderne (Resend, Expo, Apple) tilføjes i PR A. Architects forslag: `PRIVACY_VERSION` hæves ikke i prototypen (teksterne er pladsholdere, 12.4 punkt 3); hæves før drift, så alle accepterer igen. Databehandleraftaler for Resend og Expo og overførselsgrundlaget noteres af security i `docs/security.md` (databehandlere).
+54. **Admin og klinikstatus (features/admin 5.3).** Architects forslag: auto-verificering (12.2) bevares; admin kan sætte en verificeret klinik "på pause" (`verified → registered`) og verificere den igen. Andre overgange (fx fjerne en klinik eller nulstille en CVR-overtagelse) er [UDSKUDT].
+55. **Flyt tid (booking 10.16).** Architects forslag: kun patienten kan flytte, samme behandling og klinik, samme frist som aflysning; den nuværende tid og tider, der overlapper den, tilbydes ikke [PROTOTYPE]; hver flytning tæller i loftet på 5 bookinger pr. lead. Klinikkens mulighed for at foreslå en ny tid er [UDSKUDT].
+56. **Klinikkens statistik (clinics 10.18).** Architects forslag: perioderne 30 dage, 90 dage og 12 måneder; henvendelser tælles efter modtagelsesdato, bookinger efter tidspunktet for tiden; median som svartid; ingen grafer og ingen sammenligning med andre klinikker (isolation).
+57. **Påmindelse dagen før (platform 14.8).** Architects forslag: sendes 23-24 timer før tiden (cron hver time), og ikke for tider, der er booket mindre end et døgn før. Kræver hosting med cron; i demoen kaldes routen manuelt.
 ### 12.4 Udskudt [UDSKUDT]
 
 1. Databehandleraftale med OpenAI og overførsel til USA.
 2. Fagligt review af MDR (foreløbig vurdering, forklaring af behandlinger, billedbeskrivelser).
 3. Brugervilkår, privatlivspolitik og samtykketekster (inkl. deling af kontakt ved booking og portefølje).
 4. Opbevaringsperiode og automatisk sletning af kontodata.
-5. Streaming, realtime, notifikationer.
+5. Streaming, realtime, notifikationer. (Notifikationer: e-mail til klinikker og push i appen er planlagt 2026-11-04, platform 14. SMS er stadig udskudt.)
 6. CAPTCHA og e-mailbekræftelse.
 7. Overtagelse af anonym samtale ved login på eksisterende konto.
-8. Adminside til moderation, verifikation og import.
+8. Adminside til moderation, verifikation og import. (Moderation og klinikstatus er planlagt 2026-11-04, `features/admin`; import er stadig udskudt.)
 9. Egen kortfliseudbyder.
 10. Reklameregler for klinikkernes priser og profiler.
 11. Trustpilot-data for importerede klinikker: rigtig kilde og opdatering (i prototypen indtaster TandMatch dem manuelt; scraping er ikke tilladt).
@@ -258,7 +273,7 @@ Start på omlægningen 2026-10-12. Hvert trin afsluttes med reviewer og tester; 
 13. Prisforslag til klinikken i prislisten (fx typisk prisniveau pr. behandling). I prototypen skriver klinikken selv prisen.
 14. Adminside til vedligeholdelse af behandlingskataloget.
 15. Hosting af Next.js-appen (fx Vercel med EU-region) med planlagte jobs (cron). Demoen kører lokalt (2.3, 12.3 punkt 14).
-16. Patient-appen: push-notifikationer (accept, besked, påmindelse om booking), Android, EAS-build og App Store/TestFlight, universelle links fra e-mail, offline-tilstand, e2e-test med Maestro, dataeksport som fil i appen (13).
+16. Patient-appen: push-notifikationer (accept, besked, påmindelse om booking; planlagt 2026-11-04, mobile 13.10), Android, EAS-build og App Store/TestFlight, universelle links fra e-mail, offline-tilstand, e2e-test med Maestro, dataeksport som fil i appen (13).
 
 ### 12.5 Overgang fra den gamle model
 

@@ -17,6 +17,6 @@
         "NSLocationWhenInUseUsageDescription": "TandMatch bruger din position til at finde klinikker tæt på dig. Positionen gemmes ikke."
       }
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser"]
+    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser", "expo-notifications"]
   }
 }

@@ -8,9 +8,11 @@ import { getPatientMe, patchPatientMe } from "~/api/patients";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { ProfileForm } from "~/components/auth/profile-form";
+import { PushSettingsRow } from "~/components/notifications/push-settings-row";
 import { Button, Card, LoadError, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
+import { usePush } from "~/hooks/use-push";
 import { colors, fontSize } from "~/theme";
 
 // Samme felter som API'et accepterer, så skærmen ikke gentager typen.
@@ -52,6 +54,7 @@ function Profile() {
 // Konto: log ind/opret for gæster, opfordring til at oprette konto for anonyme og profil for patienter med konto.
 export function AccountScreen() {
   const router = useRouter();
+  const push = usePush();
   const { me, status, notice, reload } = useSession();
   const { run: doLogout, pending: loggingOut } = useAction(logout);
 
@@ -81,6 +84,15 @@ export function AccountScreen() {
             <>
               <Text style={styles.heading}>{me.displayName ? `Hej ${me.displayName}` : "Din konto"}</Text>
               <Profile />
+              {push.hasProjectId && push.permission !== null ? (
+                <PushSettingsRow
+                  permission={push.permission}
+                  receiving={push.receiving}
+                  onEnable={() => void push.enable()}
+                  onToggle={(on) => void push.setReceiving(on)}
+                  onOpenSettings={() => void push.openSettings()}
+                />
+              ) : null}
             </>
           )}
           <Button label="Log ud" variant="secondary" loading={loggingOut} onPress={() => void doLogout()} />
