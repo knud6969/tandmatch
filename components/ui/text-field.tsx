@@ -1,5 +1,6 @@
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
+import { FieldError } from "@/components/ui/field-error";
 
 type TextFieldProps = Omit<ComponentProps<"input">, "id"> & {
   label: ReactNode;
@@ -37,11 +38,7 @@ export function TextField({ label, hint, error, id, className, ...props }: TextF
         )}
         {...props}
       />
-      {error && (
-        <p id={errorId} className="text-sm font-medium text-danger-ink">
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from "@/lib/leads/constants/leads";
 import { leadDecisionSchema } from "@/lib/leads/schemas/leads";
 import type { ClinicLeadDetailDto } from "@/lib/leads/types/leads";
+import { FieldError } from "@/components/ui/field-error";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SelectField } from "@/components/ui/select-field";
@@ -160,7 +161,7 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
               <TextField label="Fra (kr.)" inputMode="numeric" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} />
               <TextField label="Til (kr.)" inputMode="numeric" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} />
             </div>
-            {errors.price && <p className="text-sm font-medium text-danger-ink">{errors.price}</p>}
+            {errors.price && <FieldError>{errors.price}</FieldError>}
           </fieldset>
           <p className="text-xs text-ink-muted">Patienten kan læse kommentaren og prisen.</p>
           <div className="grid grid-cols-2 gap-2">

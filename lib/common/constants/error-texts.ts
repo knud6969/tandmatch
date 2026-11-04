@@ -118,6 +118,8 @@ export const NEUTRAL_ERROR_TEXTS: Record<string, string> = {
 };
 export const GENERIC_ERROR_TEXT = `Der opstod en fejl. ${RETRY_LATER}`;
 
+export const PAGE_ERROR_TEXT = `Siden kunne ikke vises. ${RETRY_LATER}`;
+
 // Indlæsning og kontoen i appen.
 export const ACCOUNT_LOAD_FAILED_TEXT = `Vi kunne ikke hente din konto. ${RETRY_LATER}`;
 export const MESSAGES_REFRESH_FAILED_TEXT = `Beskederne kunne ikke opdateres lige nu. ${RETRY_LATER}`;

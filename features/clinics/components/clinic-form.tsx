@@ -19,6 +19,7 @@ import { useSaveState } from "@/features/clinics/utils/use-save-state";
 import { CLINIC_DESCRIPTION_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { patchClinicSchema } from "@/lib/clinics/schemas/clinics";
 import type { OwnClinicDto } from "@/lib/clinics/types/clinics";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type Values = {
   name: string;
@@ -63,6 +64,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
   const [saved, setSaved] = useState(() => toValues(initial));
   const [values, setValues] = useState(saved);
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
   const saveState = useSaveState(dirty);
   const set = (field: Field) => (event: { target: { value: string } }) =>
@@ -113,7 +115,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
         <LogoUpload logoUrl={clinic.logoUrl} onChange={(logoUrl) => setClinic((c) => ({ ...c, logoUrl }))} />
       </Card>
 
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
         <Card className="flex flex-col gap-5">
           <h2 className="text-xl font-semibold text-ink">Grunddata</h2>
           <TextField

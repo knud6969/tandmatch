@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { FormError } from "@/components/ui/form-error";
 import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -53,9 +54,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error && (
-        <Alert tone="danger" role="alert">
-          {error}
-        </Alert>
+        <FormError message={error} />
       )}
       <TextField
         label="E-mail"

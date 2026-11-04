@@ -5,7 +5,6 @@ import { isActiveLead, summaryExcerpt } from "@/lib/leads/domain/leads";
 import { priceEstimate } from "@/lib/booking/domain/reviews";
 import {
   MAX_ACTIVE_LEADS_PER_CASE,
-  MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/common/constants/limits";
 import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/leads/schemas/leads";
