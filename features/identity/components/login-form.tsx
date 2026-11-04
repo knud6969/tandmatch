@@ -38,7 +38,7 @@ export function LoginForm({ naeste }: { naeste: string | null }) {
     try {
       const user = await apiRequest<AuthUserDto>("/api/auth/login", { method: "POST", body: parsed.data });
       await refresh();
-      router.replace(safeInternalPath(naeste ?? undefined) ?? (user.role === "clinic" ? AREA_HOME.clinic : "/"));
+      router.replace(safeInternalPath(naeste ?? undefined) ?? AREA_HOME[user.role]);
       router.refresh();
     } catch (error) {
       setErrors({ fields: {}, general: apiErrorMessage(error) });

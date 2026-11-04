@@ -15,7 +15,7 @@ export const STATS_RESPONSE_WINDOW_HOURS = 24;
 export const STATS_PAGE_TITLE = "Statistik";
 export const STATS_PERIOD_LABEL = "Periode";
 export const STATS_EXPLANATION = "Henvendelser tælles efter modtagelsesdato, bookinger efter tidspunktet for tiden. Kun jeres egne tal.";
-export const STATS_NOT_VERIFIED_TEXT = "Statistikken er tilgængelig, når din klinik er verificeret.";
+export const STATS_NOT_VERIFIED_TEXT = "Din statistik er ikke tilgængelig endnu.";
 export const STATS_NO_VALUE = "–";
 
 export const STATS_LABEL = {

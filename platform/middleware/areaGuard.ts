@@ -23,9 +23,9 @@ export async function guardArea(role: Role, area: string): Promise<void> {
       redirect("/");
     }
     if (error.code === "FORBIDDEN") {
-      // Forkert rolle: klinikker til deres område, alle andre til forsiden.
+      // Forkert rolle: klinikker og admin til deres eget område, patienter til forsiden.
       const session = await getSession(ctx);
-      redirect(session?.role === "clinic" ? AREA_HOME.clinic : session ? "/" : "/login");
+      redirect(session ? AREA_HOME[session.role] : "/login");
     }
     throw error;
   }

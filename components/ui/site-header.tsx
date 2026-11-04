@@ -19,8 +19,8 @@ export function SiteHeader() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const me = state.status === "ready" ? state.me : null;
-  // Kun klinikker har et område på weben; patienter bruger appen (architecture 13.6).
-  const areaNav = me && me.role === "clinic" ? AREA_NAV[me.role] : [];
+  // Kun klinikker og admin har et område på weben; patienter bruger appen (architecture 13.6).
+  const areaNav = me && me.role !== "patient" ? AREA_NAV[me.role] : [];
   // Den længste matchende sti er aktiv, så fx /klinik/lead/... markerer "Henvendelser" og /klinik/prisliste "Klinikprofil".
   const activeHref = activeNavHref(areaNav, pathname);
   // Antal henvendelser, der kræver handling, på fanen Henvendelser (delt hentning med indbakken; 0 for andre end klinikker).
@@ -54,9 +54,9 @@ export function SiteHeader() {
     <header className="border-b border-line bg-surface">
       <div className="mx-auto flex max-w-wide items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link
-          href={me?.role === "clinic" ? AREA_HOME.clinic : "/"}
+          href={me && me.role !== "patient" ? AREA_HOME[me.role] : "/"}
           className="rounded-control text-xl font-bold tracking-tight text-brand-700 no-underline"
-          aria-label={me?.role === "clinic" ? "TandMatch, til henvendelser" : "TandMatch, til forsiden"}
+          aria-label={me?.role === "clinic" ? "TandMatch, til henvendelser" : me?.role === "admin" ? "TandMatch, til moderation" : "TandMatch, til forsiden"}
         >
           TandMatch
         </Link>
