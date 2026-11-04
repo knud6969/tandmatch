@@ -11,6 +11,7 @@ import {
   BOOKING_HORIZON_DAYS,
   NO_SHOW_GRACE_HOURS,
 } from "@/lib/booking/constants/bookings";
+import { clinicRescheduleNote } from "@/lib/booking/domain/bookings";
 import type { ClinicBookingDto } from "@/lib/booking/types/bookings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
   const [reason, setReason] = useState("");
   const action = useAction();
   const cancelled = booking.status === "cancelled";
+  const rescheduleNote = clinicRescheduleNote(booking);
   const inactive = cancelled || booking.status === "completed" || booking.status === "no_show";
 
   async function run(kind: "cancel" | "no-show") {
@@ -75,7 +77,12 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
       </div>
       <p className={cx("text-base", cancelled ? "text-ink-muted" : "text-ink")}>{booking.service.name}</p>
 
-      {cancelled && booking.cancelledBy && (
+      {rescheduleNote && (
+        <p className="text-sm text-ink-muted" data-testid="flyttet">
+          <span className="font-semibold">{rescheduleNote}</span>
+        </p>
+      )}
+      {cancelled && booking.cancelledBy && !booking.rescheduledTo && (
         <p className="text-sm text-ink-muted" data-testid="aflyst-af">
           <span className="font-semibold">{CLINIC_CANCELLED_BY_LABEL[booking.cancelledBy]}</span>
           {booking.cancelReason ? <span className="break-words">. Grund: {booking.cancelReason}</span> : null}

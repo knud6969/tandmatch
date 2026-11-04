@@ -5,6 +5,7 @@ import { Badge } from "~/components/ui";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { BASIC_CLINIC_FACTS_TEXT, BASIC_CLINIC_LABEL, NO_REVIEWS_TEXT, PRICE_SOURCE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
 import { formatKm, formatPercent, formatPriceRange, formatShortDateTime } from "@/lib/common/domain/format";
+import { FavoriteHeart } from "./favorite-heart";
 import { StarRating } from "./star-rating";
 import { TrustpilotLine } from "./trustpilot-block";
 
@@ -15,11 +16,13 @@ type Props = {
   // Akutfilteret er slået til: vis første akuttid i stedet for første ledige tid.
   emergency: boolean;
   onPress: () => void;
+  // Hjertet (gemte klinikker); udeladt, hvis skærmen ikke tilbyder det.
+  favorite?: { saved: boolean; onToggle: () => void };
 };
 
 // Klinikkort i Airbnb-stil. Verificerede klinikker har logo, blå kant og mærket "Verificeret klinik"; basisklinikker er
 // dæmpede, stiplede og uden billede, og siger tydeligt, at de ikke er på TandMatch endnu.
-export function ClinicCard({ clinic, hasServices, emergency, onPress }: Props) {
+export function ClinicCard({ clinic, hasServices, emergency, onPress, favorite }: Props) {
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
   // Akutfilteret viser første akuttid; ellers første ledige tid.
@@ -28,6 +31,7 @@ export function ClinicCard({ clinic, hasServices, emergency, onPress }: Props) {
   const where = `${clinic.address}, ${clinic.postalCode} ${clinic.city}${clinic.distanceKm !== null ? `, ${formatKm(clinic.distanceKm)} væk` : ""}`;
 
   return (
+    <View>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${clinic.name}, ${full ? VERIFIED_CLINIC_LABEL : BASIC_CLINIC_LABEL}. ${where}`}
@@ -89,10 +93,17 @@ export function ClinicCard({ clinic, hasServices, emergency, onPress }: Props) {
         <TrustpilotLine trustpilot={clinic.trustpilot} />
       </View>
     </Pressable>
+      {favorite ? (
+        <View style={styles.heartSlot}>
+          <FavoriteHeart saved={favorite.saved} onToggle={favorite.onToggle} clinicName={clinic.name} />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  heartSlot: { position: "absolute", top: spacing.xs, right: spacing.xs },
   card: { borderRadius: radius.lg, overflow: "hidden", borderWidth: 1 },
   full: { borderColor: colors.brand200, backgroundColor: colors.surface },
   basic: { borderColor: colors.fieldBorder, borderStyle: "dashed", backgroundColor: colors.surfaceMuted },

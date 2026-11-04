@@ -9,6 +9,7 @@ import { getCase } from "~/api/cases";
 import { listCaseLeads } from "~/api/leads";
 import { listClinics } from "~/api/clinics";
 import { getServiceGroups } from "~/api/services";
+import { FavoritePrompt } from "~/components/clinic-directory/favorite-prompt";
 import { ClinicCard } from "~/components/clinic-directory/clinic-card";
 import { ClinicMap } from "~/components/clinic-directory/clinic-map";
 import { ClinicMapCard } from "~/components/clinic-directory/clinic-map-card";
@@ -20,6 +21,7 @@ import { EmergencyNotice } from "~/components/clinic-directory/emergency-notice"
 import { SelectButton } from "~/components/leads/select-button";
 import { ServicePicker } from "~/components/clinic-directory/service-picker";
 import { Button, LoadError } from "~/components/ui";
+import { useFavorites } from "~/hooks/use-favorites";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, radius, spacing, type } from "~/theme";
 import {
@@ -55,6 +57,7 @@ export function ClinicDirectoryScreen() {
   const [view, setView] = useState<"list" | "map">("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { height: windowHeight } = useWindowDimensions();
+  const favorites = useFavorites();
 
   // "Jeg har ondt" på forsiden åbner oversigten med akutfilteret slået til.
   useEffect(() => {
@@ -268,6 +271,7 @@ export function ClinicDirectoryScreen() {
               hasServices={hasServices}
               emergency={filters.emergency}
               onPress={() => openProfile(item)}
+              favorite={{ saved: favorites.isSaved(item.id), onToggle: () => void favorites.toggle(item.id) }}
             />
             {selectAction(item)}
           </View>
@@ -308,6 +312,7 @@ export function ClinicDirectoryScreen() {
           />
         </View>
       ) : null}
+      <FavoritePrompt visible={favorites.promptOpen} onClose={favorites.closePrompt} />
       <ServicePicker
         visible={pickerOpen}
         groups={catalog.data ?? []}

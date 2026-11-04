@@ -8,6 +8,8 @@ import { getClinic, getClinicReviews } from "~/api/clinics";
 import { SelectButton } from "~/components/leads/select-button";
 import { getServiceGroups } from "~/api/services";
 import { ClinicLocationMap } from "~/components/clinic-directory/clinic-location-map";
+import { FavoriteHeart } from "~/components/clinic-directory/favorite-heart";
+import { FavoritePrompt } from "~/components/clinic-directory/favorite-prompt";
 import { OpeningHours } from "~/components/clinic-directory/opening-hours";
 import { PriceList } from "~/components/clinic-directory/price-list";
 import { ProfileSection } from "~/components/clinic-directory/profile-section";
@@ -15,6 +17,7 @@ import { ReviewList } from "~/components/clinic-directory/review-list";
 import { StarRating } from "~/components/clinic-directory/star-rating";
 import { TrustpilotBlock } from "~/components/clinic-directory/trustpilot-block";
 import { BackLink, Badge, Button, LoadState, Screen } from "~/components/ui";
+import { useFavorites } from "~/hooks/use-favorites";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { BASIC_CLINIC_LABEL, BASIC_CLINIC_PROFILE_TEXT, BASIC_CLINIC_PROFILE_TITLE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
@@ -38,7 +41,9 @@ function Reviews({ clinicId }: { clinicId: string }) {
 }
 
 // Fuld profil for verificerede klinikker, grunddata for basisniveau (architecture 6.1). Ledig tid og priser findes kun på fuldt niveau.
-function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; caseId?: string; hasServices: boolean }) {
+type Favorite = { saved: boolean; onToggle: () => void };
+
+function Profile({ clinic, caseId, hasServices, favorite }: { clinic: ClinicProfileDto; caseId?: string; hasServices: boolean; favorite: Favorite }) {
   const catalog = useLoad(getServiceGroups);
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
@@ -53,7 +58,10 @@ function Profile({ clinic, caseId, hasServices }: { clinic: ClinicProfileDto; ca
         )}
       </View>
       <View style={styles.head}>
-        <Badge label={full ? VERIFIED_CLINIC_LABEL : BASIC_CLINIC_LABEL} tone={full ? "info" : "warning"} />
+        <View style={styles.headRow}>
+          <Badge label={full ? VERIFIED_CLINIC_LABEL : BASIC_CLINIC_LABEL} tone={full ? "info" : "warning"} />
+          <FavoriteHeart saved={favorite.saved} onToggle={favorite.onToggle} clinicName={clinic.name} />
+        </View>
         <Text accessibilityRole="header" style={styles.title}>
           {clinic.name}
         </Text>
@@ -130,17 +138,27 @@ export function ClinicProfileScreen() {
     const slugs = sag ? (await getCase(sag).catch(() => null))?.services.map((s) => s.slug) ?? [] : [];
     return { profile: await getClinic(clinicId, slugs), hasServices: slugs.length > 0 };
   }, [clinicId, sag]);
+  const favorites = useFavorites();
   return (
     <Screen>
       <BackLink label="Alle klinikker" onPress={() => (router.canGoBack() ? router.back() : router.replace("/klinikker"))} />
       <LoadState {...clinic} onRetry={clinic.reload}>
-        {(data) => <Profile clinic={data.profile} caseId={sag} hasServices={data.hasServices} />}
+        {(data) => (
+          <Profile
+            clinic={data.profile}
+            caseId={sag}
+            hasServices={data.hasServices}
+            favorite={{ saved: favorites.isSaved(data.profile.id), onToggle: () => void favorites.toggle(data.profile.id) }}
+          />
+        )}
       </LoadState>
+      <FavoritePrompt visible={favorites.promptOpen} onClose={favorites.closePrompt} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   hero: { height: 160, borderRadius: radius.lg, backgroundColor: colors.brand50, alignItems: "center", justifyContent: "center" },
   logo: { width: "60%", height: "70%" },
   glyph: { fontSize: 56, color: colors.brand700 },

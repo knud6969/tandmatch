@@ -116,7 +116,7 @@ function BookContent() {
           <Text accessibilityRole="header" style={styles.title}>
             Din tid er booket
           </Text>
-          <BookingCard booking={booked} />
+          <BookingCard booking={booked} calendar />
           <Text style={styles.muted}>Klinikken kan nu se dit navn og telefonnummer.</Text>
           <Button label="Se mine bookinger" onPress={() => router.replace("/bookinger")} />
           <Button label="Tilbage til sagen" variant="secondary" onPress={back} />

@@ -57,6 +57,12 @@ export function bookingFailure(error: unknown): { message: string; refetchSlots:
   return { message: GENERIC_ERROR_TEXT, refetchSlots: false, clearSlot: false };
 }
 
+// Efter en mislykket flytning (13.12): som en booking, men BOOKING_NOT_RESCHEDULABLE betyder, at tiden ikke kan flyttes mere,
+// og patienten henvises til beskedtråden.
+export function rescheduleFailure(error: unknown): ReturnType<typeof bookingFailure> & { notReschedulable: boolean } {
+  return { ...bookingFailure(error), notReschedulable: error instanceof ApiRequestError && error.code === "BOOKING_NOT_RESCHEDULABLE" };
+}
+
 // Kommende: booket eller reserveret og endnu ikke slut, med den nærmeste først. Tidligere: resten, med den seneste først.
 export function splitBookings(bookings: PatientBookingDto[], now: Date = new Date()): { upcoming: PatientBookingDto[]; past: PatientBookingDto[] } {
   const active = (b: PatientBookingDto) => (b.status === "booked" || b.status === "held") && new Date(b.endsAt) > now;

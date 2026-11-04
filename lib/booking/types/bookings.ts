@@ -16,10 +16,13 @@ export type PatientBookingDto = {
   endsAt: string;
   status: BookingStatus;
   canCancel: boolean; // booked og før starttid
+  canReschedule: boolean; // samme regel som canCancel (10.16)
   canReview: boolean; // effektivt completed (ends_at + 24 t) og ikke anmeldt endnu
   holdExpiresAt: string | null; // kun held (akut)
   cancelledBy: BookingCanceller | null; // kun cancelled
   cancelReason: string | null; // klinikkens grund, kun når klinikken aflyste og skrev en
+  rescheduledFrom: string | null; // på den nye booking efter en flytning: den tidligere starttid
+  rescheduledTo: string | null; // på den aflyste, flyttede booking: den nye starttid
 };
 
 // Klinikkens visning af en booking. `contact` er kun udfyldt for booked/completed (architecture 5.5), aldrig for held.
@@ -36,6 +39,8 @@ export type ClinicBookingDto = {
   holdExpiresAt: string | null; // kun held
   cancelledBy: BookingCanceller | null; // kun cancelled. Ingen patientdata
   cancelReason: string | null; // klinikkens egen grund, kun cancelled af klinikken
+  rescheduledFrom: string | null; // på den nye booking efter en flytning: den tidligere starttid
+  rescheduledTo: string | null; // på den aflyste, flyttede booking: den nye starttid
 };
 
 // Booking i dataeksporten (GDPR art. 15/20): patientens egne bookinger, med de kontaktoplysninger patienten selv har angivet.

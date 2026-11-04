@@ -6,6 +6,7 @@ export const RETURN_TO_PATTERNS: readonly RegExp[] = [
   /^\/akut$/,
   /^\/bookinger$/,
   /^\/sager$/,
+  /^\/favoritter$/,
   new RegExp(`^/sag/${UUID}$`, "i"),
   new RegExp(`^/sag/${UUID}/book/${UUID}$`, "i"),
   new RegExp(`^/sag/${UUID}/beskeder/${UUID}$`, "i"),

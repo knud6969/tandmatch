@@ -26,3 +26,14 @@ export async function listBookings(): Promise<PatientBookingDto[]> {
 export function cancelBooking(bookingId: string): Promise<PatientBookingDto> {
   return apiRequest<PatientBookingDto>(`/api/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "POST", json: {} });
 }
+
+// Ledige tider til at flytte en booket tid: samme klinik og behandling som bookingen (booking 10.16; højst 14 dage).
+export async function getBookingAvailability(bookingId: string): Promise<SlotDto[]> {
+  const result = await apiRequest<{ slots: SlotDto[] }>(`/api/bookings/${encodeURIComponent(bookingId)}/availability`);
+  return result.slots;
+}
+
+// Flytter en booket tid. Svaret er den nye booking (nyt id). 409 SLOT_TAKEN, SLOT_UNAVAILABLE, BOOKING_NOT_RESCHEDULABLE m.fl.
+export function rescheduleBooking(bookingId: string, startsAt: string): Promise<PatientBookingDto> {
+  return apiRequest<PatientBookingDto>(`/api/bookings/${encodeURIComponent(bookingId)}/reschedule`, { method: "POST", json: { startsAt } });
+}

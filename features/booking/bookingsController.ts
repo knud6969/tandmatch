@@ -8,10 +8,10 @@ import {
   MAX_BOOKINGS_RANGE_DAYS,
 } from "@/lib/booking/constants/bookings";
 import { DAY_MS } from "@/lib/common/domain/time";
-import type { bookingsQuerySchema, bookSlotSchema, cancelBookingSchema, leadAvailabilityQuerySchema } from "@/lib/booking/schemas/bookings";
+import type { bookingsQuerySchema, bookSlotSchema, cancelBookingSchema, leadAvailabilityQuerySchema, rescheduleBookingSchema } from "@/lib/booking/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import type { SlotDto } from "@/lib/clinics/types/clinics";
-import { ApiError, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
+import { ApiError, bookingNotReschedulable, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/features/clinics";
 import { BookingsRepository } from "@/features/booking/bookingsRepository";
@@ -25,6 +25,8 @@ type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type LeadAvailabilityQuery = z.infer<typeof leadAvailabilityQuerySchema>;
 type BookingsQuery = z.infer<typeof bookingsQuerySchema>;
 type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
+type RescheduleInput = z.infer<typeof rescheduleBookingSchema>;
+type AvailabilityRange = Pick<LeadAvailabilityQuery, "from" | "to">;
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type BookingsDeps = {
@@ -77,15 +79,20 @@ export class BookingsController {
     if (!lead.serviceIds.includes(query.serviceId)) {
       throw serviceNotOnCase();
     }
-    const [service] = await this.services.requireActive([query.serviceId]);
-    const clinic = await this.directory.findClinic(lead.clinicId, [service.id]);
+    return this.slotsFor(lead.clinicId, query.serviceId, query);
+  }
+
+  // Ledige tider hos en klinik for én behandling (fælles for availabilityForLead() og availabilityForBooking()).
+  private async slotsFor(clinicId: string, serviceId: string, range: AvailabilityRange): Promise<{ slots: SlotDto[] }> {
+    const [service] = await this.services.requireActive([serviceId]);
+    const clinic = await this.directory.findClinic(clinicId, [service.id]);
     if (!clinic || clinic.tier !== "full") {
       throw clinicNotAvailable();
     }
-    const range = this.slots.resolveRange(query.from, query.to);
-    if (!range.ok) throw new ApiError(400, "VALIDATION_ERROR", range.message);
-    const { from, to } = range;
-    const busy = (await this.availability.listBusyIntervals([lead.clinicId], from, to)).get(lead.clinicId) ?? [];
+    const resolved = this.slots.resolveRange(range.from, range.to);
+    if (!resolved.ok) throw new ApiError(400, "VALIDATION_ERROR", resolved.message);
+    const { from, to } = resolved;
+    const busy = (await this.availability.listBusyIntervals([clinicId], from, to)).get(clinicId) ?? [];
     return {
       slots: this.slots.slots({
         openingHours: clinic.openingHours,
@@ -96,6 +103,19 @@ export class BookingsController {
         to,
       }),
     };
+  }
+
+  // Ledige tider til at flytte en booket tid: samme klinik og behandling som bookingen (10.16). 409 BOOKING_NOT_RESCHEDULABLE
+  // for en booking, der ikke kan flyttes; fremmed booking giver 404.
+  async availabilityForBooking(bookingId: string, query: AvailabilityRange): Promise<{ slots: SlotDto[] }> {
+    const booking = await this.bookings.requireForPatient(bookingId);
+    if (!booking.canReschedule) throw bookingNotReschedulable();
+    return this.slotsFor(booking.clinic.id, booking.service.id, query);
+  }
+
+  // Flytter en booket tid (10.16): den gamle aflyses og en ny oprettes atomisk i reschedule_booking(). Svaret er den nye booking.
+  async reschedule(bookingId: string, input: RescheduleInput): Promise<PatientBookingDto> {
+    return this.bookings.requireForPatient(await this.bookings.reschedule(bookingId, input.startsAt));
   }
 
   // Booker en tid på et accepteret lead (409 SLOT_TAKEN, LEAD_NOT_ACCEPTED, SLOT_UNAVAILABLE, BOOKING_LIMIT). Telefonen gemmes på patienten.

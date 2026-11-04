@@ -190,7 +190,7 @@ Brugerens ønske 2026-10-22: forsiden og chatten skal se mere professionelle og 
 
 ### 13.11 Tilføj til kalender
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR B.
+**Bygget i koden (2026-11-04)**, trin 11, PR B; kræver `npx expo install expo-calendar`. `app.json` har `NSCalendarsWriteOnlyAccessUsageDescription` i `infoPlist`; pluginet `expo-calendar` er ikke tilføjet (ikke nødvendigt for Expo Go; tilføjes først, hvis en development build kræver det). Filer: `src/utils/calendar.ts` (eneste import af pakken), `calendar-button.ts`, `hooks/use-calendar-available.ts`, `components/booking/add-to-calendar-button.tsx`.
 
 **Valg: `expo-calendar` med `Calendar.createEventInCalendarAsync(event)`.** Den åbner iOS' egen "Ny begivenhed"-skærm udfyldt med tiden; patienten vælger kalender og trykker "Tilføj" selv. Begrundelse: virker i Expo Go, ingen serverdel, appen læser aldrig patientens kalender (dataminimering), patienten ser og styrer præcis, hvad der gemmes, og der skal ikke håndteres filer. Fravalgt: `Calendar.createEventAsync()` (skriver uden systemets skærm og kræver fuld kalenderadgang), en `.ics`-fil delt med `expo-sharing` (flere pakker, klodset på iOS) og en `.ics`-route på serveren (kræver enten login i en browser eller et offentligt link med bookingdata). Kræver iOS i den SDK-version en kalendertilladelse til systemskærmen, tilføjes `NSCalendarsWriteOnlyAccessUsageDescription` i `app.json` med teksten "TandMatch tilføjer kun din tid til kalenderen, når du beder om det. Vi læser ikke din kalender." (verificeres i opgaven). `Calendar.isAvailableAsync()` er falsk → knappen vises ikke.
 
@@ -200,7 +200,7 @@ Brugerens ønske 2026-10-22: forsiden og chatten skal se mere professionelle og 
 
 ### 13.12 Flyt tid og gemte klinikker
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR B. API'erne står i booking 10.16 og clinics 10.17.
+**Bygget i koden (2026-11-04)**, trin 11, PR B. API'erne står i booking 10.16 og clinics 10.17. Afvigelser: `app/bookinger.tsx` er flyttet til `app/bookinger/index.tsx`, så ruten `/bookinger/[bookingId]/flyt` kan ligge ved siden af; `Screen` har en valgfri `footer` (fast bundlinje); "Skriv til klinikken" finder sagen via `findCaseIdForLead()` (`src/utils/lead-case.ts`), fordi bookingen kun kender leadet; hjertet sidder på listekortet og profilen (ikke kortvisningens infokort); `/favoritter` er tilladt som `returnTo`.
 
 | Skærm | Rute i `mobile/app/` | API | Indhold |
 |---|---|---|---|
