@@ -1,3 +1,4 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
@@ -7,7 +8,7 @@ import { getPatientMe, patchPatientMe } from "~/api/patients";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { ProfileForm } from "~/components/auth/profile-form";
-import { Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { Button, Card, LoadError, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize } from "~/theme";
@@ -62,10 +63,7 @@ export function AccountScreen() {
         Konto
       </Text>
       {status === "unavailable" ? (
-        <>
-          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={reload} />
-        </>
+        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : status === "none" || me === null ? (
         <>
           {notice ? <StatusMessage message={notice} tone="warning" /> : null}

@@ -1,5 +1,6 @@
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
+import { FieldError } from "@/components/ui/field-error";
 
 type SelectFieldProps = Omit<ComponentProps<"select">, "id"> & {
   label: string;
@@ -39,11 +40,7 @@ export function SelectField({ label, hint, error, id, className, children, ...pr
       >
         {children}
       </select>
-      {error && (
-        <p id={errorId} className="text-sm font-medium text-danger-ink">
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }

@@ -169,6 +169,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Patient-appen (Expo) har sin egen konfiguration (architecture 13.2).
     "mobile/**",
+    // Agenternes midlertidige git-worktrees (Claude Code).
+    ".claude/worktrees/**",
   ]),
 ]);
 

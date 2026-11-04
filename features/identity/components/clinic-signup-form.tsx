@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { FormError } from "@/components/ui/form-error";
+import { FieldError } from "@/components/ui/field-error";
 import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -14,6 +16,7 @@ import { AREA_HOME } from "@/lib/common/navigation/areas";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/identity/constants/legal";
 import { signupSchema } from "@/lib/identity/schemas/auth";
 import type { AuthUserDto, TermsAcceptedDto } from "@/lib/identity/types/auth";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type ClinicField = "clinicName" | "cvr" | "address" | "postalCode" | "city" | "phone" | "email" | "password" | "terms";
 
@@ -31,6 +34,7 @@ export function ClinicSignupForm({ legalText }: { legalText: ReactNode }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<ClinicField>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const [pending, setPending] = useState(false);
 
   if (state.status === "loading") {
@@ -78,11 +82,9 @@ export function ClinicSignupForm({ legalText }: { legalText: ReactNode }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {errors.general && (
-        <Alert tone="danger" role="alert">
-          {errors.general}
-        </Alert>
+        <FormError message={errors.general} />
       )}
       <fieldset className="flex flex-col gap-5">
         <legend className="mb-1 text-lg font-semibold text-ink">Klinikken</legend>
@@ -117,9 +119,7 @@ export function ClinicSignupForm({ legalText }: { legalText: ReactNode }) {
           </Button>
         )}
         {errors.fields.terms && (
-          <p id="terms-error" className="text-sm font-medium text-danger-ink">
-            {errors.fields.terms}
-          </p>
+          <FieldError id="terms-error">{errors.fields.terms}</FieldError>
         )}
       </div>
       <TermsDialog

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { POSITION_FAILED_WEB_TEXT } from "@/lib/common/constants/error-texts";
 import { roundPosition } from "@/lib/common/domain/position";
 
 export type Position = { lat: number; lng: number };
@@ -24,7 +25,7 @@ export function usePosition(onPosition: (position: Position) => void) {
       },
       () => {
         setLocating(false);
-        setError("Vi kunne ikke få din position. Tjek browserens tilladelser, eller skriv dit postnummer i stedet.");
+        setError(POSITION_FAILED_WEB_TEXT);
       },
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
     );

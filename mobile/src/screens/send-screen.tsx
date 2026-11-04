@@ -1,3 +1,4 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,7 +18,7 @@ import { CLINIC_ON_WEB_MESSAGE, useSession } from "~/auth/session-context";
 import { LoginForm } from "~/components/auth/login-form";
 import { SignupForm, type SignupValues } from "~/components/auth/signup-form";
 import { ConsentGate } from "~/components/case/consent-gate";
-import { BackLink, Badge, Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { BackLink, Badge, Button, Card, LoadError, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, spacing } from "~/theme";
@@ -207,14 +208,13 @@ export function SendScreen() {
                     </View>
                   ) : status !== "account" ? (
                     <View style={styles.section}>
-                      <StatusMessage
-                        message={status === "none" ? "Log ind eller opret en konto for at sende." : "Vi kunne ikke hente din konto lige nu."}
-                        tone="warning"
-                      />
                       {status === "none" ? (
-                        <Button label="Log ind" onPress={() => router.push("/login")} />
+                        <>
+                          <StatusMessage message="Log ind eller opret en konto for at sende." tone="warning" />
+                          <Button label="Log ind" onPress={() => router.push("/login")} />
+                        </>
                       ) : (
-                        <Button label="Prøv igen" variant="secondary" onPress={reload} />
+                        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
                       )}
                     </View>
                   ) : !consentGiven ? (

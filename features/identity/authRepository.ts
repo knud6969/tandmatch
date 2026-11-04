@@ -1,7 +1,7 @@
 import "server-only";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 import type { MobileSessionDto } from "@/lib/identity/types/auth";
-import { RECOVERY_INVALID_TEXT, SAME_PASSWORD_TEXT } from "@/lib/common/constants/error-texts";
+import { API_ERROR_TEXTS, RECOVERY_INVALID_TEXT, SAME_PASSWORD_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiError, unauthenticated } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import { isTransientAuthError } from "@/platform/db/authErrors";
@@ -10,7 +10,7 @@ import { getSupabaseConfig } from "@/platform/db/config";
 const AUTH_LOOKUP_RETRIES = 2;
 
 const authUnavailable = () =>
-  new ApiError(503, "AUTH_UNAVAILABLE", "Login-tjenesten svarer ikke lige nu. Prøv igen om lidt.");
+  new ApiError(503, "AUTH_UNAVAILABLE", API_ERROR_TEXTS.AUTH_UNAVAILABLE);
 
 // Hvordan sessionen blev oprettet (JWT-claimet amr), fx { method: "password" } eller { method: "otp" } for et e-maillink.
 export type AuthMethod = { method: string; timestamp: number };
@@ -75,7 +75,7 @@ export class AuthRepository extends BaseRepository {
         throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
       }
       if (error.status && error.status >= 400 && error.status < 500) {
-        throw new ApiError(400, "SIGNUP_FAILED", "Kontoen kunne ikke oprettes. Tjek oplysningerne.");
+        throw new ApiError(400, "SIGNUP_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
       }
       throw error;
     }
@@ -105,7 +105,7 @@ export class AuthRepository extends BaseRepository {
       if (error.code === "email_exists" || error.code === "user_already_exists") {
         throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
       }
-      throw new ApiError(400, "CONVERT_FAILED", "Kontoen kunne ikke oprettes. Tjek oplysningerne.");
+      throw new ApiError(400, "CONVERT_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
     }
   }
 
@@ -128,7 +128,7 @@ export class AuthRepository extends BaseRepository {
     if (body?.error_code === "email_exists" || body?.error_code === "user_already_exists") {
       throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
     }
-    throw new ApiError(400, "CONVERT_FAILED", "Kontoen kunne ikke oprettes. Tjek oplysningerne.");
+    throw new ApiError(400, "CONVERT_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
   }
 
   async refreshSession(): Promise<void> {

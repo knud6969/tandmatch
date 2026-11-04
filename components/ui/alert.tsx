@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
+import { StatusIcon } from "@/components/ui/status-icon";
 
 export type AlertTone = "info" | "warning" | "danger" | "success";
 
@@ -14,16 +15,24 @@ type AlertProps = {
   tone?: AlertTone;
   title?: string;
   children: ReactNode;
-  // role="alert" bruges til fejl efter en handling, så skærmlæsere læser dem straks.
+  // Fejl (danger) læses straks op af skærmlæsere (role="alert"); alt andet er rolig status. Kan overstyres, fx til en
+  // advarsel, der kræver et svar (role="alert").
   role?: "alert" | "status";
   className?: string;
 };
 
-export function Alert({ tone = "info", title, children, role = "status", className }: AlertProps) {
+// Fælles boks til beskeder i en tone. Fejl, advarsler og succes får et ikon, så de ikke kun adskilles på farve.
+export function Alert({ tone = "info", title, children, role, className }: AlertProps) {
   return (
-    <div role={role} className={cx("rounded-card border p-4 text-base leading-relaxed", tones[tone], className)}>
-      {title && <p className="mb-1 font-semibold">{title}</p>}
-      {children}
+    <div
+      role={role ?? (tone === "danger" ? "alert" : "status")}
+      className={cx("flex gap-3 rounded-card border p-4 text-base leading-relaxed", tones[tone], className)}
+    >
+      {tone !== "info" && <StatusIcon tone={tone} />}
+      <div className="min-w-0 flex-1">
+        {title && <p className="mb-1 font-semibold">{title}</p>}
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { FormError } from "@/components/ui/form-error";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -8,6 +9,7 @@ import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { changeEmailSchema } from "@/lib/identity/schemas/auth";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type Field = "email" | "currentPassword";
 
@@ -15,6 +17,7 @@ type Field = "email" | "currentPassword";
 export function ChangeEmailForm({ onClose }: { onClose: () => void }) {
   const [values, setValues] = useState({ email: "", currentPassword: "" });
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const [pending, setPending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
 
@@ -47,11 +50,9 @@ export function ChangeEmailForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       {errors.general && (
-        <Alert tone="danger" role="alert">
-          {errors.general}
-        </Alert>
+        <FormError message={errors.general} />
       )}
       <TextField
         label="Ny e-mail"

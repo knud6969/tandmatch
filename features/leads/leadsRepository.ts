@@ -1,10 +1,10 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import type { z } from "zod";
 import { isActiveLead, summaryExcerpt } from "@/lib/leads/domain/leads";
 import { priceEstimate } from "@/lib/booking/domain/reviews";
 import {
   MAX_ACTIVE_LEADS_PER_CASE,
-  MAX_LEADS_PER_PATIENT_DAY,
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/common/constants/limits";
 import type { emergencyLeadSchema, leadDecisionSchema } from "@/lib/leads/schemas/leads";
@@ -165,7 +165,7 @@ const SEND_ERRORS = (): Record<string, ApiError> => ({
   LEAD_DAILY_LIMIT: new ApiError(
     429,
     "LEAD_DAILY_LIMIT",
-    `Du kan højst sende ${MAX_LEADS_PER_PATIENT_DAY} henvendelser i døgnet. Prøv igen i morgen.`,
+    API_ERROR_TEXTS.LEAD_DAILY_LIMIT,
   ),
 });
 

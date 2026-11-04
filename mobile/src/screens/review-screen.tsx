@@ -5,7 +5,7 @@ import type { ReviewEligibleItemDto } from "@/lib/booking/types/reviews";
 import { createReview, listEligibleReviews } from "~/api/reviews";
 import { AccountRequired } from "~/screens/account-required";
 import { StarInput } from "~/components/review/star-input";
-import { BackLink, Button, Card, Checkbox, CheckboxText, Chip, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
+import { BackLink, Button, Card, Checkbox, CheckboxText, Chip, FieldError, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, spacing, type } from "~/theme";
@@ -65,7 +65,7 @@ function ReviewForm({ item, onDone }: { item: ReviewEligibleItemDto; onDone: () 
         {PRICE_ACCURACY_OPTIONS.map((option) => (
           <Chip key={option.value} label={option.label} selected={values.priceAccuracy === option.value} onPress={() => set("priceAccuracy", option.value)} />
         ))}
-        {errors.priceAccuracy ? <Text style={styles.error}>{errors.priceAccuracy}</Text> : null}
+        {errors.priceAccuracy ? <FieldError message={errors.priceAccuracy} /> : null}
       </View>
 
       <TextField
@@ -149,6 +149,5 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: colors.ink },
   muted: type.caption,
   label: { ...type.caption, fontWeight: "600", color: colors.ink },
-  error: { ...type.caption, color: colors.dangerInk },
   group: { gap: spacing.sm },
 });

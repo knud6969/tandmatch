@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { FieldError } from "@/components/ui/field-error";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -249,9 +250,7 @@ function ServiceRow({ service, row, error, onChange }: ServiceRowProps) {
         onChange={(e) => onChange({ on: e.target.checked })}
       />
       {row.on && error && (
-        <p role="alert" className="text-sm font-medium text-danger-ink">
-          {error}
-        </p>
+        <FieldError>{error}</FieldError>
       )}
       {row.on && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

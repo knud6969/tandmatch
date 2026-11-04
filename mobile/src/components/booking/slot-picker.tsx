@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Chip } from "~/components/ui";
+import { Chip, FieldError } from "~/components/ui";
 import { colors, fontSize, spacing } from "~/theme";
 import type { SlotDay } from "~/utils/booking-form";
 import { formatTime } from "@/lib/common/domain/format";
@@ -38,7 +38,7 @@ function DayAndTimes({ days, selectedStartsAt, initialKey, onSelect, error }: Pr
           />
         ))}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <FieldError message={error} /> : null}
     </View>
   );
 }
@@ -47,5 +47,4 @@ const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
   label: { fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  error: { fontSize: fontSize.sm, color: colors.dangerInk },
 });

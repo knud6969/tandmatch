@@ -14,7 +14,7 @@ import { ProfileSection } from "~/components/clinic-directory/profile-section";
 import { ReviewList } from "~/components/clinic-directory/review-list";
 import { StarRating } from "~/components/clinic-directory/star-rating";
 import { TrustpilotBlock } from "~/components/clinic-directory/trustpilot-block";
-import { BackLink, Badge, Button, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { BackLink, Badge, Button, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, radius, spacing } from "~/theme";
 import { BASIC_CLINIC_LABEL, BASIC_CLINIC_PROFILE_TEXT, BASIC_CLINIC_PROFILE_TITLE, VERIFIED_CLINIC_LABEL } from "@/lib/clinics/constants/clinic-texts";
@@ -133,16 +133,9 @@ export function ClinicProfileScreen() {
   return (
     <Screen>
       <BackLink label="Alle klinikker" onPress={() => (router.canGoBack() ? router.back() : router.replace("/klinikker"))} />
-      {clinic.error ? (
-        <>
-          <StatusMessage message={clinic.error} tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={clinic.reload} />
-        </>
-      ) : (
-        <LoadState {...clinic} onRetry={clinic.reload}>
-          {(data) => <Profile clinic={data.profile} caseId={sag} hasServices={data.hasServices} />}
-        </LoadState>
-      )}
+      <LoadState {...clinic} onRetry={clinic.reload}>
+        {(data) => <Profile clinic={data.profile} caseId={sag} hasServices={data.hasServices} />}
+      </LoadState>
     </Screen>
   );
 }

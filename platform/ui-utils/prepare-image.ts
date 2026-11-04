@@ -1,6 +1,7 @@
 // Nedskalerer og genkoder billeder i browseren, før de uploades (architecture 9.3, 9.5).
 // Resultatet er altid et JPEG under MAX_IMAGE_UPLOAD_BYTES. Serveren genkoder igen og fjerner EXIF; det her er for at
 // undgå fejl ved store mobilbilleder og for at spare båndbredde.
+import { IMAGE_PREPARE_FAILED_TEXT, IMAGE_UNREADABLE_TEXT } from "@/lib/common/constants/error-texts";
 import { MAX_IMAGE_DIMENSION, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
 
 export class ImagePrepareError extends Error {}
@@ -24,7 +25,7 @@ export async function prepareImage(file: File, maxDimension: number = MAX_IMAGE_
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    throw new ImagePrepareError("Billedet kunne ikke læses. Vælg et andet billede.");
+    throw new ImagePrepareError(IMAGE_UNREADABLE_TEXT);
   }
 
   try {
@@ -34,7 +35,7 @@ export async function prepareImage(file: File, maxDimension: number = MAX_IMAGE_
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext("2d");
     if (!context) {
-      throw new ImagePrepareError("Billedet kunne ikke behandles i din browser. Prøv et andet billede.");
+      throw new ImagePrepareError(IMAGE_PREPARE_FAILED_TEXT);
     }
     // Hvid baggrund, så gennemsigtige PNG-billeder ikke bliver sorte i JPEG.
     context.fillStyle = "#ffffff";

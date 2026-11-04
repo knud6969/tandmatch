@@ -1,4 +1,5 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lazyAdminClient } from "@/platform/db/admin";
@@ -25,6 +26,6 @@ export async function enforceIpRateLimit(
   const hash = createHash("sha256").update(clientIp(req)).digest("hex");
   // 2.3 (b): consume_rate_limit() kan kun udføres af service role.
   if (!(await new RateLimitRepository(admin()).consume(`${scope}:${hash}`, limit))) {
-    throw new ApiError(429, "RATE_LIMITED", "For mange forsøg. Prøv igen om lidt.");
+    throw new ApiError(429, "RATE_LIMITED", API_ERROR_TEXTS.RATE_LIMITED);
   }
 }

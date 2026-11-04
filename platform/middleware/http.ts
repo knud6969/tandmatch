@@ -3,6 +3,7 @@ import { after } from "next/server";
 import type { ZodType } from "zod";
 import {
   ALREADY_REPLIED_TEXT,
+  API_ERROR_TEXTS,
   ALREADY_REVIEWED_TEXT,
   BOOKING_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
@@ -102,7 +103,7 @@ export async function readJson<T>(req: Request, schema: ZodType<T>): Promise<T> 
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new ApiError(400, "INVALID_JSON", "Indholdet kunne ikke læses.");
+    throw new ApiError(400, "INVALID_JSON", API_ERROR_TEXTS.INVALID_JSON);
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
@@ -147,7 +148,7 @@ export function imageFileReader(req: Request, field: string, maxBytes: number): 
     try {
       form = await req.formData();
     } catch {
-      throw new ApiError(400, "INVALID_FORM", "Billedet kunne ikke læses.");
+      throw new ApiError(400, "INVALID_FORM", API_ERROR_TEXTS.INVALID_FORM);
     }
     const file = form.get(field);
     if (!(file instanceof File)) {
@@ -174,7 +175,7 @@ export function imagesFormReader(
     try {
       form = await req.formData();
     } catch {
-      throw new ApiError(400, "INVALID_FORM", "Billedet kunne ikke læses.");
+      throw new ApiError(400, "INVALID_FORM", API_ERROR_TEXTS.INVALID_FORM);
     }
     const files: File[] = [];
     const fields: Record<string, string> = {};
@@ -209,7 +210,7 @@ export async function readImageForm<T>(
   try {
     form = await req.formData();
   } catch {
-    throw new ApiError(400, "INVALID_FORM", "Billedet kunne ikke læses.");
+    throw new ApiError(400, "INVALID_FORM", API_ERROR_TEXTS.INVALID_FORM);
   }
   const raw: Record<string, string> = {};
   for (const [key, value] of form.entries()) {
@@ -295,7 +296,7 @@ export const chatLimit = () => new ApiError(429, "CHAT_LIMIT", "Samtalen er lukk
 
 // AI-tjenesten svarer ikke eller gav et ugyldigt svar (architecture 7.6: timeout og nedbrud giver 503).
 export const aiUnavailable = () =>
-  new ApiError(503, "AI_UNAVAILABLE", "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.");
+  new ApiError(503, "AI_UNAVAILABLE", API_ERROR_TEXTS.AI_UNAVAILABLE);
 
 // Booking (architecture 10.10). Fabrikkerne bruges af både controllere og repositories.
 export const leadNotAccepted = () =>

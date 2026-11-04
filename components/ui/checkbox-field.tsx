@@ -1,5 +1,6 @@
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
+import { FieldError } from "@/components/ui/field-error";
 
 type CheckboxFieldProps = Omit<ComponentProps<"input">, "type" | "id"> & {
   label: ReactNode;
@@ -43,11 +44,7 @@ export function CheckboxField({ label, description, selected, error, id, classNa
           {description && <span className="text-sm text-ink-muted">{description}</span>}
         </span>
       </label>
-      {error && (
-        <p id={errorId} className="text-sm font-medium text-danger-ink">
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }

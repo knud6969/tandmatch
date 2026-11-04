@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cx } from "@/components/ui/cx";
+import { StatusIcon } from "@/components/ui/status-icon";
 
 type SaveBarProps = {
   // Der er ændringer, som ikke er gemt.
@@ -40,8 +41,9 @@ export function SaveBar({ dirty, saving, savedAt, error, label = "Gem", sticky =
           ? "sticky bottom-0 z-10 -mx-4 border-t px-4 py-3 shadow-raised sm:mx-0 sm:rounded-card sm:border"
           : "pt-1",
       )}>
-      <p role={error ? "alert" : "status"} aria-live="polite" className={cx("text-base font-medium", tone)}>
-        {status}
+      <p role={error ? "alert" : "status"} aria-live="polite" className={cx("flex items-start gap-2 text-base font-medium", tone)}>
+        {error && !saving && <StatusIcon tone="danger" />}
+        <span>{status}</span>
       </p>
       <Button type="submit" disabled={saving || !dirty} className="sm:min-w-40">
         {saving ? "Gemmer …" : label}

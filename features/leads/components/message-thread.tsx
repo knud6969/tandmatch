@@ -12,7 +12,7 @@ import {
 import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
 import { canSendMessage, isEmptyMessage, keepImageUrls, type ImageUrlCache } from "@/lib/leads/domain/messages";
 import type { MessageDto } from "@/lib/leads/types/messages";
-import { Alert } from "@/components/ui/alert";
+import { LoadError } from "@/components/ui/load-state";
 import { Button } from "@/components/ui/button";
 import { cx } from "@/components/ui/cx";
 import { StatusMessage } from "@/components/ui/status-message";
@@ -177,12 +177,7 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
   return (
     <div className="flex flex-col gap-3" data-testid="beskedtraad">
       {loadError && (
-        <Alert tone="danger" role="alert">
-          <p>{loadError}</p>
-          <Button variant="secondary" className="mt-3" onClick={() => void refresh()}>
-            Prøv igen
-          </Button>
-        </Alert>
+        <LoadError message={loadError} onRetry={() => void refresh()} />
       )}
       {messages === null && !loadError && (
         <p role="status" className="text-sm text-ink-muted">

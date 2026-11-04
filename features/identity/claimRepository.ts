@@ -1,4 +1,5 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import type { ClaimResultDto, ClaimTokenDto } from "@/lib/identity/types/session";
 import { ApiError, forbidden, unauthenticated } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
@@ -15,12 +16,12 @@ export class ClaimRepository extends BaseRepository {
   private readonly errors = () => ({
     UNAUTHENTICATED: unauthenticated(),
     FORBIDDEN: forbidden(),
-    NOT_ANONYMOUS: new ApiError(403, "NOT_ANONYMOUS", "Der er ingen anonym samtale at overføre."),
+    NOT_ANONYMOUS: new ApiError(403, "NOT_ANONYMOUS", API_ERROR_TEXTS.NOT_ANONYMOUS),
     ACCOUNT_REQUIRED: new ApiError(403, "ACCOUNT_REQUIRED", "Log ind på din konto for at overføre samtalen."),
     CLAIM_INVALID: new ApiError(
       400,
       "CLAIM_INVALID",
-      "Din tidligere samtale kunne ikke hentes over på kontoen. Den kan være udløbet eller allerede overført.",
+      API_ERROR_TEXTS.CLAIM_INVALID,
     ),
   });
 

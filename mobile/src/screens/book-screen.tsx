@@ -1,3 +1,4 @@
+import { LEAD_NOT_FOUND_TEXT } from "@/lib/common/constants/error-texts";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -11,14 +12,13 @@ import { AccountRequired } from "~/screens/account-required";
 import { getPatientMe } from "~/api/patients";
 import { BookingCard } from "~/components/booking/booking-card";
 import { SlotPicker } from "~/components/booking/slot-picker";
-import { BackLink, Button, Chip, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
+import { BackLink, Button, Chip, FieldError, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { colors, spacing, type } from "~/theme";
 import { bookingFailure, groupSlotsByDay, parseBooking, type BookingField } from "~/utils/booking-form";
 import { canBookLead } from "~/utils/case-view";
 import type { FieldErrors } from "~/utils/field-errors";
 
-const LEAD_NOT_FOUND_TEXT = "Henvendelsen findes ikke på denne sag.";
 
 type Loaded = { caseDto: CaseDto; lead: PatientLeadDto; name: string; phone: string };
 
@@ -73,7 +73,7 @@ function BookingForm({ data, leadId, onBooked }: { data: Loaded; leadId: string;
               <Chip key={s.id} label={s.name} selected={s.id === serviceId} onPress={() => { setServiceId(s.id); setStartsAt(null); }} />
             ))}
           </View>
-          {errors.serviceId ? <Text style={styles.error}>{errors.serviceId}</Text> : null}
+          {errors.serviceId ? <FieldError message={errors.serviceId} /> : null}
         </View>
       ) : (
         <Text style={styles.body}>Behandling: {services[0]?.name}</Text>
@@ -156,5 +156,4 @@ const styles = StyleSheet.create({
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   body: { ...type.body, color: colors.ink },
   muted: type.caption,
-  error: { ...type.caption, color: colors.dangerInk },
 });

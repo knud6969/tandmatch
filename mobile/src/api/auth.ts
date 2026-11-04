@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/identity/schemas/auth";
 import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
 import type { AuthResultDto } from "@/lib/identity/types/auth";
@@ -78,7 +79,7 @@ async function claimDraft(claimToken: string): Promise<Pick<LoginWithDraftResult
       if (!(e instanceof ApiRequestError && e.code === "NETWORK")) break;
     }
   }
-  const draftError = lastError instanceof ApiRequestError ? lastError.message : "Din tidligere samtale kunne ikke hentes over på kontoen.";
+  const draftError = lastError instanceof ApiRequestError ? lastError.message : API_ERROR_TEXTS.CLAIM_INVALID;
   return { draft: "lost", caseId: null, draftError };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/form-error";
 import { Button } from "@/components/ui/button";
 import { TermsDialog } from "@/features/identity/components/terms-dialog";
 import { apiRequest } from "@/platform/ui-utils/api-client";
@@ -50,9 +50,7 @@ export function TermsAcceptForm({ naeste, legalText }: { naeste: string | null; 
         acceptLabel={pending ? "Gemmer dit valg …" : "Jeg accepterer vilkårene og har læst privatlivspolitikken"}
         error={
           error && (
-            <Alert tone="danger" role="alert">
-              {error}
-            </Alert>
+            <FormError message={error} />
           )
         }
       >
