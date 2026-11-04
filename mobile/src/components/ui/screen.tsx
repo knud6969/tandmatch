@@ -3,14 +3,15 @@ import { ScrollView, StyleSheet, View, type HostInstance, type ScrollViewInstanc
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing } from "~/theme";
 
-type Props = { children: ReactNode; scroll?: boolean };
+// `footer` er en fast bundlinje under indholdet (fx den valgte tid og en knap).
+type Props = { children: ReactNode; scroll?: boolean; footer?: ReactNode };
 
 // Skærmen stiller "rul til dette element" til rådighed, så fejl kan rulles ind i billedet, når de dukker op.
 type ScrollApi = { scrollTo: (node: HostInstance) => void };
 const ScrollContext = createContext<ScrollApi | null>(null);
 
 // Fælles skærmramme: sikkert område, scroll og tastaturvenlig. Kanten i bunden håndteres af fanebjælken.
-export function Screen({ children, scroll = true }: Props) {
+export function Screen({ children, scroll = true, footer }: Props) {
   const scrollRef = useRef<ScrollViewInstance>(null);
 
   const scrollTo = useCallback((node: HostInstance) => {
@@ -41,6 +42,7 @@ export function Screen({ children, scroll = true }: Props) {
       ) : (
         <View style={styles.content}>{children}</View>
       )}
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
     </SafeAreaView>
   );
 }
@@ -55,5 +57,6 @@ export function useScrollIntoView(ref: RefObject<HostInstance | null>, active: b
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.canvas },
+  footer: { padding: spacing.lg, gap: spacing.sm, backgroundColor: colors.canvas, borderTopWidth: 1, borderTopColor: colors.line },
   content: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1 },
 });

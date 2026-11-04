@@ -4,7 +4,6 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  BASE_URL,
   PASSWORD,
   SHARING_CONSENT_VERSION,
   TestClient,

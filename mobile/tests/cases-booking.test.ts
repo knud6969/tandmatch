@@ -139,7 +139,8 @@ describe("booking", () => {
   it("deler bookinger i kommende og tidligere", () => {
     const mk = (id: string, startsAt: string, endsAt: string, status: PatientBookingDto["status"]): PatientBookingDto => ({
       id, leadId: "l", clinic: { id: "c", name: "K", address: "A", city: "B" }, service: { id: "s", name: "S" },
-      startsAt, endsAt, status, canCancel: false, canReview: false, holdExpiresAt: null, cancelledBy: null, cancelReason: null,
+      startsAt, endsAt, status, canCancel: false, canReschedule: false, canReview: false, holdExpiresAt: null, cancelledBy: null, cancelReason: null,
+      rescheduledFrom: null, rescheduledTo: null,
     });
     const now = new Date("2026-10-25T12:00:00Z");
     const { upcoming, past } = splitBookings(

@@ -14,6 +14,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "TandMatch bruger kameraet, så du kan tage et billede af dit tandproblem. Billedet sendes først, når du har givet samtykke.",
         "NSPhotoLibraryUsageDescription": "TandMatch bruger dine fotos, så du kan vælge et billede af dit tandproblem. Billedet sendes først, når du har givet samtykke.",
+        "NSCalendarsWriteOnlyAccessUsageDescription": "TandMatch tilføjer kun din tid til kalenderen, når du beder om det. Vi læser ikke din kalender.",
         "NSLocationWhenInUseUsageDescription": "TandMatch bruger din position til at finde klinikker tæt på dig. Positionen gemmes ikke."
       }
     },

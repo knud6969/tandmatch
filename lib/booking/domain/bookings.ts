@@ -53,8 +53,14 @@ export function bookingCanceller(status: BookingStatus, cancelledBy: "patient" |
 }
 
 // Den ene linje patienten ser om en aflysning (appens bookingkort): klinikkens grund, hvis der er en, ellers hvem der aflyste.
-export function patientCancellationText(booking: { cancelledBy: BookingCanceller | null; cancelReason: string | null }): string | null {
+// En flyttet booking (10.16) viser "Du flyttede tiden til …" i stedet for "Du aflyste tiden".
+export function patientCancellationText(booking: {
+  cancelledBy: BookingCanceller | null;
+  cancelReason: string | null;
+  rescheduledTo?: string | null;
+}): string | null {
   if (!booking.cancelledBy) return null;
+  if (booking.rescheduledTo) return `Du flyttede tiden til ${formatDayAtTime(booking.rescheduledTo)}`;
   if (booking.cancelledBy === "clinic" && booking.cancelReason) return `${CLINIC_CANCEL_REASON_PREFIX} ${booking.cancelReason}`;
   return PATIENT_CANCELLED_BY_LABEL[booking.cancelledBy];
 }
@@ -64,4 +70,9 @@ export function clinicRescheduleNote(booking: { rescheduledFrom: string | null; 
   if (booking.rescheduledTo) return `Flyttet af patienten til ${formatDayAtTime(booking.rescheduledTo)}`;
   if (booking.rescheduledFrom) return `Flyttet fra ${formatDayAtTime(booking.rescheduledFrom)}`;
   return null;
+}
+
+// Linjen på den nye booking efter en flytning (10.16): "Flyttet fra …".
+export function patientRescheduledFromText(booking: { rescheduledFrom?: string | null }): string | null {
+  return booking.rescheduledFrom ? `Flyttet fra ${formatDayAtTime(booking.rescheduledFrom)}` : null;
 }

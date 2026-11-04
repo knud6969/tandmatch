@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
+import { CALENDAR_REMINDER_TEXT } from "@/lib/booking/domain/calendar-event";
 import { CANCEL_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import { cancelBooking, listBookings } from "~/api/bookings";
@@ -21,10 +22,12 @@ function BookingsContent() {
 
   // Aflysning efter bekræftelse; listen hentes igen bagefter, også ved BOOKING_NOT_CANCELLABLE, så den nyeste status ses.
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelledNotice, setCancelledNotice] = useState(false);
   const cancel = useAction(async (bookingId: string) => {
     setCancellingId(bookingId);
     try {
       await cancelBooking(bookingId);
+      setCancelledNotice(true);
     } finally {
       setCancellingId(null);
       bookings.reload();
@@ -41,6 +44,8 @@ function BookingsContent() {
     <BookingCard
       key={b.id}
       booking={b}
+      calendar
+      onReschedule={() => router.push({ pathname: "/bookinger/[bookingId]/flyt", params: { bookingId: b.id } })}
       onCancel={() => askCancel(b)}
       cancelling={cancellingId === b.id}
       onReview={() => router.push({ pathname: "/anmeld/[bookingId]", params: { bookingId: b.id } })}
@@ -52,6 +57,7 @@ function BookingsContent() {
       <Text accessibilityRole="header" style={styles.title}>
         Mine bookinger
       </Text>
+      {cancelledNotice ? <Text style={styles.muted}>{CALENDAR_REMINDER_TEXT}</Text> : null}
       {cancel.error ? <StatusMessage message={cancel.error} tone="danger" /> : null}
       <LoadState {...bookings} onRetry={bookings.reload}>
         {(list) => {

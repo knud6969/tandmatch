@@ -6,13 +6,23 @@ import { canCancelBooking, canReviewBooking } from "~/utils/case-actions";
 import { colors, type } from "~/theme";
 import { bookingTone } from "~/utils/case-view";
 import { formatDateTime } from "@/lib/common/domain/format";
-import { patientCancellationText } from "@/lib/booking/domain/bookings";
+import { patientCancellationText, patientRescheduledFromText } from "@/lib/booking/domain/bookings";
+import { AddToCalendarButton } from "~/components/booking/add-to-calendar-button";
 
-type Props = { booking: PatientBookingDto; onCancel?: () => void; cancelling?: boolean; onReview?: () => void };
+type Props = {
+  booking: PatientBookingDto;
+  onCancel?: () => void;
+  cancelling?: boolean;
+  onReview?: () => void;
+  onReschedule?: () => void;
+  // Vis "Tilføj til kalender" (kvitteringen og listen; 13.11).
+  calendar?: boolean;
+};
 
 // En booking: tidspunkt, klinik, behandling, status og ved en aflysning én linje om hvem (og klinikkens evt. grund). "Aflys" og "Skriv anmeldelse" vises kun, når serveren tillader det og skærmen giver handlingen.
-export function BookingCard({ booking, onCancel, cancelling = false, onReview }: Props) {
+export function BookingCard({ booking, onCancel, cancelling = false, onReview, onReschedule, calendar = false }: Props) {
   const cancellation = patientCancellationText(booking);
+  const movedFrom = patientRescheduledFromText(booking);
   return (
     <Card>
       <Badge label={BOOKING_STATUS_LABEL[booking.status]} tone={bookingTone(booking.status)} />
@@ -26,8 +36,17 @@ export function BookingCard({ booking, onCancel, cancelling = false, onReview }:
           {cancellation}
         </Text>
       ) : null}
+      {movedFrom ? (
+        <Text style={styles.muted} testID="booking-rescheduled-from">
+          {movedFrom}
+        </Text>
+      ) : null}
+      {calendar ? <AddToCalendarButton booking={booking} /> : null}
       {onReview && canReviewBooking(booking) ? (
         <Button label="Skriv anmeldelse" accessibilityLabel={`Skriv anmeldelse af ${booking.clinic.name}`} onPress={onReview} />
+      ) : null}
+      {onReschedule && booking.canReschedule ? (
+        <Button label="Flyt tid" accessibilityLabel={`Flyt tiden hos ${booking.clinic.name}`} variant="secondary" onPress={onReschedule} />
       ) : null}
       {onCancel && canCancelBooking(booking) ? (
         <Button label="Aflys tiden" accessibilityLabel={`Aflys tiden hos ${booking.clinic.name}`} variant="secondary" loading={cancelling} onPress={onCancel} />
