@@ -76,6 +76,29 @@ test.describe("klinikkens kalender", () => {
     }
   });
 
+  test("en flyttet tid viser \"Flyttet af patienten til …\" og \"Flyttet fra …\"", async ({ browser }, testInfo) => {
+    const clinic = await bookableClinic(browser, testInfo, "flyt");
+    const patient = await patientWithCase(browser, testInfo);
+    try {
+      const leadId = await acceptedLead(patient, clinic);
+      const booked = await bookViaApi(patient, leadId);
+      const avail = await patient.page.request.get(`/api/bookings/${booked.id}/availability`);
+      expect(avail.ok(), await avail.text()).toBeTruthy();
+      const { slots } = (await avail.json()) as { slots: { startsAt: string }[] };
+      const next = slots.find((s) => s.startsAt !== booked.startsAt)!;
+      const moved = await patient.page.request.post(`/api/bookings/${booked.id}/reschedule`, { data: { startsAt: next.startsAt } });
+      expect(moved.status(), await moved.text()).toBe(200);
+      await clinic.page.goto("/klinik/kalender");
+      await expect(clinic.page.getByTestId("flyttet").filter({ hasText: /^Flyttet af patienten til .+ kl\. \d\d\.\d\d$/ })).toHaveCount(1);
+      await expect(clinic.page.getByTestId("flyttet").filter({ hasText: /^Flyttet fra .+ kl\. \d\d\.\d\d$/ })).toHaveCount(1);
+      await expect(clinic.page.getByTestId("aflyst-af")).toHaveCount(0);
+      await expect(clinic.page.getByTestId("kalender-kontakt")).toHaveCount(1);
+      if (width(clinic.page) <= 390) await expectNoHorizontalScroll(clinic.page);
+    } finally {
+      await cleanup(patient, [clinic]);
+    }
+  });
+
   test.setTimeout(180_000);
 
   test("efter en booking ser klinikken kontakten i kalenderen og på lead-kortet", async ({ browser }, testInfo) => {
