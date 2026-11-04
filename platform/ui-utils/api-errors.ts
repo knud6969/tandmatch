@@ -1,3 +1,4 @@
+import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import { apiErrorText } from "@/lib/common/domain/errors";
 import { ApiRequestError } from "@/platform/ui-utils/api-client";
 import { ImagePrepareError } from "@/platform/ui-utils/prepare-image";
@@ -6,5 +7,5 @@ import { ImagePrepareError } from "@/platform/ui-utils/prepare-image";
 export function apiErrorMessage(error: unknown): string {
   if (error instanceof ImagePrepareError) return error.message;
   if (error instanceof ApiRequestError) return apiErrorText(error.code, error.message);
-  return "Der opstod en uventet fejl. Prøv igen om lidt.";
+  return GENERIC_ERROR_TEXT;
 }

@@ -1,5 +1,5 @@
 import type { MeDto } from "@/lib/identity/types/auth";
-import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
+import { API_ERROR_TEXTS, GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 
 // Klientens eneste adgang til backend: fetch mod /api/* (architecture 2.1). Ingen Supabase i browseren.
 export class ApiRequestError extends Error {
@@ -46,7 +46,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiRequestError(
       0,
       "NETWORK",
-      "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
+      API_ERROR_TEXTS.NETWORK,
     );
   }
 

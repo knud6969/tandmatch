@@ -1,4 +1,5 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { convertSchema, loginSchema, signupSchema } from "@/lib/identity/schemas/auth";
@@ -58,7 +59,7 @@ export class AuthController {
 
     const profile = await this.profiles.findById(userId);
     if (!profile) {
-      throw new ApiError(500, "PROFILE_MISSING", "Kontoen er ikke klar. Prøv igen om lidt.");
+      throw new ApiError(500, "PROFILE_MISSING", API_ERROR_TEXTS.PROFILE_MISSING);
     }
     return this.result({ userId, session }, profile.role, mobile);
   }

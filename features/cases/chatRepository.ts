@@ -1,4 +1,5 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { ApiError, aiConsentRequired, chatLimit, consentRequired, notDraft, notFound } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
@@ -150,7 +151,7 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
         NOT_DRAFT: notDraft(),
         CONSENT_REQUIRED: aiConsentRequired(),
         CHAT_LIMIT: chatLimit(),
-        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", "Du har sendt mange beskeder i dag. Prøv igen i morgen."),
+        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", API_ERROR_TEXTS.MESSAGE_LIMIT),
         ANON_USER_LIMIT: new ApiError(
           429,
           "RATE_LIMITED",
@@ -195,7 +196,7 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
         IMAGE_CONSENT_REQUIRED: consentRequired("Du skal give samtykke til billeder, før AI'en kan se dem."),
         CHAT_LIMIT: chatLimit(),
         NO_NEW_IMAGES: new ApiError(409, "NO_NEW_IMAGES", "Der er ingen nye billeder at kigge på."),
-        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", "Du har sendt mange billeder i dag. Prøv igen i morgen."),
+        RATE_LIMITED: new ApiError(429, "RATE_LIMITED", API_ERROR_TEXTS.MESSAGE_IMAGE_LIMIT),
         ANON_USER_LIMIT: new ApiError(
           429,
           "RATE_LIMITED",

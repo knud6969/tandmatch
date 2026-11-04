@@ -9,12 +9,18 @@ import {
   MAX_TOTAL_LEADS_PER_CASE,
 } from "@/lib/common/constants/limits";
 
+// REGEL FOR BRUGERRETTEDE FEJLTEKSTER (architecture 2.4): alle står i denne fil, og web, app og server bruger dem derfra.
+// Tonen er kort og i du-form: hvad der skete, og hvad man kan gøre. Sætningerne slutter med punktum. Kan fejlen gå væk
+// af sig selv, bruges den faste vending RETRY_LATER ("Prøv igen om lidt."); er dagens grænse nået, "Prøv igen i morgen.".
+export const RETRY_LATER = "Prøv igen om lidt.";
+export const RETRY_TOMORROW = "Prøv igen i morgen.";
+
 // Fejltekster, der bruges både af serveren (platform/middleware/http.ts) og klienten (lib/common/domain/errors.ts og appen). Teksterne står
 // kun her (architecture 2.1), så de ikke kan komme til at afvige fra hinanden.
 export const CLINIC_NOT_VERIFIED_TEXT = "Din klinik kan ikke modtage henvendelser endnu.";
 export const THREAD_CLOSED_TEXT = "Samtalen er lukket, så der kan ikke skrives flere beskeder.";
-export const MESSAGE_LIMIT_TEXT = "Du har sendt for mange beskeder i dag. Prøv igen i morgen.";
-export const MESSAGE_IMAGE_LIMIT_TEXT = "Du har sendt for mange billeder i dag. Prøv igen i morgen.";
+export const MESSAGE_LIMIT_TEXT = `Du har sendt for mange beskeder i dag. ${RETRY_TOMORROW}`;
+export const MESSAGE_IMAGE_LIMIT_TEXT = `Du har sendt for mange billeder i dag. ${RETRY_TOMORROW}`;
 
 // Booking og anmeldelse (architecture 10.10, 10.13).
 export const SLOT_TAKEN_TEXT = "Den tid blev lige optaget. Vælg en anden tid blandt de ledige tider herunder.";
@@ -44,16 +50,16 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   ANONYMOUS_SESSION_ACTIVE: "Din samtale skal gemmes på en konto. Brug formularen til at oprette konto.",
   TERMS_REQUIRED: "Du skal acceptere brugervilkårene og privatlivspolitikken først.",
   OUTDATED_TERMS: "Vilkårene er opdateret. Læs de nye vilkår og accepter igen.",
-  AUTH_UNAVAILABLE: "Login-tjenesten svarer ikke lige nu. Prøv igen om lidt.",
+  AUTH_UNAVAILABLE: `Login-tjenesten svarer ikke lige nu. ${RETRY_LATER}`,
   UNAUTHENTICATED: "Din session er udløbet. Log ind igen.",
-  PROFILE_MISSING: "Kontoen er ikke klar endnu. Prøv igen om lidt.",
+  PROFILE_MISSING: `Kontoen er ikke klar endnu. ${RETRY_LATER}`,
   NETWORK: "Vi kunne ikke oprette forbindelse. Tjek din internetforbindelse og prøv igen.",
   NOT_FOUND: "Vi kunne ikke finde det, du søgte efter.",
   CONSENT_REQUIRED: "Du skal give samtykke til at dele din beskrivelse med klinikkerne, før du kan sende.",
   CONSENT_VERSION_MISMATCH: "Samtykketeksten er opdateret. Læs den igen og giv samtykke.",
   CHAT_LIMIT: `Samtalen har nået grænsen på ${CHAT_MAX_USER_MESSAGES_PER_CONVERSATION} beskeder. Du kan lave en opsummering af det, du har skrevet.`,
-  RATE_LIMITED: "Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.",
-  AI_UNAVAILABLE: "AI-assistenten er ikke tilgængelig lige nu. Prøv igen om lidt.",
+  RATE_LIMITED: `Der er sendt for mange forsøg på kort tid. ${RETRY_LATER}`,
+  AI_UNAVAILABLE: `AI-assistenten er ikke tilgængelig lige nu. ${RETRY_LATER}`,
   SUMMARY_LIMIT: "Du har brugt de mulige udkast til denne sag. Ret teksten selv i stedet.",
   INVALID_FORM: "Billedet kunne ikke sendes. Prøv et andet billede.",
   MISSING_FILE: "Vælg et billede, før du uploader.",
@@ -61,7 +67,7 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   IMAGE_LIMIT: `Du kan højst uploade ${MAX_IMAGES_PER_CASE} billeder pr. sag.`,
   ACCOUNT_REQUIRED: "Opret en konto for at fortsætte.",
   LEAD_LIMIT: `Din sag kan højst have ${MAX_ACTIVE_LEADS_PER_CASE} aktive henvendelser ad gangen. Træk en henvendelse tilbage, eller vælg færre klinikker.`,
-  LEAD_DAILY_LIMIT: `Du har sendt henvendelser til mange klinikker i dag. Der kan højst sendes ${MAX_LEADS_PER_PATIENT_DAY} henvendelser pr. døgn. Prøv igen senere.`,
+  LEAD_DAILY_LIMIT: `Du har sendt henvendelser til mange klinikker i dag. Der kan højst sendes ${MAX_LEADS_PER_PATIENT_DAY} henvendelser pr. døgn. ${RETRY_TOMORROW}`,
   LEAD_TOTAL_LIMIT: `Din sag er allerede sendt til ${MAX_TOTAL_LEADS_PER_CASE} klinikker, som er det højeste antal pr. sag. Start en ny samtale, hvis du har brug for flere.`,
   CLINIC_ALREADY_CONTACTED: "Du har allerede kontaktet en af klinikkerne med denne sag. Vælg en anden klinik.",
   CLINIC_NOT_AVAILABLE: "Klinikken kan ikke kontaktes via TandMatch lige nu. Prøv igen senere, eller vælg en anden klinik.",
@@ -84,9 +90,10 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   FORBIDDEN: "Du har ikke adgang til denne handling.",
   ANONYMOUS_NOT_ALLOWED: "Opret en konto for at fortsætte.",
   SIGNUP_FAILED: "Kontoen kunne ikke oprettes. Tjek oplysningerne og prøv igen.",
+  CONVERT_FAILED: "Kontoen kunne ikke oprettes. Tjek oplysningerne og prøv igen.",
   PAYLOAD_TOO_LARGE: "Indholdet er for stort. Gør det mindre og prøv igen.",
   INVALID_JSON: "Oplysningerne kunne ikke læses. Genindlæs siden og prøv igen.",
-  INTERNAL: "Der opstod en fejl hos os. Prøv igen om lidt.",
+  INTERNAL: `Der opstod en fejl hos os. ${RETRY_LATER}`,
   SLOT_TAKEN: SLOT_TAKEN_TEXT,
   SLOT_UNAVAILABLE: SLOT_UNAVAILABLE_TEXT,
   LEAD_NOT_ACCEPTED: LEAD_NOT_ACCEPTED_TEXT,
@@ -109,5 +116,30 @@ export const API_ERROR_TEXTS: Record<string, string> = {
 export const NEUTRAL_ERROR_TEXTS: Record<string, string> = {
   VALIDATION_ERROR: "Oplysningerne kunne ikke gemmes. Ret det, der står i felterne, og prøv igen.",
 };
-export const GENERIC_ERROR_TEXT = "Der opstod en fejl. Prøv igen om lidt.";
+export const GENERIC_ERROR_TEXT = `Der opstod en fejl. ${RETRY_LATER}`;
+
+// Indlæsning og kontoen i appen.
+export const ACCOUNT_LOAD_FAILED_TEXT = `Vi kunne ikke hente din konto. ${RETRY_LATER}`;
+export const MESSAGES_REFRESH_FAILED_TEXT = `Beskederne kunne ikke opdateres lige nu. ${RETRY_LATER}`;
+export const THREAD_LEAD_NOT_FOUND_TEXT = "Henvendelsen findes ikke på denne sag.";
+
+// Position ("Brug min position"). Browseren og telefonen har hver sin vej til tilladelsen.
+export const POSITION_FAILED_WEB_TEXT = "Vi kunne ikke få din position. Tjek browserens tilladelser, eller skriv dit postnummer i stedet.";
+export const POSITION_FAILED_APP_TEXT = "Vi kunne ikke få din position. Tjek tilladelsen i Indstillinger, eller skriv dit postnummer i stedet.";
+
+// Billeder (web og app): samme tekster, uanset hvor billedet vælges.
+export const IMAGE_PREPARE_FAILED_TEXT = "Billedet kunne ikke gøres klar. Prøv et andet billede.";
+export const IMAGE_UNREADABLE_TEXT = "Billedet kunne ikke læses. Vælg et andet billede.";
+export const IMAGE_OPEN_FAILED_TEXT = "Billedet kunne ikke åbnes. Prøv igen.";
+export const IMAGE_UPLOAD_FAILED_TEXT = "Billedet blev ikke sendt. Prøv igen.";
+export const IMAGE_TOO_LARGE_TEXT = "Billedet er for stort. Prøv et andet billede.";
+export const IMAGE_PERMISSION_TEXT = "TandMatch har ikke adgang. Du kan give adgang under Indstillinger på telefonen.";
+export const CONSENT_SAVE_FAILED_TEXT = "Samtykket kunne ikke gemmes. Prøv igen.";
+export const NO_CONNECTION_SHORT_TEXT = "Ingen forbindelse. Tjek nettet, og prøv igen.";
+
+// Chatten (billedtur og AI).
+export const CHAT_RATE_LIMITED_TEXT = `Der er sendt mange beskeder lige nu. ${RETRY_LATER}`;
+export const CHAT_DAILY_CAP_TEXT = `AI'en har nået dagens grænse. ${RETRY_TOMORROW}`;
+export const CHAT_CONSENT_MISSING_TEXT = "Samtykket mangler. Giv samtykke, og prøv igen.";
+export const CHAT_IMAGE_SAVED_NO_REPLY_TEXT = "AI'en svarer ikke lige nu. Billedet er gemt.";
 

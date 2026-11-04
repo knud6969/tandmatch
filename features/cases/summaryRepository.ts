@@ -1,4 +1,5 @@
 import "server-only";
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import { SUMMARY_MAX_CHARS } from "@/lib/common/constants/limits";
 import type { AiSummary } from "@/lib/cases/types/ai";
 import { ApiError, consentRequired, notDraft, notFound } from "@/platform/middleware/http";
@@ -22,7 +23,7 @@ export class SummaryRepository extends BaseRepository {
         CONSENT_REQUIRED: consentRequired("Du skal give samtykke til AI-behandling, før du kan få en opsummering."),
         ANON_USER_LIMIT: limit("RATE_LIMITED", "Du har brugt dine AI-kald i dag. Opret en konto for at fortsætte, eller prøv igen i morgen."),
         SUMMARY_LIMIT: limit("SUMMARY_LIMIT", "Du har brugt alle opsummeringer på denne sag. Skriv selv videre."),
-        DAILY_SUMMARY_LIMIT: limit("SUMMARY_LIMIT", "Du har lavet mange opsummeringer i dag. Prøv igen i morgen."),
+        DAILY_SUMMARY_LIMIT: limit("SUMMARY_LIMIT", API_ERROR_TEXTS.SUMMARY_LIMIT),
         ANON_CAP_REACHED: limit("ANON_CAP_REACHED", "AI-assistenten er optaget lige nu. Opret en konto eller prøv igen senere."),
       },
     );
