@@ -152,7 +152,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 
 #### `push_tokens` (patientens enheder til push)
 
-**Planlagt (2026-11-04).** Migration `20261105000100_push_tokens.sql`. Bruges af notifikationerne (platform 14) og appen (mobile 13.10). Push kræver intet samtykke efter art. 9, fordi beskederne ikke indeholder helbredsdata (platform 14.2); telefonens egen tilladelse er patientens valg.
+**Bygget (2026-11-04).** Migration `20261105000100_push_tokens.sql`. Bruges af notifikationerne (platform 14) og appen (mobile 13.10). Push kræver intet samtykke efter art. 9, fordi beskederne ikke indeholder helbredsdata (platform 14.2); telefonens egen tilladelse er patientens valg.
 
 | Felt | Type | Note |
 |---|---|---|
@@ -229,7 +229,7 @@ Bygget (trin 0), inkl. `withdrawnLeads`. GET `/api/consents`, POST `/api/consent
 
 ### 10.15 Push-tokens
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR A. Tabellen står i 4.3 `push_tokens`, afsendelsen i platform 14.
+**Bygget (2026-11-04)** (trin 11, PR A; appens del er 11.8). Tabellen står i 4.3 `push_tokens`, afsendelsen i platform 14.
 
 ```ts
 // lib/identity/schemas/push-tokens.ts

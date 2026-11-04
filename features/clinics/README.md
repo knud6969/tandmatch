@@ -185,20 +185,26 @@ Tandlæger har intet login og ingen rolle. Leads og bookinger går til klinikken
 
 Vises kun for verificerede klinikker.
 
-#### `clinic_notification_settings` (klinikkens e-mailvalg)
+#### `clinic_notification_settings` (klinikkens valg af e-mail og browser-notifikationer)
 
-**Planlagt (2026-11-04).** Migration `20261105000200_notification_outbox.sql` (sammen med outboxen, platform 14.3).
+**Bygget (2026-11-04).** Migration `20261105000200_notification_outbox.sql` (sammen med outboxen, platform 14.3).
 
 | Felt | Type | Note |
 |---|---|---|
-| clinic_id | uuid PK, FK clinics | Én række pr. klinik. **Ingen række = alle typer slået til** (standard, 12.3 punkt 50) |
-| email_new_lead | boolean not null default true | `clinic_new_lead` |
+| clinic_id | uuid PK, FK clinics | Én række pr. klinik. **Ingen række = standardværdierne** nedenfor (12.3 punkt 50) |
+| email_new_lead | boolean not null default true | `clinic_new_lead` som e-mail |
 | email_new_message | boolean not null default true | `clinic_new_message` (højst én pr. henvendelse pr. 15 minutter) |
 | email_booking_changes | boolean not null default true | `clinic_booking_created`, `clinic_booking_cancelled`, `clinic_booking_rescheduled` |
 | email_booking_reminder | boolean not null default true | `clinic_booking_reminder` |
+| web_push_new_lead | boolean not null default true | Samme typer som e-mailen, men som web push i klinikkens browser (platform 14.2) |
+| web_push_new_message | boolean not null default true | |
+| web_push_booking_changes | boolean not null default true | |
+| web_push_booking_reminder | boolean not null default **false** | Påmindelser i browseren er fravalgt som standard |
 | updated_at | timestamptz not null default now() | Trigger |
 
-RLS: SELECT, INSERT og UPDATE kun `is_clinic_owner(clinic_id)` (INSERT og UPDATE også `is_permanent_user()`); kolonne-grant for UPDATE kun de fire `email_*`-felter; ingen DELETE (platform 5.4). Triggerne i platform 14.4 læser rækken, når en notifikation lægges i outboxen. Rækken bliver stående, hvis klinikken mister sin ejer; e-mails sendes alligevel ikke uden ejer (platform 14.2).
+RLS: SELECT, INSERT og UPDATE kun `is_clinic_owner(clinic_id)` (INSERT og UPDATE også `is_permanent_user()`); kolonne-grant for INSERT og UPDATE kun `email_*` og `web_push_*` (INSERT også `clinic_id`); ingen DELETE (platform 5.4). Triggerne i platform 14.4 læser rækken, når en notifikation lægges i outboxen. Rækken bliver stående, hvis klinikken mister sin ejer; notifikationer sendes alligevel ikke uden ejer (platform 14.2).
+
+Klinikejerens browsere til web push ligger i `web_push_subscriptions` (platform 14.3, skrives kun af `register_web_push_subscription()`).
 
 #### `favorite_clinics` (patientens gemte klinikker)
 
@@ -234,7 +240,7 @@ Primærnøgle `(patient_id, clinic_id)`. RLS (platform 5.4): SELECT og DELETE `p
 | `/klinik/tandlaeger` | Tandlæger og deres portefølje (upload med bekræftelse af patientens samtykke) |
 | `/klinik` (trin 10.7, bygget) | Henvendelser fra appen ses uden manuel genindlæsning: indbakken (`features/leads`) henter `/api/leads` igen hvert 20. sekund, mens fanen er synlig (`document.visibilityState`, delt `startVisiblePolling` i `lib/common/domain/polling.ts`), og viser antallet af ubesvarede leads i en statuslinje og antallet, der kræver handling, i browserfanens titel og på fanen Henvendelser (2026-10-24; én delt hentning, se Fanerne). Samme polling på kalenderen for nye bookinger. Ingen realtime (princip 8) |
 | `/klinik/anmeldelser` | Godkendte anmeldelser + offentligt svar. Bygget i 6.5: anmeldelser med stjerner, tekst, prisnøjagtighed og måned; svarformular, når `replyStatus` er `null`; eget svar med status; punktet "Anmeldelser" i navigationen |
-| `/klinik/profil` (sektion "Notifikationer") | **Planlagt (2026-11-04), PR A.** Sektion med `id="notifikationer"` (e-mails linker hertil) mellem Trustpilot og kontoen. Overskrift "Notifikationer", én linje "Vi sender e-mails til jeres login-e-mail. E-mailen indeholder aldrig oplysninger om patienten." og fire afkrydsningsfelter med labels fra `NOTIFICATION_SETTING_LABEL` (`lib/clinics/constants/notification-settings.ts`): "Ny henvendelse", "Ny besked fra en patient" (hjælpetekst "Højst én e-mail pr. henvendelse pr. 15 minutter"), "Ny, flyttet eller aflyst tid" og "Påmindelse dagen før en booket tid". Knappen "Gem" er aktiv, når noget er ændret; kvittering "Gemt". Data: `GET`/`PUT /api/clinics/me/notification-settings` (10.19). Komponent `features/clinics/components/notification-settings.tsx`. Mindst 44 px trykflade; tjekkes ved 390 og 1280 px |
+| `/klinik/profil` (sektion "Notifikationer") | **Planlagt (2026-11-04), PR A (11.7; server og delt kode er bygget).** Sektion med `id="notifikationer"` (e-mails linker hertil) mellem Trustpilot og kontoen. Overskrift "Notifikationer", én linje "Vi sender e-mails til jeres login-e-mail. E-mailen indeholder aldrig oplysninger om patienten." og to grupper med fire afkrydsningsfelter hver, E-mail og Browser (`emailNewLead` … `webPushBookingReminder`), med labels fra `NOTIFICATION_SETTING_LABEL` (`lib/clinics/constants/notification-settings.ts`; samme fire labels i begge grupper). Gruppen Browser har en knap "Slå notifikationer til i denne browser", som beder om tilladelse, registrerer service workeren og kalder `POST /api/web-push-subscriptions` (afmelding: `DELETE`, også ved logout); uden browserens tilladelse er felterne i gruppen deaktiverede: "Ny henvendelse", "Ny besked fra en patient" (hjælpetekst "Højst én e-mail pr. henvendelse pr. 15 minutter"), "Ny, flyttet eller aflyst tid" og "Påmindelse dagen før en booket tid". Knappen "Gem" er aktiv, når noget er ændret; kvittering "Gemt". Data: `GET`/`PUT /api/clinics/me/notification-settings` (10.19). Komponent `features/clinics/components/notification-settings.tsx`. Mindst 44 px trykflade; tjekkes ved 390 og 1280 px |
 | `/klinik/statistik` | **Planlagt (2026-11-04), PR C.** Ny fane **Statistik** mellem Anmeldelser og Klinikprofil (`AREA_NAV.clinic`). Øverst et valg af periode med tre knapper (`aria-pressed`): "30 dage" (standard), "90 dage", "12 måneder"; valget står i URL'en (`?dage=30|90|365`). Under det kort i et gitter (1 kolonne ved 390 px, 2 fra `sm`, 4 fra `lg`): **Henvendelser** (antal; under: "n venter på svar"), **Accepteret** (antal og "x % af besvarede"), **Afvist** (antal), **Svartid** (median som "2 t 15 min" eller "under 1 min"; under: "x % besvaret inden for 24 timer"), **Bookinger** (gennemført; under: "n kommende · n udeblevet"), **Aflyst** ("n af patienter · n af jer"), **Fra henvendelse til booking** ("x %"). Tal, der ikke kan beregnes (0 besvarede), vises som "–". Forklaring under gitteret (én linje): "Henvendelser tælles efter modtagelsesdato, bookinger efter tidspunktet for tiden. Kun jeres egne tal." Ingen grafer. En ikke-verificeret klinik ser en kort tekst som på kalenderen. Tekster i `lib/clinics/constants/stats.ts`. Data: `GET /api/clinics/me/stats?days=` (10.18). Filer: `features/clinics/pages/clinic-stats-page.tsx`, `features/clinics/components/stats-*.tsx`, `app/klinik/statistik/page.tsx` |
 
 ### 6.6 Klinikoversigt, rangering og filtre
@@ -390,7 +396,7 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 | POST `/api/clinics/me/portfolio` | multipart: `file`, `dentistId`, `serviceId?`, `caption?`, `patientConsentConfirmed: "true"`, `consentTextVersion` (læses med `readImageForm`; tekstfelterne valideres, før billedet behandles) | 201 portfolio item; 400 uden bekræftelse eller ved forkert `consentTextVersion`; 429 `PORTFOLIO_LIMIT` ved over 60 billeder pr. klinik |
 | PATCH/DELETE `/api/clinics/me/portfolio/{id}` | PATCH `{ caption?, serviceId? }` | item / 204 |
 | GET `/api/clinics/me/reviews` | | `{ reviews: ClinicReviewDto[] }` (10.13): godkendte anmeldelser af egen klinik med eget svar og dets status, via `clinic_reviews()`. 403 `CLINIC_NOT_VERIFIED` for ikke-verificerede. Bygget i 6.2 |
-| **Planlagt (2026-11-04)** GET/PUT `/api/clinics/me/notification-settings` | se 10.19 | |
+| GET/PUT `/api/clinics/me/notification-settings` og POST/DELETE `/api/web-push-subscriptions` | se 10.19 | |
 | **Planlagt (2026-11-04)** GET `/api/clinics/me/stats` | se 10.18 | |
 
 **Planlagt (2026-11-04):** `DELETE /api/clinics/me` får `withApi(…, { notify: true })`, så patienterne får push om aflyste tider og afviste henvendelser, når klinikken sletter sin konto (platform 14.4, 14.6).
@@ -462,23 +468,34 @@ Lag: route → `ClinicStatsController` (`features/clinics/clinicStatsController.
 
 **Tests:** RLS platform 5.6 punkt 59. Unit `features/clinics/__tests__/stats.test.ts` (procenter, `null` ved 0, afrunding, `formatResponseTime`). API `features/clinics/__tests__/api/stats.test.ts`: tal efter et kendt forløb (to leads, én accept, én afvisning, én booking), `days=7` giver 400, patient 403, anden klinik ser 0.
 
-### 10.19 Klinikkens notifikationsindstillinger
+### 10.19 Klinikkens notifikationsindstillinger og web push
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR A. Tabellen står i 4.3 `clinic_notification_settings`, siden i 6.3, afsendelsen i platform 14.
+**Bygget (2026-11-04)** (trin 11, PR A; siden på `/klinik/profil` er 11.7). Tabellerne står i 4.3 (`clinic_notification_settings`) og platform 14.3 (`web_push_subscriptions`), afsendelsen i platform 14.
 
 ```ts
 // lib/clinics/types/notification-settings.ts
 export type ClinicNotificationSettingsDto = {
   emailNewLead: boolean; emailNewMessage: boolean; emailBookingChanges: boolean; emailBookingReminder: boolean;
+  webPushNewLead: boolean; webPushNewMessage: boolean; webPushBookingChanges: boolean; webPushBookingReminder: boolean;
 };
-// lib/clinics/schemas/notification-settings.ts: alle fire felter påkrævet, .strict()
+// lib/clinics/schemas/notification-settings.ts: alle otte felter påkrævet, .strict()
+// lib/clinics/schemas/web-push.ts
+export const registerWebPushSchema = z.object({
+  endpoint: z.string().refine(isAllowedWebPushEndpoint),            // https hos Google, Mozilla, Apple eller Microsoft, højst 500 tegn
+  keys: z.object({ p256dh: z.string().regex(/^[A-Za-z0-9_-]{87}$/), auth: z.string().regex(/^[A-Za-z0-9_-]{22}$/) }).strict(),
+}).strict();                                                         // samme form som PushSubscription.toJSON() uden expirationTime
+export const deleteWebPushSchema = z.object({ endpoint: z.string().min(1).max(500) }).strict();
 ```
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | GET `/api/clinics/me/notification-settings` | klinik (ejer, permanent; også `registered`) | | 200 `ClinicNotificationSettingsDto` (standardværdierne, hvis der ingen række er) |
-| PUT `/api/clinics/me/notification-settings` | samme | `ClinicNotificationSettingsDto` (strict) | 200 `ClinicNotificationSettingsDto`. Upsert med brugerens klient (RLS). 400 `VALIDATION_ERROR`; 403 `FORBIDDEN` for andre roller; 404 uden egen klinik |
+| PUT `/api/clinics/me/notification-settings` | samme | `ClinicNotificationSettingsDto` (strict) | 200 `ClinicNotificationSettingsDto`. UPDATE og ellers INSERT med brugerens klient (RLS; en upsert kan ikke bruges, fordi `clinic_id` ikke er i kolonne-grantet for UPDATE). 400 `VALIDATION_ERROR`; 403 `FORBIDDEN` for andre roller; 404 uden egen klinik |
+| POST `/api/web-push-subscriptions` | klinik (permanent; kun weben: med bearer eller `X-TandMatch-Client: mobile` 400 `VALIDATION_ERROR`) | `registerWebPushSchema` | 204. Kalder `register_web_push_subscription()` med brugerens klient. 400 `VALIDATION_ERROR` (endpoint ikke `https` hos en kendt push-tjeneste, forkerte nøgler, ukendte felter); 401 uden session; 403 `FORBIDDEN` for patient og admin; 429 `RATE_LIMITED` (`enforceIpRateLimit("web-push", req, 30)`) |
+| DELETE `/api/web-push-subscriptions` | klinik (kun weben) | `deleteWebPushSchema` | 204 altid, også når endpointet ikke findes eller tilhører en anden (sletter kun egne rækker via RLS). 400 ved ugyldig body; 401 uden session |
 
-Lag: route → `NotificationSettingsController` (`features/clinics/notificationSettingsController.ts`, `get`, `put`) → `ClinicsRepository.requireOwnId()` og `NotificationSettingsRepository`. Ingen service role.
+Lag: route → `NotificationSettingsController` (`features/clinics/notificationSettingsController.ts`, `get`, `put`) → `ClinicsRepository.requireOwnId()` og `NotificationSettingsRepository`; og route → `WebPushSubscriptionsController` (`register`, `remove`) → `WebPushSubscriptionsRepository`. Ingen service role. Alle routes er bag vilkårs-gaten.
 
-**Tests:** RLS platform 5.6 punkt 56. API `features/clinics/__tests__/api/notification-settings.test.ts`: GET uden række giver alle `true`; PUT og GET igen; ukendt felt 400; patient 403; klinik Y kan ikke læse X's (får sine egne).
+**Web push i klinik-weben (frontend, 11.7):** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` bruges som `applicationServerKey`. Service workeren viser `title` og `body` fra den dekrypterede besked og åbner kun `path`, hvis den er en af stierne i `isAllowedClinicNotificationPath()` (`/klinik/lead/<id>`, `/klinik/kalender`), ellers `/klinik`. Beskeden indeholder aldrig helbredsdata, navne eller beskedtekst (platform 14.2). Afmelding sker ved logout (`DELETE /api/web-push-subscriptions` før `POST /api/auth/logout`) og når klinikken slår det fra.
+
+**Tests:** RLS platform 5.6 punkt 56 og 61. API `features/clinics/__tests__/api/notification-settings.test.ts`: GET uden række giver standardværdierne; PUT og GET igen; ukendt eller manglende felt 400; patient 403; klinik Y kan ikke læse X's (får sine egne); web push: registrering og afmelding (204), flytning mellem klinikker, afvisning af `http`, ukendte værter og forkerte nøgler (400), patient 403, appen 400.

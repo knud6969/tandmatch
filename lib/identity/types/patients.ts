@@ -3,11 +3,12 @@ import type { BookingExportDto } from "@/lib/booking/types/bookings";
 import type { CaseExportDto } from "@/lib/cases/types/cases";
 import type { ConsentDto } from "@/lib/identity/types/consents";
 import type { LeadExportDto } from "@/lib/leads/types/leads";
+import type { PushDeviceExportDto } from "@/lib/identity/types/push-tokens";
 import type { ReviewExportDto } from "@/lib/booking/types/reviews";
 
 export type PatientMeDto = { firstName: string | null; postalCode: string | null; phone: string | null };
 
-// Dataeksport (GDPR art. 15/20, architecture 10.2): { exportedAt, cases, chat, leads, bookings, reviews, consents }.
+// Dataeksport (GDPR art. 15/20, architecture 10.2): { exportedAt, cases, chat, leads, bookings, reviews, consents, pushDevices }.
 export type PatientExportDto = {
   exportedAt: string;
   cases: CaseExportDto[];
@@ -16,4 +17,5 @@ export type PatientExportDto = {
   bookings: BookingExportDto[];
   reviews: ReviewExportDto[];
   consents: ConsentDto[];
+  pushDevices: PushDeviceExportDto[]; // enhedernes platform og tidspunkter, aldrig tokenet
 };
