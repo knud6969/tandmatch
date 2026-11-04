@@ -23,6 +23,9 @@ export AI_FAKE_CLIENT=1
 # Falsk adresseopslag uden netværkskald (features/clinics/geocoding.ts, clinics 4.3); "Kortvej <n>" findes, alt andet
 # giver postnummerets midtpunkt. Virker kun når NODE_ENV ikke er production.
 export GEOCODING_FAKE=1
+# Falske e-mail-, push- og web push-tjenester uden netværkskald (platform/notifications/notificationServices.ts, platform 14.6).
+# Virker kun når NODE_ENV ikke er production.
+export NOTIFICATIONS_FAKE=1
 export NEXT_TELEMETRY_DISABLED=1
 
 # Testserveren bygger i sin egen mappe (.next-test), så den aldrig deler cache med `npm run dev`, der kører mod et andet
@@ -46,7 +49,7 @@ for _ in $(seq 1 90); do
   sleep 1
 done
 
-node --test --test-reporter=spec --test-concurrency=1 features/*/__tests__/api/*.test.ts
+node --test --test-reporter=spec --test-concurrency=1 features/*/__tests__/api/*.test.ts platform/__tests__/api/*.test.ts
 STATUS=$?
 [ $STATUS -ne 0 ] && echo "Serverlog: $LOG" >&2
 exit $STATUS

@@ -13,4 +13,4 @@ export const POST = withApi<Ctx>(async (req, { params }) => {
   const bookingId = parseId((await params).id);
   const input = await readJson(req, cancelBookingSchema);
   return jsonResponse(await new BookingsController(gate.supabase, session).cancel(bookingId, input));
-});
+}, { notify: true });

@@ -22,6 +22,9 @@ export AI_FAKE_CLIENT=1
 # Falsk adresseopslag uden netværkskald (features/clinics/geocoding.ts, clinics 4.3); "Kortvej <n>" findes, alt andet
 # giver postnummerets midtpunkt. Virker kun når NODE_ENV ikke er production.
 export GEOCODING_FAKE=1
+# Falske e-mail-, push- og web push-tjenester uden netværkskald (platform/notifications/notificationServices.ts, platform 14.6).
+# Virker kun når NODE_ENV ikke er production.
+export NOTIFICATIONS_FAKE=1
 export NEXT_TELEMETRY_DISABLED=1
 
 # Demodata til klinikoversigten (tests/e2e/clinic-directory.spec.ts): verificerede og importerede, fiktive klinikker.

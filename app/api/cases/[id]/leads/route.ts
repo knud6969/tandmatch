@@ -19,7 +19,7 @@ export const POST = withApi<Ctx>(async (req, { params }) => {
   const caseId = parseId((await params).id);
   const input = await readJson(req, sendLeadsSchema);
   return jsonResponse({ leads: await new LeadsController(gate.supabase, session).send(caseId, input) }, 201);
-});
+}, { notify: true });
 
 // Sagens leads. En anonym patient ejer sagen, men har ingen leads (tom liste).
 export const GET = withApi<Ctx>(async (_req, { params }) => {

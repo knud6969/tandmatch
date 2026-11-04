@@ -13,4 +13,4 @@ export const POST = withApi<Ctx>(async (req, { params }) => {
   const leadId = parseId((await params).id);
   const input = await readJson(req, leadDecisionSchema);
   return jsonResponse(await new LeadsController(gate.supabase, session).decide(leadId, input));
-});
+}, { notify: true });
