@@ -45,6 +45,10 @@ as $$
 begin
   -- Samtidige indsættelser for samme patient tælles efter hinanden.
   perform pg_advisory_xact_lock(hashtextextended('favorite_clinics:' || new.patient_id::text, 0));
+  -- En allerede gemt klinik tæller ikke (PUT er idempotent, også ved loftet).
+  if exists (select 1 from public.favorite_clinics f where f.patient_id = new.patient_id and f.clinic_id = new.clinic_id) then
+    return new;
+  end if;
   if (select count(*) from public.favorite_clinics f where f.patient_id = new.patient_id) >= 200 then -- MAX_FAVORITE_CLINICS
     raise exception 'FAVORITE_LIMIT' using errcode = 'P0001';
   end if;
