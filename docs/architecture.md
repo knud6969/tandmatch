@@ -33,10 +33,10 @@ Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md 
 | 9.5 | `public-media` | `features/clinics/README.md` |
 | 10.1 | Delte typer | `platform/README.md` |
 | 10.14 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
-| 10.2-10.3, 10.15 | Auth, sessioner, konto, samtykker, push-tokens (10.15 planlagt) | `features/identity/README.md` |
+| 10.2-10.3, 10.15 | Auth, sessioner, konto, samtykker, push-tokens | `features/identity/README.md` |
 | 10.16 | Flyt tid (planlagt) | `features/booking/README.md` |
-| 10.17-10.19 | Favoritter, klinikkens statistik, notifikationsindstillinger (planlagt) | `features/clinics/README.md` |
-| 14 | Notifikationer: outbox, e-mail, push, påmindelser (planlagt) | `platform/README.md` |
+| 10.17-10.19 | Favoritter, klinikkens statistik (planlagt), notifikationsindstillinger og web push (10.19, bygget) | `features/clinics/README.md` |
+| 14 | Notifikationer: outbox, e-mail, app-push, web push, påmindelser | `platform/README.md` |
 | 10.4, 10.7, 10.8 | Katalog, klinikoversigt og profil, egen klinik | `features/clinics/README.md` |
 | 10.5, 10.6 | Sager og AI-chat | `features/cases/README.md` |
 | 10.9, 10.11, 10.12 | Leads, akutvej, beskeder | `features/leads/README.md` |
@@ -83,7 +83,7 @@ Bærende principper:
 5. **AI'en vurderer ikke endeligt og sælger ikke.** Den spørger ind, forklarer behandlinger og må give en foreløbig vurdering, altid markeret som foreløbig. Den oversætter ønsket til ydelser fra kataloget, som patienten bekræfter. Den nævner aldrig priser og anbefaler aldrig en klinik. Priser kommer fra klinikkernes prislister, og rækkefølgen af klinikker bestemmes af faste, synlige kriterier (6.6). Reglerne samles i `features/cases/ai/` (7.8).
 6. **Helbredsdata (GDPR art. 9).** Tekst, chat og billeder om patientens mund er helbredsdata. Eksplicit samtykke før AI-behandling, upload og deling; dataminimering over for klinikker og OpenAI.
 7. **MVC med adskilt frontend og backend.** Databasen tilgås kun via API-routes (2.1), både fra klinikkernes web og fra patienternes app. REST og JSON, men pragmatisk, hvis det giver bedre UX.
-8. **Simpelt.** Ingen ekstra infrastruktur (køer, caches, realtime, streaming). Next.js + Supabase (EU-region) + OpenAI, og en Expo-app til patienterne. Notifikationer (planlagt 2026-11-04) bruger en outbox-tabel i Postgres og to HTTP-API'er (Resend til e-mail, Expo til push), ingen ekstern kø (platform 14). Notifikationer indeholder aldrig helbredsdata eller patientens navn.
+8. **Simpelt.** Ingen ekstra infrastruktur (køer, caches, realtime, streaming). Next.js + Supabase (EU-region) + OpenAI, og en Expo-app til patienterne. Notifikationer (trin 11, PR A) bruger en outbox-tabel i Postgres og HTTP-API'er (Resend til e-mail, Expo til push i patient-appen, browserens egen push-tjeneste til web push i klinik-weben), ingen ekstern kø og ingen ekstra npm-pakker (platform 14). Notifikationer indeholder aldrig helbredsdata eller patientens navn.
 
 ### 1.2 To applikationer i ét repo
 
@@ -110,7 +110,7 @@ features/<domæne>/         ét domæne: identity, cases, clinics, leads, bookin
   ui.ts                    klientsikre komponenter, som andre domæners UI må importere
   __tests__/               unit-tests; __tests__/api/ har API-testene
   README.md                domænets afsnit af arkitekturen
-platform/                  tværgående: platform/middleware/, db/, base/, cron, billedbehandling, notifications/ (planlagt), ui-utils/ (api-client, use-load m.fl.)
+platform/                  tværgående: platform/middleware/, db/, base/, cron, billedbehandling, notifications/ (e-mail, app-push, web push, afsendelse), ui-utils/ (api-client, use-load m.fl.)
 components/ui/             delte UI-komponenter og layout (header, footer, faner)
 lib/<domæne>/<art>/        delt med appen: types, schemas, constants, domain; lib/common/ for fælles ting og navigation
 mobile/                    patient-appen (Expo); importerer kun @/lib fra roden
@@ -123,7 +123,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 
 - **Lagene i et domæne:** route → controller → repository/service. Controllere kalder ikke hinanden; delt logik hører i en service. Kun repositories kalder Supabase. UI (`components/`, `pages/`, `utils/`) henter data via `/api` med `platform/ui-utils/api-client` og importerer aldrig repositories, controllere, services eller `ai/`.
 - **Mellem domæner:** et domæne importerer kun andre domæners `index.ts` (serverkode) eller `ui.ts` (klientsikre komponenter), aldrig deres interne filer. Serverkode importerer ikke UI.
-- **platform/** kender ingen domæner. Undtagelser: `platform/cronController.ts` og `platform/middleware/{session,termsGate}.ts` bruger `features/identity` og `features/booking` via `index.ts`. `platform/notifications/` (planlagt) er ingen undtagelse: databasen lægger notifikationerne i outboxen, og platformen sender dem uden at kende domænerne; tekster og stier kommer fra `lib/common/` (platform 14). Routes må kun importere `notificationController` derfra.
+- **platform/** kender ingen domæner. Undtagelser: `platform/cronController.ts` og `platform/middleware/{session,termsGate}.ts` bruger `features/identity` og `features/booking` via `index.ts`. `platform/notifications/` er ingen undtagelse: databasen lægger notifikationerne i outboxen, og platformen sender dem uden at kende domænerne; tekster og stier kommer fra `lib/common/` (platform 14). Routes må kun importere `notificationController` derfra.
 - **components/ui/** bruger kun `lib/`, `platform/ui-utils` og domænernes `ui.ts`.
 - **lib/** importerer kun `lib/` og `zod`, fordi appen deler den. Danske labels og tekster til enums og fejlkoder ligger i `lib/`, så server, web og app bruger samme tekst.
 - **app/** sider og layouts videresender til `pages/`; routes kalder én controller og henter kun klientfabrikken fra `platform/db`.
@@ -144,7 +144,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 | `booking` | bookinger, kalender, anmeldelser, svar, moderationsreglerne (8.5; admins side ligger i `admin`); flyt tid (planlagt) | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
 | `site` | forsiden og informationssiderne | `/`, `/om-os`, `/kontakt`, `/privatliv`, `/saadan-*`, `/for-klinikker` |
 | `admin` (planlagt 2026-11-04) | klinikstatus og moderation af anmeldelser og klinikkers svar (rollen `admin`) | `/admin/*`, `/api/admin/*` |
-| (platform) | notifikationer (planlagt): outbox, e-mail, push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders` |
+| (platform) | notifikationer: outbox, e-mail, app-push, web push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders` |
 
 ### 2.6 Sådan bygger du en ny funktion
 
