@@ -46,6 +46,8 @@ export type ClinicBookingFields = {
   // Valgfri: clinic_bookings()/clinic_booking() giver dem; clinic_lead_detail() gør ikke (endnu), og så er de null i DTO'en.
   cancelledBy?: "patient" | "clinic" | null;
   cancelReason?: string | null;
+  rescheduledFrom?: string | null;
+  rescheduledTo?: string | null;
 };
 
 // Klinikkens booking. Kontaktfelterne følger databasens regel (kun booked/completed, architecture 5.5); mapperen
@@ -68,5 +70,7 @@ export function toClinicBookingDto(fields: ClinicBookingFields, now: Date = new 
     holdExpiresAt: isoOrNull(fields.holdExpiresAt),
     cancelledBy: bookingCanceller(fields.status, fields.cancelledBy),
     cancelReason: fields.status === "cancelled" ? (fields.cancelReason ?? null) : null,
+    rescheduledFrom: isoOrNull(fields.rescheduledFrom ?? null),
+    rescheduledTo: fields.status === "cancelled" ? isoOrNull(fields.rescheduledTo ?? null) : null,
   };
 }

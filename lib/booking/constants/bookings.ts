@@ -61,4 +61,8 @@ export const PATIENT_CANCELLED_BY_LABEL = {
 export const CLINIC_CANCEL_REASON_PREFIX = "Klinikken aflyste:";
 
 // Konsekvensen af at aflyse en booking, som patienten ser før bekræftelsen. Klinikken får ingen notifikation.
+// Konsekvensen af at flytte en booking (10.16), som patienten ser før bekræftelsen.
+export const RESCHEDULE_BOOKING_CONSEQUENCE = "Din nuværende tid frigives, og klinikken får besked.";
+
+// Konsekvensen af at aflyse en booking. Klinikken ser aflysningen i kalenderen og får besked (platform 14.4).
 export const CANCEL_BOOKING_CONSEQUENCE = "Tiden frigives, og klinikken ser aflysningen i sin kalender. Du kan booke en ny tid, hvis henvendelsen stadig er åben.";

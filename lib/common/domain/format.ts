@@ -107,4 +107,6 @@ export function formatCount(count: number, singular: string, plural: string): st
 const dayLabelFormat = new Intl.DateTimeFormat("da-DK", { weekday: "short", day: "numeric", month: "short", timeZone: TIME_ZONE });
 const dayKeyFormat = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: TIME_ZONE });
 export const formatDayLabel = (iso: string) => dayLabelFormat.format(new Date(iso));
+// "man. 26. okt. kl. 09.15" til "Flyttet fra …" og "Flyttet af patienten til …" (booking 10.16).
+export const formatDayAtTime = (iso: string) => `${formatDayLabel(iso)} kl. ${formatTime(iso)}`;
 export const dayKey = (iso: string) => dayKeyFormat.format(new Date(iso));

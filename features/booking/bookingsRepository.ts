@@ -9,6 +9,7 @@ import {
   accountRequired,
   bookingLimit,
   bookingNotCancellable,
+  bookingNotReschedulable,
   clinicNotAvailable,
   leadNotAccepted,
   noShowWindowClosed,
@@ -29,11 +30,11 @@ type Functions = Database["public"]["Functions"];
 // ikke nullable kolonner; formen angives her.
 type PatientBookingRow = WithNulls<
   Functions["patient_bookings"]["Returns"][number],
-  "hold_expires_at" | "cancelled_by" | "cancel_reason"
+  "hold_expires_at" | "cancelled_by" | "cancel_reason" | "rescheduled_from_starts_at" | "rescheduled_to_starts_at"
 >;
 type ClinicBookingRow = WithNulls<
   Functions["clinic_booking"]["Returns"][number],
-  "hold_expires_at" | "contact_name" | "contact_phone" | "contact_email" | "cancelled_by" | "cancel_reason"
+  "hold_expires_at" | "contact_name" | "contact_phone" | "contact_email" | "cancelled_by" | "cancel_reason" | "rescheduled_from_starts_at" | "rescheduled_to_starts_at"
 >;
 
 // Tabelrække til dataeksporten (RLS: patientens egne bookinger).
@@ -72,6 +73,18 @@ const CANCEL_ERRORS = (): Record<string, ApiError> => ({
   BOOKING_NOT_CANCELLABLE: bookingNotCancellable(),
 });
 
+// Fejl fra reschedule_booking() (10.16). De fleste deler fabrikker med book_slot(); SAME_SLOT er et inputfejl (400).
+const RESCHEDULE_ERRORS = (): Record<string, ApiError> => ({
+  ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.bookSlot),
+  NOT_FOUND: notFound(),
+  BOOKING_NOT_RESCHEDULABLE: bookingNotReschedulable(),
+  SAME_SLOT: new ApiError(400, "VALIDATION_ERROR", "Vælg en anden tid end den, du allerede har."),
+  CLINIC_NOT_AVAILABLE: clinicNotAvailable(),
+  BOOKING_LIMIT: bookingLimit(),
+  SLOT_TAKEN: slotTaken(),
+  SLOT_UNAVAILABLE: slotUnavailable(),
+});
+
 const NO_SHOW_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
   NO_SHOW_WINDOW_CLOSED: noShowWindowClosed(),
@@ -98,10 +111,13 @@ export class BookingsRepository extends BaseRepository {
       endsAt: iso(row.ends_at),
       status: row.status,
       canCancel: canCancel(row.status, row.starts_at, now),
+      canReschedule: canCancel(row.status, row.starts_at, now),
       canReview: canReview(row.status, row.ends_at, row.reviewed, now),
       holdExpiresAt: isoOrNull(row.hold_expires_at),
       cancelledBy: bookingCanceller(row.status, row.cancelled_by),
       cancelReason: row.status === "cancelled" ? row.cancel_reason : null,
+      rescheduledFrom: isoOrNull(row.rescheduled_from_starts_at),
+      rescheduledTo: row.status === "cancelled" ? isoOrNull(row.rescheduled_to_starts_at) : null,
     };
   }
 
@@ -120,6 +136,8 @@ export class BookingsRepository extends BaseRepository {
       contactEmail: row.contact_email,
       cancelledBy: row.cancelled_by,
       cancelReason: row.cancel_reason,
+      rescheduledFrom: row.rescheduled_from_starts_at,
+      rescheduledTo: row.rescheduled_to_starts_at,
     });
   }
 
@@ -166,6 +184,13 @@ export class BookingsRepository extends BaseRepository {
       },
       BOOK_ERRORS(),
     );
+    return this.requireRow(id);
+  }
+
+  // reschedule_booking(): ejeren flytter en booket tid til en ny tid hos samme klinik og behandling i én transaktion.
+  // Returnerer den nye bookings id.
+  async reschedule(bookingId: string, startsAt: string): Promise<string> {
+    const id = await this.rpc<string>("reschedule_booking", { p_booking_id: bookingId, p_starts_at: startsAt }, RESCHEDULE_ERRORS());
     return this.requireRow(id);
   }
 

@@ -38,5 +38,8 @@ export const cancelBookingSchema = z
   })
   .strict();
 
+// POST /api/bookings/{id}/reschedule (10.16): den nye starttid. Samme tid som den nuværende afvises af databasen (SAME_SLOT).
+export const rescheduleBookingSchema = z.object({ startsAt: isoDateTime }).strict();
+
 // POST .../no-show har tom body.
 export const emptyBookingActionSchema = z.object({}).strict();

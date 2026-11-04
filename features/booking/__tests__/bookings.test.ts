@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bookingCanceller, canCancel, canMarkNoShow, canReview, graceEndsAt, patientCancellationText, pickLeadBooking } from "@/lib/booking/domain/bookings";
-import { cancelBookingSchema } from "@/lib/booking/schemas/bookings";
+import { bookingCanceller, clinicRescheduleNote, canCancel, canMarkNoShow, canReview, graceEndsAt, patientCancellationText, pickLeadBooking } from "@/lib/booking/domain/bookings";
+import { cancelBookingSchema, rescheduleBookingSchema } from "@/lib/booking/schemas/bookings";
 
 const HOUR = 3_600_000;
 const now = new Date("2026-10-20T12:00:00Z");
@@ -96,5 +96,20 @@ describe("bookings-domæne: hvem der aflyste (10.10)", () => {
     expect(cancelBookingSchema.parse({ reason: "x".repeat(200) }).reason).toHaveLength(200);
     expect(cancelBookingSchema.safeParse({ reason: "x".repeat(201) }).success).toBe(false);
     expect(cancelBookingSchema.safeParse({ note: "x" }).success).toBe(false);
+  });
+});
+
+describe("bookings-domæne: flyttet tid (10.16)", () => {
+  it("klinikkens linje: til på den gamle, fra på den nye, ellers ingen", () => {
+    expect(clinicRescheduleNote({ rescheduledFrom: null, rescheduledTo: "2026-10-26T08:15:00Z" })).toBe("Flyttet af patienten til man. 26. okt. kl. 09.15");
+    expect(clinicRescheduleNote({ rescheduledFrom: "2026-10-26T08:15:00Z", rescheduledTo: null })).toBe("Flyttet fra man. 26. okt. kl. 09.15");
+    expect(clinicRescheduleNote({ rescheduledFrom: null, rescheduledTo: null })).toBeNull();
+  });
+
+  it("rescheduleBookingSchema kræver en starttid og afviser ekstra felter", () => {
+    expect(rescheduleBookingSchema.safeParse({ startsAt: "2026-10-26T08:15:00Z" }).success).toBe(true);
+    expect(rescheduleBookingSchema.safeParse({}).success).toBe(false);
+    expect(rescheduleBookingSchema.safeParse({ startsAt: "i morgen" }).success).toBe(false);
+    expect(rescheduleBookingSchema.safeParse({ startsAt: "2026-10-26T08:15:00Z", x: 1 }).success).toBe(false);
   });
 });

@@ -55,6 +55,19 @@ describe("toClinicBookingDto: hvem der aflyste (10.10)", () => {
   });
 });
 
+describe("toClinicBookingDto: flyttet tid (10.16)", () => {
+  it("giver rescheduledFrom på den nye og rescheduledTo kun på en aflyst booking", () => {
+    const next = toClinicBookingDto({ ...fields("booked"), rescheduledFrom: "2026-10-20T09:00:00Z" }, NOW);
+    expect(next.rescheduledFrom).toBe("2026-10-20T09:00:00.000Z");
+    expect(next.rescheduledTo).toBeNull();
+    const old = toClinicBookingDto({ ...fields("cancelled"), cancelledBy: "patient", rescheduledTo: "2026-10-22T09:00:00Z" }, NOW);
+    expect(old.rescheduledTo).toBe("2026-10-22T09:00:00.000Z");
+    expect(old.contact).toBeNull();
+    expect(toClinicBookingDto({ ...fields("booked"), rescheduledTo: "2026-10-22T09:00:00Z" }, NOW).rescheduledTo).toBeNull();
+    expect(toClinicBookingDto(fields("booked"), NOW).rescheduledFrom).toBeNull();
+  });
+});
+
 describe("phoneSchema: mindst 8 cifre (security trin 6, L2)", () => {
   it("accepterer gyldige danske numre", () => {
     for (const phone of ["12345678", "12 34 56 78", "+45 12 34 56 78", "(+45) 1234-5678"]) expect(phoneSchema.safeParse(phone).success).toBe(true);

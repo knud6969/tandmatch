@@ -26,6 +26,7 @@ export const MESSAGE_IMAGE_LIMIT_TEXT = `Du har sendt for mange billeder i dag. 
 export const SLOT_TAKEN_TEXT = "Den tid blev lige optaget. Vælg en anden tid blandt de ledige tider herunder.";
 export const SLOT_UNAVAILABLE_TEXT = "Klinikken kan ikke tage imod den tid. Vælg en anden tid.";
 export const BOOKING_NOT_CANCELLABLE_TEXT = "Bookingen kan ikke aflyses længere. Genindlæs siden for at se den nyeste status.";
+export const BOOKING_NOT_RESCHEDULABLE_TEXT = "Tiden kan ikke flyttes længere. Kontakt klinikken i beskedtråden.";
 export const NO_SHOW_WINDOW_CLOSED_TEXT = `Udeblivelse kan kun registreres fra starttidspunktet og op til ${NO_SHOW_GRACE_HOURS} timer efter, at tiden er slut.`;
 export const REVIEW_NOT_ALLOWED_TEXT = `Du kan ikke anmelde dette besøg. Du kan først anmelde, når der er gået ${NO_SHOW_GRACE_HOURS} timer efter tiden, og kun hvis besøget er gennemført.`;
 export const BOOKING_LIMIT_TEXT = `Du har booket og aflyst for mange tider på denne henvendelse (højst ${MAX_BOOKINGS_PER_LEAD}). Skriv til klinikken i beskedtråden.`;
@@ -98,6 +99,7 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   SLOT_UNAVAILABLE: SLOT_UNAVAILABLE_TEXT,
   LEAD_NOT_ACCEPTED: LEAD_NOT_ACCEPTED_TEXT,
   BOOKING_NOT_CANCELLABLE: BOOKING_NOT_CANCELLABLE_TEXT,
+  BOOKING_NOT_RESCHEDULABLE: BOOKING_NOT_RESCHEDULABLE_TEXT,
   NO_SHOW_WINDOW_CLOSED: NO_SHOW_WINDOW_CLOSED_TEXT,
   REVIEW_NOT_ALLOWED: REVIEW_NOT_ALLOWED_TEXT,
   BOOKING_LIMIT: BOOKING_LIMIT_TEXT,

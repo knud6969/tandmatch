@@ -1,3 +1,4 @@
+import { formatDayAtTime } from "@/lib/common/domain/format";
 import { CLINIC_CANCEL_REASON_PREFIX, NO_SHOW_GRACE_HOURS, PATIENT_CANCELLED_BY_LABEL } from "@/lib/booking/constants/bookings";
 import type { BookingCanceller, BookingStatus } from "@/lib/booking/types/bookings";
 
@@ -56,4 +57,11 @@ export function patientCancellationText(booking: { cancelledBy: BookingCanceller
   if (!booking.cancelledBy) return null;
   if (booking.cancelledBy === "clinic" && booking.cancelReason) return `${CLINIC_CANCEL_REASON_PREFIX} ${booking.cancelReason}`;
   return PATIENT_CANCELLED_BY_LABEL[booking.cancelledBy];
+}
+
+// Klinikkens linje om en flyttet tid (10.16): "Flyttet af patienten til …" på den gamle, "Flyttet fra …" på den nye.
+export function clinicRescheduleNote(booking: { rescheduledFrom: string | null; rescheduledTo: string | null }): string | null {
+  if (booking.rescheduledTo) return `Flyttet af patienten til ${formatDayAtTime(booking.rescheduledTo)}`;
+  if (booking.rescheduledFrom) return `Flyttet fra ${formatDayAtTime(booking.rescheduledFrom)}`;
+  return null;
 }

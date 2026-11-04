@@ -7,6 +7,7 @@ import {
   ALREADY_REVIEWED_TEXT,
   BOOKING_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
+  BOOKING_NOT_RESCHEDULABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
   GENERIC_ERROR_TEXT,
   LEAD_NOT_ACCEPTED_TEXT,
@@ -315,6 +316,8 @@ export const slotUnavailable = () => conflict("SLOT_UNAVAILABLE", SLOT_UNAVAILAB
 export const bookingLimit = () => conflict("BOOKING_LIMIT", BOOKING_LIMIT_TEXT);
 
 export const bookingNotCancellable = () => conflict("BOOKING_NOT_CANCELLABLE", BOOKING_NOT_CANCELLABLE_TEXT);
+
+export const bookingNotReschedulable = () => conflict("BOOKING_NOT_RESCHEDULABLE", BOOKING_NOT_RESCHEDULABLE_TEXT);
 
 export const noShowWindowClosed = () => conflict("NO_SHOW_WINDOW_CLOSED", NO_SHOW_WINDOW_CLOSED_TEXT);
 
