@@ -34,11 +34,11 @@ describe("roundPosition", () => {
 });
 
 describe("fælles tone i fejltekster", () => {
-  const texts = Object.entries(errorTexts).flatMap(([name, value]) =>
-    typeof value === "string"
-      ? [[name, value] as const]
-      : Object.entries(value as Record<string, string>).map(([key, text]) => [`${name}.${key}`, text] as const),
-  );
+  const texts: [string, string][] = [];
+  for (const [name, value] of Object.entries(errorTexts) as [string, string | Record<string, string>][]) {
+    if (typeof value === "string") texts.push([name, value]);
+    else for (const [key, text] of Object.entries(value)) texts.push([`${name}.${key}`, text]);
+  }
 
   it("slutter hver tekst med punktum og bruger ikke udråbstegn", () => {
     for (const [name, text] of texts) {
