@@ -25,6 +25,8 @@ export GEOCODING_FAKE=1
 # Falske e-mail-, push- og web push-tjenester uden netværkskald (platform/notifications/notificationServices.ts, platform 14.6).
 # Virker kun når NODE_ENV ikke er production.
 export NOTIFICATIONS_FAKE=1
+# Offentlig VAPID-nøgle (ingen hemmelighed; ingen tilhørende privat nøgle), så knappen til notifikationer i browseren vises.
+export NEXT_PUBLIC_VAPID_PUBLIC_KEY="${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-BNezZs4btwpnX5kDwVBHDOFilL2p9vnOg5HzVcoXn3QhMvS2QUdJauiKLw6H10FbrSBKrr4xZ7Wq8E3taxG1UEg}"
 export NEXT_TELEMETRY_DISABLED=1
 
 # Demodata til klinikoversigten (tests/e2e/clinic-directory.spec.ts): verificerede og importerede, fiktive klinikker.

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useSession } from "@/features/identity/ui";
 import { Button, LinkButton } from "@/components/ui/button";
 import { apiRequest } from "@/platform/ui-utils/api-client";
+import { unsubscribeBrowserPush } from "@/platform/ui-utils/web-push-client";
 import { AreaTabs } from "@/components/ui/area-tabs";
 import { AREA_HOME, AREA_NAV, activeNavHref } from "@/lib/common/navigation/areas";
 import { useLeadsNeedingActionCount } from "@/features/leads/ui";
@@ -28,6 +29,8 @@ export function SiteHeader() {
 
   async function logout() {
     setLoggingOut(true);
+    // Browserens web push afmeldes, mens sessionen stadig gælder (clinics 10.19). Fejl stopper ikke logud.
+    await unsubscribeBrowserPush();
     try {
       await apiRequest<void>("/api/auth/logout", { method: "POST" });
     } catch {

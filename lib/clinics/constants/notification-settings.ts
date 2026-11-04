@@ -45,3 +45,34 @@ export const NOTIFICATION_SETTING_COLUMN = {
   webPushBookingChanges: "web_push_booking_changes",
   webPushBookingReminder: "web_push_booking_reminder",
 } as const satisfies Record<(typeof NOTIFICATION_SETTING_KEYS)[number], string>;
+
+// Rækkerne i UI'et: ét label pr. type, med feltet for e-mail og for browser.
+export const NOTIFICATION_SETTING_ROWS = [
+  { label: "newLead", email: "emailNewLead", webPush: "webPushNewLead" },
+  { label: "newMessage", email: "emailNewMessage", webPush: "webPushNewMessage" },
+  { label: "bookingChanges", email: "emailBookingChanges", webPush: "webPushBookingChanges" },
+  { label: "bookingReminder", email: "emailBookingReminder", webPush: "webPushBookingReminder" },
+] as const satisfies readonly {
+  label: keyof typeof NOTIFICATION_SETTING_LABEL;
+  email: (typeof NOTIFICATION_SETTING_KEYS)[number];
+  webPush: (typeof NOTIFICATION_SETTING_KEYS)[number];
+}[];
+
+// Tekster på /klinik/profil (clinics 6.3), sektionen "Notifikationer".
+export const NOTIFICATION_SETTINGS_TEXT = {
+  title: "Notifikationer",
+  intro: "Vi sender e-mails til jeres login-e-mail. E-mailen indeholder aldrig oplysninger om patienten.",
+  emailGroup: "E-mail",
+  browserGroup: "Browser",
+  enable: "Slå notifikationer til i denne browser",
+  disable: "Slå fra",
+  browserOn: "Notifikationer er slået til i denne browser.",
+  browserOff: "Notifikationer er slået fra i denne browser. Slå dem til for at vælge, hvad du vil have besked om.",
+  denied: "Browseren blokerer notifikationer for TandMatch. Tillad dem i browserens indstillinger for siden, og prøv igen.",
+  unsupported:
+    "Denne browser understøtter ikke notifikationer. På iPhone skal TandMatch først lægges på hjemmeskærmen (Del, derefter Føj til hjemmeskærm).",
+  missingKey: "Notifikationer i browseren er ikke sat op endnu på dette miljø.",
+  enabledDone: "Notifikationer er slået til i denne browser.",
+  disabledDone: "Notifikationer er slået fra i denne browser.",
+  save: "Gem notifikationer",
+} as const;

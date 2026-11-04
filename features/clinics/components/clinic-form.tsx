@@ -5,6 +5,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Card } from "@/components/ui/card";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
+import { NotificationSettings } from "@/features/clinics/components/notification-settings";
 import { DeleteAccount } from "@/features/clinics/components/delete-account";
 import { AccountCredentials } from "@/features/identity/ui";
 import { LoadState } from "@/components/ui/load-state";
@@ -164,6 +165,7 @@ function ProfileEditor({ initial }: { initial: OwnClinicDto }) {
         <SaveBar {...saveState.props} label="Gem profil" />
       </form>
 
+      <NotificationSettings />
       <AccountCredentials />
       <DeleteAccount clinicName={clinic.name} />
     </div>

@@ -88,6 +88,7 @@ export function PrivacySections() {
           <li>Supabase, som hoster database, login og filer i EU (databehandler).</li>
           <li>OpenAI, som leverer AI-tjenesten (databehandler). Oplysninger kan blive behandlet uden for EU/EØS; overførslen sker på grundlag af EU’s standardkontraktbestemmelser eller tilsvarende gyldigt grundlag. Oplysningerne bruges ikke til at træne modeller.</li>
           <li>Leverandør af hosting af serverne og leverandør af e-mail (nulstilling af adgangskode), begge databehandlere.</li>
+          <li>Resend, som sender e-mails om notifikationer til klinikker, Expo og Apple (Apple Push Notification service), som leverer korte beskeder til patienternes app, og browserens push-tjeneste (Google, Mozilla, Apple eller Microsoft) for klinikker, der slår notifikationer til i browseren. Alle er databehandlere.</li>
         </ul>
         <p>Vi sælger ikke dine oplysninger og viser ingen reklamer.</p>
       </InfoSection>
@@ -122,7 +123,23 @@ export function PrivacySections() {
           Vi bruger ingen cookies til statistik eller markedsføring, så der vises intet cookiebanner.
         </p>
       </InfoSection>
-      <InfoSection title="10. Ændringer">
+      <InfoSection title="10. Notifikationer">
+        <p>
+          Klinikker får e-mails om nye henvendelser, beskeder og bookinger. E-mailen sendes via Resend og indeholder
+          ingen oplysninger om patienten, kun et link til TandMatch. Klinikker, der slår notifikationer til i
+          browseren, får en kort, krypteret besked via browserens push-tjeneste (Google, Mozilla, Apple eller
+          Microsoft, afhængigt af browseren); den indeholder ingen oplysninger om patienten, kun en generisk tekst og
+          et link til TandMatch. Vi gemmer en adresse og to nøgler til push pr. browser, og de slettes, når klinikken
+          logger ud, slår det fra eller sletter sin konto.
+        </p>
+        <p>
+          Patienter, der slår notifikationer til i appen, får korte beskeder via Expo og Apple Push Notification
+          service. Beskederne indeholder aldrig oplysninger om dit helbred. Vi gemmer en adresse til push (et token) pr.
+          telefon, og den slettes, når du logger ud eller sletter din konto. Du kan slå notifikationer fra i appen
+          eller i telefonens indstillinger.
+        </p>
+      </InfoSection>
+      <InfoSection title="11. Ændringer">
         <p>Ændrer vi politikken væsentligt, får du besked og skal læse den igen, før du fortsætter.</p>
       </InfoSection>
     </>
