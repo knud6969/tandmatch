@@ -75,7 +75,11 @@ Status ændres kun af admin (eller seed via `admin_set_clinic_status()`, 5.3). D
 | Svare offentligt på anmeldelse | | | | anmeldelser af egen klinik | |
 | Redigere profil, prisliste, åbningstider, blokeringer, tandlæger, portefølje, Trustpilot | | | egen patientprofil | egen klinik | |
 | Trække samtykke tilbage, slette egne data, eksportere data | | ja | ja | | |
-| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (UI [IKKE BYGGET]) |
+| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (UI [IKKE BYGGET]; planlagt 2026-11-04 i `features/admin`) |
+| **Planlagt (2026-11-04):** flytte en booket tid (booking 10.16) | | | egne, før starttid | nej (aflyser og skriver i tråden) | |
+| **Planlagt (2026-11-04):** gemme klinikker som favoritter (clinics 10.17) | | nej, skal oprette konto | ja | | |
+| **Planlagt (2026-11-04):** modtage notifikationer (platform 14) | | nej | push i appen | e-mail til login-adressen, valgbar pr. type | nej |
+| **Planlagt (2026-11-04):** se statistik (clinics 10.18) | | | | kun egen klinik | nej |
 
 Bemærkninger:
 - En anonym session kan aldrig blive klinik eller admin. Klinikker opretter sig via `/opret/klinik`.
@@ -146,6 +150,23 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 | `image_upload` | Upload af billeder | ja | Opbevaring af mundfotos og deling med de klinikker, patienten senere sender sagen til |
 | `health_data_sharing` | Afsendelse af leads | **nej**, kun med konto | Deling af godkendt opsummering, bekræftede ydelser, ønsket tidsrum, område og billeder med de op til 3 klinikker, patienten vælger. Teksten nævner også, at navn og kontaktoplysninger deles med klinikken ved booking |
 
+#### `push_tokens` (patientens enheder til push)
+
+**Planlagt (2026-11-04).** Migration `20261105000100_push_tokens.sql`. Bruges af notifikationerne (platform 14) og appen (mobile 13.10). Push kræver intet samtykke efter art. 9, fordi beskederne ikke indeholder helbredsdata (platform 14.2); telefonens egen tilladelse er patientens valg.
+
+| Felt | Type | Note |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK profiles on delete cascade | Patientens bruger-id. Slettes med kontoen |
+| token | text not null **unique** | Expo push-token. Check: `token ~ '^Expo(nent)?PushToken\[[A-Za-z0-9_-]{8,200}\]$'` (`PUSH_TOKEN_PATTERN` i `lib/identity/constants/push-tokens.ts`, samme mønster) |
+| platform | text not null | `ios` eller `android` (check). Kun `ios` bruges i dag (13.1) |
+| created_at | timestamptz not null default now() | |
+| last_seen_at | timestamptz not null default now() | Opdateres, hver gang appen registrerer tokenet igen |
+
+- RLS: SELECT og DELETE kun `user_id = auth.uid()`; ingen INSERT eller UPDATE for klientroller (platform 5.4). Rækker skrives kun af `register_push_token(p_token, p_platform)` (`security definer`, `search_path = ''`, kun `authenticated`): kræver `is_permanent_user()` og `profiles.role = 'patient'` (ellers `42501`), et gyldigt token og en gyldig platform (ellers `22023`); sletter tokenet hos en anden bruger (samme telefon, ny konto), indsætter eller opdaterer egen række (`last_seen_at = now()`) og sletter de ældste ud over `MAX_PUSH_TOKENS_PER_USER` (5).
+- Tokenet fjernes, når patienten logger ud i appen (`DELETE /api/push-tokens` før `POST /api/auth/logout`, mobile 13.10), når kontoen slettes (cascade), og når Expo svarer `DeviceNotRegistered` (platform 14.5).
+- Tokens logges aldrig og sendes aldrig til klinikker.
+
 ## 10. API-kontrakter
 
 ### 10.2 Auth, anonym session og konto
@@ -205,3 +226,27 @@ IP-rate-limited (10 pr. time): login, signup, glemt adgangskode, recovery, nulst
 ### 10.3 Samtykker
 
 Bygget (trin 0), inkl. `withdrawnLeads`. GET `/api/consents`, POST `/api/consents` (`{ type, textVersion }`; `health_data_sharing` kun permanent), POST `/api/consents/{id}/withdraw` (`{ withdrawnAt, deletedImages, withdrawnLeads, sessionDeleted }`). `withdrawnLeads` er antallet af leads, der blev trukket tilbage ved tilbagetrækning af `health_data_sharing` (5.3); UI fortæller, at bookede tider består og kan aflyses under Bookinger. `POST /api/consents` accepterer kun den gældende tekstversion for typen (`CONSENT_TEXT_VERSIONS`, 4.3), og fra migration `20261028000500` afviser databasen også en pensioneret version. Tilbagetrækning gælder alle aktive samtykker af typen (4.3, 5.3); svaret er uændret. UI'et for samtykker står i 6.2 (`/patient/samtykker`).
+
+### 10.15 Push-tokens
+
+**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR A. Tabellen står i 4.3 `push_tokens`, afsendelsen i platform 14.
+
+```ts
+// lib/identity/schemas/push-tokens.ts
+export const registerPushTokenSchema = z.object({
+  token: z.string().regex(PUSH_TOKEN_PATTERN),     // lib/identity/constants/push-tokens.ts
+  platform: z.enum(["ios", "android"]),
+}).strict();
+export const deletePushTokenSchema = z.object({ token: z.string().min(1).max(250) }).strict();
+```
+
+| Metode og route | Rolle | Input | Output |
+|---|---|---|---|
+| PUT `/api/push-tokens` | patient med konto (`requireRole(["patient"])` og permanent) | `registerPushTokenSchema` | 204. Kalder `register_push_token()` med brugerens klient. 400 `VALIDATION_ERROR` (ugyldigt token eller platform); 401 uden session; 403 `ACCOUNT_REQUIRED` for anonyme; 403 `FORBIDDEN` for klinik og admin; 429 `RATE_LIMITED` (`enforceIpRateLimit("push-token", req, 30)`) |
+| DELETE `/api/push-tokens` | patient (også anonym; har i praksis ingen tokens) | `deletePushTokenSchema` | 204 altid, også når tokenet ikke findes eller tilhører en anden (sletter kun egne rækker via RLS; ingen opregning). 400 ved ugyldig body; 401 uden session |
+
+Lag: `app/api/push-tokens/route.ts` → `new PushTokensController(gate.supabase, session)` (`register`, `remove`) → `PushTokensRepository` (`features/identity`, arver `BaseRepository`). Ingen service role. Begge routes er bag vilkårs-gaten.
+
+**Dataeksport (10.2):** `GET /api/patients/me/export` får feltet `pushDevices: { platform: "ios" | "android"; createdAt: string; lastSeenAt: string }[]` (uden selve tokenet). Typen `PushDeviceExportDto` i `lib/identity/types/push-tokens.ts`.
+
+**Tests:** `features/identity/__tests__/api/push-tokens.test.ts`: PUT med bearer giver 204, og rækken findes (læst med service role); samme token fra patient B flytter det; anonym 403 `ACCOUNT_REQUIRED`; klinik 403; ugyldigt token 400; DELETE af et fremmed token giver 204 og sletter intet; eksporten har `pushDevices` uden token. RLS: platform 5.6 punkt 54.

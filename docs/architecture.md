@@ -1,6 +1,6 @@
 # TandMatch: arkitektur (oversigt)
 
-Version: 3.0 (2026-10-22). Kort oversigt over lag, regler, domæner og hvor tingene ligger. Detaljerne (datamodel, RLS, API-kontrakter, AI-regler) står i README'en for det domæne, de hører til. Afsnitsnumrene er bevaret, så henvisninger som "architecture 10.10" i koden stadig kan findes via tabellen i 0.2.
+Version: 3.1 (2026-11-04: notifikationer, flyt tid, kalender, favoritter, statistik og admin planlagt; trin 11). Kort oversigt over lag, regler, domæner og hvor tingene ligger. Detaljerne (datamodel, RLS, API-kontrakter, AI-regler) står i README'en for det domæne, de hører til. Afsnitsnumrene er bevaret, så henvisninger som "architecture 10.10" i koden stadig kan findes via tabellen i 0.2.
 Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md features/*/README.md platform/README.md mobile/README.md`.
 
 ## 0. Sådan bruges dokumentet
@@ -24,19 +24,24 @@ Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md 
 | 6.1 | Offentlige sider | `features/site/README.md` |
 | 6.2 | Patientfladen (flyttet til appen) | `mobile/README.md` |
 | 6.3, 6.6, 6.7 | Klinikflade, klinikoversigt og rangering, ledige tider | `features/clinics/README.md` |
-| 6.4, 6.5 | Admin, beskyttelse af sider | `platform/README.md` |
+| 6.4 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
+| 6.5 | Beskyttelse af sider | `platform/README.md` |
 | 7 | AI-flowet, AI-reglerne og sagsflowet som samtale | `features/cases/README.md` |
 | 8 | Anmeldelser og prisnøjagtighed | `features/booking/README.md` |
 | 9.1 | Storage-buckets | `platform/README.md` |
 | 9.2-9.4 | Sagsbilleder | `features/cases/README.md` |
 | 9.5 | `public-media` | `features/clinics/README.md` |
-| 10.1, 10.14 | Delte typer, admin | `platform/README.md` |
-| 10.2-10.3 | Auth, sessioner, konto, samtykker | `features/identity/README.md` |
+| 10.1 | Delte typer | `platform/README.md` |
+| 10.14 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
+| 10.2-10.3, 10.15 | Auth, sessioner, konto, samtykker, push-tokens (10.15 planlagt) | `features/identity/README.md` |
+| 10.16 | Flyt tid (planlagt) | `features/booking/README.md` |
+| 10.17-10.19 | Favoritter, klinikkens statistik, notifikationsindstillinger (planlagt) | `features/clinics/README.md` |
+| 14 | Notifikationer: outbox, e-mail, push, påmindelser (planlagt) | `platform/README.md` |
 | 10.4, 10.7, 10.8 | Katalog, klinikoversigt og profil, egen klinik | `features/clinics/README.md` |
 | 10.5, 10.6 | Sager og AI-chat | `features/cases/README.md` |
 | 10.9, 10.11, 10.12 | Leads, akutvej, beskeder | `features/leads/README.md` |
 | 10.10, 10.13 | Bookinger, anmeldelser | `features/booking/README.md` |
-| 13 | Patient-appen | `mobile/README.md` |
+| 13 | Patient-appen (13.10-13.12 planlagt: push, kalender, flyt tid og gemte klinikker) | `mobile/README.md` |
 
 ## 1. Overblik og principper
 
@@ -78,7 +83,7 @@ Bærende principper:
 5. **AI'en vurderer ikke endeligt og sælger ikke.** Den spørger ind, forklarer behandlinger og må give en foreløbig vurdering, altid markeret som foreløbig. Den oversætter ønsket til ydelser fra kataloget, som patienten bekræfter. Den nævner aldrig priser og anbefaler aldrig en klinik. Priser kommer fra klinikkernes prislister, og rækkefølgen af klinikker bestemmes af faste, synlige kriterier (6.6). Reglerne samles i `features/cases/ai/` (7.8).
 6. **Helbredsdata (GDPR art. 9).** Tekst, chat og billeder om patientens mund er helbredsdata. Eksplicit samtykke før AI-behandling, upload og deling; dataminimering over for klinikker og OpenAI.
 7. **MVC med adskilt frontend og backend.** Databasen tilgås kun via API-routes (2.1), både fra klinikkernes web og fra patienternes app. REST og JSON, men pragmatisk, hvis det giver bedre UX.
-8. **Simpelt.** Ingen ekstra infrastruktur (køer, caches, realtime, streaming). Next.js + Supabase (EU-region) + OpenAI, og en Expo-app til patienterne.
+8. **Simpelt.** Ingen ekstra infrastruktur (køer, caches, realtime, streaming). Next.js + Supabase (EU-region) + OpenAI, og en Expo-app til patienterne. Notifikationer (planlagt 2026-11-04) bruger en outbox-tabel i Postgres og to HTTP-API'er (Resend til e-mail, Expo til push), ingen ekstern kø (platform 14). Notifikationer indeholder aldrig helbredsdata eller patientens navn.
 
 ### 1.2 To applikationer i ét repo
 
@@ -95,7 +100,7 @@ Koden er organiseret efter funktion (domæne), og MVC er bevaret inde i hvert do
 
 ```
 app/                       Next.js-ruter. page.tsx/layout.tsx videresender til features/<domæne>/pages; app/api/**/route.ts kalder én controller
-features/<domæne>/         ét domæne: identity, cases, clinics, leads, booking, site
+features/<domæne>/         ét domæne: identity, cases, clinics, leads, booking, site (og admin, planlagt 2026-11-04)
   <x>Controller.ts         forretningsregler; tager typet input og returnerer DTO'er
   <x>Repository.ts         eneste sted, der kalder Supabase (arver platform/base/BaseRepository)
   <x>Service.ts            delt logik (fx AI, rangering, ledige tider)
@@ -105,7 +110,7 @@ features/<domæne>/         ét domæne: identity, cases, clinics, leads, bookin
   ui.ts                    klientsikre komponenter, som andre domæners UI må importere
   __tests__/               unit-tests; __tests__/api/ har API-testene
   README.md                domænets afsnit af arkitekturen
-platform/                  tværgående: platform/middleware/, db/, base/, cron, billedbehandling, ui-utils/ (api-client, use-load m.fl.)
+platform/                  tværgående: platform/middleware/, db/, base/, cron, billedbehandling, notifications/ (planlagt), ui-utils/ (api-client, use-load m.fl.)
 components/ui/             delte UI-komponenter og layout (header, footer, faner)
 lib/<domæne>/<art>/        delt med appen: types, schemas, constants, domain; lib/common/ for fælles ting og navigation
 mobile/                    patient-appen (Expo); importerer kun @/lib fra roden
@@ -118,7 +123,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 
 - **Lagene i et domæne:** route → controller → repository/service. Controllere kalder ikke hinanden; delt logik hører i en service. Kun repositories kalder Supabase. UI (`components/`, `pages/`, `utils/`) henter data via `/api` med `platform/ui-utils/api-client` og importerer aldrig repositories, controllere, services eller `ai/`.
 - **Mellem domæner:** et domæne importerer kun andre domæners `index.ts` (serverkode) eller `ui.ts` (klientsikre komponenter), aldrig deres interne filer. Serverkode importerer ikke UI.
-- **platform/** kender ingen domæner. Undtagelser: `platform/cronController.ts` og `platform/middleware/{session,termsGate}.ts` bruger `features/identity` og `features/booking` via `index.ts`.
+- **platform/** kender ingen domæner. Undtagelser: `platform/cronController.ts` og `platform/middleware/{session,termsGate}.ts` bruger `features/identity` og `features/booking` via `index.ts`. `platform/notifications/` (planlagt) er ingen undtagelse: databasen lægger notifikationerne i outboxen, og platformen sender dem uden at kende domænerne; tekster og stier kommer fra `lib/common/` (platform 14). Routes må kun importere `notificationController` derfra.
 - **components/ui/** bruger kun `lib/`, `platform/ui-utils` og domænernes `ui.ts`.
 - **lib/** importerer kun `lib/` og `zod`, fordi appen deler den. Danske labels og tekster til enums og fejlkoder ligger i `lib/`, så server, web og app bruger samme tekst.
 - **app/** sider og layouts videresender til `pages/`; routes kalder én controller og henter kun klientfabrikken fra `platform/db`.
@@ -132,17 +137,19 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 
 | Domæne | Ansvar | Ruter |
 |---|---|---|
-| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning | `/login`, `/opret`, `/glemt-adgangskode`, `/nulstil-adgangskode`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me` |
+| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning; push-tokens (planlagt) | `/login`, `/opret`, `/glemt-adgangskode`, `/nulstil-adgangskode`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me`, `/api/push-tokens` (planlagt) |
 | `cases` | sager, AI-chat, opsummering, sagsbilleder, AI-reglerne | `/api/cases/*` |
-| `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/api/clinics/*`, `/api/services` |
+| `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider; planlagt: notifikationsindstillinger, statistik, patientens gemte klinikker | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/klinik/statistik` (planlagt), `/api/clinics/*`, `/api/services`, `/api/favorites/*` (planlagt) |
 | `leads` | leads, klinikkens indbakke og lead-kort, beskeder, akutvejen | `/klinik`, `/klinik/lead/*`, `/api/leads/*`, `/api/emergency-leads` |
-| `booking` | bookinger, kalender, anmeldelser, svar, moderation | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
+| `booking` | bookinger, kalender, anmeldelser, svar, moderationsreglerne (8.5; admins side ligger i `admin`); flyt tid (planlagt) | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
 | `site` | forsiden og informationssiderne | `/`, `/om-os`, `/kontakt`, `/privatliv`, `/saadan-*`, `/for-klinikker` |
+| `admin` (planlagt 2026-11-04) | klinikstatus og moderation af anmeldelser og klinikkers svar (rollen `admin`) | `/admin/*`, `/api/admin/*` |
+| (platform) | notifikationer (planlagt): outbox, e-mail, push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders` |
 
 ### 2.6 Sådan bygger du en ny funktion
 
 1. Find domænet i 2.2, og ret først domænets README (kontrakt, tabel, regler).
-2. Migration i `supabase/migrations/` (ny fil, ret aldrig en kørt migration) og RLS-test i `tests/rls/`.
+2. Migration i `supabase/migrations/` (ny fil, ret aldrig en kørt migration) og RLS-test i `tests/rls/`. Skal handlingen give en notifikation, lægges den i outboxen af en trigger i samme migration, og routen får `withApi(…, { notify: true })` (platform 14).
 3. Typer, skemaer og tekster i `lib/<domæne>/`.
 4. Repository → service (hvis delt logik) → controller → route i `app/api/`.
 5. UI i `features/<domæne>/components` og `pages`, og en tynd `app/**/page.tsx`. Patientfunktioner bygges i `mobile/`.

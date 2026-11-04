@@ -185,11 +185,40 @@ Tandlæger har intet login og ingen rolle. Leads og bookinger går til klinikken
 
 Vises kun for verificerede klinikker.
 
+#### `clinic_notification_settings` (klinikkens e-mailvalg)
+
+**Planlagt (2026-11-04).** Migration `20261105000200_notification_outbox.sql` (sammen med outboxen, platform 14.3).
+
+| Felt | Type | Note |
+|---|---|---|
+| clinic_id | uuid PK, FK clinics | Én række pr. klinik. **Ingen række = alle typer slået til** (standard, 12.3 punkt 50) |
+| email_new_lead | boolean not null default true | `clinic_new_lead` |
+| email_new_message | boolean not null default true | `clinic_new_message` (højst én pr. henvendelse pr. 15 minutter) |
+| email_booking_changes | boolean not null default true | `clinic_booking_created`, `clinic_booking_cancelled`, `clinic_booking_rescheduled` |
+| email_booking_reminder | boolean not null default true | `clinic_booking_reminder` |
+| updated_at | timestamptz not null default now() | Trigger |
+
+RLS: SELECT, INSERT og UPDATE kun `is_clinic_owner(clinic_id)` (INSERT og UPDATE også `is_permanent_user()`); kolonne-grant for UPDATE kun de fire `email_*`-felter; ingen DELETE (platform 5.4). Triggerne i platform 14.4 læser rækken, når en notifikation lægges i outboxen. Rækken bliver stående, hvis klinikken mister sin ejer; e-mails sendes alligevel ikke uden ejer (platform 14.2).
+
+#### `favorite_clinics` (patientens gemte klinikker)
+
+**Planlagt (2026-11-04).** Migration `20261106000200_favorite_clinics.sql` (PR B).
+
+| Felt | Type | Note |
+|---|---|---|
+| patient_id | uuid FK patients on delete cascade | |
+| clinic_id | uuid FK clinics | Klinikrækker slettes aldrig (4.3 `clinics`) |
+| created_at | timestamptz not null default now() | |
+
+Primærnøgle `(patient_id, clinic_id)`. RLS (platform 5.4): SELECT og DELETE `patient_id = auth.uid()`; INSERT `patient_id = auth.uid()` og `is_permanent_user()` og `is_public_clinic(clinic_id)` (kun klinikker, der vises offentligt: `verified` og `imported` uden ejer; platform 5.3); ingen UPDATE. Trigger: højst `MAX_FAVORITE_CLINICS` (200, `lib/clinics/constants/favorites.ts`) pr. patient (`FAVORITE_LIMIT`). En gemt klinik, der senere bliver usynlig (`registered`, `removed`), bliver stående i tabellen, men vises ikke (10.17). Klinikken kan ikke se, hvem der har gemt den, og der findes ingen optælling pr. klinik.
+
 ## 6. Sider og routes (App Router)
 
 ### 6.3 Klinikflade (`/klinik`, rolle `clinic`)
 
 [PROTOTYPE, 2026-10-25] Klinikker auto-verificeres ved oprettelse (`docs/beslutninger.md` 12.2), så banneret "Afventer verificering" vises ikke (`SHOW_VERIFICATION_BANNER = false` i `verification-banner.tsx`). Koden for `registered` står: en `registered` klinik kan sætte alt op, men indbakke og kalender er tomme, indtil den er verificeret.
+
+**Planlagt (2026-11-04), PR C:** en femte fane **Statistik** (`/klinik/statistik`) mellem Anmeldelser og Klinikprofil; vandret rulning på smalle skærme er uændret.
 
 **Fanerne (2026-10-24, klinik-web):** fire faner (`AREA_NAV.clinic` i `lib/common/navigation/areas.ts`): **Henvendelser** (`/klinik`), **Kalender**, **Anmeldelser** og **Klinikprofil** (`/klinik/profil`). Klinikprofil er også den aktive fane på `/klinik/prisliste`, `/klinik/aabningstider` og `/klinik/tandlaeger` (`NavItem.matches`); de fire opsætningssider har en lokal undernavigation (Profil · Prisliste · Åbningstider · Tandlæger, `ClinicSettingsNav` i `features/clinics`), og deres URL'er er uændrede. Fanen Henvendelser viser antallet af henvendelser, der **kræver handling** (se `/klinik`), som et lille tal; tallet kommer fra de samme data, som indbakken poller (én delt hentning af `/api/leads` hvert 20. sekund, `useClinicLeads()` i `features/leads/ui.ts`), og vises ikke, når tallet er 0 eller klinikken ikke er verificeret. Logoet fører en indlogget klinik til `/klinik`. Vandret rulning med fade i kanten (7.8, `area-tabs.tsx`) er bevaret til smalle skærme.
 
@@ -205,6 +234,8 @@ Vises kun for verificerede klinikker.
 | `/klinik/tandlaeger` | Tandlæger og deres portefølje (upload med bekræftelse af patientens samtykke) |
 | `/klinik` (trin 10.7, bygget) | Henvendelser fra appen ses uden manuel genindlæsning: indbakken (`features/leads`) henter `/api/leads` igen hvert 20. sekund, mens fanen er synlig (`document.visibilityState`, delt `startVisiblePolling` i `lib/common/domain/polling.ts`), og viser antallet af ubesvarede leads i en statuslinje og antallet, der kræver handling, i browserfanens titel og på fanen Henvendelser (2026-10-24; én delt hentning, se Fanerne). Samme polling på kalenderen for nye bookinger. Ingen realtime (princip 8) |
 | `/klinik/anmeldelser` | Godkendte anmeldelser + offentligt svar. Bygget i 6.5: anmeldelser med stjerner, tekst, prisnøjagtighed og måned; svarformular, når `replyStatus` er `null`; eget svar med status; punktet "Anmeldelser" i navigationen |
+| `/klinik/profil` (sektion "Notifikationer") | **Planlagt (2026-11-04), PR A.** Sektion med `id="notifikationer"` (e-mails linker hertil) mellem Trustpilot og kontoen. Overskrift "Notifikationer", én linje "Vi sender e-mails til jeres login-e-mail. E-mailen indeholder aldrig oplysninger om patienten." og fire afkrydsningsfelter med labels fra `NOTIFICATION_SETTING_LABEL` (`lib/clinics/constants/notification-settings.ts`): "Ny henvendelse", "Ny besked fra en patient" (hjælpetekst "Højst én e-mail pr. henvendelse pr. 15 minutter"), "Ny, flyttet eller aflyst tid" og "Påmindelse dagen før en booket tid". Knappen "Gem" er aktiv, når noget er ændret; kvittering "Gemt". Data: `GET`/`PUT /api/clinics/me/notification-settings` (10.19). Komponent `features/clinics/components/notification-settings.tsx`. Mindst 44 px trykflade; tjekkes ved 390 og 1280 px |
+| `/klinik/statistik` | **Planlagt (2026-11-04), PR C.** Ny fane **Statistik** mellem Anmeldelser og Klinikprofil (`AREA_NAV.clinic`). Øverst et valg af periode med tre knapper (`aria-pressed`): "30 dage" (standard), "90 dage", "12 måneder"; valget står i URL'en (`?dage=30|90|365`). Under det kort i et gitter (1 kolonne ved 390 px, 2 fra `sm`, 4 fra `lg`): **Henvendelser** (antal; under: "n venter på svar"), **Accepteret** (antal og "x % af besvarede"), **Afvist** (antal), **Svartid** (median som "2 t 15 min" eller "under 1 min"; under: "x % besvaret inden for 24 timer"), **Bookinger** (gennemført; under: "n kommende · n udeblevet"), **Aflyst** ("n af patienter · n af jer"), **Fra henvendelse til booking** ("x %"). Tal, der ikke kan beregnes (0 besvarede), vises som "–". Forklaring under gitteret (én linje): "Henvendelser tælles efter modtagelsesdato, bookinger efter tidspunktet for tiden. Kun jeres egne tal." Ingen grafer. En ikke-verificeret klinik ser en kort tekst som på kalenderen. Tekster i `lib/clinics/constants/stats.ts`. Data: `GET /api/clinics/me/stats?days=` (10.18). Filer: `features/clinics/pages/clinic-stats-page.tsx`, `features/clinics/components/stats-*.tsx`, `app/klinik/statistik/page.tsx` |
 
 ### 6.6 Klinikoversigt, rangering og filtre
 
@@ -359,3 +390,95 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 | POST `/api/clinics/me/portfolio` | multipart: `file`, `dentistId`, `serviceId?`, `caption?`, `patientConsentConfirmed: "true"`, `consentTextVersion` (læses med `readImageForm`; tekstfelterne valideres, før billedet behandles) | 201 portfolio item; 400 uden bekræftelse eller ved forkert `consentTextVersion`; 429 `PORTFOLIO_LIMIT` ved over 60 billeder pr. klinik |
 | PATCH/DELETE `/api/clinics/me/portfolio/{id}` | PATCH `{ caption?, serviceId? }` | item / 204 |
 | GET `/api/clinics/me/reviews` | | `{ reviews: ClinicReviewDto[] }` (10.13): godkendte anmeldelser af egen klinik med eget svar og dets status, via `clinic_reviews()`. 403 `CLINIC_NOT_VERIFIED` for ikke-verificerede. Bygget i 6.2 |
+| **Planlagt (2026-11-04)** GET/PUT `/api/clinics/me/notification-settings` | se 10.19 | |
+| **Planlagt (2026-11-04)** GET `/api/clinics/me/stats` | se 10.18 | |
+
+**Planlagt (2026-11-04):** `DELETE /api/clinics/me` får `withApi(…, { notify: true })`, så patienterne får push om aflyste tider og afviste henvendelser, når klinikken sletter sin konto (platform 14.4, 14.6).
+
+### 10.17 Favoritter (gemte klinikker)
+
+**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR B. Tabellen står i 4.3 `favorite_clinics`; appens skærme i `mobile/README.md` 13.12. Kun patienter med konto; ingen web-UI (patienter bruger appen).
+
+```ts
+// lib/clinics/types/favorites.ts
+export type FavoriteIdsDto = { clinicIds: string[] };
+export type FavoriteClinicsDto = { clinics: ClinicListItemDto[] };   // samme kort som oversigten (10.7)
+```
+
+| Metode og route | Rolle | Input | Output |
+|---|---|---|---|
+| GET `/api/favorites/ids` | patient med konto | | 200 `FavoriteIdsDto`: id'er på gemte klinikker, der stadig vises offentligt. Bruges til hjertet i listen og på profilen |
+| GET `/api/favorites` | patient med konto | | 200 `FavoriteClinicsDto`: de gemte klinikker som `ClinicListItemDto` fra `public_clinics(p_clinic_ids)` uden valgte behandlinger (`prices: []`, `priceForSelection: null`, `distanceKm: null`, `firstAvailableAt` for Undersøgelse som i oversigten), sorteret efter navn. Klinikker, der ikke længere vises offentligt, udelades uden fejl. Højst 200 |
+| PUT `/api/favorites/{clinicId}` | patient med konto | ingen body | 204, også hvis klinikken allerede er gemt (idempotent, `on conflict do nothing`). 400 `VALIDATION_ERROR` for et ugyldigt id; 404 `NOT_FOUND` for en klinik, der ikke vises offentligt (policyen afviser; oversættes i repositoriet); 429 `FAVORITE_LIMIT` ved 200; 403 `ACCOUNT_REQUIRED` for anonyme, `FORBIDDEN` for klinik og admin |
+| DELETE `/api/favorites/{clinicId}` | patient med konto | | 204, også hvis den ikke var gemt |
+
+Lag: `app/api/favorites/**/route.ts` → `FavoritesController` (`features/clinics/favoritesController.ts`: `ids`, `list`, `add`, `remove`) → `FavoritesRepository` (tabellen) og `ClinicDirectoryRepository.listClinics([], ids)` (findes; `public_clinics(p_clinic_ids)`). **Ingen kopi af oversigtens mapping:** omdannelsen fra `PublicClinicRecord` til `ClinicListItemDto` (anmeldelsesstatistik, første ledige tid) ligger i dag som private metoder i `ClinicDirectoryController` (`contextFor()`, `toListItem()`); de flyttes først til en service (`ClinicListingService` i `features/clinics/clinicListingService.ts`), som begge controllere bruger (egen commit, ingen adfærdsændring). Fejlkoden `FAVORITE_LIMIT` (429) og teksten "Du kan højst gemme 200 klinikker." står i `lib/common/constants/error-texts.ts`.
+
+**Dataeksport (identity 10.2):** feltet `favorites: { clinicId: string; createdAt: string }[]`.
+
+**Tests:** RLS platform 5.6 punkt 58. API `features/clinics/__tests__/api/favorites.test.ts`: PUT to gange giver én række; GET viser klinikken som `ClinicListItemDto`; en `registered` klinik giver 404 og vises ikke i GET; DELETE er idempotent; anonym 403 `ACCOUNT_REQUIRED`; klinik 403; patient A ser ikke B's favoritter. Unit for `ClinicListingService`, hvis mappingen flyttes.
+
+### 10.18 Klinikkens statistik
+
+**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR C. Siden står i 6.3 (`/klinik/statistik`).
+
+**Databasen** (migration `20261107000100_clinic_stats.sql`): `clinic_stats(p_from timestamptz, p_to timestamptz)` er `security definer`, `stable`, `search_path = ''`, kun `authenticated`, og returnerer én række for **den kaldendes egen klinik** (`auth_clinic_id()`; ingen klinik-id som parameter). Kræver ejer og `verified` (ellers `CLINIC_NOT_VERIFIED`), `p_from < p_to` og højst 366 dage (ellers `22023`). Tæller kun leads med `sent_at >= clinics.owner_since` (5.1 regel 16). Returnerer kun tal, aldrig id'er eller indhold. Definitioner:
+
+| Kolonne | Definition |
+|---|---|
+| `leads_total` | Egne leads med `sent_at` i `[p_from, p_to)`, alle statusser |
+| `leads_pending` | heraf status `sent` |
+| `leads_accepted` | heraf `responded_at is not null` og `decline_reason is null` (accepteret, uanset hvad der skete bagefter) |
+| `leads_declined` | heraf `decline_reason is not null` |
+| `leads_withdrawn_unanswered` | heraf status `withdrawn` og `responded_at is null` |
+| `leads_emergency` | heraf `requested_starts_at is not null` |
+| `answered_within_24h` | heraf besvarede med `responded_at - sent_at <= 24 timer` |
+| `median_response_minutes` | median (`percentile_cont(0.5)`) af `responded_at - sent_at` i minutter for besvarede; `null` uden besvarede |
+| `leads_with_booking` | heraf leads med mindst én booking med effektiv status `booked`, `completed` eller `no_show` |
+| `bookings_upcoming` | Egne bookinger med `starts_at` i perioden, effektiv status `booked` og `starts_at > now()` |
+| `bookings_completed`, `bookings_no_show` | samme periode, effektiv status `completed` / `no_show` |
+| `bookings_cancelled_by_patient`, `bookings_cancelled_by_clinic` | samme periode, `cancelled` med `cancelled_by` = `patient` / `clinic`. En booking, der er flyttet (der findes en booking med `rescheduled_from_id` = dens id, booking 4.3), tælles ikke som aflyst |
+
+`held`-bookinger og udløbne reservationer tælles ikke.
+
+```ts
+// lib/clinics/types/stats.ts
+export type ClinicStatsPeriodDays = 30 | 90 | 365;              // CLINIC_STATS_PERIODS i lib/clinics/constants/stats.ts
+export type ClinicStatsDto = {
+  period: { days: ClinicStatsPeriodDays; from: string; to: string };   // ISO; to = nu
+  leads: { total: number; pending: number; accepted: number; declined: number; withdrawnUnanswered: number; emergency: number };
+  acceptRatePct: number | null;        // round(100 * accepted / (accepted + declined)); null ved 0 besvarede
+  response: { medianMinutes: number | null; within24hPct: number | null };   // within24hPct af besvarede
+  bookings: { upcoming: number; completed: number; noShow: number; cancelledByPatient: number; cancelledByClinic: number };
+  leadToBookingPct: number | null;     // round(100 * leadsWithBooking / total); null ved 0 leads
+};
+```
+
+| Metode og route | Rolle | Input | Output |
+|---|---|---|---|
+| GET `/api/clinics/me/stats` | verificeret klinik | `?days=30\|90\|365` (standard 30; `clinicStatsQuerySchema` i `lib/clinics/schemas/stats.ts`) | 200 `ClinicStatsDto`. 400 `VALIDATION_ERROR` for andre værdier; 403 `CLINIC_NOT_VERIFIED`; 403 `FORBIDDEN` for andre roller |
+
+Lag: route → `ClinicStatsController` (`features/clinics/clinicStatsController.ts`, `get(days)`) → `ClinicStatsRepository` (ét RPC-kald). Procenterne og perioden beregnes i den rene funktion `toClinicStatsDto(row, days, now)` i `lib/clinics/domain/stats.ts`; formatering af svartid (`formatResponseTime(minutes)`: "under 1 min", "45 min", "2 t 15 min", "3 d 4 t") ligger samme sted, så siden ikke regner selv.
+
+**Tests:** RLS platform 5.6 punkt 59. Unit `features/clinics/__tests__/stats.test.ts` (procenter, `null` ved 0, afrunding, `formatResponseTime`). API `features/clinics/__tests__/api/stats.test.ts`: tal efter et kendt forløb (to leads, én accept, én afvisning, én booking), `days=7` giver 400, patient 403, anden klinik ser 0.
+
+### 10.19 Klinikkens notifikationsindstillinger
+
+**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR A. Tabellen står i 4.3 `clinic_notification_settings`, siden i 6.3, afsendelsen i platform 14.
+
+```ts
+// lib/clinics/types/notification-settings.ts
+export type ClinicNotificationSettingsDto = {
+  emailNewLead: boolean; emailNewMessage: boolean; emailBookingChanges: boolean; emailBookingReminder: boolean;
+};
+// lib/clinics/schemas/notification-settings.ts: alle fire felter påkrævet, .strict()
+```
+
+| Metode og route | Rolle | Input | Output |
+|---|---|---|---|
+| GET `/api/clinics/me/notification-settings` | klinik (ejer, permanent; også `registered`) | | 200 `ClinicNotificationSettingsDto` (standardværdierne, hvis der ingen række er) |
+| PUT `/api/clinics/me/notification-settings` | samme | `ClinicNotificationSettingsDto` (strict) | 200 `ClinicNotificationSettingsDto`. Upsert med brugerens klient (RLS). 400 `VALIDATION_ERROR`; 403 `FORBIDDEN` for andre roller; 404 uden egen klinik |
+
+Lag: route → `NotificationSettingsController` (`features/clinics/notificationSettingsController.ts`, `get`, `put`) → `ClinicsRepository.requireOwnId()` og `NotificationSettingsRepository`. Ingen service role.
+
+**Tests:** RLS platform 5.6 punkt 56. API `features/clinics/__tests__/api/notification-settings.test.ts`: GET uden række giver alle `true`; PUT og GET igen; ukendt felt 400; patient 403; klinik Y kan ikke læse X's (får sine egne).
