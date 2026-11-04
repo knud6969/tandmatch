@@ -147,3 +147,14 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 4. Repository → service (hvis delt logik) → controller → route i `app/api/`.
 5. UI i `features/<domæne>/components` og `pages`, og en tynd `app/**/page.tsx`. Patientfunktioner bygges i `mobile/`.
 6. Tests i `features/<domæne>/__tests__/` (unit og `api/`) og evt. `tests/e2e/`. `npx tsc --noEmit`, `npm run lint` og testene skal bestå.
+
+### 2.7 Fejlbeskeder (ens på web og i appen)
+
+- **Tekster ét sted:** alle brugerrettede fejltekster står i `lib/common/constants/error-texts.ts` (domænespecifikke i `lib/<domæne>/constants`). Server, web og app importerer dem derfra; ingen komponent, hook eller repository skriver sin egen fejltekst. Fejlkoder fra API'et oversættes ét sted: `apiErrorText(code, message)` (`lib/common/domain/errors.ts`, bruger `API_ERROR_TEXTS`). Serverens `ApiError`-beskeder henter deres tekst fra de samme konstanter.
+- **Tone:** kort, hvad der skete og hvad man kan gøre, du-form, punktum til sidst, ingen udråbstegn. Kan fejlen gå over, bruges den faste vending `RETRY_LATER` ("Prøv igen om lidt."), ved dagsgrænser `RETRY_TOMORROW`. En test i `platform/__tests__/apiErrorText.test.ts` tjekker punktum.
+- **Fire visninger, samme visuelle sprog** (danger-farverne, rundt "!"-ikon, afrundet kasse):
+  - *Feltfejl:* `FieldError` lige under feltet (web: `components/ui/field-error.tsx`; app: `~/components/ui/field-error.tsx`). `TextField`, `TextArea`, `SelectField` og `CheckboxField` bruger den selv via `error`-prop; ingen rød tekst på andre måder.
+  - *Formular- og handlingsfejl:* `FormError` (web) / `StatusMessage tone="danger"` (app) inline over knappen eller formularen. Web: `useAction` + `StatusMessage` viser dem automatisk.
+  - *Indlæsningsfejl:* `LoadState` eller `LoadError` med knappen "Prøv igen". Bygges ikke i hånden.
+  - *Kortvarige notitser og advarsler:* `Alert`/`StatusMessage` i tonen `warning`, `success` eller `info`.
+- **Tilgængelighed:** fejl er `role="alert"` (web) / `accessibilityRole="alert"` og `accessibilityLiveRegion="assertive"` (app); felter er koblet med `aria-describedby` og `aria-invalid`. Når en fejl vises, flyttes fokus til den (`FormError`) eller til det første ugyldige felt (`useFocusInvalid` på web), og appen ruller den ind i billedet (`Screen`). Nye formularer bruger de samme komponenter.
