@@ -24,7 +24,7 @@ function layer(files, regexes, message, ignores = []) {
   };
 }
 
-const DOMAINS = ["identity", "cases", "clinics", "leads", "booking", "site"];
+const DOMAINS = ["identity", "cases", "clinics", "leads", "booking", "site", "admin"];
 
 // Ren kode uden I/O pr. domæne (testes direkte og starter ikke med import "server-only").
 const PURE = {
