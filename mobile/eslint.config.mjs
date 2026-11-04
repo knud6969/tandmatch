@@ -46,9 +46,11 @@ export default defineConfig([
   },
   layer(["app/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/api/*", "~/components/*", "~/hooks/*", "~/utils/*"], "Rutefiler re-eksporterer en skærm og har ingen logik. Layouts må bruge ~/auth/*."),
   layer(["src/screens/**/*.{ts,tsx}"], NOT_ROOT_LAYERS, "Skærme bruger ~/components, ~/api, ~/hooks, ~/utils, ~/auth og @/lib."),
-  layer(["src/components/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/api/*", "~/screens/*", "~/auth/*"], "Komponenter får data og handlinger som props og kalder ikke ~/api eller ~/auth."),
-  layer(["src/api/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/screens/*", "~/components/*", "~/hooks/*", "~/utils/*", "~/auth/*", "!~/auth/tokens"], "~/api må kun bruge ~/auth/tokens og @/lib."),
-  layer(["src/auth/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/screens/*", "~/components/*", "~/hooks/*", "~/utils/*", "~/api/*"], "~/auth må kun bruge ~/api/* i session-context.tsx.", ["src/auth/session-context.tsx"]),
+  layer(["src/components/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/api/*", "~/screens/*", "~/auth/*", "~/notifications/*"], "Komponenter får data og handlinger som props og kalder ikke ~/api eller ~/auth."),
+  layer(["src/api/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/screens/*", "~/components/*", "~/hooks/*", "~/utils/*", "~/auth/*", "~/notifications/*", "!~/auth/tokens"], "~/api må kun bruge ~/auth/tokens og @/lib."),
+  layer(["src/auth/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/screens/*", "~/components/*", "~/hooks/*", "~/utils/*", "~/api/*", "~/notifications/*"], "~/auth må kun bruge ~/api/* i session-context.tsx.", ["src/auth/session-context.tsx"]),
+  // Push-laget (13.10): må bruge ~/api/push-tokens, ~/auth og ~/utils, men aldrig skærme, komponenter eller hooks.
+  layer(["src/notifications/**/*.{ts,tsx}"], [...NOT_ROOT_LAYERS, "~/screens/*", "~/components/*", "~/hooks/*"], "~/notifications må kun bruge ~/api, ~/auth, ~/utils og @/lib."),
   {
     files: ["src/api/client.ts", "tests/**/*.{ts,tsx}"],
     rules: { "no-restricted-globals": "off" },

@@ -85,3 +85,14 @@ export const PATIENT_PUSH_TEXTS = {
 export const CLINIC_LEAD_PATH = "/klinik/lead/";
 export const CLINIC_CALENDAR_PATH = "/klinik/kalender";
 export const CLINIC_NOTIFICATION_SETTINGS_PATH = "/klinik/profil#notifikationer";
+
+// Appens kort efter første henvendelse og rækken i Konto (mobile 13.10).
+export const PUSH_PROMPT_TITLE = "Få besked, når klinikken svarer";
+export const PUSH_PROMPT_TEXT =
+  "Vi sender en kort besked, når klinikken svarer, skriver eller ændrer din tid. Beskeden indeholder aldrig oplysninger om dit helbred.";
+export const PUSH_PROMPT_ENABLE = "Slå notifikationer til";
+export const PUSH_PROMPT_DISMISS = "Ikke nu";
+export const PUSH_ACCOUNT_TITLE = "Notifikationer";
+export const PUSH_ACCOUNT_SWITCH = "Modtag notifikationer";
+export const PUSH_DENIED_TEXT = "Slået fra i iPhone-indstillinger";
+export const PUSH_OPEN_SETTINGS = "Åbn Indstillinger";

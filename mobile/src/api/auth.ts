@@ -4,8 +4,9 @@ import type { convertSchema, loginSchema, signupSchema } from "@/lib/identity/sc
 import { CONSENT_TEXT_VERSIONS } from "@/lib/identity/constants/consents";
 import type { AuthResultDto } from "@/lib/identity/types/auth";
 import type { AnonymousSessionDto, ClaimResultDto, ClaimTokenDto } from "@/lib/identity/types/session";
-import { clearSession, saveSession } from "~/auth/tokens";
+import { clearPushToken, clearSession, getPushToken, saveSession, setPushFlag } from "~/auth/tokens";
 import { ApiRequestError, apiRequest } from "./client";
+import { deletePushToken } from "./push-tokens";
 
 // Typerne følger serverens skemaer, så appen og weben validerer ens (architecture 13.2).
 type LoginInput = z.infer<typeof loginSchema>;
@@ -39,9 +40,23 @@ export async function convertAnonymous(input: ConvertInput): Promise<void> {
   await storeSession(await apiRequest<AuthResultDto>("/api/auth/convert", { method: "POST", json: input }));
 }
 
+async function unregisterStoredPushToken(): Promise<void> {
+  try {
+    const token = await getPushToken();
+    if (!token) return;
+    await deletePushToken(token).catch(() => undefined);
+    await clearPushToken();
+    await setPushFlag("disabled", false);
+  } catch {
+    // Afmelding er best effort.
+  }
+}
+
 // Log ud: kaldet tilbagekalder tokenet på serveren; tokens slettes lokalt, også hvis kaldet fejler (architecture 13.3).
 export async function logout(): Promise<void> {
   try {
+    // Push-tokenet afmeldes, mens sessionen stadig gælder (mobile 13.10). Fejl stopper ikke logud.
+    await unregisterStoredPushToken();
     await apiRequest("/api/auth/logout", { method: "POST" });
   } finally {
     await clearSession({ settle: true });

@@ -14,6 +14,7 @@ import { getPatientMe } from "~/api/patients";
 import { getServiceGroups } from "~/api/services";
 import { useSession } from "~/auth/session-context";
 import { SlotPicker } from "~/components/booking/slot-picker";
+import { PushPrompt } from "~/components/notifications/push-prompt";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { EmergencyNotice } from "~/components/clinic-directory/emergency-notice";
 import { EmergencyClinicOption } from "~/components/emergency/emergency-clinic-option";
@@ -176,6 +177,7 @@ function Sent({ result, onOpenCase, onOpenBookings }: { result: EmergencyLeadCre
         {booking?.holdExpiresAt ? <Text style={styles.muted}>Reservationen gælder til {formatDateTime(booking.holdExpiresAt)}.</Text> : null}
       </Card>
       <Text style={styles.body}>{EMERGENCY_HOLD_TEXT}</Text>
+      <PushPrompt />
       <Button label="Se sagen og svaret" onPress={onOpenCase} />
       <Button label="Se mine bookinger" variant="secondary" onPress={onOpenBookings} />
     </>

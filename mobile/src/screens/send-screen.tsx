@@ -17,6 +17,7 @@ import { listCaseLeads, sendLeads } from "~/api/leads";
 import { CLINIC_ON_WEB_MESSAGE, useSession } from "~/auth/session-context";
 import { LoginForm } from "~/components/auth/login-form";
 import { SignupForm, type SignupValues } from "~/components/auth/signup-form";
+import { PushPrompt } from "~/components/notifications/push-prompt";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { BackLink, Badge, Button, Card, LoadError, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
@@ -83,6 +84,7 @@ function Sent({ leads, onOpen }: { leads: PatientLeadDto[]; onOpen: () => void }
           <Badge label={LEAD_STATUS_LABEL[lead.status]} tone="info" />
         </Card>
       ))}
+      <PushPrompt />
       <Button label="Gå til Mine sager" onPress={onOpen} />
     </>
   );
