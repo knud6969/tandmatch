@@ -84,6 +84,7 @@ export function AccountScreen() {
             <>
               <Text style={styles.heading}>{me.displayName ? `Hej ${me.displayName}` : "Din konto"}</Text>
               <Profile />
+              <Button label="Gemte klinikker" variant="secondary" onPress={() => router.push("/favoritter")} />
               {push.hasProjectId && push.permission !== null ? (
                 <PushSettingsRow
                   permission={push.permission}
