@@ -11,9 +11,11 @@ import {
   BOOKING_NOT_RESCHEDULABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
   GENERIC_ERROR_TEXT,
+  INVALID_STATUS_TRANSITION_TEXT,
   LEAD_NOT_ACCEPTED_TEXT,
   MESSAGE_LIMIT_TEXT,
   NO_SHOW_WINDOW_CLOSED_TEXT,
+  REASON_REQUIRED_TEXT,
   REVIEW_NOT_ALLOWED_TEXT,
   SLOT_TAKEN_TEXT,
   SLOT_UNAVAILABLE_TEXT,
@@ -341,3 +343,8 @@ export const reviewNotAllowed = () => new ApiError(403, "REVIEW_NOT_ALLOWED", RE
 export const alreadyReviewed = () => conflict("ALREADY_REVIEWED", ALREADY_REVIEWED_TEXT);
 
 export const alreadyReplied = () => conflict("ALREADY_REPLIED", ALREADY_REPLIED_TEXT);
+
+// Admin (features/admin 10.14): klinikstatus og moderation.
+export const invalidStatusTransition = () => conflict("INVALID_STATUS_TRANSITION", INVALID_STATUS_TRANSITION_TEXT);
+
+export const reasonRequired = () => new ApiError(400, "REASON_REQUIRED", REASON_REQUIRED_TEXT);

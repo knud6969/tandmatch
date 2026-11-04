@@ -49,7 +49,9 @@ for _ in $(seq 1 90); do
   sleep 1
 done
 
-node --test --test-reporter=spec --test-concurrency=1 features/*/__tests__/api/*.test.ts platform/__tests__/api/*.test.ts
+# Uden argumenter køres alle API-testene; med argumenter (fx `npm run test:api -- features/clinics/__tests__/api/stats.test.ts`) kun disse filer.
+if [ $# -gt 0 ]; then FILES=("$@"); else FILES=(features/*/__tests__/api/*.test.ts platform/__tests__/api/*.test.ts); fi
+node --test --test-reporter=spec --test-concurrency=1 "${FILES[@]}"
 STATUS=$?
 [ $STATUS -ne 0 ] && echo "Serverlog: $LOG" >&2
 exit $STATUS

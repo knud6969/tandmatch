@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { cleanup, expectNoHorizontalScroll, verifiedClinic } from "./helpers/inbox";
 
-// Klinikkens fire faner (features/clinics/README.md 6.3, 2026-10-24): Klinikprofil er aktiv på opsætningssiderne, som har en
+// Klinikkens fem faner (features/clinics/README.md 6.3, 2026-10-24): Klinikprofil er aktiv på opsætningssiderne, som har en
 // lokal undernavigation; den aktive fane er synlig uden rulning; logoet fører til /klinik. Kører i 390 og 1280 px.
 
 test.describe("områdefaner", () => {
@@ -14,7 +14,7 @@ test.describe("områdefaner", () => {
     try {
       await page.goto("/klinik/tandlaeger");
       const nav = page.getByRole("navigation", { name: "Områdenavigation" });
-      await expect(nav.getByRole("link")).toHaveText(["Henvendelser", "Kalender", "Anmeldelser", "Klinikprofil"]);
+      await expect(nav.getByRole("link")).toHaveText(["Henvendelser", "Kalender", "Anmeldelser", "Statistik", "Klinikprofil"]);
       // ratio 0.99: scrollIntoView runder scrollLeft til hele pixels, så fanen kan mangle en brøkdel af en pixel.
       const tab = nav.getByRole("link", { name: "Klinikprofil", exact: true });
       await expect(tab).toHaveAttribute("aria-current", "page");

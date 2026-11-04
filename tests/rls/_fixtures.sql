@@ -77,6 +77,16 @@ begin
   return v_id;
 end $$;
 
+-- Admin-bruger (signup-triggeren opretter kun patient/klinik; scripts/create-admin.ts gør det samme som her).
+create function tt.mk_admin(p_name text default 'admin') returns uuid language plpgsql as $$
+begin
+  insert into auth.users (id, email, is_anonymous, raw_user_meta_data)
+  values (tt.id(p_name), p_name || '@test.invalid', false, '{"role":"patient","first_name":"Admin"}');
+  delete from public.patients where id = tt.id(p_name);
+  update public.profiles set role = 'admin' where id = tt.id(p_name);
+  return tt.id(p_name);
+end $$;
+
 grant execute on all functions in schema tt to public;
 
 -- ---------------------------------------------------------------------------------------------------------

@@ -23,7 +23,26 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "ai_anon_user_usage_daily": {
+            "admin_actions": {
+                  Row: {
+                    "action": string,"admin_id": string | null,"created_at": string,"from_value": string,"id": string,"reason": string | null,"target_id": string,"to_value": string
+                  }
+                  Insert: {
+                    "action": string,"admin_id"?: string | null,"created_at"?: string,"from_value": string,"id"?: string,"reason"?: string | null,"target_id": string,"to_value": string
+                  }
+                  Update: {
+                    "action"?: string,"admin_id"?: string | null,"created_at"?: string,"from_value"?: string,"id"?: string,"reason"?: string | null,"target_id"?: string,"to_value"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "admin_actions_admin_id_fkey"
+      columns: ["admin_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"ai_anon_user_usage_daily": {
                   Row: {
                     "calls": number,"day": string,"user_id": string
                   }
@@ -883,7 +902,16 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "admin_set_clinic_status":
+            "admin_change_clinic_status":
+{ Args: { "p_clinic_id": string,"p_reason"?: string,"p_status": Database["public"]['Enums']["clinic_status"] }; Returns: Database["public"]['Enums']["clinic_status"]
+                           },
+"admin_clean_reason":
+{ Args: { "p_reason": string }; Returns: string
+                           },
+"admin_moderate":
+{ Args: { "p_id": string,"p_kind": string,"p_reason"?: string,"p_status": Database["public"]['Enums']["moderation_status"] }; Returns: Database["public"]['Enums']["moderation_status"]
+                           },
+"admin_set_clinic_status":
 { Args: { "p_clinic_id": string,"p_status": Database["public"]['Enums']["clinic_status"] }; Returns: undefined
                            },
 "ai_limit":
@@ -912,6 +940,9 @@ isOneToOne: false
       } },
 "approve_summary":
 { Args: { "p_ai_assisted"?: boolean,"p_case_id": string,"p_summary_text": string }; Returns: string
+                           },
+"assert_admin":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "assert_slot_bookable":
 { Args: { "p_clinic_id": string,"p_ends_at": string,"p_service_id": string,"p_starts_at": string }; Returns: undefined
@@ -986,6 +1017,11 @@ isOneToOne: false
 "clinic_reviews":
 { Args: Record<PropertyKey, never>; Returns: {
               "actual_price": number,"created_at": string,"lacked_transparency": boolean,"price_accuracy": Database["public"]['Enums']["price_accuracy"],"reply_created_at": string,"reply_id": string,"reply_status": Database["public"]['Enums']["moderation_status"],"reply_text": string,"review_id": string,"stars": number,"text": string,"transparency_comment": string
+            }[]
+                           },
+"clinic_stats":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "answered_within_24h": number,"bookings_cancelled_by_clinic": number,"bookings_cancelled_by_patient": number,"bookings_completed": number,"bookings_no_show": number,"bookings_upcoming": number,"leads_accepted": number,"leads_declined": number,"leads_emergency": number,"leads_pending": number,"leads_total": number,"leads_with_booking": number,"leads_withdrawn_unanswered": number,"median_response_minutes": number
             }[]
                            },
 "close_case":

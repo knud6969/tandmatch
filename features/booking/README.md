@@ -103,7 +103,7 @@ Vises kun ved `n_total >= 3` sammen med fordelingen. Beregnes i databasen (`publ
 
 ### 8.5 Moderation
 
-- Nye anmeldelser og svar er `pending` og ikke offentlige, før admin godkender. Seed-anmeldelser er forhåndsgodkendte. Adminsiden er [IKKE BYGGET]; indtil da godkendes manuelt i databasen. **Planlagt (2026-11-04), PR C:** moderation på `/admin/moderation` via `admin_moderate()` (`features/admin/README.md` 6.4, 10.14); reglerne nedenfor er uændrede.
+- Nye anmeldelser og svar er `pending` og ikke offentlige, før admin godkender. Seed-anmeldelser er forhåndsgodkendte. Adminsiden er [IKKE BYGGET]; indtil da godkendes manuelt i databasen. **Bygget (2026-11-04), PR C:** moderation på `/admin/moderation` via `admin_moderate()` (`features/admin/README.md` 6.4, 10.14); reglerne nedenfor er uændrede.
 - Afvisning ved personoplysninger om andre, injurier, helbredsoplysninger om tredjemand eller irrelevant indhold, med `rejection_reason`.
 - Patienten kan ikke redigere en anmeldelse; sletning er [IKKE BYGGET].
 - Et afvist klinik-svar vises for klinikken som "Afvist" med begrundelse (`rejection_reason`), og klinikken kan ikke svare igen (ét svar pr. anmeldelse). [PROTOTYPE] Før drift: mulighed for at rette et afvist svar.

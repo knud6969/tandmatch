@@ -36,6 +36,10 @@ export const LEAD_NOT_ACCEPTED_TEXT = "Klinikken har ikke accepteret din henvend
 export const ALREADY_REVIEWED_TEXT = "Du har allerede anmeldt dette besøg.";
 export const ALREADY_REPLIED_TEXT = "Du har allerede svaret på denne anmeldelse. Genindlæs siden for at se svaret.";
 
+// Admin (features/admin 10.14).
+export const INVALID_STATUS_TRANSITION_TEXT = "Klinikkens status kan ikke ændres på den måde. Genindlæs siden for at se den nyeste status.";
+export const REASON_REQUIRED_TEXT = "Skriv en begrundelse, når du afviser.";
+
 // Adgangskode og login-e-mail (identity 10.2).
 export const INVALID_CURRENT_PASSWORD_TEXT = "Den nuværende adgangskode er forkert.";
 export const SAME_PASSWORD_TEXT = "Den nye adgangskode skal være en anden end den nuværende.";
@@ -108,6 +112,8 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   FAVORITE_LIMIT: FAVORITE_LIMIT_TEXT,
   ALREADY_REVIEWED: ALREADY_REVIEWED_TEXT,
   ALREADY_REPLIED: ALREADY_REPLIED_TEXT,
+  INVALID_STATUS_TRANSITION: INVALID_STATUS_TRANSITION_TEXT,
+  REASON_REQUIRED: REASON_REQUIRED_TEXT,
   CLAIM_INVALID: "Din tidligere samtale kunne ikke hentes over på kontoen. Den kan være udløbet eller allerede overført.",
   NOT_ANONYMOUS: "Der er ingen anonym samtale at overføre.",
   INVALID_CURRENT_PASSWORD: INVALID_CURRENT_PASSWORD_TEXT,

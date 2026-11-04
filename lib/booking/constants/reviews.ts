@@ -17,6 +17,14 @@ export const MODERATION_LABEL = {
   rejected: "Afvist",
 } as const satisfies Record<(typeof MODERATION_STATUSES)[number], string>;
 
+// Hurtigvalg til begrundelsen, når admin afviser en anmeldelse eller et svar (architecture 8.5, features/admin 6.4).
+export const MODERATION_REJECTION_REASONS = [
+  "Personoplysninger om andre",
+  "Injurierende indhold",
+  "Helbredsoplysninger om andre",
+  "Irrelevant indhold",
+] as const;
+
 // Prisnøjagtighed vises først fra så mange godkendte anmeldelser (SQL: public_clinic_review_stats_many, 8.3).
 export const MIN_REVIEWS_FOR_PRICE_ACCURACY = 3;
 
