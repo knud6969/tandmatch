@@ -47,6 +47,7 @@ insert into public.favorite_clinics (patient_id, clinic_id)
 select tt.id('pA'), k.id from public.clinics k where k.cvr like '200000__' or k.cvr like '20000___' limit 198;
 select tt.eq((select count(*)::int from public.favorite_clinics where patient_id = tt.id('pA')), 200, 'pA har 200');
 select tt.as_user(tt.id('pA'));
+select tt.allowed(format('insert into public.favorite_clinics (patient_id, clinic_id) values (%L, %L) on conflict do nothing', tt.id('pA'), tt.cid('I')), 'en allerede gemt klinik kan gemmes igen ved loftet');
 select tt.denied(format('insert into public.favorite_clinics (patient_id, clinic_id) values (%L, %L)', tt.id('pA'), tt.cid('Z')), 'den 201. afvises', 'FAVORITE_LIMIT');
 select tt.allowed(format('delete from public.favorite_clinics where patient_id = %L and clinic_id = %L', tt.id('pA'), tt.cid('X')), 'pA fjerner en');
 select tt.allowed(format('insert into public.favorite_clinics (patient_id, clinic_id) values (%L, %L)', tt.id('pA'), tt.cid('Z')), 'plads igen efter sletning');

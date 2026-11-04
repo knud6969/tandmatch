@@ -7,3 +7,4 @@ export * from "./clinicLocationService";
 export * from "./clinicsRepository";
 export * from "./publicMediaStorage";
 export * from "./servicesRepository";
+export * from "./favoritesRepository";

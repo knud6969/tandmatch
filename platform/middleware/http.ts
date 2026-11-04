@@ -6,6 +6,7 @@ import {
   API_ERROR_TEXTS,
   ALREADY_REVIEWED_TEXT,
   BOOKING_LIMIT_TEXT,
+  FAVORITE_LIMIT_TEXT,
   BOOKING_NOT_CANCELLABLE_TEXT,
   BOOKING_NOT_RESCHEDULABLE_TEXT,
   CLINIC_NOT_VERIFIED_TEXT,
@@ -235,6 +236,15 @@ export async function readImageForm<T>(
   return { file, fields: parsed.data };
 }
 
+// Validerer stiparametre med zod: 400 VALIDATION_ERROR med skemaets første tekst (til ruter, hvor et ugyldigt id er inputfejl).
+export function parseParams<T>(schema: ZodType<T>, raw: unknown): T {
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ApiError(400, "VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Ugyldige oplysninger. Tjek felterne og prøv igen.");
+  }
+  return parsed.data;
+}
+
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 // Ugyldigt id og manglende id giver 404 (architecture 2.4: vi skelner ikke, for ikke at lække eksistens).
@@ -270,6 +280,7 @@ export const ACCOUNT_REQUIRED_MESSAGES = {
   withdrawLead: "Opret en konto for at trække en henvendelse tilbage.",
   bookSlot: "Opret en konto for at booke en tid.",
   emergencyLead: "Opret en konto for at bestille en akuttid.",
+  favorites: "Opret en konto for at gemme klinikker.",
 } as const;
 
 export const accountRequired = (message: string) => new ApiError(403, "ACCOUNT_REQUIRED", message);
@@ -314,6 +325,9 @@ export const slotUnavailable = () => conflict("SLOT_UNAVAILABLE", SLOT_UNAVAILAB
 
 // Leadet har nået loftet på bookinger (architecture 7.6).
 export const bookingLimit = () => conflict("BOOKING_LIMIT", BOOKING_LIMIT_TEXT);
+
+// Patienten har gemt det højeste antal klinikker (clinics 10.17).
+export const favoriteLimit = () => new ApiError(429, "FAVORITE_LIMIT", FAVORITE_LIMIT_TEXT);
 
 export const bookingNotCancellable = () => conflict("BOOKING_NOT_CANCELLABLE", BOOKING_NOT_CANCELLABLE_TEXT);
 
