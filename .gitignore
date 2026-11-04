@@ -51,3 +51,6 @@ supabase/.temp/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Agenternes midlertidige git-worktrees (Claude Code)
+.claude/worktrees/
