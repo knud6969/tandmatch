@@ -12,7 +12,7 @@ Forkortet 2026-10-22 efter omlægningen til `features/`. Den fulde plan for trin
 | Oprydning | Patientsiderne på weben fjernet; koden flyttet fra lag til `features/<domæne>/` med grænser i lint (`docs/oprydning-features.md`) | Færdigt 2026-10-22 |
 | 9 | Appen klar til aflevering: forside, chat der altid fører videre, "klinikker der kan hjælpe", demoprofiler | Planlagt (nedenfor) |
 | 10 | Klinik-web og app spiller sammen: Mine sager, booking, beskeder, akut i appen; egne behandlinger | Planlagt, efter afleveringen |
-| 11 | Notifikationer (PR A), flyt tid, kalender og favoritter (PR B), klinikkens statistik og admin (PR C) | Planlagt 2026-11-04 (nedenfor). PR A: server, database og `lib/` bygget (11.1-11.6, inkl. web push til klinik-weben); 11.7-11.8 mangler |
+| 11 | Notifikationer (PR A), flyt tid, kalender og favoritter (PR B), klinikkens statistik og admin (PR C) | Planlagt 2026-11-04 (nedenfor). PR A: server, database og `lib/` bygget (11.1-11.6, inkl. web push til klinik-weben); 11.7 bygget (web); 11.8 bygget i koden, men `expo-notifications` skal installeres (`npx expo install expo-notifications`) |
 
 ## Tilbage i appen (trin 8)
 
