@@ -21,11 +21,11 @@ select tt.as_postgres();
 insert into public.favorite_clinics (patient_id, clinic_id) values (tt.id('pA'), tt.cid('X'));
 insert into public.reviews (booking_id, stars, text, price_accuracy)
 values (tt.booking(tt.lead('A_done', 'X')), 4, 'Fin behandling og klar kommunikation om prisen.', 'as_quoted');
-select set_config('tt.review', (select id::text from public.reviews limit 1), true);
+select set_config('tt.review', (select id::text from public.reviews where booking_id = tt.booking(tt.lead('A_done', 'X'))), true);
 update public.reviews set moderation_status = 'approved' where id = current_setting('tt.review')::uuid;
 insert into public.review_replies (review_id, text) values (current_setting('tt.review')::uuid, 'Tak for din anmeldelse.');
 update public.reviews set moderation_status = 'pending' where id = current_setting('tt.review')::uuid;
-select set_config('tt.reply', (select id::text from public.review_replies limit 1), true);
+select set_config('tt.reply', (select id::text from public.review_replies where review_id = current_setting('tt.review')::uuid), true);
 
 -- Ikke-admin kan ikke kalde funktionerne.
 select tt.as_user(tt.id('pA'));
@@ -110,7 +110,7 @@ select tt.denied(format('update public.review_replies set moderation_status = ''
 -- Admin ser det, den skal: klinikker, anmeldelser og svar i alle statusser (ingen patient-id i DTO'en er et API-spørgsmål).
 select tt.ok(tt.vis('select 1 from public.clinics') >= 13, 'admin ser klinikker');
 select tt.rows(format('select 1 from public.reviews where id = %L', current_setting('tt.review')), 1, 'admin ser anmeldelsen');
-select tt.rows('select 1 from public.review_replies', 1, 'admin ser svaret');
+select tt.rows(format('select 1 from public.review_replies where id = %L', current_setting('tt.reply')), 1, 'admin ser svaret');
 
 -- Admin kan stadig ikke læse patienternes eller leadenes data
 select tt.rows('select 1 from public.cases', 0, 'admin ser ingen sager');
