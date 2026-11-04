@@ -902,7 +902,7 @@ isOneToOne: false
                            },
 "claim_notifications":
 { Args: { "p_limit"?: number }; Returns: {
-              "attempts": number,"channel": Database["public"]['Enums']["notification_channel"],"id": string,"payload": Json,"push_tokens": (string)[],"to_email": string,"type": Database["public"]['Enums']["notification_type"],"web_push_subscriptions": Json
+              "attempts": number,"channel": Database["public"]['Enums']["notification_channel"],"clinic_id": string,"id": string,"payload": Json,"push_tokens": (string)[],"recipient_user_id": string,"to_email": string,"type": Database["public"]['Enums']["notification_type"],"web_push_subscriptions": Json
             }[]
                            },
 "clinic_booking":

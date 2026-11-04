@@ -44,7 +44,7 @@ const otherDomainsExceptUi = (d) => `^@/features/(?!${d}(?:/|$))[a-z]+(?:/(?!ui$
 // Domænets egen serverkode, både med @/-sti og relativt (fx i ui.ts).
 const ownServerCode = (d) => `^(?:@/features/${d}/|\./)(?:ai/.*|[^/]*(?:Repository|Storage|Controller|Service))$`;
 const SERVER_ONLY =
-  "^(?:@/platform/(?:db|base|middleware)/|@/platform/[^/]*(?:Repository|cronController|imageProcessingService)$|@supabase/)";
+  "^(?:@/platform/(?:db|base|middleware|notifications)/|@/platform/[^/]*(?:Repository|cronController|imageProcessingService)$|@supabase/)";
 const ANY_FEATURE_EXCEPT_UI = "^@/features/[a-z]+(?:/(?!ui$).*)?$";
 const ANY_CONTROLLER = "^(?:\\./|@/features/[a-z]+/)[^/]*Controller$";
 const ANY_SERVICE = "^(?:\\./|@/features/[a-z]+/)[^/]*Service$";
@@ -100,10 +100,11 @@ const layerRules = [
       "^@/features/[a-z]+/(?:ai/.*|ui|[^/]*(?:Repository|Storage|Service)|components/.*|pages/.*|utils/.*)$",
       "^@/platform/db/(?!supabase$)",
       "^@/platform/base/",
+      "^@/platform/notifications/(?!notificationController$)",
       "^@/platform/[^/]*(?:Repository|imageProcessingService)$",
       "^@supabase/",
     ],
-    "Routes kalder én controller og bruger platform/middleware. Supabase kaldes kun i repositories.",
+    "Routes kalder én controller og bruger platform/middleware. Supabase kaldes kun i repositories. Fra platform/notifications må routes kun importere notificationController.",
   ),
   // platform/ er tværgående og kender ingen domæner (undtagen cron og session-/vilkårsvagten, se nedenfor).
   layer(

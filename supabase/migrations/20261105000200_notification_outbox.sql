@@ -366,7 +366,7 @@ create trigger bookings_notify_status
 create function public.claim_notifications(p_limit integer default 20)
 returns table (
   id uuid, type public.notification_type, channel public.notification_channel, payload jsonb, attempts smallint,
-  to_email text, push_tokens text[], web_push_subscriptions jsonb
+  clinic_id uuid, recipient_user_id uuid, to_email text, push_tokens text[], web_push_subscriptions jsonb
 )
 language plpgsql security definer set search_path = ''
 as $$
@@ -393,7 +393,7 @@ begin
      where o.id = picked.id
     returning o.*
   )
-  select u.id, u.type, u.channel, u.payload, u.attempts,
+  select u.id, u.type, u.channel, u.payload, u.attempts, u.clinic_id, u.recipient_user_id,
          -- E-mail: den nuværende ejers login-e-mail, kun for en verificeret klinik og et lead sendt efter ejerskabet.
          case when u.channel = 'email' then (
            select au.email::text
