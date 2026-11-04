@@ -1,10 +1,10 @@
 # Admin (`features/admin`)
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Bygges i trin 11, PR C (`docs/arbejdsplan.md`). Domænet dækker admins sider på weben: klinikkernes status og moderation af anmeldelser og klinikkers svar. Rollen `admin` og `is_admin()` findes allerede (identity 3, platform 5.2).
+**Bygget (2026-11-04)** i trin 11, PR C (`docs/arbejdsplan.md`); review, security og test mangler. Domænet dækker admins sider på weben: klinikkernes status og moderation af anmeldelser og klinikkers svar. Rollen `admin` og `is_admin()` findes allerede (identity 3, platform 5.2).
 
 - **Server:** `*Controller.ts`, `*Repository.ts`, direkte i mappen.
 - **Web-UI:** `components/`, `pages/` (som `app/admin/**` videresender til).
-- **Grænseflade:** `index.ts` (tom i starten; ingen andre domæner bruger admin) og `ui.ts` (tom).
+- **Grænseflade:** `index.ts` (tom i starten; ingen andre domæner bruger admin) og `ui.ts` (tom). Afvigelse: `features/booking/ui.ts` eksporterer også `MODERATION_TONE` (`utils/review-status.ts`), så adminsiden genbruger tonerne i stedet for at kopiere dem. Controllerne tjekker `session.role === "admin"` i constructoren (forsvar i dybden).
 - **Tests:** `__tests__/` (unit) og `__tests__/api/` (API).
 - **Lint:** `admin` tilføjes til `DOMAINS` i `eslint.config.mjs`, så domænegrænserne (architecture 2.1) også gælder her.
 
@@ -16,7 +16,7 @@ Afsnitsnumrene følger oversigten (`docs/architecture.md` 0.2). 6.4 og 10.14 er 
 
 Uændret fra identity 3: admin ser og ændrer klinikstatus og modererer anmeldelser og svar. Admin har **ingen** adgang til sager, chat, billeder, leads, bookinger, beskeder, notifikationer eller push-tokens (dataminimering), og ingen DTO til admin indeholder `patient_id`, patientens navn eller kontaktoplysninger. Alle skrivninger sker via `security definer`-funktioner, der selv tjekker `is_admin()`; UI og API er ikke grænsen.
 
-**Oprettelse af en admin** (gøres af brugeren): `npm run admin:create -- --email <e-mail>` (`scripts/create-admin.ts`, service role, 2.3 h) opretter en bruger med en tilfældig adgangskode og `role = 'patient'` i metadata (signup-triggeren accepterer kun `patient`/`clinic`), sætter derefter `profiles.role = 'admin'` og sletter `patients`-rækken, og udskriver kun, at det lykkedes (adgangskoden sættes via "Glemt adgangskode" på `/login`). Scriptet nægter at køre mod det fælles projekt uden `--allow-remote` (som seed-scriptet).
+**Oprettelse af en admin** (gøres af brugeren): `npm run admin:create -- --email <e-mail>` (`scripts/create-admin.ts`, service role, 2.3 h) opretter en bruger med en tilfældig adgangskode og `role = 'patient'` i metadata (signup-triggeren accepterer kun `patient`/`clinic`), sætter derefter `profiles.role = 'admin'` og sletter `patients`-rækken, og udskriver kun, at det lykkedes (adgangskoden sættes via "Glemt adgangskode" på `/login`). Scriptet bruger miljøet i `.env.test.local` (lokal Supabase) og nægter en ikke-lokal URL uden `--allow-remote` (samme vagt som seed-scriptet, `readConfig()`); mod et fælles projekt køres det med det ønskede miljø og `--allow-remote`. Eksisterende e-mail giver en fejl.
 
 ## 4. Datamodel
 
@@ -63,14 +63,14 @@ Platform 5.6 punkt 60 (fil `tests/rls/65_admin.sql`).
 
 | Route | Indhold |
 |---|---|
-| `/admin/moderation` | To faner: **Anmeldelser** og **Klinikkers svar**. Filter: **Afventer** (standard), Godkendt, Afvist. Ét kort pr. element, ældste først: klinikkens navn, dato, for anmeldelser stjerner, tekst, prisnøjagtighed, evt. faktisk pris og gennemsigtighedskommentar; for svar svarets tekst og et uddrag af anmeldelsen (højst 200 tegn). Knapperne "Godkend" og "Afvis". "Afvis" åbner et felt til begrundelsen med fire hurtigvalg (`MODERATION_REJECTION_REASONS`: "Personoplysninger om andre", "Injurierende indhold", "Helbredsoplysninger om andre", "Irrelevant indhold", 8.5) og fri tekst; begrundelsen vises for patienten eller klinikken. Efter en handling forsvinder kortet fra filteret med kvitteringen "Godkendt" / "Afvist". Tom kø: "Der er intet at moderere." Ingen patientnavne eller -id'er |
+| `/admin/moderation` | To faner: **Anmeldelser** og **Klinikkers svar**. Filter: **Afventer** (standard), Godkendt, Afvist. Ét kort pr. element, ældste først: klinikkens navn, dato, for anmeldelser stjerner, tekst, prisnøjagtighed, evt. faktisk pris og gennemsigtighedskommentar; for svar svarets tekst og et uddrag af anmeldelsen (højst 200 tegn). Knapperne "Godkend" og "Afvis". "Afvis" åbner et felt til begrundelsen med fire hurtigvalg (`MODERATION_REJECTION_REASONS`, defineret i `lib/booking/constants/reviews.ts` og genbrugt via `lib/admin/constants/admin.ts`: "Personoplysninger om andre", "Injurierende indhold", "Helbredsoplysninger om andre", "Irrelevant indhold", 8.5) og fri tekst; begrundelsen vises for patienten eller klinikken. Efter en handling forsvinder kortet fra filteret med kvitteringen "Godkendt" / "Afvist". Tom kø: "Der er intet at moderere." Ingen patientnavne eller -id'er |
 | `/admin/klinikker` | Søgefelt (navn, by eller CVR) og filter på status (Alle, Verificeret, Oprettet, Importeret, Fjernet; labels fra `CLINIC_STATUS_LABEL`). Tabel/liste: navn, postnummer og by, CVR, status, "har konto" (ja/nej), verificeret dato. Handlinger: "Verificér" (kun `registered`) og "Sæt på pause" (kun `verified`). Begge kræver bekræftelse med valgfri begrundelse; "Sæt på pause" viser konsekvensen (`CLINIC_PAUSE_CONSEQUENCE`): "Klinikken forsvinder fra oversigten og kan hverken modtage eller se henvendelser og bookinger, før den bliver verificeret igen. Patienternes henvendelser bliver liggende." Højst 200 rækker; ingen sidevisning [PROTOTYPE] |
 
 ## 10. API-kontrakter
 
 ### 10.14 Admin
 
-Alle routes: `requireTerms()` og `requireRole(["admin"])`; andre roller får 403 `FORBIDDEN`, anonyme 403 `ANONYMOUS_NOT_ALLOWED`, uden session 401. Ingen service role.
+Alle routes: `requireTerms()` og `requireRole(["admin"])`; andre roller får 403 `FORBIDDEN`, anonyme 403 `FORBIDDEN` (rollen tjekkes før anonym-tjekket; anonyme har rollen patient), uden session 401. Ingen service role.
 
 ```ts
 // lib/admin/types/admin.ts
