@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import {
+  CONSENT_SAVE_FAILED_TEXT,
+  GENERIC_ERROR_TEXT,
+  IMAGE_OPEN_FAILED_TEXT,
+  IMAGE_PERMISSION_TEXT,
+  IMAGE_PREPARE_FAILED_TEXT,
+  IMAGE_TOO_LARGE_TEXT,
+} from "@/lib/common/constants/error-texts";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import type { ImageDto } from "@/lib/common/types/common";
 import { getConsents, grantConsent } from "~/api/consents";
@@ -13,8 +21,6 @@ import { prepareForUpload } from "~/utils/prepare-upload";
 
 export type ImageSource = "camera" | "library";
 
-const SIZE_TEXT = "Billedet er for stort. Prøv et andet billede.";
-const PERMISSION_TEXT = "TandMatch har ikke adgang. Du kan give adgang under Indstillinger på telefonen.";
 
 // Billeder i chatten (architecture 9.3, 9.4): samtykke først, derefter tag/vælg, komprimér og upload. Intet uploades uden samtykke.
 // Når en upload-batch er færdig (mindst ét billede gemt, ingen i gang), kaldes onBatchUploaded: så starter billedturen (7.9c).
@@ -99,7 +105,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         if (!withinSizeLimit(file.bytes)) {
           prepared.current.set(key, file.uri);
           cleanup(key);
-          patch(key, { status: "failed", error: SIZE_TEXT });
+          patch(key, { status: "failed", error: IMAGE_TOO_LARGE_TEXT });
           settle(false);
           return;
         }
@@ -107,7 +113,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         settle(await send(key, file.uri, uploadedCount));
       } catch {
         cleanup(key);
-        patch(key, { status: "failed", error: "Billedet kunne ikke gøres klar. Prøv et andet billede." });
+        patch(key, { status: "failed", error: IMAGE_PREPARE_FAILED_TEXT });
         settle(false);
       }
     },
@@ -126,7 +132,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         if (source === "camera") {
           const permission = await ImagePicker.requestCameraPermissionsAsync();
           if (!permission.granted) {
-            setNotice(PERMISSION_TEXT);
+            setNotice(IMAGE_PERMISSION_TEXT);
             return;
           }
           result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1, exif: false });
@@ -137,7 +143,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         // Højst så mange, som der er plads til; resten ignoreres.
         for (const asset of result.assets.slice(0, left)) void handleAsset(asset);
       } catch {
-        setNotice("Billedet kunne ikke åbnes. Prøv igen.");
+        setNotice(IMAGE_OPEN_FAILED_TEXT);
       }
     },
     [handleAsset, left],
@@ -152,7 +158,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
         if (hasCurrentConsent(consents, "image_upload")) await pick(source);
         else setAwaitingConsent(source);
       } catch (error) {
-        setNotice(error instanceof Error ? error.message : "Prøv igen om lidt.");
+        setNotice(error instanceof Error ? error.message : GENERIC_ERROR_TEXT);
       }
     },
     [pick],
@@ -176,7 +182,7 @@ export function useChatImages(caseId: string, uploaded: readonly ImageDto[], onC
       setAwaitingConsent(null);
       await pick(source);
     } catch (error) {
-      setConsentError(error instanceof Error ? error.message : "Samtykket kunne ikke gemmes. Prøv igen.");
+      setConsentError(error instanceof Error ? error.message : CONSENT_SAVE_FAILED_TEXT);
     } finally {
       setConsentPending(false);
     }

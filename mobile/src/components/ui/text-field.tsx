@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TextInput, type TextInputProps, View } from "react-native";
+import { FieldError } from "./field-error";
 import { colors, fontSize, MIN_TOUCH, radius, spacing } from "~/theme";
 
 type Props = Omit<TextInputProps, "style"> & { label: string; error?: string | null };
@@ -14,7 +15,7 @@ export function TextField({ label, error, ...input }: Props) {
         style={[styles.input, input.multiline ? styles.multiline : null, error ? styles.inputError : null]}
         {...input}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <FieldError message={error} /> : null}
     </View>
   );
 }
@@ -35,5 +36,4 @@ const styles = StyleSheet.create({
   // Flerlinjet felt: højere, med teksten fra toppen.
   multiline: { minHeight: 120, paddingVertical: spacing.md, textAlignVertical: "top" },
   inputError: { borderColor: colors.dangerLine },
-  error: { fontSize: fontSize.sm, color: colors.dangerInk },
 });

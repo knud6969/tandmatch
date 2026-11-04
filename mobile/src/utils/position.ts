@@ -1,4 +1,5 @@
 import * as Location from "expo-location";
+import { POSITION_FAILED_APP_TEXT } from "@/lib/common/constants/error-texts";
 import { roundPosition } from "@/lib/common/domain/position";
 
 export type Position = { lat: number; lng: number };
@@ -6,7 +7,7 @@ export type Position = { lat: number; lng: number };
 // Fejl med en dansk tekst, der kan vises direkte til patienten.
 export class PositionError extends Error {}
 
-const FAILED = "Vi kunne ikke få din position. Tjek tilladelsen i Indstillinger, eller skriv dit postnummer i stedet.";
+const FAILED = POSITION_FAILED_APP_TEXT;
 
 // "Brug min position" (architecture 6.1, 13.5): positionen afrundes til ca. 1 km og gemmes aldrig.
 export async function getRoundedPosition(): Promise<Position> {

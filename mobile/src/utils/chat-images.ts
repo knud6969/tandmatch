@@ -1,3 +1,4 @@
+import { API_ERROR_TEXTS, IMAGE_TOO_LARGE_TEXT, IMAGE_UPLOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { MAX_IMAGES_PER_CASE, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/common/constants/limits";
 import { IMAGE_QUALITY_LABELS } from "@/lib/cases/constants/ai-texts";
 import { IMAGE_QUALITIES } from "@/lib/cases/constants/ai";
@@ -11,7 +12,6 @@ import { errorCodeOf } from "./chat-turn";
 export const UPLOAD_MAX_EDGE = 1600;
 export const UPLOAD_JPEG_QUALITY = 0.7;
 
-export const IMAGE_UPLOAD_FAILED_TEXT = "Billedet blev ikke sendt. Prøv igen.";
 
 // Resize-handlingen til expo-image-manipulator: kun hvis billedet er større end grænsen, og kun på den længste kant.
 export function resizeFor(width: number, height: number, maxEdge: number = UPLOAD_MAX_EDGE): { width: number } | { height: number } | null {
@@ -32,12 +32,12 @@ export function withinSizeLimit(bytes: number, max: number = MAX_IMAGE_UPLOAD_BY
 export function uploadErrorText(error: unknown): string {
   switch (errorCodeOf(error)) {
     case "IMAGE_LIMIT":
-      return `Du kan højst have ${MAX_IMAGES_PER_CASE} billeder pr. sag. Slet et billede for at tilføje et nyt.`;
+      return API_ERROR_TEXTS.IMAGE_LIMIT;
     case "FILE_TOO_LARGE":
     case "PAYLOAD_TOO_LARGE":
-      return "Billedet er for stort. Prøv et andet billede.";
+      return IMAGE_TOO_LARGE_TEXT;
     case "NETWORK":
-      return "Ingen forbindelse. Tjek nettet, og prøv igen.";
+      return API_ERROR_TEXTS.NETWORK;
     default:
       return error instanceof Error && error.message ? error.message : IMAGE_UPLOAD_FAILED_TEXT;
   }

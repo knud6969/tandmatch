@@ -1,4 +1,10 @@
-import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
+import {
+  CHAT_CONSENT_MISSING_TEXT,
+  CHAT_DAILY_CAP_TEXT,
+  CHAT_IMAGE_SAVED_NO_REPLY_TEXT,
+  CHAT_RATE_LIMITED_TEXT,
+  GENERIC_ERROR_TEXT,
+} from "@/lib/common/constants/error-texts";
 import type { ChatTurnResponse, ImageTurnResponse } from "@/lib/cases/types/ai";
 
 // Ren chatlogik uden React og uden netværk (architecture 10.6): hvad en tur gav, og hvad skærmen skal gøre bagefter.
@@ -40,10 +46,10 @@ export type ImageTurnOutcome =
   | { kind: "failed"; code: string | null; message: string; retry: boolean };
 
 export const IMAGE_TURN_TEXTS = {
-  consent: "Samtykket mangler. Giv samtykke, og prøv igen.",
-  rateLimited: "Der er sendt mange beskeder lige nu. Prøv igen om lidt.",
-  anonCap: "AI'en har nået dagens grænse. Prøv igen i morgen.",
-  unavailable: "AI'en svarer ikke lige nu. Billedet er gemt.",
+  consent: CHAT_CONSENT_MISSING_TEXT,
+  rateLimited: CHAT_RATE_LIMITED_TEXT,
+  anonCap: CHAT_DAILY_CAP_TEXT,
+  unavailable: CHAT_IMAGE_SAVED_NO_REPLY_TEXT,
 } as const;
 
 // Oversætter fejlen fra billedturen til et udfald; kaster aldrig.

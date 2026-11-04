@@ -4,6 +4,16 @@ import { colors, spacing } from "~/theme";
 import { Button } from "./button";
 import { StatusMessage } from "./status-message";
 
+// Indlæsningsfejl med "Prøv igen": den ene måde at vise, at noget ikke kunne hentes, eller at en handling kan gentages.
+export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <View style={styles.box}>
+      <StatusMessage message={message} tone="danger" />
+      <Button label="Prøv igen" variant="secondary" onPress={onRetry} />
+    </View>
+  );
+}
+
 type Props<T> = {
   loading: boolean;
   error: string | null;
@@ -14,14 +24,7 @@ type Props<T> = {
 
 // Viser indlæsning, fejl med "Prøv igen" eller indholdet.
 export function LoadState<T>({ loading, error, data, onRetry, children }: Props<T>) {
-  if (error) {
-    return (
-      <View style={styles.box}>
-        <StatusMessage message={error} tone="danger" />
-        <Button label="Prøv igen" variant="secondary" onPress={onRetry} />
-      </View>
-    );
-  }
+  if (error) return <LoadError message={error} onRetry={onRetry} />;
   if (loading || data === null) {
     return (
       <View style={styles.center} accessibilityLabel="Henter">

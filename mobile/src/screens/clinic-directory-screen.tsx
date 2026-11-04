@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { POSITION_FAILED_APP_TEXT } from "@/lib/common/constants/error-texts";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import { remainingLeadSlots } from "@/lib/leads/domain/leads";
 import { getCase } from "~/api/cases";
@@ -18,7 +19,7 @@ import { OfferingNotice } from "~/components/clinic-directory/offering-notice";
 import { EmergencyNotice } from "~/components/clinic-directory/emergency-notice";
 import { SelectButton } from "~/components/leads/select-button";
 import { ServicePicker } from "~/components/clinic-directory/service-picker";
-import { Button, StatusMessage } from "~/components/ui";
+import { Button, LoadError } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { colors, fontSize, MIN_TOUCH, radius, spacing, type } from "~/theme";
 import {
@@ -121,7 +122,7 @@ export function ClinicDirectoryScreen() {
       const position = await getRoundedPosition();
       change({ position, postalCode: "" });
     } catch (e) {
-      setPositionError(e instanceof PositionError ? e.message : "Vi kunne ikke få din position.");
+      setPositionError(e instanceof PositionError ? e.message : POSITION_FAILED_APP_TEXT);
     } finally {
       setLocating(false);
     }
@@ -189,10 +190,7 @@ export function ClinicDirectoryScreen() {
       ) : null}
       {filters.emergency ? <EmergencyNotice /> : null}
       {clinics.error ? (
-        <>
-          <StatusMessage message={clinics.error} tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={clinics.reload} />
-        </>
+        <LoadError message={clinics.error} onRetry={clinics.reload} />
       ) : null}
       {hasServices ? <OfferingNotice names={serviceNames(filters.serviceSlugs, names)} onlyOffering={onlyOffering} caseMode={Boolean(caseId)} /> : null}
       {view === "list" && origin ? (

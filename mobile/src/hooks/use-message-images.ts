@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import {
+  CONSENT_SAVE_FAILED_TEXT,
+  GENERIC_ERROR_TEXT,
+  IMAGE_OPEN_FAILED_TEXT,
+  IMAGE_PERMISSION_TEXT,
+  IMAGE_PREPARE_FAILED_TEXT,
+  IMAGE_TOO_LARGE_TEXT,
+} from "@/lib/common/constants/error-texts";
 import { MESSAGE_MAX_IMAGES } from "@/lib/common/constants/limits";
 import { hasCurrentConsent } from "@/lib/identity/domain/consents";
 import { getConsents, grantConsent } from "~/api/consents";
@@ -12,8 +20,6 @@ import type { ImageSource } from "~/hooks/use-chat-images";
 // Et valgt billede, der endnu ikke er sendt: den komprimerede fil (sendes) og vælgerens original (slettes sammen med den).
 export type MessageAttachment = { key: string; uri: string; original: string };
 
-const SIZE_TEXT = "Billedet er for stort. Prøv et andet billede.";
-const PERMISSION_TEXT = "TandMatch har ikke adgang. Du kan give adgang under Indstillinger på telefonen.";
 const LIMIT_TEXT = `Du kan højst vedhæfte ${MESSAGE_MAX_IMAGES} billeder pr. besked.`;
 
 // Billeder til en besked i tråden (features/leads/README.md 10.12). Samme vælger og samme samtykke som i chatten (9.4): første
@@ -48,14 +54,14 @@ export function useMessageImages() {
       const file = await prepareForUpload(asset);
       if (!withinSizeLimit(file.bytes)) {
         deleteLocalFiles([file.uri, asset.uri]);
-        setNotice(SIZE_TEXT);
+        setNotice(IMAGE_TOO_LARGE_TEXT);
         return;
       }
       const key = `vedhaeftet-${(counter.current += 1)}`;
       setAttachments((list) => [...list, { key, uri: file.uri, original: asset.uri }]);
     } catch {
       deleteLocalFiles([asset.uri]);
-      setNotice("Billedet kunne ikke gøres klar. Prøv et andet billede.");
+      setNotice(IMAGE_PREPARE_FAILED_TEXT);
     } finally {
       setPreparing((n) => n - 1);
     }
@@ -73,7 +79,7 @@ export function useMessageImages() {
         if (source === "camera") {
           const permission = await ImagePicker.requestCameraPermissionsAsync();
           if (!permission.granted) {
-            setNotice(PERMISSION_TEXT);
+            setNotice(IMAGE_PERMISSION_TEXT);
             return;
           }
           result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1, exif: false });
@@ -84,7 +90,7 @@ export function useMessageImages() {
         // Højst så mange, som der er plads til; resten ignoreres.
         for (const asset of result.assets.slice(0, room)) void addAsset(asset);
       } catch {
-        setNotice("Billedet kunne ikke åbnes. Prøv igen.");
+        setNotice(IMAGE_OPEN_FAILED_TEXT);
       }
     },
     [addAsset, room],
@@ -99,7 +105,7 @@ export function useMessageImages() {
         if (hasCurrentConsent(consents, "image_upload")) await pick(source);
         else setAwaitingConsent(source);
       } catch (error) {
-        setNotice(error instanceof Error ? error.message : "Prøv igen om lidt.");
+        setNotice(error instanceof Error ? error.message : GENERIC_ERROR_TEXT);
       }
     },
     [pick],
@@ -123,7 +129,7 @@ export function useMessageImages() {
       setAwaitingConsent(null);
       if (source !== "retry") await pick(source);
     } catch (error) {
-      setConsentError(error instanceof Error ? error.message : "Samtykket kunne ikke gemmes. Prøv igen.");
+      setConsentError(error instanceof Error ? error.message : CONSENT_SAVE_FAILED_TEXT);
     } finally {
       setConsentPending(false);
     }

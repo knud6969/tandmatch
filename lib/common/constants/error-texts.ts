@@ -123,7 +123,7 @@ export const PAGE_ERROR_TEXT = `Siden kunne ikke vises. ${RETRY_LATER}`;
 // Indlæsning og kontoen i appen.
 export const ACCOUNT_LOAD_FAILED_TEXT = `Vi kunne ikke hente din konto. ${RETRY_LATER}`;
 export const MESSAGES_REFRESH_FAILED_TEXT = `Beskederne kunne ikke opdateres lige nu. ${RETRY_LATER}`;
-export const THREAD_LEAD_NOT_FOUND_TEXT = "Henvendelsen findes ikke på denne sag.";
+export const LEAD_NOT_FOUND_TEXT = "Henvendelsen findes ikke på denne sag.";
 
 // Position ("Brug min position"). Browseren og telefonen har hver sin vej til tilladelsen.
 export const POSITION_FAILED_WEB_TEXT = "Vi kunne ikke få din position. Tjek browserens tilladelser, eller skriv dit postnummer i stedet.";
@@ -137,7 +137,6 @@ export const IMAGE_UPLOAD_FAILED_TEXT = "Billedet blev ikke sendt. Prøv igen.";
 export const IMAGE_TOO_LARGE_TEXT = "Billedet er for stort. Prøv et andet billede.";
 export const IMAGE_PERMISSION_TEXT = "TandMatch har ikke adgang. Du kan give adgang under Indstillinger på telefonen.";
 export const CONSENT_SAVE_FAILED_TEXT = "Samtykket kunne ikke gemmes. Prøv igen.";
-export const NO_CONNECTION_SHORT_TEXT = "Ingen forbindelse. Tjek nettet, og prøv igen.";
 
 // Chatten (billedtur og AI).
 export const CHAT_RATE_LIMITED_TEXT = `Der er sendt mange beskeder lige nu. ${RETRY_LATER}`;
