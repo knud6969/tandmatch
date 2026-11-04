@@ -1,8 +1,9 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import type { ReactNode } from "react";
 import { Text } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSession } from "~/auth/session-context";
-import { Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { Button, Card, LoadError, LoadState, Screen } from "~/components/ui";
 import { type } from "~/theme";
 import { accountGate } from "~/utils/account-gate";
 import { safeReturnTo } from "~/utils/return-to";
@@ -32,10 +33,7 @@ export function AccountRequired({ title, children }: Props) {
           {() => null}
         </LoadState>
       ) : gate === "retry" ? (
-        <>
-          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={reload} />
-        </>
+        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : (
         <Card>
           <Text accessibilityRole="header" style={type.heading}>

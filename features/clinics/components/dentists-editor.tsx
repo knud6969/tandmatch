@@ -22,6 +22,7 @@ import { DENTIST_BIO_MAX_CHARS } from "@/lib/clinics/constants/clinics";
 import { createDentistSchema } from "@/lib/clinics/schemas/clinics";
 import type { DentistDto } from "@/lib/clinics/types/clinics";
 import type { ServiceGroupDto } from "@/lib/clinics/types/services";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type Loaded = { dentists: DentistDto[]; groups: ServiceGroupDto[]; verified: boolean };
 type Field = "fullName" | "title" | "bio";
@@ -81,6 +82,7 @@ function toValues(dentist: DentistDto): DentistValues {
 function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: number; onAdded: (d: DentistDto) => void; hasDentists: boolean }) {
   const [values, setValues] = useState<DentistValues>({ fullName: "", title: "", bio: "" });
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const { busy, message, run } = useAction();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -100,7 +102,7 @@ function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: nu
 
   return (
     <Card>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+      <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <h2 className="text-xl font-semibold text-ink">{hasDentists ? "Tilføj endnu en tandlæge" : "Tilføj den første tandlæge"}</h2>
         <StatusMessage message={message} />
         <TextField label="Navn" name="fullName" autoComplete="off" value={values.fullName} onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))} error={errors.fields.fullName} required />
@@ -127,6 +129,7 @@ function DentistCard({ dentist, groups, verified, onChange, onDeleted }: Dentist
   const [saved, setSaved] = useState(() => toValues(dentist));
   const [values, setValues] = useState(saved);
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const photo = useAction();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const deletion = useAction();
@@ -204,7 +207,7 @@ function DentistCard({ dentist, groups, verified, onChange, onDeleted }: Dentist
       </div>
       <StatusMessage message={photo.message} />
 
-      <form onSubmit={onSave} noValidate className="flex flex-col gap-5">
+      <form ref={formRef} onSubmit={onSave} noValidate className="flex flex-col gap-5">
         <TextField label="Navn" autoComplete="off" value={values.fullName} onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))} error={errors.fields.fullName} required />
         <TextField label="Titel" autoComplete="off" value={values.title} onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))} error={errors.fields.title} />
         <TextArea label="Kort præsentation" maxLength={DENTIST_BIO_MAX_CHARS} value={values.bio} onChange={(e) => setValues((v) => ({ ...v, bio: e.target.value }))} error={errors.fields.bio} className="min-h-24" />

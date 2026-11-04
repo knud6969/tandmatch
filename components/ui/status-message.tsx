@@ -1,12 +1,10 @@
 import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/form-error";
 import type { ActionMessage } from "@/platform/ui-utils/use-action";
 
-// Viser beskeden fra useAction: fejl som alert, succes som status.
+// Viser beskeden fra useAction: fejl som alert (fokus og rul til den), succes som rolig status.
 export function StatusMessage({ message }: { message: ActionMessage | null }) {
   if (!message) return null;
-  return (
-    <Alert tone={message.tone} role={message.tone === "danger" ? "alert" : "status"}>
-      {message.text}
-    </Alert>
-  );
+  if (message.tone === "danger") return <FormError message={message.text} />;
+  return <Alert tone={message.tone}>{message.text}</Alert>;
 }

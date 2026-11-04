@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { FieldError } from "~/components/ui";
 import { colors, MIN_TOUCH, spacing, type } from "~/theme";
 
 type Props = { value: number; onChange: (stars: number) => void; error?: string | null };
@@ -24,7 +25,7 @@ export function StarInput({ value, onChange, error }: Props) {
           </Pressable>
         ))}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <FieldError message={error} /> : null}
     </View>
   );
 }
@@ -34,5 +35,4 @@ const styles = StyleSheet.create({
   label: { ...type.caption, fontWeight: "600", color: colors.ink },
   row: { flexDirection: "row", gap: spacing.xs },
   star: { minWidth: MIN_TOUCH, minHeight: MIN_TOUCH, alignItems: "center", justifyContent: "center" },
-  error: { ...type.caption, color: colors.dangerInk },
 });

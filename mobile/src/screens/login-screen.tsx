@@ -1,3 +1,4 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -5,7 +6,7 @@ import { loginKeepingDraft, logout, type LoginWithDraftResult } from "~/api/auth
 import { CLINIC_ON_WEB_MESSAGE, useSession } from "~/auth/session-context";
 import { SignedInCard } from "~/components/auth/signed-in-card";
 import { LoginForm } from "~/components/auth/login-form";
-import { BackLink, Button, Screen, StatusMessage } from "~/components/ui";
+import { BackLink, Button, LoadError, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { colors, fontSize } from "~/theme";
 import { DEFAULT_RETURN_TO, safeReturnTo } from "~/utils/return-to";
@@ -61,10 +62,7 @@ export function LoginScreen() {
           <SignedInCard me={me} onContinue={() => router.replace(draftNotice ? "/sager" : target)} onLogout={() => void doLogout()} loggingOut={loggingOut} />
         </>
       ) : status === "unavailable" ? (
-        <>
-          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={reload} />
-        </>
+        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : (
         <>
           <LoginForm onSubmit={(v) => void onSubmit(v)} pending={pending} error={error ?? clinicNotice} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { FormError } from "@/components/ui/form-error";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -8,6 +9,7 @@ import { apiRequest } from "@/platform/ui-utils/api-client";
 import { apiErrorMessage } from "@/platform/ui-utils/api-errors";
 import { fieldErrorsFrom, type FieldErrors } from "@/lib/common/domain/field-errors";
 import { changePasswordSchema } from "@/lib/identity/schemas/auth";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type Field = "currentPassword" | "newPassword" | "repeat";
 
@@ -17,6 +19,7 @@ const EMPTY = { currentPassword: "", newPassword: "", repeat: "" };
 export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -56,11 +59,9 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       {errors.general && (
-        <Alert tone="danger" role="alert">
-          {errors.general}
-        </Alert>
+        <FormError message={errors.general} />
       )}
       <TextField label="Nuværende adgangskode" name="currentPassword" type="password" autoComplete="current-password" value={values.currentPassword} onChange={set("currentPassword")} error={errors.fields.currentPassword} required />
       <TextField label="Ny adgangskode" name="newPassword" type="password" autoComplete="new-password" hint="Mindst 8 tegn." value={values.newPassword} onChange={set("newPassword")} error={errors.fields.newPassword} required />

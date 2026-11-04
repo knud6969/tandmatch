@@ -1,9 +1,10 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { listCases } from "~/api/cases";
 import { useSession } from "~/auth/session-context";
 import { CaseListItem } from "~/components/case/case-list-item";
-import { Button, Card, LoadState, Screen, StatusMessage } from "~/components/ui";
+import { Button, Card, LoadError, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
 import { type } from "~/theme";
@@ -41,10 +42,7 @@ export function CasesScreen() {
         Mine sager
       </Text>
       {status === "unavailable" ? (
-        <>
-          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={reload} />
-        </>
+        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : status === "none" ? (
         <Card>
           <Text style={styles.heading}>Du er ikke logget ind</Text>

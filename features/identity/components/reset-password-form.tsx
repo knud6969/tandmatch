@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FormError } from "@/components/ui/form-error";
 import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -69,9 +70,7 @@ export function ResetPasswordForm({ link }: { link: RecoveryLink }) {
   if (step === "invalid") {
     return (
       <div className="flex flex-col gap-4">
-        <Alert tone="danger" role="alert">
-          {error ?? RECOVERY_INVALID_TEXT}
-        </Alert>
+        <FormError message={error ?? RECOVERY_INVALID_TEXT} />
         <LinkButton href="/glemt-adgangskode" className="self-start">
           Bed om et nyt link
         </LinkButton>

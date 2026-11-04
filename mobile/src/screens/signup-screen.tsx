@@ -1,3 +1,4 @@
+import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -5,7 +6,7 @@ import { convertAnonymous, logout, signupPatient } from "~/api/auth";
 import { useSession } from "~/auth/session-context";
 import { SignedInCard } from "~/components/auth/signed-in-card";
 import { SignupForm, type SignupValues } from "~/components/auth/signup-form";
-import { BackLink, Button, Screen, StatusMessage } from "~/components/ui";
+import { BackLink, Button, LoadError, Screen } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { colors, fontSize } from "~/theme";
 import { DEFAULT_RETURN_TO, safeReturnTo } from "~/utils/return-to";
@@ -49,10 +50,7 @@ export function SignupScreen() {
       {status === "account" && me ? (
         <SignedInCard me={me} onContinue={() => router.replace(target)} onLogout={() => void doLogout()} loggingOut={loggingOut} />
       ) : status === "unavailable" ? (
-        <>
-          <StatusMessage message="Vi kunne ikke hente din konto lige nu." tone="danger" />
-          <Button label="Prøv igen" variant="secondary" onPress={reload} />
-        </>
+        <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : (
         <>
           <SignupForm onSubmit={(v) => void onSubmit(v)} pending={pending} error={error} />

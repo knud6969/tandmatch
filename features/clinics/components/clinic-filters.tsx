@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { EMERGENCY_FILTER_HOURS, MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
 import type { ServiceGroupDto } from "@/lib/clinics/types/services";
+import { FormError } from "@/components/ui/form-error";
 import { Button } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/checkbox-field";
 import { cx } from "@/components/ui/cx";
@@ -168,9 +169,7 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
               </p>
             )}
             {geo.error && (
-              <p role="alert" className="text-sm font-medium text-danger-ink">
-                {geo.error}
-              </p>
+              <FormError message={geo.error} />
             )}
           </div>
 

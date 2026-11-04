@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/form-error";
 import { Button, LinkButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useSession } from "@/features/identity/components/session-provider";
@@ -14,6 +14,7 @@ import { AREA_HOME } from "@/lib/common/navigation/areas";
 import { safeInternalPath } from "@/lib/common/navigation/paths";
 import { loginSchema } from "@/lib/identity/schemas/auth";
 import type { AuthUserDto } from "@/lib/identity/types/auth";
+import { useFocusInvalid } from "@/platform/ui-utils/use-focus-invalid";
 
 type LoginField = "email" | "password";
 
@@ -22,6 +23,7 @@ export function LoginForm({ naeste }: { naeste: string | null }) {
   const { refresh } = useSession();
   const [values, setValues] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<FieldErrors<LoginField>>({ fields: {}, general: null });
+  const formRef = useFocusInvalid(errors);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -45,11 +47,9 @@ export function LoginForm({ naeste }: { naeste: string | null }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {errors.general && (
-        <Alert tone="danger" role="alert">
-          {errors.general}
-        </Alert>
+        <FormError message={errors.general} />
       )}
       <TextField
         label="E-mail"

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { API_ERROR_TEXTS, GENERIC_ERROR_TEXT, NEUTRAL_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
+import * as errorTexts from "@/lib/common/constants/error-texts";
 import { apiErrorText } from "@/lib/common/domain/errors";
 import { roundPosition } from "@/lib/common/domain/position";
 
@@ -29,5 +30,20 @@ describe("roundPosition", () => {
   it("runder til to decimaler", () => {
     expect(roundPosition(55.67594)).toBe(55.68);
     expect(roundPosition(12.56553)).toBe(12.57);
+  });
+});
+
+describe("fælles tone i fejltekster", () => {
+  const texts: [string, string][] = [];
+  for (const [name, value] of Object.entries(errorTexts) as [string, string | Record<string, string>][]) {
+    if (typeof value === "string") texts.push([name, value]);
+    else for (const [key, text] of Object.entries(value)) texts.push([`${name}.${key}`, text]);
+  }
+
+  it("slutter hver tekst med punktum og bruger ikke udråbstegn", () => {
+    for (const [name, text] of texts) {
+      expect(text.endsWith("."), name).toBe(true);
+      expect(text.includes("!"), name).toBe(false);
+    }
   });
 });

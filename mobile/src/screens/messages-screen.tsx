@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { MESSAGE_MAX_CHARS, MESSAGE_MAX_IMAGES } from "@/lib/common/constants/limits";
-import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
+import { GENERIC_ERROR_TEXT, LEAD_NOT_FOUND_TEXT, MESSAGES_REFRESH_FAILED_TEXT } from "@/lib/common/constants/error-texts";
 import { MESSAGE_POLL_INTERVAL_MS } from "@/lib/leads/constants/messages";
 import { isThreadOpen } from "@/lib/leads/domain/leads";
 import { canSendMessage, keepImageUrls, type ImageUrlCache } from "@/lib/leads/domain/messages";
@@ -73,7 +73,7 @@ function MessagesContent() {
         setLoadError(null);
         setPollError(null);
       } catch (e) {
-        const text = e instanceof Error && e.message === "not-found" ? "Henvendelsen findes ikke på denne sag." : errorText(e);
+        const text = e instanceof Error && e.message === "not-found" ? LEAD_NOT_FOUND_TEXT : errorText(e);
         if (hasData.current) setPollError(text);
         else setLoadError(text);
       } finally {
@@ -154,7 +154,7 @@ function MessagesContent() {
                 {data.messages.map((m) => (
                   <MessageBubble key={m.id} message={m} onOpenImage={(index) => setViewing({ messageId: m.id, index })} />
                 ))}
-                {pollError ? <StatusMessage message={`Beskederne kunne ikke opdateres lige nu. ${pollError}`} tone="warning" /> : null}
+                {pollError ? <StatusMessage message={MESSAGES_REFRESH_FAILED_TEXT} tone="warning" /> : null}
               </ScrollView>
               <View style={styles.footer}>
                 {writable ? (

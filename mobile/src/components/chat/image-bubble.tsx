@@ -1,6 +1,6 @@
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { StatusMessage } from "~/components/ui";
+import { LoadError, StatusMessage } from "~/components/ui";
 import { colors, fontSize, iconSize, MIN_TOUCH, radius, spacing } from "~/theme";
 import { qualityNotice, type ChatImageItem } from "~/utils/chat-images";
 
@@ -40,10 +40,7 @@ export function ImageBubble({ item, index, onDelete, onRetry }: Props) {
         </View>
         {item.error ? (
           <View style={styles.notice}>
-            <StatusMessage message={item.error} tone="danger" />
-            <Pressable accessibilityRole="button" accessibilityLabel="Send billedet igen" onPress={onRetry} style={styles.retry}>
-              <Text style={styles.retryText}>Prøv igen</Text>
-            </Pressable>
+            <LoadError message={item.error} onRetry={onRetry} />
           </View>
         ) : null}
         {feedback ? (
@@ -65,6 +62,4 @@ const styles = StyleSheet.create({
   status: { fontSize: fontSize.sm, color: colors.onBrand },
   delete: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: "center", justifyContent: "center" },
   notice: { gap: spacing.xs },
-  retry: { minHeight: MIN_TOUCH, alignItems: "center", justifyContent: "center", borderRadius: radius.md, backgroundColor: colors.surface },
-  retryText: { fontSize: fontSize.md, fontWeight: "600", color: colors.brand700 },
 });

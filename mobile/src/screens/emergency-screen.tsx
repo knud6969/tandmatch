@@ -17,7 +17,7 @@ import { SlotPicker } from "~/components/booking/slot-picker";
 import { ConsentGate } from "~/components/case/consent-gate";
 import { EmergencyNotice } from "~/components/clinic-directory/emergency-notice";
 import { EmergencyClinicOption } from "~/components/emergency/emergency-clinic-option";
-import { BackLink, Button, Card, Chip, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
+import { BackLink, Button, Card, Chip, FieldError, LoadState, Screen, StatusMessage, TextField } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
 import { useLoad } from "~/hooks/use-load";
 import { colors, spacing, type } from "~/theme";
@@ -107,7 +107,7 @@ function EmergencyForm({ clinic, data, onSent }: { clinic: ClinicListItemDto; da
               <Chip key={s.id} label={s.name} selected={s.id === serviceId} onPress={() => { setServiceId(s.id); setStartsAt(null); }} />
             ))}
           </View>
-          {errors.serviceId ? <Text style={styles.error}>{errors.serviceId}</Text> : null}
+          {errors.serviceId ? <FieldError message={errors.serviceId} /> : null}
         </View>
       ) : (
         <Text style={styles.body}>Behandling: {data.services[0].name}</Text>
@@ -241,7 +241,6 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: colors.ink },
   muted: type.caption,
   label: { ...type.caption, fontWeight: "600", color: colors.ink },
-  error: { ...type.caption, color: colors.dangerInk },
   group: { gap: spacing.sm },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });
