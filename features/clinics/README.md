@@ -208,7 +208,7 @@ Klinikejerens browsere til web push ligger i `web_push_subscriptions` (platform 
 
 #### `favorite_clinics` (patientens gemte klinikker)
 
-**Planlagt (2026-11-04).** Migration `20261106000200_favorite_clinics.sql` (PR B).
+**Bygget (2026-11-04).** Migration `20261106000200_favorite_clinics.sql` (PR B). Triggeren tæller ikke en allerede gemt klinik, så et gentaget `PUT` er idempotent også ved loftet.
 
 | Felt | Type | Note |
 |---|---|---|
@@ -403,7 +403,7 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 
 ### 10.17 Favoritter (gemte klinikker)
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR B. Tabellen står i 4.3 `favorite_clinics`; appens skærme i `mobile/README.md` 13.12. Kun patienter med konto; ingen web-UI (patienter bruger appen).
+**Bygget (2026-11-04).** Trin 11, PR B (11.17-11.20). Tabellen står i 4.3 `favorite_clinics`; appens skærme i `mobile/README.md` 13.12. Kun patienter med konto; ingen web-UI (patienter bruger appen).
 
 ```ts
 // lib/clinics/types/favorites.ts
@@ -418,7 +418,7 @@ export type FavoriteClinicsDto = { clinics: ClinicListItemDto[] };   // samme ko
 | PUT `/api/favorites/{clinicId}` | patient med konto | ingen body | 204, også hvis klinikken allerede er gemt (idempotent, `on conflict do nothing`). 400 `VALIDATION_ERROR` for et ugyldigt id; 404 `NOT_FOUND` for en klinik, der ikke vises offentligt (policyen afviser; oversættes i repositoriet); 429 `FAVORITE_LIMIT` ved 200; 403 `ACCOUNT_REQUIRED` for anonyme, `FORBIDDEN` for klinik og admin |
 | DELETE `/api/favorites/{clinicId}` | patient med konto | | 204, også hvis den ikke var gemt |
 
-Lag: `app/api/favorites/**/route.ts` → `FavoritesController` (`features/clinics/favoritesController.ts`: `ids`, `list`, `add`, `remove`) → `FavoritesRepository` (tabellen) og `ClinicDirectoryRepository.listClinics([], ids)` (findes; `public_clinics(p_clinic_ids)`). **Ingen kopi af oversigtens mapping:** omdannelsen fra `PublicClinicRecord` til `ClinicListItemDto` (anmeldelsesstatistik, første ledige tid) ligger i dag som private metoder i `ClinicDirectoryController` (`contextFor()`, `toListItem()`); de flyttes først til en service (`ClinicListingService` i `features/clinics/clinicListingService.ts`), som begge controllere bruger (egen commit, ingen adfærdsændring). Fejlkoden `FAVORITE_LIMIT` (429) og teksten "Du kan højst gemme 200 klinikker." står i `lib/common/constants/error-texts.ts`.
+Lag: `app/api/favorites/**/route.ts` → `FavoritesController` (`features/clinics/favoritesController.ts`: `ids`, `list`, `add`, `remove`) → `FavoritesRepository` (tabellen; `listOwn`, `add` med `upsert … ignoreDuplicates`, `remove`) og `ClinicDirectoryRepository.listClinics([], ids)` (`public_clinics(p_clinic_ids)`). Stien valideres med `favoriteClinicParamsSchema` og `parseParams()` (400, ikke 404). Eksporten bruger `FavoritesRepository` via `features/clinics/index.ts`. **Ingen kopi af oversigtens mapping:** omdannelsen fra `PublicClinicRecord` til `ClinicListItemDto` (anmeldelsesstatistik, første ledige tid) ligger i dag som private metoder i `ClinicDirectoryController` (`contextFor()`, `toListItem()`); de er flyttet til `ClinicListingService` (`features/clinics/clinicListingService.ts`: `plan()`, `contextFor()`, `toListItem()`), som begge controllere bruger (egen commit, ingen adfærdsændring). Fejlkoden `FAVORITE_LIMIT` (429) og teksten "Du kan højst gemme 200 klinikker." står i `lib/common/constants/error-texts.ts`.
 
 **Dataeksport (identity 10.2):** feltet `favorites: { clinicId: string; createdAt: string }[]`.
 

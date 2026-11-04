@@ -32,7 +32,7 @@ Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten).
 | hold_expires_at | timestamptz null | Kun `held`: `least(created_at + interval '30 minutes', starts_at)`. Sættes af `send_leads()`; check `status <> 'held' or hold_expires_at is not null` |
 | no_show_at | timestamptz null | Sat af `mark_booking_no_show()` |
 | completed_at | timestamptz null | Sat af `complete_due_bookings()` (= `ends_at + 24 timer`, når fristen for udeblivelse udløb) |
-| rescheduled_from_id | uuid null FK bookings on delete set null, **unique** | **Planlagt (2026-11-04), PR B.** Sat på den nye booking, når patienten flytter en tid (10.16): id'et på den gamle (nu aflyste) booking. Unik, så en booking kun kan flyttes én gang (den nye kan flyttes igen). Sættes kun af `reschedule_booking()`. Migration `20261106000100_reschedule_booking.sql` |
+| rescheduled_from_id | uuid null FK bookings on delete set null, **unique** | **Bygget (2026-11-04), PR B.** Sat på den nye booking, når patienten flytter en tid (10.16): id'et på den gamle (nu aflyste) booking. Unik, så en booking kun kan flyttes én gang (den nye kan flyttes igen). Sættes kun af `reschedule_booking()`. Migration `20261106000100_reschedule_booking.sql` |
 
 Regler i databasen:
 - **Ingen dobbeltbooking:** `exclude using gist (clinic_id with =, tstzrange(starts_at, ends_at, '[)') with &&) where (status in ('held', 'booked', 'completed'))`. En reserveret akuttid kan derfor ikke tages af andre. Én kalender pr. klinik [PROTOTYPE].
@@ -164,7 +164,7 @@ Bygget i 6.1. Filer: `features/booking/bookingsController.ts` (`BookingsControll
 
 ### 10.16 Flyt tid
 
-**Planlagt (2026-11-04).** [IKKE BYGGET]. Trin 11, PR B. Patienten flytter en booket tid til en anden ledig tid hos samme klinik og samme behandling. Klinikken kan ikke flytte en tid; den aflyser og skriver i tråden (som i dag). Flytning af en reserveret akuttid (`held`) er ikke mulig.
+**Bygget (2026-11-04).** Trin 11, PR B (11.12-11.14). Patienten flytter en booket tid til en anden ledig tid hos samme klinik og samme behandling. Klinikken kan ikke flytte en tid; den aflyser og skriver i tråden (som i dag). Flytning af en reserveret akuttid (`held`) er ikke mulig.
 
 **Databasen** (migration `20261106000100_reschedule_booking.sql`):
 - Kolonnen `bookings.rescheduled_from_id` (4.3).
@@ -193,6 +193,8 @@ export const rescheduleBookingSchema = z.object({ startsAt: z.iso.datetime({ off
 |---|---|---|---|
 | GET `/api/bookings/{id}/availability` | patient med konto (ejer), booking `booked` før starttid | `?from=&to=` (samme regler som `GET /api/leads/{id}/availability`, højst 14 dage pr. kald) | 200 `{ slots: SlotDto[] }` for bookingens klinik og behandling (`AvailabilityService`, ingen kopi). 409 `BOOKING_NOT_RESCHEDULABLE`; 409 `CLINIC_NOT_AVAILABLE`; 404 for en fremmed eller ukendt booking; 403 `ACCOUNT_REQUIRED` for anonyme, `FORBIDDEN` for klinik |
 | POST `/api/bookings/{id}/reschedule` | patient med konto (ejer) | `rescheduleBookingSchema` | 200 `PatientBookingDto` for den **nye** booking (nyt id; `rescheduledFrom` udfyldt). 400 `VALIDATION_ERROR` (også samme tid, `SAME_SLOT`); 403 `ACCOUNT_REQUIRED`/`FORBIDDEN`; 404; 409 `BOOKING_NOT_RESCHEDULABLE`, `SLOT_TAKEN`, `SLOT_UNAVAILABLE`, `CLINIC_NOT_AVAILABLE`, `BOOKING_LIMIT`; 429 `RATE_LIMITED` (`enforceIpRateLimit("booking", req, BOOKING_IP_LIMIT_PER_HOUR)`, samme spand som booking). `withApi(…, { notify: true })`: klinikken får `clinic_booking_rescheduled` (platform 14.2) |
+
+**Afvigelser fra planen:** (1) `availabilityForBooking()` og `availabilityForLead()` deler den private metode `slotsFor(clinicId, serviceId, range)`; ingen kopi af beregningen. (2) `reschedule_booking()` laver gammel-aflysning og ny booking i ét `begin … exception`-blok, så den gamle booking også står uændret, hvis en kalder fanger `SLOT_TAKEN` inde i samme transaktion (RLS-test 62); flaget `tm.rescheduling` sættes tilbage til `off` bagefter. (3) `canReschedule`/`rescheduledFrom`/`rescheduledTo` ligger i `PatientBookingDto` og `ClinicBookingDto` (`rescheduledTo` kun på en aflyst booking). (4) Klinikkens tekster ligger i `clinicRescheduleNote()` og patientens i `patientCancellationText()`/`patientRescheduledFromText()` (`lib/booking/domain/bookings.ts`); datoformatet er `formatDayAtTime()` ("man. 26. okt. kl. 09.15").
 
 Lag: routes → `BookingsController.availabilityForBooking(id, query)` og `reschedule(id, input)` → `BookingsRepository.reschedule()` (ét RPC-kald; fejlkoderne oversættes med fabrikkerne i `platform/middleware/http.ts`, ny fabrik `bookingNotReschedulable()`), `AvailabilityService.resolveRange()` og `ClinicDirectoryRepository.findClinic()` via `features/clinics/index.ts` som `availabilityForLead`. `canReschedule` beregnes af `canCancel()` i `lib/booking/domain/bookings.ts` (samme regel; ingen ny funktion). Fejltekst `BOOKING_NOT_RESCHEDULABLE`: "Tiden kan ikke flyttes længere. Kontakt klinikken i beskedtråden." i `lib/common/constants/error-texts.ts`. Bekræftelsesteksten `RESCHEDULE_BOOKING_CONSEQUENCE` ("Din nuværende tid frigives, og klinikken får besked.") står i `lib/booking/constants/bookings.ts`.
 
