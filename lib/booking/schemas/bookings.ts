@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { CANCEL_REASON_MAX_CHARS, CONTACT_NAME_MAX_CHARS, CONTACT_NAME_MIN_CHARS } from "@/lib/booking/constants/bookings";
+import { isoDateTime } from "@/lib/common/schemas/datetime";
 import { phoneSchema } from "@/lib/common/schemas/phone";
-
-const isoDateTime = z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." });
 
 // Kontaktnavn ved booking (og ved akut-lead, architecture 10.11).
 export const contactNameSchema = z

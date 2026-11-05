@@ -7,7 +7,7 @@ import {
   MIN_EMERGENCY_NOTICE_MIN,
   SLOT_STEP_MINUTES,
 } from "@/lib/booking/constants/bookings";
-import { DAY_MS } from "@/lib/common/domain/time";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@/lib/common/domain/time";
 import type { BusyInterval, OpeningHoursDto, SlotDto } from "@/lib/clinics/types/clinics";
 
 // Ledige tider (architecture 6.7). Ren kode uden I/O: åbningstider og optaget tid kommer som indgangsdata fra
@@ -28,9 +28,6 @@ export type SlotQuery = {
   to: Date; // sidste mulige starttid (eksklusiv)
   limit?: number;
 };
-
-const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
 
 const zoneFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: CLINIC_TIME_ZONE,
