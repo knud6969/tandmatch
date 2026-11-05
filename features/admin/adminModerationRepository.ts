@@ -1,31 +1,18 @@
 import "server-only";
 import { ADMIN_EXCERPT_CHARS, ADMIN_LIST_LIMIT } from "@/lib/admin/constants/admin";
 import type { AdminModerationItemDto, ModerationKind } from "@/lib/admin/types/admin";
-import type { ModerationStatus, PriceAccuracy } from "@/lib/booking/types/reviews";
+import type { ModerationStatus } from "@/lib/booking/types/reviews";
 import { BaseRepository } from "@/platform/base/baseRepository";
+import type { Database } from "@/platform/db/database.types";
 import { iso, isoOrNull } from "@/platform/db/mappers";
 import { notFound, reasonRequired } from "@/platform/middleware/http";
 
-// Rækkerne fra admin_reviews() og admin_review_replies() (migration 20261110000200). Funktionerne returnerer aldrig patient_id,
-// booking_id eller patientens navn, så de kan ikke nå DTO'erne (dataminimering, admin 3).
-type ModerationFields = {
-  id: string;
-  created_at: string;
-  clinic_id: string;
-  clinic_name: string;
-  moderation_status: ModerationStatus;
-  rejection_reason: string | null;
-  moderated_at: string | null;
-};
-type ReviewRow = ModerationFields & {
-  stars: number;
-  text: string;
-  price_accuracy: PriceAccuracy;
-  actual_price: number | null;
-  lacked_transparency: boolean | null;
-  transparency_comment: string | null;
-};
-type ReplyRow = ModerationFields & { review_id: string; text: string; review_text: string };
+// Rækkerne fra admin_reviews() og admin_review_replies() (migration 20261110000200), udledt af de genererede typer. Funktionerne
+// returnerer aldrig patient_id, booking_id eller patientens navn, så de kan ikke nå DTO'erne (dataminimering, admin 3).
+type Functions = Database["public"]["Functions"];
+type ReviewRow = Functions["admin_reviews"]["Returns"][number];
+type ReplyRow = Functions["admin_review_replies"]["Returns"][number];
+type ModerationFields = ReviewRow | ReplyRow;
 
 const excerpt = (text: string) => (text.length > ADMIN_EXCERPT_CHARS ? `${text.slice(0, ADMIN_EXCERPT_CHARS).trimEnd()}…` : text);
 
