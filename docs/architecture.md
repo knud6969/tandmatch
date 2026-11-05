@@ -1,6 +1,6 @@
 # TandMatch: arkitektur (oversigt)
 
-Version: 3.1 (2026-11-04: notifikationer, flyt tid, kalender, favoritter, statistik og admin planlagt; trin 11). Kort oversigt over lag, regler, domæner og hvor tingene ligger. Detaljerne (datamodel, RLS, API-kontrakter, AI-regler) står i README'en for det domæne, de hører til. Afsnitsnumrene er bevaret, så henvisninger som "architecture 10.10" i koden stadig kan findes via tabellen i 0.2.
+Version: 3.1 (2026-11-05: notifikationer, flyt tid, kalender, favoritter, statistik og admin er bygget; trin 11). Kort oversigt over lag, regler, domæner og hvor tingene ligger. Detaljerne (datamodel, RLS, API-kontrakter, AI-regler) står i README'en for det domæne, de hører til. Afsnitsnumrene er bevaret, så henvisninger som "architecture 10.10" i koden stadig kan findes via tabellen i 0.2.
 Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md features/*/README.md platform/README.md mobile/README.md`.
 
 ## 0. Sådan bruges dokumentet
@@ -24,7 +24,7 @@ Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md 
 | 6.1 | Offentlige sider | `features/site/README.md` |
 | 6.2 | Patientfladen (flyttet til appen) | `mobile/README.md` |
 | 6.3, 6.6, 6.7 | Klinikflade, klinikoversigt og rangering, ledige tider | `features/clinics/README.md` |
-| 6.4 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
+| 6.4 | Admin | `features/admin/README.md` |
 | 6.5 | Beskyttelse af sider | `platform/README.md` |
 | 7 | AI-flowet, AI-reglerne og sagsflowet som samtale | `features/cases/README.md` |
 | 8 | Anmeldelser og prisnøjagtighed | `features/booking/README.md` |
@@ -32,16 +32,16 @@ Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md 
 | 9.2-9.4 | Sagsbilleder | `features/cases/README.md` |
 | 9.5 | `public-media` | `features/clinics/README.md` |
 | 10.1 | Delte typer | `platform/README.md` |
-| 10.14 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
+| 10.14 | Admin | `features/admin/README.md` |
 | 10.2-10.3, 10.15, 10.20 | Auth, sessioner, konto, samtykker, push-tokens, e-mail og telefon til notifikationer | `features/identity/README.md` |
-| 10.16 | Flyt tid (planlagt) | `features/booking/README.md` |
-| 10.17-10.19 | Favoritter, klinikkens statistik (planlagt), notifikationsindstillinger og web push (10.19, bygget) | `features/clinics/README.md` |
+| 10.16 | Flyt tid | `features/booking/README.md` |
+| 10.17-10.19 | Favoritter, klinikkens statistik, notifikationsindstillinger og web push (10.19) | `features/clinics/README.md` |
 | 14 | Notifikationer: outbox, klokken (14.11), e-mail, SMS, app-push, web push, påmindelser | `platform/README.md` |
 | 10.4, 10.7, 10.8 | Katalog, klinikoversigt og profil, egen klinik | `features/clinics/README.md` |
 | 10.5, 10.6 | Sager og AI-chat | `features/cases/README.md` |
 | 10.9, 10.11, 10.12 | Leads, akutvej, beskeder | `features/leads/README.md` |
 | 10.10, 10.13 | Bookinger, anmeldelser | `features/booking/README.md` |
-| 13 | Patient-appen (13.10-13.12 planlagt: push, kalender, flyt tid og gemte klinikker) | `mobile/README.md` |
+| 13 | Patient-appen (13.10-13.12: push, kalender, flyt tid og gemte klinikker) | `mobile/README.md` |
 
 ## 1. Overblik og principper
 
@@ -100,7 +100,7 @@ Koden er organiseret efter funktion (domæne), og MVC er bevaret inde i hvert do
 
 ```
 app/                       Next.js-ruter. page.tsx/layout.tsx videresender til features/<domæne>/pages; app/api/**/route.ts kalder én controller
-features/<domæne>/         ét domæne: identity, cases, clinics, leads, booking, site (og admin, planlagt 2026-11-04)
+features/<domæne>/         ét domæne: identity, cases, clinics, leads, booking, site (og admin)
   <x>Controller.ts         forretningsregler; tager typet input og returnerer DTO'er
   <x>Repository.ts         eneste sted, der kalder Supabase (arver platform/base/BaseRepository)
   <x>Service.ts            delt logik (fx AI, rangering, ledige tider)
@@ -137,13 +137,13 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 
 | Domæne | Ansvar | Ruter |
 |---|---|---|
-| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning; push-tokens (planlagt) | `/login`, `/opret`, `/glemt-adgangskode`, `/nulstil-adgangskode`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me`, `/api/push-tokens` (planlagt) |
+| `identity` | login, signup, sessioner (cookie og bearer), vilkår, samtykker, patientprofil, eksport, sletning; push-tokens | `/login`, `/opret`, `/glemt-adgangskode`, `/nulstil-adgangskode`, `/vilkaar`, `/api/auth/*`, `/api/session/*`, `/api/terms/*`, `/api/consents`, `/api/patients/me`, `/api/me`, `/api/push-tokens` |
 | `cases` | sager, AI-chat, opsummering, sagsbilleder, AI-reglerne | `/api/cases/*` |
-| `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider; planlagt: notifikationsindstillinger, statistik, patientens gemte klinikker | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/klinik/statistik` (planlagt), `/api/clinics/*`, `/api/services`, `/api/favorites/*` (planlagt) |
+| `clinics` | klinikprofil, katalog, prisliste, åbningstider, tandlæger, portefølje, klinikoversigt, rangering, ledige tider; notifikationsindstillinger, statistik, patientens gemte klinikker | `/klinikker`, `/klinik/{profil,prisliste,aabningstider,tandlaeger}`, `/klinik/statistik`, `/api/clinics/*`, `/api/services`, `/api/favorites/*` |
 | `leads` | leads, klinikkens indbakke og lead-kort, beskeder, akutvejen | `/klinik`, `/klinik/lead/*`, `/api/leads/*`, `/api/emergency-leads` |
-| `booking` | bookinger, kalender, anmeldelser, svar, moderationsreglerne (8.5; admins side ligger i `admin`); flyt tid (planlagt) | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
+| `booking` | bookinger, kalender, anmeldelser, svar, moderationsreglerne (8.5; admins side ligger i `admin`); flyt tid | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
 | `site` | forsiden og informationssiderne | `/`, `/om-os`, `/kontakt`, `/privatliv`, `/saadan-*`, `/for-klinikker` |
-| `admin` (planlagt 2026-11-04) | klinikstatus og moderation af anmeldelser og klinikkers svar (rollen `admin`) | `/admin/*`, `/api/admin/*` |
+| `admin` | klinikstatus og moderation af anmeldelser og klinikkers svar (rollen `admin`) | `/admin/*`, `/api/admin/*` |
 | (platform) | notifikationer: outbox, e-mail, app-push, web push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders` |
 
 ### 2.6 Sådan bygger du en ny funktion
