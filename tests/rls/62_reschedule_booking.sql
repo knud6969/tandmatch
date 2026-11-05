@@ -4,6 +4,8 @@
 --  * Efter succes: gammel cancelled (patient), ny booked med rescheduled_from_id, leadet stadig booked, kontakt kun på den nye.
 --  * Outboxen har én clinic_booking_rescheduled (med previousStartsAt) og ingen clinic_booking_cancelled.
 --  * BOOKING_LIMIT gælder.
+--  * L5 (security 2026-11-05): at flytte en booket tid kræver ikke et aktivt delingssamtykke; patienten kan flytte tiden efter at have
+--    trukket health_data_sharing tilbage, og klinikken beholder kun indholdet af det bookede lead (som før).
 begin;
 \ir _helpers.sql
 \ir _fixtures.sql
@@ -103,5 +105,17 @@ select tt.mk_booking(tt.mk_lead('S_h', 'X', 'sent'), 'akut_konsultation', tt.slo
 select set_config('tt.h', tt.booking(tt.lead('S_h', 'X'))::text, true);
 select tt.as_user(tt.id('pA'));
 select tt.denied(format('select public.reschedule_booking(%L::uuid, %L)', current_setting('tt.h'), tt.slot(3, 18)), 'held kan ikke flyttes', 'BOOKING_NOT_RESCHEDULABLE');
+
+-- L5: flyt tid uden aktivt delingssamtykke (den bookede tid består efter tilbagetrækning)
+select tt.as_postgres();
+select tt.mk_case('pA', 'S_l5');
+select tt.mk_booking(tt.mk_lead('S_l5', 'X', 'booked'), 'undersoegelse', tt.slot(8, 13), 'booked');
+select set_config('tt.c', tt.booking(tt.lead('S_l5', 'X'))::text, true);
+select tt.as_user(tt.id('pA'));
+select public.withdraw_consent(tt.consent('pA', 'health_data_sharing'));
+select tt.allowed(format('select public.reschedule_booking(%L::uuid, %L)', current_setting('tt.c'), tt.slot(12, 10)), 'flytning kræver ikke delingssamtykke (L5)');
+select tt.as_user(tt.id('uX'));
+select tt.eq((select booking_status::text from public.clinic_lead_detail(tt.lead('S_l5', 'X'))), 'booked', 'klinikken ser den flyttede tid');
+select tt.ok((select starts_at = tt.slot(12, 10) from public.clinic_bookings(tt.slot(0, 0), tt.slot(20, 0)) where lead_id = tt.lead('S_l5', 'X') and status = 'booked'), 'tiden er flyttet');
 
 rollback;

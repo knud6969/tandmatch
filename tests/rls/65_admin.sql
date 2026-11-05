@@ -4,6 +4,10 @@
 --  * admin_actions kan kun læses af admin og skrives aldrig direkte.
 --  * Admin kan stadig ikke læse sager, billeder, AI-samtaler, leads, bookinger, beskeder, outbox, push-tokens, samtykker,
 --    patientprofiler eller favoritter, og kan ikke ændre klinikker eller anmeldelser direkte.
+--  * M1 (migration 20261110000200): med admins egen JWT kan reviews (og dermed patient_id/booking_id), review_replies,
+--    andres profiles og terms_acceptances ikke læses direkte; admin_reviews()/admin_review_replies() giver moderationsfelterne
+--    uden patient- og bookingreference og kan kun kaldes af admin.
+--  * H1: admin_clinic_owners() giver ejerens e-mail kun til admin; registered -> verified kræver en begrundelse.
 begin;
 \ir _helpers.sql
 \ir _fixtures.sql
@@ -51,8 +55,10 @@ select tt.as_postgres();
 select tt.eq((select status::text from public.clinics where id = tt.cid('Y')), 'registered', 'status ændret');
 select tt.ok((select verified_at is null from public.clinics where id = tt.cid('Y')), 'verified_at nulstillet');
 select tt.as_user(tt.id('admin'));
-select tt.eq((select public.admin_change_clinic_status(tt.cid('Y'), 'verified')), 'verified'::public.clinic_status, 'Y verificeret igen');
-select tt.eq((select public.admin_change_clinic_status(tt.cid('R'), 'verified')), 'verified'::public.clinic_status, 'R verificeret');
+select tt.denied(format('select public.admin_change_clinic_status(%L, ''verified'')', tt.cid('Y')), 'verificering uden begrundelse afvises', 'REASON_REQUIRED');
+select tt.denied(format('select public.admin_change_clinic_status(%L, ''verified'', ''   '')', tt.cid('Y')), 'verificering med tom begrundelse afvises', 'REASON_REQUIRED');
+select tt.eq((select public.admin_change_clinic_status(tt.cid('Y'), 'verified', 'CVR kontrolleret mod virk.dk')), 'verified'::public.clinic_status, 'Y verificeret igen');
+select tt.eq((select public.admin_change_clinic_status(tt.cid('R'), 'verified', 'Ejer bekræftet pr. telefon')), 'verified'::public.clinic_status, 'R verificeret');
 select tt.denied(format('select public.admin_change_clinic_status(%L, ''verified'')', tt.cid('Y')), 'samme status afvises', 'INVALID_STATUS_TRANSITION');
 select tt.denied(format('select public.admin_change_clinic_status(%L, ''imported'')', tt.cid('Y')), 'imported kan ikke sættes', 'INVALID_STATUS_TRANSITION');
 select tt.denied(format('select public.admin_change_clinic_status(%L, ''removed'')', tt.cid('Y')), 'removed kan ikke sættes', 'INVALID_STATUS_TRANSITION');
@@ -85,6 +91,7 @@ select tt.eq((select moderation_status::text from public.review_replies where id
 -- Log
 select tt.as_user(tt.id('admin'));
 select tt.eq((select count(*)::int from public.admin_actions where action = 'clinic_status'), 3, 'tre statusændringer logget');
+select tt.eq((select reason from public.admin_actions where action = 'clinic_status' and to_value = 'verified' and target_id = tt.cid('R')), 'Ejer bekræftet pr. telefon', 'begrundelsen ved verificering logges');
 select tt.eq((select count(*)::int from public.admin_actions where action = 'moderate_review'), 2, 'to anmeldelsesmoderationer logget');
 select tt.eq((select count(*)::int from public.admin_actions where action = 'moderate_reply'), 2, 'to svarmoderationer logget');
 select tt.eq((select reason from public.admin_actions where action = 'clinic_status' and to_value = 'registered' and target_id = tt.cid('Y')), 'Pause for test', 'begrundelsen er trimmet');
@@ -107,10 +114,42 @@ select tt.affects(format('update public.clinics set name = ''Hacket'' where id =
 select tt.denied(format('update public.reviews set moderation_status = ''approved'' where id = %L', current_setting('tt.review')), 'direkte moderation afvises', '42501');
 select tt.denied(format('update public.review_replies set moderation_status = ''approved'' where id = %L', current_setting('tt.reply')), 'direkte svarmoderation afvises', '42501');
 
--- Admin ser det, den skal: klinikker, anmeldelser og svar i alle statusser (ingen patient-id i DTO'en er et API-spørgsmål).
+-- Admin ser klinikker direkte, men anmeldelser og svar kun gennem funktionerne (M1)
 select tt.ok(tt.vis('select 1 from public.clinics') >= 13, 'admin ser klinikker');
-select tt.rows(format('select 1 from public.reviews where id = %L', current_setting('tt.review')), 1, 'admin ser anmeldelsen');
-select tt.rows(format('select 1 from public.review_replies where id = %L', current_setting('tt.reply')), 1, 'admin ser svaret');
+select tt.rows('select 1 from public.reviews', 0, 'admin kan ikke læse reviews direkte (patient_id og booking_id)');
+select tt.rows('select 1 from public.review_replies', 0, 'admin kan ikke læse review_replies direkte');
+select tt.rows(format('select 1 from public.profiles where id <> %L', tt.id('admin')), 0, 'admin ser ikke andres profiler (e-mail, rolle, navn)');
+select tt.rows(format('select 1 from public.profiles where id = %L', tt.id('admin')), 1, 'admin ser sin egen profil');
+select tt.rows(format('select 1 from public.terms_acceptances where user_id <> %L', tt.id('admin')), 0, 'admin ser ikke andres vilkårsaccepter');
+select tt.eq((select count(*)::int from public.admin_reviews(null, current_setting('tt.review')::uuid)), 1, 'admin_reviews() giver anmeldelsen');
+select tt.ok((select count(*) from public.admin_reviews()) >= 1, 'admin_reviews() uden filter giver anmeldelser');
+select tt.eq((select count(*)::int from public.admin_reviews('approved', current_setting('tt.review')::uuid)), 1, 'filter på status (godkendt)');
+select tt.eq((select count(*)::int from public.admin_reviews('pending', current_setting('tt.review')::uuid)), 0, 'filter på status (afventer)');
+select tt.eq((select r.clinic_name from public.admin_reviews(null, current_setting('tt.review')::uuid) r), (select name from public.clinics where id = tt.cid('X')), 'filter på id og klinikkens navn');
+select tt.eq((select to_jsonb(r) ? 'patient_id' or to_jsonb(r) ? 'booking_id' from public.admin_reviews(null, current_setting('tt.review')::uuid) r), false, 'admin_reviews() har hverken patient_id eller booking_id');
+select tt.eq((select count(*)::int from public.admin_review_replies(null, current_setting('tt.reply')::uuid)), 1, 'admin_review_replies() giver svaret');
+select tt.eq((select r.review_text from public.admin_review_replies(null, current_setting('tt.reply')::uuid) r), 'Fin behandling og klar kommunikation om prisen.', 'svaret følger anmeldelsens tekst');
+select tt.eq((select to_jsonb(r) ? 'patient_id' or to_jsonb(r) ? 'booking_id' from public.admin_review_replies(null, current_setting('tt.reply')::uuid) r), false, 'admin_review_replies() har ingen patient- eller bookingreference');
+select tt.eq((select count(*)::int from public.admin_clinic_owners(array[tt.cid('X'), tt.cid('I')])), 1, 'ejerens e-mail kun for klinikken med ejer');
+select tt.eq((select owner_email from public.admin_clinic_owners(array[tt.cid('X')])), 'klinik-x@test.invalid', 'ejerens e-mail');
+select tt.denied('select public.admin_clinic_owners((select array_agg(gen_random_uuid()) from generate_series(1, 201)))', 'højst 200 klinikker ad gangen', '22023');
+-- Ikke-admin kan ikke kalde læsefunktionerne
+select tt.as_user(tt.id('pA'));
+select tt.denied('select * from public.admin_reviews()', 'patient kan ikke kalde admin_reviews()', '42501');
+select tt.denied('select * from public.admin_review_replies()', 'patient kan ikke kalde admin_review_replies()', '42501');
+select tt.denied(format('select * from public.admin_clinic_owners(array[%L::uuid])', tt.cid('X')), 'patient kan ikke kalde admin_clinic_owners()', '42501');
+select tt.as_user(tt.id('uX'));
+select tt.denied('select * from public.admin_reviews()', 'klinik kan ikke kalde admin_reviews()', '42501');
+select tt.denied('select * from public.admin_review_replies()', 'klinik kan ikke kalde admin_review_replies()', '42501');
+select tt.denied(format('select * from public.admin_clinic_owners(array[%L::uuid])', tt.cid('X')), 'klinik kan ikke se andres e-mail', '42501');
+select tt.as_user(tt.id('pAnon'), true);
+select tt.denied('select * from public.admin_reviews()', 'anonym kan ikke kalde admin_reviews()', '42501');
+select tt.as_anon();
+select tt.denied('select * from public.admin_reviews()', 'anon-rollen kan ikke kalde admin_reviews()', '42501');
+select tt.denied('select * from public.admin_clinic_owners(array[gen_random_uuid()])', 'anon-rollen kan ikke kalde admin_clinic_owners()', '42501');
+select tt.as_user(tt.id('admin'), true);
+select tt.denied('select * from public.admin_reviews()', 'admin med anonym JWT afvises', '42501');
+select tt.as_user(tt.id('admin'));
 
 -- Admin kan stadig ikke læse patienternes eller leadenes data
 select tt.rows('select 1 from public.cases', 0, 'admin ser ingen sager');

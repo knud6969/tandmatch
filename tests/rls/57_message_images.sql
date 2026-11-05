@@ -2,7 +2,7 @@
 --  * authenticated kan hverken skrive i message_images eller kalde send_message_with_images().
 --  * Patienten ser kun billeder i egne tråde; klinik Y ser intet af X's tråd; X ser intet efter withdrawn.
 --  * send_message_with_images() (service role) afviser fremmed afsender, lukket tråd, for mange billeder, tom besked uden
---    billeder og patient uden gældende image_upload; klinikken kræver intet samtykke.
+--    billeder og patient uden gældende image_upload; klinikken kræver sin egen bekræftelse (M2, se også test 69).
 --  * Tilbagetrækning af image_upload sletter patientens beskedbilleder (ikke klinikkens) og returnerer stierne.
 --  * Direkte indsættelse af en tom tekstbesked afvises stadig.
 begin;
@@ -20,8 +20,8 @@ create function tt.imgs(p_names text[]) returns jsonb language sql immutable as 
 $$;
 create function tt.send_imgs(p_user text, p_case text, p_clinic text, p_msg text, p_body text, p_imgs text[]) returns text
 language sql as $$
-  select format('select public.send_message_with_images(%L, %L, %L, %L, %L)',
-                tt.id(p_user), tt.lead(p_case, p_clinic), tt.id(p_msg), p_body, tt.imgs(p_imgs))
+  select format('select public.send_message_with_images(%L, %L, %L, %L, %L, %L)',
+                tt.id(p_user), tt.lead(p_case, p_clinic), tt.id(p_msg), p_body, tt.imgs(p_imgs), 'clinic_message_images@v0-prototype')
 $$;
 grant execute on function tt.imgs(text[]), tt.send_imgs(text, text, text, text, text, text[]) to public;
 
@@ -38,7 +38,7 @@ select tt.denied(tt.send_imgs('uX', 'S', 'X', 'mX0', 'hej', array['iX0']), 'klin
 -- Service role: gyldige kald
 select tt.as_service();
 select tt.allowed(tt.send_imgs('pA', 'S', 'X', 'm1', '', array['i1', 'i2']), 'patient sender to billeder uden tekst til X');
-select tt.allowed(tt.send_imgs('uX', 'S', 'X', 'm2', 'Her er et eksempel', array['i3']), 'klinik X sender et billede (intet samtykke krævet)');
+select tt.allowed(tt.send_imgs('uX', 'S', 'X', 'm2', 'Her er et eksempel', array['i3']), 'klinik X sender et billede (med sin egen bekræftelse)');
 select tt.allowed(tt.send_imgs('pA', 'S', 'Z', 'm3', 'Til Z', array['i4']), 'patient sender et billede til Z');
 select tt.allowed(tt.send_imgs('pB', 'SB', 'X', 'm4', 'Fra B', array['i5']), 'patient B sender et billede til X');
 
@@ -48,7 +48,9 @@ select tt.eq((select body from public.messages where id = tt.id('m1')), '', 'tom
 select tt.eq((select sender_role::text from public.messages where id = tt.id('m1')), 'patient', 'afsenderrollen sættes af databasen');
 select tt.eq((select sender_role::text from public.messages where id = tt.id('m2')), 'clinic', 'klinikkens rolle');
 select tt.ok((select consent_id from public.message_images where id = tt.id('i1')) = tt.consent('pA', 'image_upload'), 'patientens billede peger på samtykket');
-select tt.ok((select consent_id is null from public.message_images where id = tt.id('i3')), 'klinikkens billede har intet samtykke');
+select tt.ok((select consent_id is null from public.message_images where id = tt.id('i3')), 'klinikkens billede har intet patientsamtykke');
+select tt.ok((select clinic_consent_text_version = 'clinic_message_images@v0-prototype' and clinic_consent_confirmed_at is not null from public.message_images where id = tt.id('i3')), 'klinikkens bekræftelse (version og tidspunkt) gemmes');
+select tt.ok((select clinic_consent_text_version is null and clinic_consent_confirmed_at is null from public.message_images where id = tt.id('i1')), 'patientens billede har ingen klinikbekræftelse');
 select tt.eq((select array_agg(position order by position) from public.message_images where message_id = tt.id('m1')), array[0, 1]::smallint[], 'rækkefølgen gemmes');
 select tt.denied(format('update public.message_images set storage_path = %L where id = %L', 'messages/andet.jpg', tt.id('i1')), 'stien skal følge formatet (check)');
 
