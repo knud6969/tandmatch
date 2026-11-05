@@ -4,11 +4,14 @@ begin;
 \ir _helpers.sql
 \ir _fixtures.sql
 
--- Tæller outbox-rækker uanset rolle (outboxen er ellers lukket for alle klientroller).
+-- Tæller outbox-rækker uanset rolle (outboxen er ellers lukket for alle klientroller). Patientens e-mail- og SMS-rækker
+-- (migration 20261108000300, test 67) tælles ikke med her; de har deres egen test.
 create function tt.n(p_type text default null, p_lead uuid default null) returns integer
 language sql stable security definer set search_path = '' as $$
   select count(*)::int from public.notification_outbox o
    where (p_type is null or o.type::text = p_type) and (p_lead is null or o.lead_id = p_lead)
+     and not (o.type::text like 'patient\_%' and o.channel::text in ('email', 'sms'))
+     and o.type::text not in ('patient_booking_created', 'patient_booking_rescheduled', 'patient_booking_cancelled_self', 'patient_review_reminder')
 $$;
 grant execute on function tt.n(text, uuid) to public;
 -- Den aktive (booked) booking på et lead; tt.booking() er tvetydig, når flere bookinger oprettes i samme transaktion.
@@ -358,7 +361,7 @@ update public.bookings set created_at = now() - interval '3 days'
  where lead_id in (tt.lead('R1', 'A5'), tt.lead('R2', 'A5'), tt.lead('R4', 'A5'));
 delete from public.notification_outbox;
 select tt.as_service();
-select tt.eq(public.enqueue_booking_reminders(), 2, 'to påmindelser (patient og klinik) for den ene booking');
+select tt.eq(public.enqueue_booking_reminders(), 4, 'fire outbox-rækker for den ene booking: patientens push, e-mail og SMS og klinikkens e-mail');
 select tt.eq(public.enqueue_booking_reminders(), 0, 'idempotent');
 select tt.as_postgres();
 select tt.eq(tt.n('patient_booking_reminder'), 1, 'én patient_booking_reminder');
@@ -370,6 +373,6 @@ select tt.eq((select array_agg(k order by k) from public.notification_outbox, js
 update public.bookings set created_at = now() - interval '3 days' where lead_id = tt.lead('R3', 'A5');
 insert into public.clinic_notification_settings (clinic_id, email_booking_reminder) values (tt.cid('A5'), false);
 select tt.as_service();
-select tt.eq(public.enqueue_booking_reminders(), 1, 'kun patientens påmindelse, når klinikken har slået dem fra');
+select tt.eq(public.enqueue_booking_reminders(), 3, 'kun patientens påmindelse (push, e-mail, SMS), når klinikken har slået dem fra');
 
 rollback;

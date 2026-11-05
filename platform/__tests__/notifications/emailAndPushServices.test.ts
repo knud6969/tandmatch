@@ -16,7 +16,7 @@ const message: EmailMessage = {
   html: "<p>Hemmelig brødtekst</p>",
   idempotencyKey: "11111111-1111-4111-8111-111111111111",
   type: "clinic_new_lead",
-  clinicId: "22222222-2222-4222-8222-222222222222",
+  recipient: { kind: "clinic" as const, id: "22222222-2222-4222-8222-222222222222" },
 };
 
 function stub(status: number, body = "{}"): ReturnType<typeof vi.fn> {

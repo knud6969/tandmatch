@@ -1,16 +1,16 @@
 import "server-only";
-import type { ClinicNotificationType } from "@/lib/common/types/notifications";
+import type { NotificationType } from "@/lib/common/types/notifications";
 import { NotificationDeliveryError } from "@/platform/notifications/notificationErrors";
 
-// `type`, `clinicId` og `idempotencyKey` (outbox-rækkens id) bruges kun til logning og idempotens, aldrig i indholdet.
+// `type`, `recipient` (klinik eller patient, kun id) og `idempotencyKey` (outbox-rækkens id) bruges kun til logning og idempotens, aldrig i indholdet.
 export type EmailMessage = {
   to: string;
   subject: string;
   text: string;
   html: string;
   idempotencyKey: string;
-  type: ClinicNotificationType;
-  clinicId: string;
+  type: NotificationType;
+  recipient: { kind: "clinic" | "patient"; id: string };
 };
 
 const EMAIL_RE = /^[^\s@<>,;"]{1,64}@[^\s@<>,;"]{1,255}$/;

@@ -2,18 +2,22 @@ import "server-only";
 import {
   clinicNotificationPath,
   isClinicNotificationType,
+  isPatientContactNotificationType,
   isPatientNotificationType,
   parseNotificationPayload,
   patientNotificationPath,
   renderClinicEmail,
   renderClinicWebPush,
+  renderPatientEmail,
   renderPatientPush,
+  renderPatientSms,
 } from "@/lib/common/domain/notifications";
-import type { ClinicNotificationType, NotificationPayload, PatientNotificationType } from "@/lib/common/types/notifications";
+import type { ClinicNotificationType, NotificationPayload, PatientContactNotificationType, PatientNotificationType } from "@/lib/common/types/notifications";
 import type { EmailService } from "@/platform/notifications/emailService";
 import { NotificationDeliveryError, type DeliveryResult } from "@/platform/notifications/notificationErrors";
 import type { ClaimedNotification, CompletionStatus, NotificationOutboxRepository } from "@/platform/notifications/notificationOutboxRepository";
 import type { PushService } from "@/platform/notifications/pushService";
+import type { SmsService } from "@/platform/notifications/smsService";
 import type { WebPushService } from "@/platform/notifications/webPushService";
 
 export type FlushSummary = { sent: number; failed: number; skipped: number; retried: number };
@@ -25,6 +29,7 @@ export type DispatcherDeps = {
   repository: Pick<NotificationOutboxRepository, "claim" | "complete">;
   email: EmailService;
   push: PushService;
+  sms: SmsService;
   webPush: WebPushService;
   // Basisadressen til links i e-mails; null = ingen (e-mails springes over med NO_SITE_URL).
   siteUrl: () => string | null;
@@ -40,6 +45,7 @@ export class NotificationDispatcher {
     const rows = await this.deps.repository.claim(limit);
     for (const row of rows) {
       const outcome = await this.process(row);
+      this.logOutcome(row, outcome);
       try {
         await this.deps.repository.complete(row.id, outcome.status, outcome.code, outcome.invalid);
       } catch (error) {
@@ -60,6 +66,7 @@ export class NotificationDispatcher {
       const payload = parseNotificationPayload(row.payload);
       if (row.channel === "email") return await this.sendEmail(row, payload);
       if (row.channel === "web_push") return await this.sendWebPush(row, payload);
+      if (row.channel === "sms") return await this.sendSms(row, payload);
       return await this.sendPush(row, payload);
     } catch (error) {
       if (error instanceof NotificationDeliveryError) return this.failure(error.code, error.retryable);
@@ -69,12 +76,24 @@ export class NotificationDispatcher {
     }
   }
 
+  // Én tydelig linje i serverloggen for alt, der ikke blev sendt (sprunget over, fejlet, udskudt), så det kan ses i demoen, når
+  // der ikke er nøgler eller enheder (platform 14.6). De afsendte logges af tjenesterne. Kun type, kanal, id'er og fejlkode:
+  // aldrig adresse, nummer, token eller tekst.
+  private logOutcome(row: ClaimedNotification, outcome: Outcome): void {
+    if (outcome.status === "sent") return;
+    const recipient = row.clinicId ? `klinik ${row.clinicId}` : `patient ${row.recipientUserId ?? "ukendt"}`;
+    const channel = row.channel === "web_push" ? "web-push" : row.channel;
+    const verb = outcome.status === "skipped" ? "sprunget over" : outcome.status === "retry" ? "udskudt" : "fejlede";
+    console.info(`[${channel}] ${row.type} til ${recipient} ${verb}: ${outcome.code ?? "UKENDT"} (outbox ${row.id})`);
+  }
+
   private failure(code: string, retryable: boolean): Outcome {
     // Databasen gør selv retry til failed efter NOTIFY_MAX_ATTEMPTS forsøg.
     return { status: retryable ? "retry" : "failed", code };
   }
 
   private async sendEmail(row: ClaimedNotification, payload: NotificationPayload): Promise<Outcome> {
+    if (isPatientContactNotificationType(row.type)) return this.sendPatientEmail(row, row.type, payload);
     if (!isClinicNotificationType(row.type)) return { status: "failed", code: "INVALID_TYPE" };
     if (!row.toEmail) return { status: "skipped", code: "NO_RECIPIENT" };
     const siteUrl = this.deps.siteUrl();
@@ -87,7 +106,37 @@ export class NotificationDispatcher {
       html: content.html,
       idempotencyKey: row.id,
       type: row.type,
-      clinicId: row.clinicId ?? "ukendt",
+      recipient: { kind: "clinic", id: row.clinicId ?? "ukendt" },
+    });
+    return { status: "sent" };
+  }
+
+  // Patientens e-mail om en booking (platform 14.12): generisk tekst, adressen er slået op af databasen ved afsendelsen.
+  private async sendPatientEmail(row: ClaimedNotification, type: PatientContactNotificationType, payload: NotificationPayload): Promise<Outcome> {
+    if (!row.toEmail) return { status: "skipped", code: "NO_RECIPIENT" };
+    const content = renderPatientEmail(type, payload);
+    await this.deps.email.send({
+      to: row.toEmail,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+      idempotencyKey: row.id,
+      type,
+      recipient: { kind: "patient", id: row.recipientUserId ?? "ukendt" },
+    });
+    return { status: "sent" };
+  }
+
+  // Patientens SMS om en booking (platform 14.12). Intet nummer valgt = sprunget over (loggen viser det).
+  private async sendSms(row: ClaimedNotification, payload: NotificationPayload): Promise<Outcome> {
+    if (!isPatientContactNotificationType(row.type)) return { status: "failed", code: "INVALID_TYPE" };
+    if (!row.toPhone) return { status: "skipped", code: "NO_RECIPIENT" };
+    await this.deps.sms.send({
+      to: row.toPhone,
+      body: renderPatientSms(row.type, payload),
+      idempotencyKey: row.id,
+      type: row.type,
+      patientId: row.recipientUserId ?? "ukendt",
     });
     return { status: "sent" };
   }

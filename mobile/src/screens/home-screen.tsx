@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { HomeEntries } from "~/components/clinic-directory/home-entries";
+import { NotificationBellSlot } from "~/screens/notification-bell-slot";
 import { Screen } from "~/components/ui";
 import { colors, fontSize, spacing, type } from "~/theme";
 
@@ -20,9 +21,12 @@ export function HomeScreen() {
   return (
     <Screen>
       <View style={styles.page}>
-        <Text accessibilityRole="header" style={type.wordmark}>
-          TandMatch
-        </Text>
+        <View style={styles.top}>
+          <Text accessibilityRole="header" style={type.wordmark}>
+            TandMatch
+          </Text>
+          <NotificationBellSlot />
+        </View>
         <View style={styles.intro}>
           <Text accessibilityRole="header" style={type.display}>
             Find den rigtige tandklinik til en fair pris
@@ -54,6 +58,7 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   page: { gap: spacing.xxl, paddingVertical: spacing.lg },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   intro: { gap: spacing.md },
   steps: { gap: spacing.lg },
   step: { flexDirection: "row", gap: spacing.lg, alignItems: "flex-start" },

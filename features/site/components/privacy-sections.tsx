@@ -138,6 +138,15 @@ export function PrivacySections() {
           telefon, og den slettes, når du logger ud eller sletter din konto. Du kan slå notifikationer fra i appen
           eller i telefonens indstillinger.
         </p>
+        <p>
+          Hvis du har en konto, får du en kort e-mail og SMS, når en tid er booket eller aflyst, dagen før din tid og
+          dagen efter, så du kan anmelde besøget. Beskederne indeholder kun et generisk indhold og evt. tidspunktet,
+          aldrig oplysninger om dit helbred eller din behandling. E-mailen sendes til din login-adresse eller til den
+          e-mailadresse, du selv har angivet under Konto i appen; SMS sendes kun, hvis du har angivet et telefonnummer
+          dér. Adressen og nummeret gemmes kun til dette formål, vises aldrig for klinikker og slettes, når du
+          sletter din konto. E-mails sendes via Resend; en SMS-leverandør tilføjes her, før SMS tages i brug. Derudover
+          har du en notifikationsklokke i appen, som viser de samme hændelser uden at sende noget uden for TandMatch.
+        </p>
       </InfoSection>
       <InfoSection title="11. Ændringer">
         <p>Ændrer vi politikken væsentligt, får du besked og skal læse den igen, før du fortsætter.</p>

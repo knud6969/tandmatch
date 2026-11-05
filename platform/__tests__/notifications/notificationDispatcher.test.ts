@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { FakeEmailService } from "@/platform/notifications/fakeEmailService";
 import { FakePushService } from "@/platform/notifications/fakePushService";
+import { FakeSmsService } from "@/platform/notifications/fakeSmsService";
 import { FakeWebPushService } from "@/platform/notifications/fakeWebPushService";
 import { notificationSiteUrl } from "@/platform/notifications/notificationController";
 import { NotificationDispatcher } from "@/platform/notifications/notificationDispatcher";
@@ -16,18 +17,19 @@ const CLINIC = "44444444-4444-4444-8444-444444444444";
 function row(partial: Partial<ClaimedNotification>): ClaimedNotification {
   return {
     id: crypto.randomUUID(), type: "clinic_new_lead", channel: "email", payload: { leadId: LEAD }, attempts: 1,
-    clinicId: CLINIC, recipientUserId: null, toEmail: "ejer@klinik.example", pushTokens: [], webPushSubscriptions: [], ...partial,
+    clinicId: CLINIC, recipientUserId: null, toEmail: "ejer@klinik.example", toPhone: null, pushTokens: [], webPushSubscriptions: [], ...partial,
   };
 }
 
-function setup(rows: ClaimedNotification[], opts: { email?: FakeEmailService; push?: FakePushService; webPush?: FakeWebPushService; siteUrl?: string | null } = {}) {
+function setup(rows: ClaimedNotification[], opts: { email?: FakeEmailService; push?: FakePushService; sms?: FakeSmsService; webPush?: FakeWebPushService; siteUrl?: string | null } = {}) {
   const complete = vi.fn(async () => undefined);
   const repository = { claim: vi.fn(async () => rows), complete };
   const email = opts.email ?? new FakeEmailService();
   const push = opts.push ?? new FakePushService();
   const webPush = opts.webPush ?? new FakeWebPushService();
-  const dispatcher = new NotificationDispatcher({ repository, email, push, webPush, siteUrl: () => (opts.siteUrl === undefined ? "https://tandmatch.dk" : opts.siteUrl) });
-  return { dispatcher, complete, email, push, webPush };
+  const sms = opts.sms ?? new FakeSmsService();
+  const dispatcher = new NotificationDispatcher({ repository, email, push, sms, webPush, siteUrl: () => (opts.siteUrl === undefined ? "https://tandmatch.dk" : opts.siteUrl) });
+  return { dispatcher, complete, email, push, sms, webPush };
 }
 
 describe("NotificationDispatcher", () => {
@@ -127,6 +129,49 @@ describe("NotificationDispatcher", () => {
     await dispatcher.flush();
     const all = JSON.stringify(email.sent);
     for (const secret of ["Alma", "Hul i tand", "Hemmelig"]) expect(all).not.toContain(secret);
+  });
+});
+
+describe("patientens e-mail og SMS (platform 14.12)", () => {
+  const PATIENT = "55555555-5555-4555-8555-555555555555";
+  const booked = { bookingId: BOOKING, startsAt: "2026-11-10T08:15:00Z" };
+
+  it("sender generisk e-mail og SMS med tidspunktet, aldrig behandling eller klinik", async () => {
+    const mail = row({ type: "patient_booking_created", channel: "email", clinicId: null, recipientUserId: PATIENT, toEmail: "lea@example.com", payload: booked });
+    const text = row({ type: "patient_booking_reminder", channel: "sms", clinicId: null, recipientUserId: PATIENT, toEmail: null, toPhone: "+45 12 34 56 78", payload: booked });
+    const { dispatcher, email, sms } = setup([mail, text]);
+    expect(await dispatcher.flush()).toMatchObject({ sent: 2 });
+    expect(email.sent[0]).toMatchObject({ to: "lea@example.com", subject: "Din tid på TandMatch er booket", recipient: { kind: "patient", id: PATIENT } });
+    expect(email.sent[0].text).toContain("kl. 09.15");
+    expect(sms.sent[0].body).toBe("TandMatch: Du har en tid på TandMatch tirsdag 10. november kl. 09.15. Se detaljer i appen.");
+  });
+
+  it("mangler e-mail eller nummer, springes kanalen over og logges uden adresse, nummer og tekst", async () => {
+    const mail = row({ type: "patient_booking_cancelled", channel: "email", clinicId: null, recipientUserId: PATIENT, toEmail: null, payload: { bookingId: BOOKING } });
+    const text = row({ type: "patient_review_reminder", channel: "sms", clinicId: null, recipientUserId: PATIENT, toEmail: null, toPhone: null, payload: booked });
+    const noToken = row({ type: "patient_booking_confirmed", channel: "push", clinicId: null, recipientUserId: PATIENT, toEmail: null, payload: { caseId: CASE, leadId: LEAD }, pushTokens: [] });
+    const { dispatcher, complete } = setup([mail, text, noToken]);
+    const log = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    expect(await dispatcher.flush()).toMatchObject({ skipped: 3 });
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    log.mockRestore();
+    expect(lines).toEqual([
+      `[email] patient_booking_cancelled til patient ${PATIENT} sprunget over: NO_RECIPIENT (outbox ${mail.id})`,
+      `[sms] patient_review_reminder til patient ${PATIENT} sprunget over: NO_RECIPIENT (outbox ${text.id})`,
+      `[push] patient_booking_confirmed til patient ${PATIENT} sprunget over: NO_RECIPIENT (outbox ${noToken.id})`,
+    ]);
+    expect(complete).toHaveBeenCalledWith(mail.id, "skipped", "NO_RECIPIENT", undefined);
+  });
+
+  it("svar på henvendelse og beskeder giver aldrig e-mail eller SMS", async () => {
+    for (const type of ["patient_lead_answered", "patient_new_message"] as const) {
+      const mail = row({ type, channel: "email", clinicId: null, recipientUserId: PATIENT, toEmail: "lea@example.com", payload: { caseId: CASE, leadId: LEAD } });
+      const text = row({ type, channel: "sms", clinicId: null, recipientUserId: PATIENT, toEmail: null, toPhone: "+45 12 34 56 78", payload: { caseId: CASE, leadId: LEAD } });
+      const { dispatcher, email, sms } = setup([mail, text]);
+      expect(await dispatcher.flush()).toMatchObject({ sent: 0, failed: 2 });
+      expect(email.sent).toHaveLength(0);
+      expect(sms.sent).toHaveLength(0);
+    }
   });
 });
 

@@ -18,6 +18,7 @@ export type ClaimedNotification = {
   clinicId: string | null; // kun e-mail og web push (til logning)
   recipientUserId: string | null; // kun app-push (til logning)
   toEmail: string | null;
+  toPhone: string | null; // kun sms (patientens nummer, slået op ved afsendelsen)
   pushTokens: string[];
   webPushSubscriptions: WebPushTarget[];
 };
@@ -35,6 +36,7 @@ export class NotificationOutboxRepository extends BaseRepository<ClaimRow, Claim
       clinicId: row.clinic_id ?? null,
       recipientUserId: row.recipient_user_id ?? null,
       toEmail: row.to_email ?? null,
+      toPhone: row.to_phone ?? null,
       pushTokens: row.push_tokens ?? [],
       webPushSubscriptions: subs.filter(isTarget),
     };
@@ -56,6 +58,11 @@ export class NotificationOutboxRepository extends BaseRepository<ClaimRow, Claim
 
   async purge(): Promise<number> {
     return (await this.rpc<number>("purge_notifications", undefined)) ?? 0;
+  }
+
+  // Påmindelse om anmeldelse dagen efter tiden (platform 14.8); idempotent.
+  async enqueueReviewReminders(): Promise<number> {
+    return (await this.rpc<number>("enqueue_review_reminders", undefined)) ?? 0;
   }
 
   async enqueueBookingReminders(): Promise<number> {

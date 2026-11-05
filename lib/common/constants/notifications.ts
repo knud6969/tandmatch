@@ -17,12 +17,16 @@ export const PATIENT_NOTIFICATION_TYPES = [
   "patient_booking_confirmed",
   "patient_booking_cancelled",
   "patient_booking_reminder",
+  "patient_booking_created",
+  "patient_booking_rescheduled",
+  "patient_booking_cancelled_self",
+  "patient_review_reminder",
 ] as const;
 
 export const NOTIFICATION_TYPES = [...CLINIC_NOTIFICATION_TYPES, ...PATIENT_NOTIFICATION_TYPES] as const;
 
-// email og web_push går til klinikken, push (Expo) til patientens app.
-export const NOTIFICATION_CHANNELS = ["email", "push", "web_push"] as const;
+// email og web_push går til klinikken; patienten får push (Expo) til appen og, kun om bookinger, email og sms (14.12).
+export const NOTIFICATION_CHANNELS = ["email", "push", "web_push", "sms"] as const;
 export const NOTIFICATION_STATUSES = ["pending", "sending", "sent", "failed", "skipped"] as const;
 
 export const NOTIFY_MESSAGE_THROTTLE_MIN = 15; // (SQL) højst én besked-notifikation pr. lead, type og kanal pr. 15 min
@@ -79,6 +83,10 @@ export const PATIENT_PUSH_TEXTS = {
   patient_booking_confirmed: "Klinikken har bekræftet din tid.",
   patient_booking_cancelled: "Klinikken har aflyst din tid. Åbn appen for at se mere.",
   patient_booking_reminder: "Påmindelse: Du har en tandlægetid i morgen kl. {tid}.",
+  patient_booking_created: "Din tid er booket.",
+  patient_booking_rescheduled: "Din tid er flyttet.",
+  patient_booking_cancelled_self: "Du har aflyst din tid.",
+  patient_review_reminder: "Hvordan var dit besøg? Skriv gerne en anmeldelse.",
 } as const satisfies Record<(typeof PATIENT_NOTIFICATION_TYPES)[number], string>;
 
 // Stier (sidst i linket i e-mailen og i web push). {leadId} osv. udfyldes med id'er.
@@ -96,3 +104,63 @@ export const PUSH_ACCOUNT_TITLE = "Notifikationer";
 export const PUSH_ACCOUNT_SWITCH = "Modtag notifikationer";
 export const PUSH_DENIED_TEXT = "Slået fra i iPhone-indstillinger";
 export const PUSH_OPEN_SETTINGS = "Åbn Indstillinger";
+
+// Notifikationsklokken (platform 14.11): tabellen user_notifications, listens længde og pollingen. Tallene er ikke i SQL.
+export const INBOX_LIST_LIMIT = 20; // de nyeste, der vises i klokkens liste
+export const INBOX_UNREAD_CAP = 100; // højeste ulæste-tal, API'et tæller til; vises som "99+"
+export const INBOX_MARK_MAX_IDS = 100; // (SQL) højst så mange id'er i mark_notifications_read()
+export const INBOX_POLL_MS = 30_000; // klokken henter tallet hvert 30. sekund (web: kun mens fanen er synlig)
+export const INBOX_RETENTION_DAYS = NOTIFY_RETENTION_DAYS; // (SQL) rækkerne slettes af purge_notifications()
+
+// Klokkens tekster. Titlen på en notifikation er klinikkens e-mailemne eller patientens pushtekst (ingen nye tekster).
+export const INBOX_HEADING = "Notifikationer";
+export const INBOX_EMPTY_TEXT = "Du har ingen notifikationer endnu.";
+export const INBOX_MARK_ALL_READ = "Marker alle som læst";
+export const INBOX_BELL_LABEL = "Notifikationer";
+export const INBOX_UNREAD_LABEL = "ulæste";
+export const INBOX_RESCHEDULED_BODY = "Fra {gammel} til {ny}.";
+
+// Patientens e-mail og SMS om bookinger (platform 14.12). Kun disse syv typer sendes som e-mail og SMS; svar på henvendelse og
+// beskeder går kun til klokken og app-push. Teksterne er generiske: aldrig behandling, klinik eller helbredsdata.
+export const PATIENT_CONTACT_NOTIFICATION_TYPES = [
+  "patient_booking_created",
+  "patient_booking_rescheduled",
+  "patient_booking_confirmed",
+  "patient_booking_cancelled",
+  "patient_booking_cancelled_self",
+  "patient_booking_reminder",
+  "patient_review_reminder",
+] as const;
+
+// {tid} udfyldes med "tirsdag 14. oktober kl. 09.15". Mangler tidspunktet i payload, bruges `bodyNoTime`.
+export const PATIENT_CONTACT_TEXTS = {
+  booked: {
+    subject: "Din tid på TandMatch er booket",
+    body: "Du har en tid på TandMatch {tid}. Se detaljer i appen.",
+    bodyNoTime: "Du har en tid på TandMatch. Se detaljer i appen.",
+  },
+  cancelled: {
+    subject: "Din tid på TandMatch er aflyst",
+    body: "Din tid på TandMatch {tid} er aflyst. Se detaljer i appen.",
+    bodyNoTime: "Din tid på TandMatch er aflyst. Se detaljer i appen.",
+  },
+  reminder: {
+    subject: "Påmindelse: du har en tid i morgen",
+    body: "Du har en tid på TandMatch {tid}. Se detaljer i appen.",
+    bodyNoTime: "Du har en tid på TandMatch i morgen. Se detaljer i appen.",
+  },
+  review: {
+    subject: "Hvordan var dit besøg?",
+    body: "Du har haft en tid på TandMatch. Skriv gerne en anmeldelse i appen.",
+    bodyNoTime: "Du har haft en tid på TandMatch. Skriv gerne en anmeldelse i appen.",
+  },
+} as const;
+
+export const PATIENT_EMAIL_FOOTER =
+  "Du får denne e-mail, fordi du har en konto på TandMatch. Du kan ændre din e-mail og dit telefonnummer under Konto i appen. Svar ikke på denne e-mail.";
+export const PATIENT_SMS_PREFIX = "TandMatch: ";
+
+// Konto i appen: e-mail og telefon til notifikationer (identity 10.20).
+export const PATIENT_CONTACT_TITLE = "E-mail og SMS om dine tider";
+export const PATIENT_CONTACT_HELP =
+  "Vi sender en kort besked, når en tid er booket eller aflyst, dagen før din tid og dagen efter, så du kan anmelde besøget. Beskeden indeholder aldrig oplysninger om dit helbred eller din behandling.";

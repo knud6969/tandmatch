@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lazyAdminClient } from "@/platform/db/admin";
-import { createEmailService, createPushService, createWebPushService } from "@/platform/notifications/notificationServices";
+import { createEmailService, createPushService, createSmsService, createWebPushService } from "@/platform/notifications/notificationServices";
 import { NotificationDispatcher, type FlushSummary } from "@/platform/notifications/notificationDispatcher";
 import { NotificationOutboxRepository } from "@/platform/notifications/notificationOutboxRepository";
 
@@ -46,6 +46,7 @@ export class NotificationController {
         repository: this.repository,
         email: createEmailService(),
         push: createPushService(),
+        sms: createSmsService(),
         webPush: createWebPushService(),
         siteUrl: () => notificationSiteUrl(),
       });
@@ -71,9 +72,11 @@ export class NotificationController {
   }
 
   // Lægger påmindelser dagen før i outboxen og sender dem (platform 14.8).
-  async sendBookingReminders(): Promise<FlushSummary & { enqueued: number }> {
+  // Og påmindelser om at skrive en anmeldelse dagen efter tiden (14.8).
+  async sendBookingReminders(): Promise<FlushSummary & { enqueued: number; reviewReminders: number }> {
     const enqueued = await this.repository.enqueueBookingReminders();
-    return { enqueued, ...(await this.flushBatches()) };
+    const reviewReminders = await this.repository.enqueueReviewReminders();
+    return { enqueued, reviewReminders, ...(await this.flushBatches()) };
   }
 
   // Sikkerhedsnettet hvert 5. minut: send og ryd op.

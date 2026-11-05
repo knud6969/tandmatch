@@ -1,9 +1,10 @@
 import { ACCOUNT_LOAD_FAILED_TEXT } from "@/lib/common/constants/error-texts";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { listCases } from "~/api/cases";
 import { useSession } from "~/auth/session-context";
 import { CaseListItem } from "~/components/case/case-list-item";
+import { NotificationBellSlot } from "~/screens/notification-bell-slot";
 import { Button, Card, LoadError, LoadState, Screen } from "~/components/ui";
 import { useLoad } from "~/hooks/use-load";
 import { useReloadOnFocus } from "~/hooks/use-reload-on-focus";
@@ -38,9 +39,12 @@ export function CasesScreen() {
   if (status === "loading") return <Screen>{null}</Screen>;
   return (
     <Screen>
-      <Text accessibilityRole="header" style={styles.title}>
-        Mine sager
-      </Text>
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          Mine sager
+        </Text>
+        <NotificationBellSlot />
+      </View>
       {status === "unavailable" ? (
         <LoadError message={ACCOUNT_LOAD_FAILED_TEXT} onRetry={reload} />
       ) : status === "none" ? (
@@ -60,6 +64,7 @@ export function CasesScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: type.screenTitle,
   heading: type.heading,
   body: type.body,

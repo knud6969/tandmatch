@@ -1,12 +1,15 @@
 import "server-only";
 import { ConsoleEmailService } from "@/platform/notifications/consoleEmailService";
 import { ConsolePushService } from "@/platform/notifications/consolePushService";
+import { ConsoleSmsService } from "@/platform/notifications/consoleSmsService";
 import { ConsoleWebPushService } from "@/platform/notifications/consoleWebPushService";
 import type { EmailService } from "@/platform/notifications/emailService";
 import { ExpoPushService } from "@/platform/notifications/expoPushService";
 import { FakeEmailService } from "@/platform/notifications/fakeEmailService";
 import { FakePushService } from "@/platform/notifications/fakePushService";
+import { FakeSmsService } from "@/platform/notifications/fakeSmsService";
 import { FakeWebPushService } from "@/platform/notifications/fakeWebPushService";
+import type { SmsService } from "@/platform/notifications/smsService";
 import type { PushService } from "@/platform/notifications/pushService";
 import { ResendEmailService } from "@/platform/notifications/resendEmailService";
 import { VapidWebPushService } from "@/platform/notifications/vapidWebPushService";
@@ -25,6 +28,12 @@ export function createEmailService(): EmailService {
   if (apiKey && from) return new ResendEmailService(apiKey, from);
   if (process.env.NODE_ENV === "production") console.warn("E-mail: RESEND_API_KEY eller EMAIL_FROM mangler; e-mails logges kun.");
   return new ConsoleEmailService();
+}
+
+// Ingen rigtig SMS-udbyder endnu (platform 14.12): standarden logger kun type, patient-id og outbox-id.
+export function createSmsService(): SmsService {
+  if (fake()) return new FakeSmsService();
+  return new ConsoleSmsService();
 }
 
 export function createPushService(): PushService {

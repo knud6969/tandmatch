@@ -10,6 +10,7 @@ import { unsubscribeBrowserPush } from "@/platform/ui-utils/web-push-client";
 import { AreaTabs } from "@/components/ui/area-tabs";
 import { AREA_HOME, AREA_NAV, activeNavHref } from "@/lib/common/navigation/areas";
 import { useLeadsNeedingActionCount } from "@/features/leads/ui";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 // Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
 export function SiteHeader() {
@@ -78,6 +79,7 @@ export function SiteHeader() {
               {greeting && (
                 <span className="hidden max-w-[12rem] truncate text-sm text-ink-muted sm:inline">{greeting}</span>
               )}
+              {me.role === "clinic" && <NotificationBell />}
               <Button variant="ghost" className="min-h-11 px-3" onClick={logout} disabled={loggingOut}>
                 {loggingOut ? "Logger ud …" : "Log ud"}
               </Button>

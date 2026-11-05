@@ -8,6 +8,7 @@ import { getPatientMe, patchPatientMe } from "~/api/patients";
 import { useSession } from "~/auth/session-context";
 import { AnonymousBanner } from "~/components/auth/anonymous-banner";
 import { ProfileForm } from "~/components/auth/profile-form";
+import { NotificationContactSection } from "~/screens/notification-contact-section";
 import { PushSettingsRow } from "~/components/notifications/push-settings-row";
 import { Button, Card, LoadError, LoadState, Screen, StatusMessage } from "~/components/ui";
 import { useAction } from "~/hooks/use-action";
@@ -85,6 +86,7 @@ export function AccountScreen() {
               <Text style={styles.heading}>{me.displayName ? `Hej ${me.displayName}` : "Din konto"}</Text>
               <Profile />
               <Button label="Gemte klinikker" variant="secondary" onPress={() => router.push("/favoritter")} />
+              <NotificationContactSection />
               {push.hasProjectId && push.permission !== null ? (
                 <PushSettingsRow
                   permission={push.permission}

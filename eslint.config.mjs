@@ -100,11 +100,11 @@ const layerRules = [
       "^@/features/[a-z]+/(?:ai/.*|ui|[^/]*(?:Repository|Storage|Service)|components/.*|pages/.*|utils/.*)$",
       "^@/platform/db/(?!supabase$)",
       "^@/platform/base/",
-      "^@/platform/notifications/(?!notificationController$)",
+      "^@/platform/notifications/(?!notification(?:Inbox)?Controller$)",
       "^@/platform/[^/]*(?:Repository|imageProcessingService)$",
       "^@supabase/",
     ],
-    "Routes kalder én controller og bruger platform/middleware. Supabase kaldes kun i repositories. Fra platform/notifications må routes kun importere notificationController.",
+    "Routes kalder én controller og bruger platform/middleware. Supabase kaldes kun i repositories. Fra platform/notifications må routes kun importere notificationController og notificationInboxController.",
   ),
   // platform/ er tværgående og kender ingen domæner (undtagen cron og session-/vilkårsvagten, se nedenfor).
   layer(
