@@ -166,6 +166,8 @@ Bygget i 6.1. Filer: `features/booking/bookingsController.ts` (`BookingsControll
 
 **Bygget (2026-11-04).** Trin 11, PR B (11.12-11.14). Patienten flytter en booket tid til en anden ledig tid hos samme klinik og samme behandling. Klinikken kan ikke flytte en tid; den aflyser og skriver i tråden (som i dag). Flytning af en reserveret akuttid (`held`) er ikke mulig.
 
+**Delingssamtykke (beslutning 2026-11-05, security L5):** at flytte en tid kræver **ikke** et aktivt `health_data_sharing`. Flytningen deler intet nyt (samme klinik, behandling og kontaktoplysninger, som klinikken allerede har for den booket tid), og en booket tid består, selv om patienten trækker samtykket tilbage (leads 4.4). Afsendelse af nye leads og ny booking (`book_slot()`) kræver stadig samtykket. Dækket af RLS-test 62.
+
 **Databasen** (migration `20261106000100_reschedule_booking.sql`):
 - Kolonnen `bookings.rescheduled_from_id` (4.3).
 - `reschedule_booking(p_booking_id uuid, p_starts_at timestamptz) returns uuid` (`security definer`, `search_path = ''`, kun `authenticated`). Én transaktion, så den gamle tid aldrig er aflyst, uden at den nye er booket:
