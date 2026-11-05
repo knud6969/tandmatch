@@ -399,9 +399,9 @@ Bygget i trin 1 og 1.9 (undtagen anmeldelser). Billedupload (logo, portræt, por
 | PATCH/DELETE `/api/clinics/me/portfolio/{id}` | PATCH `{ caption?, serviceId? }` | item / 204 |
 | GET `/api/clinics/me/reviews` | | `{ reviews: ClinicReviewDto[] }` (10.13): godkendte anmeldelser af egen klinik med eget svar og dets status, via `clinic_reviews()`. 403 `CLINIC_NOT_VERIFIED` for ikke-verificerede. Bygget i 6.2 |
 | GET/PUT `/api/clinics/me/notification-settings` og POST/DELETE `/api/web-push-subscriptions` | se 10.19 | |
-| **Planlagt (2026-11-04)** GET `/api/clinics/me/stats` | se 10.18 | |
+| GET `/api/clinics/me/stats` | se 10.18 | |
 
-**Planlagt (2026-11-04):** `DELETE /api/clinics/me` får `withApi(…, { notify: true })`, så patienterne får push om aflyste tider og afviste henvendelser, når klinikken sletter sin konto (platform 14.4, 14.6).
+`DELETE /api/clinics/me` har `withApi(…, { notify: true })`, så patienterne får push om aflyste tider og afviste henvendelser, når klinikken sletter sin konto (platform 14.4, 14.6).
 
 ### 10.17 Favoritter (gemte klinikker)
 

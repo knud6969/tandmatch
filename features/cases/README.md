@@ -173,7 +173,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 //   outOfScopeTopics       OutOfScopeTopic[]
 //   readyForSummary        AI'en har nok til, at klinikken kan svare. Weben: aktiverer knappen "Lav opsummering".
 //                          Appen: viser kortet til at bekræfte ydelser (7.9). Fra 8.6c tvinger guard.ts feltet til
-//                          false, når suggestedServices er tom (og som i dag ved emergency) [IKKE BYGGET]
+//                          false, når suggestedServices er tom (og som i dag ved emergency)
 //   quickReplies           (bygget, 8.6g) 0-4 korte svarmuligheder på AI'ens eget spørgsmål, hver 1-60 tegn
 //                          (fx "Et par dage", "Over en uge"). Køres gennem reply-filteret og desuden et filter mod
 //                          tidsrum, postnummer, navn, telefon og e-mail; fejler ét, fjernes alle (intet nyt forsøg,
@@ -306,7 +306,7 @@ Stramning til EU MDR sker ved at ændre `rules.ts` og prompt-versionen. De faste
 
 ### 7.9 Sagsflowet som én samtale (patient-appen)
 
-Status: bygget i trin 8 (8.6b-8.6i, 8.11e). Billeder i chatten (8.7) er [IKKE BYGGET]. Reglerne for, hvornår behandlingskortet vises, er ændret i 7.9a og bygget i trin 9 (9.1-9.6a); hvor tabellen nedenfor og 7.9a er uenige, gælder 7.9a. Besluttet af brugeren 2026-10-19 efter test af appens chat. Gælder kun appen; weben har ikke længere patientsider (13.6).
+Status: bygget i trin 8 (8.6b-8.6i, 8.11e). Billeder i chatten (8.7) er bygget. Reglerne for, hvornår behandlingskortet vises, er ændret i 7.9a og bygget i trin 9 (9.1-9.6a); hvor tabellen nedenfor og 7.9a er uenige, gælder 7.9a. Besluttet af brugeren 2026-10-19 efter test af appens chat. Gælder kun appen; weben har ikke længere patientsider (13.6).
 
 I appen er hele sagen **én chatskærm** (`/sag/[caseId]/flow`). Der er ingen separate trin eller formularskærme. AI'en spørger ind frem og tilbage, indtil den kan foreslå ydelser og evt. give en foreløbig vurdering. Det, sagen kræver før afsendelse (`canSendCase()`, `send_leads()`: mindst én bekræftet ydelse, tidsrum, postnummer, godkendt opsummering), indsamler appen med **faste svar-kort i chatten**.
 
