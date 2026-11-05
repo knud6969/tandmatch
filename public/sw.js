@@ -37,7 +37,10 @@ self.addEventListener("push", function (event) {
     self.registration.showNotification(text(payload && payload.title, FALLBACK_TITLE, 100), {
       body: text(payload && payload.body, FALLBACK_BODY, 200),
       data: { path: path },
-      tag: typeof (payload && payload.type) === "string" ? payload.type.slice(0, 60) : undefined,
+      // Typen og stien i tagget: to forskellige leads giver to notifikationer, og en ny besked i samme lead erstatter den forrige.
+      // renotify får også en erstatning til at lyde i stedet for at ske lydløst.
+      tag: typeof (payload && payload.type) === "string" ? (payload.type.slice(0, 60) + ":" + path).slice(0, 255) : path,
+      renotify: true,
     }),
   );
 });
