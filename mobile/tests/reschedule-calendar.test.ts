@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { patientCancellationText, patientRescheduledFromText } from "@/lib/booking/domain/bookings";
 import { SLOT_TAKEN_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiRequestError } from "~/api/client";
@@ -8,7 +10,12 @@ import { canAddToCalendar } from "~/utils/calendar-button";
 // Expo Calendar er ikke installeret i alle miljøer; modulet mockes, så testen ikke afhænger af den native pakke.
 const mockCreateEvent = jest.fn(async () => ({ action: "saved" }));
 const mockIsAvailable = jest.fn(async () => true);
-jest.mock("expo-calendar", () => ({ createEventInCalendarAsync: (...a: unknown[]) => mockCreateEvent(...(a as [])), isAvailableAsync: () => mockIsAvailable() }), { virtual: true });
+jest.mock("expo-calendar/legacy", () => ({ createEventInCalendarAsync: (...a: unknown[]) => mockCreateEvent(...(a as [])), isAvailableAsync: () => mockIsAvailable() }), { virtual: true });
+// Hovedindgangen kaster altid i 58.0.6; bruges den ved en fejl, fejler testene.
+jest.mock("expo-calendar", () => ({
+  createEventInCalendarAsync: () => { throw new Error("Brug expo-calendar/legacy"); },
+  isAvailableAsync: () => { throw new Error("Brug expo-calendar/legacy"); },
+}), { virtual: true });
 
 const NOW = new Date("2026-10-25T12:00:00Z");
 
@@ -33,6 +40,12 @@ describe("rescheduleFailure", () => {
 });
 
 describe("Tilføj til kalender (13.11)", () => {
+  it("importerer fra expo-calendar/legacy og ikke hovedindgangen", () => {
+    const source = readFileSync(join(__dirname, "../src/utils/calendar.ts"), "utf8");
+    expect(source).toMatch(/from "expo-calendar\/legacy"/);
+    expect(source).not.toMatch(/from "expo-calendar"/);
+  });
+
   it("vises kun for en booket tid før starttid, og kun når kalenderen er tilgængelig", () => {
     const future = { status: "booked" as const, startsAt: "2026-10-26T08:00:00Z" };
     expect(canAddToCalendar(future, true, NOW)).toBe(true);
