@@ -52,3 +52,5 @@ export const CHAT_LOW_MESSAGES_WARNING = 5;
 // Registrering af enheder til notifikationer pr. klient-IP pr. time (identity 10.15, clinics 10.19).
 export const PUSH_TOKEN_IP_LIMIT_PER_HOUR = 30;
 export const WEB_PUSH_IP_LIMIT_PER_HOUR = 30;
+// Ændringer af klinikprofilen (PATCH /api/clinics/me); en adresseændring slår koordinater op hos Nominatim.
+export const CLINIC_PROFILE_IP_LIMIT_PER_HOUR = 120;
