@@ -217,7 +217,7 @@ describe("outboxen gennem API'et", () => {
 });
 
 describe("påmindelser dagen før", () => {
-  it("booking-reminders lægger to rækker pr. booking og er idempotent", async () => {
+  it("booking-reminders lægger rækker pr. booking (patient: push, e-mail og SMS; klinik: e-mail) og er idempotent", async () => {
     const k = await clinic();
     const p = await patient();
     const leadId = await sentLead(p, k);
@@ -237,14 +237,16 @@ describe("påmindelser dagen før", () => {
 
     const first = await new TestClient().post("/api/cron/booking-reminders", {}, CRON);
     assert.equal(first.status, 200, JSON.stringify(first.body));
-    assert.deepEqual(Object.keys(first.body).sort(), ["enqueued", "failed", "retried", "sent", "skipped"]);
-    assert.ok(first.body.enqueued >= 2);
+    assert.deepEqual(Object.keys(first.body).sort(), ["enqueued", "failed", "retried", "reviewReminders", "sent", "skipped"]);
+    assert.ok(first.body.enqueued >= 4);
     const rows = await outbox({ booking: data!.id });
     assert.equal(find(rows, "patient_booking_reminder", "push").length, 1);
     assert.equal(find(rows, "clinic_booking_reminder", "email").length, 1);
+    assert.equal(find(rows, "patient_booking_reminder", "email").length, 1);
+    assert.equal(find(rows, "patient_booking_reminder", "sms").length, 1);
     assert.equal(find(rows, "clinic_booking_reminder", "web_push").length, 0, "web push-påmindelser er ikke valgt som standard");
     for (const row of rows) {
-      assert.equal(row.status === "pending" || row.status === "sending" || row.status === "sent", true, `${row.type}: ${row.status}`);
+      assert.equal(["pending", "sending", "sent", "skipped"].includes(row.status), true, `${row.type}: ${row.status}`); // SMS uden nummer: skipped
     }
 
     const second = await new TestClient().post("/api/cron/booking-reminders", {}, CRON);

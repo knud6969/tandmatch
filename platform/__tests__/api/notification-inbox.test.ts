@@ -259,4 +259,38 @@ describe("påmindelser", () => {
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.deepEqual(Object.keys(r.body).sort(), ["enqueued", "failed", "retried", "reviewReminders", "sent", "skipped"]);
   });
+
+  it("anmeldelsespåmindelsen sendes én gang (e-mail, SMS og klokke) for et gennemført besøg uden anmeldelse, tryk åbner anmeldelsen", async () => {
+    const k = await clinic();
+    const p = await patient();
+    assert.equal((await p.c.put("/api/patients/me/notification-contact", { email: null, phone: "+45 87 65 43 21" })).status, 200);
+    const leadId = await sendLead(p, k);
+    assert.equal((await k.c.post(`/api/leads/${leadId}/decision`, { decision: "accept" })).status, 200);
+    const starts = new Date(Math.floor((Date.now() - 26 * 3_600_000) / 900_000) * 900_000);
+    const { data, error } = await admin
+      .from("bookings")
+      .insert({
+        lead_id: leadId, clinic_id: k.id, patient_id: p.userId, service_id: p.serviceId,
+        starts_at: starts.toISOString(), ends_at: new Date(starts.getTime() + 30 * 60_000).toISOString(), status: "booked",
+        contact_name: "Lea Testesen", contact_phone: "+45 12 34 56 78", contact_email: p.email,
+        created_at: new Date(starts.getTime() - 3_600_000).toISOString(),
+      })
+      .select("id")
+      .single();
+    assert.ifError(error);
+    const bookingId = data!.id as string;
+    const first = await new TestClient().post("/api/cron/booking-reminders", {}, CRON);
+    assert.equal(first.status, 200);
+    assert.ok(first.body.reviewReminders >= 1);
+    assert.equal((await settled(p.userId, "patient_review_reminder", "email")).status, "sent");
+    assert.equal((await settled(p.userId, "patient_review_reminder", "sms")).status, "sent");
+    const item = (await inbox(p.c)).items.find((i) => i.type === "patient_review_reminder");
+    assert.ok(item, "påmindelsen står i klokken");
+    assert.equal(item.path, `/anmeld/${bookingId}`);
+    await new TestClient().post("/api/cron/booking-reminders", {}, CRON);
+    const rows = (await outbox(p.userId)).filter((r) => r.type === "patient_review_reminder");
+    assert.deepEqual(rows.map((r) => r.channel).sort(), ["email", "sms"], "kun én e-mail og én SMS, ingen push");
+    // Også i klokken er der kun én.
+    assert.equal((await inbox(p.c)).items.filter((i) => i.type === "patient_review_reminder").length, 1);
+  });
 });
