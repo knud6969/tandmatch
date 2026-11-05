@@ -41,15 +41,18 @@ export class FavoritesController {
 
   // Id'er på gemte klinikker, der stadig vises offentligt (hjertet i listen og på profilen).
   async ids(): Promise<FavoriteIdsDto> {
-    const records = await this.visible();
+    const records = await this.visible(await this.favorites.listOwn());
     return { clinicIds: records.map((record) => record.id) };
   }
 
   // De gemte klinikker som oversigtens kort uden valgte behandlinger, sorteret efter navn.
   async list(): Promise<FavoriteClinicsDto> {
-    const records = await this.visible();
-    if (records.length === 0) return { clinics: [] };
+    const saved = await this.favorites.listOwn();
+    if (saved.length === 0) return { clinics: [] };
+    // Samme plan som oversigten: varighed og første ledige tid for en undersøgelse, og priser for de ydelser, planen bruger.
     const plan = await this.listing.plan([]);
+    const records = await this.visible(saved, plan.priceServiceIds);
+    if (records.length === 0) return { clinics: [] };
     const context = await this.listing.contextFor(records);
     const clinics = records.map((record) => this.listing.toListItem(record, plan, context, null));
     clinics.sort((a, b) => a.name.localeCompare(b.name, "da"));
@@ -64,9 +67,8 @@ export class FavoritesController {
     return this.favorites.remove(clinicId);
   }
 
-  private async visible() {
-    const saved = await this.favorites.listOwn();
+  private async visible(saved: readonly { clinicId: string }[], priceServiceIds: readonly string[] = []) {
     if (saved.length === 0) return [];
-    return this.directory.listClinics([], saved.map((favorite) => favorite.clinicId));
+    return this.directory.listClinics(priceServiceIds, saved.map((favorite) => favorite.clinicId));
   }
 }
