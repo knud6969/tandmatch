@@ -1,5 +1,5 @@
 import "server-only";
-import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
+import { API_ERROR_TEXTS, UNKNOWN_SERVICE_TEXT } from "@/lib/common/constants/error-texts";
 import type { AiConversationRecord, AiMessageRecord, ChatExportDto, OutOfScopeTopic } from "@/lib/cases/types/ai";
 import { ApiError, aiConsentRequired, chatLimit, consentRequired, notDraft, notFound } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
@@ -231,7 +231,7 @@ export class ChatRepository extends BaseRepository<MessageRow, AiMessageRecord> 
         NOT_FOUND: notFound(),
         CONVERSATION_CLOSED: chatLimit(),
         CONSENT_REQUIRED: aiConsentRequired(),
-        INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget."),
+        INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", UNKNOWN_SERVICE_TEXT),
       },
     );
     const row = Array.isArray(data) ? data[0] : data;

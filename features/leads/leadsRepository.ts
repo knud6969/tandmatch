@@ -1,5 +1,5 @@
 import "server-only";
-import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
+import { API_ERROR_TEXTS, INVALID_CONTACT_TEXT } from "@/lib/common/constants/error-texts";
 import type { z } from "zod";
 import { isActiveLead, summaryExcerpt } from "@/lib/leads/domain/leads";
 import { priceEstimate } from "@/lib/booking/domain/reviews";
@@ -176,7 +176,7 @@ const EMERGENCY_ERRORS = (): Record<string, ApiError> => ({
   ...SEND_ERRORS(),
   ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.emergencyLead),
   INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "Vælg en akutbehandling."),
-  INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", "Tjek navn og telefonnummer."),
+  INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", INVALID_CONTACT_TEXT),
   UNKNOWN_POSTAL_CODE: new ApiError(400, "UNKNOWN_POSTAL_CODE", "Vi kender ikke postnummeret."),
   SLOT_TAKEN: slotTaken(),
   SLOT_UNAVAILABLE: slotUnavailable(),

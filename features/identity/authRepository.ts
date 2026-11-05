@@ -1,7 +1,7 @@
 import "server-only";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 import type { MobileSessionDto } from "@/lib/identity/types/auth";
-import { API_ERROR_TEXTS, RECOVERY_INVALID_TEXT, SAME_PASSWORD_TEXT } from "@/lib/common/constants/error-texts";
+import { API_ERROR_TEXTS, EMAIL_EXISTS_TEXT, RECOVERY_INVALID_TEXT, SAME_PASSWORD_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiError, unauthenticated } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import { isTransientAuthError } from "@/platform/db/authErrors";
@@ -72,7 +72,7 @@ export class AuthRepository extends BaseRepository {
 
     if (error) {
       if (error.code === "user_already_exists" || error.code === "email_exists") {
-        throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
+        throw new ApiError(409, "EMAIL_EXISTS", EMAIL_EXISTS_TEXT);
       }
       if (error.status && error.status >= 400 && error.status < 500) {
         throw new ApiError(400, "SIGNUP_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
@@ -103,7 +103,7 @@ export class AuthRepository extends BaseRepository {
     const { error } = await this.db.auth.updateUser({ email, password });
     if (error) {
       if (error.code === "email_exists" || error.code === "user_already_exists") {
-        throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
+        throw new ApiError(409, "EMAIL_EXISTS", EMAIL_EXISTS_TEXT);
       }
       throw new ApiError(400, "CONVERT_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
     }
@@ -126,7 +126,7 @@ export class AuthRepository extends BaseRepository {
     const body = (await res.json().catch(() => null)) as { error_code?: string } | null;
     if (res.status === 401) throw unauthenticated();
     if (body?.error_code === "email_exists" || body?.error_code === "user_already_exists") {
-      throw new ApiError(409, "EMAIL_EXISTS", "Der findes allerede en konto med denne e-mail.");
+      throw new ApiError(409, "EMAIL_EXISTS", EMAIL_EXISTS_TEXT);
     }
     throw new ApiError(400, "CONVERT_FAILED", API_ERROR_TEXTS.SIGNUP_FAILED);
   }

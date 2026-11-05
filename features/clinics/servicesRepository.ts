@@ -3,6 +3,7 @@ import type { ServiceCategory, ServiceDto, ServiceGroupDto } from "@/lib/clinics
 import { ApiError } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
+import { UNKNOWN_SERVICE_TEXT } from "@/lib/common/constants/error-texts";
 
 type GroupRow = Pick<Tables<"service_groups">, "id" | "slug" | "name" | "description" | "sort_order" | "is_active">;
 type ServiceRow = Pick<
@@ -77,7 +78,7 @@ export class ServicesRepository extends BaseRepository<ServiceRow, ServiceDto> {
     const unique = [...new Set(ids)];
     const found = await this.findActive(unique);
     if (found.length !== unique.length) {
-      throw new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget.");
+      throw new ApiError(400, "UNKNOWN_SERVICE", UNKNOWN_SERVICE_TEXT);
     }
     return found;
   }

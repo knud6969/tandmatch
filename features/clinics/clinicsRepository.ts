@@ -7,6 +7,7 @@ import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
 import { trustpilotFromColumns } from "@/platform/db/mappers";
 import type { LatLng } from "@/lib/clinics/domain/location";
+import { UNKNOWN_SERVICE_TEXT } from "@/lib/common/constants/error-texts";
 
 type ClinicPatch = z.infer<typeof patchClinicSchema>;
 
@@ -183,7 +184,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
   async replacePrices(prices: NewClinicPrice[]): Promise<void> {
     await this.rpc("replace_clinic_prices", { p_prices: prices }, {
       SERVICE_GROUP_NOT_SELECTED: new ApiError(409, "SERVICE_GROUP_NOT_SELECTED", "Vælg først kategorien, før du angiver priser i den."),
-      UNKNOWN_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget."),
+      UNKNOWN_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", UNKNOWN_SERVICE_TEXT),
     });
   }
 }
