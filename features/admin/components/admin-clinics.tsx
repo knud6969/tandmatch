@@ -26,7 +26,6 @@ export function AdminClinics() {
   const [input, setInput] = useState("");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [updated, setUpdated] = useState<Record<string, AdminClinicDto>>({});
 
   // Søgningen sendes først, når der er holdt en kort pause i skrivningen.
   useEffect(() => {
@@ -42,12 +41,7 @@ export function AdminClinics() {
     return (await apiRequest<{ clinics: AdminClinicDto[] }>(`/api/admin/clinics${query ? `?${query}` : ""}`)).clinics;
   }, [status, q]);
   const { data, loading, error, reload } = useLoad(load);
-
-  // En ændret klinik opdateres på stedet, og listen hentes igen, så filteret passer (fx forsvinder den fra "Verificeret").
-  function onChanged(clinic: AdminClinicDto) {
-    setUpdated((current) => ({ ...current, [clinic.id]: clinic }));
-    reload();
-  }
+  // En ændret klinik hentes igen sammen med listen, så filteret passer (fx forsvinder den fra "Verificeret").
 
   return (
     <div className="flex flex-col gap-5">
@@ -62,7 +56,7 @@ export function AdminClinics() {
       ) : (
         <ul className="flex flex-col gap-4" aria-label="Klinikker">
           {data.map((clinic) => (
-            <AdminClinicRow key={clinic.id} clinic={updated[clinic.id] ?? clinic} onChanged={onChanged} />
+            <AdminClinicRow key={clinic.id} clinic={clinic} onChanged={reload} />
           ))}
         </ul>
       )}
