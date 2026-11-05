@@ -141,7 +141,7 @@ export function renderClinicWebPush(type: ClinicNotificationType, payload: Notif
 // Push til patientens app (platform 14.2): titel "TandMatch" og en fast tekst.
 export function renderPatientPush(type: PatientNotificationType, payload: NotificationPayload): RenderedPush {
   const template = PATIENT_PUSH_TEXTS[type];
-  const body = type === "patient_booking_reminder" ? template.replace("{tid}", formatTime(need(payload.startsAt, "startsAt"))) : template;
+  const body = type === "patient_booking_reminder" ? template.replace("{tid}", when(need(payload.startsAt, "startsAt"))) : template;
   return { title: NOTIFICATION_TITLE, body };
 }
 

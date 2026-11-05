@@ -579,12 +579,12 @@ Ingen notifikation indeholder helbredsdata, patientens navn eller kontaktoplysni
 | `clinic_booking_created` | e-mail og web push | klinikken | patienten booker (`book_slot()`) | "Ny booking på TandMatch" / "En patient har booket en tid hos jer {dag d. dato kl. HH.MM}. Se bookingen her:" | samme |
 | `clinic_booking_cancelled` | e-mail og web push | klinikken | patienten aflyser (`cancel_booking()`) | "Aflyst tid på TandMatch" / "En patient har aflyst tiden {dag d. dato kl. HH.MM}. Tiden er ledig igen i jeres kalender." | samme |
 | `clinic_booking_rescheduled` | e-mail og web push | klinikken | patienten flytter en tid (PR B, booking 10.16) | "Flyttet tid på TandMatch" / "En patient har flyttet en tid fra {gammel} til {ny}." | samme |
-| `clinic_booking_reminder` | e-mail og web push (hvis valgt) | klinikken | dagen før en booket tid (14.8) | "Påmindelse: booket tid i morgen" / "I har en booket tid via TandMatch {dag d. dato kl. HH.MM}." | samme |
+| `clinic_booking_reminder` | e-mail og web push (hvis valgt) | klinikken | dagen før en booket tid (14.8) | "Påmindelse: booket tid" / "I har en booket tid via TandMatch {dag d. dato kl. HH.MM}." | samme |
 | `patient_lead_answered` | push | patienten | klinikken accepterer eller afviser (også systemets `clinic_left`) | Titel "TandMatch", tekst "Klinikken har svaret på din henvendelse." | `/sag/<caseId>` |
 | `patient_new_message` | push | patienten | besked fra klinikken (højst én pr. lead pr. 15 min) | "Du har en ny besked fra klinikken." | `/sag/<caseId>/beskeder/<leadId>` |
 | `patient_booking_confirmed` | push | patienten | klinikken accepterer et akut-lead, så den reserverede tid bliver booket (`held → booked`). Erstatter `patient_lead_answered` for den beslutning, så patienten kun får én push | "Klinikken har bekræftet din tid." | `/bookinger` |
 | `patient_booking_cancelled` | push | patienten | klinikken aflyser (også når klinikken sletter sin konto) | "Klinikken har aflyst din tid. Åbn appen for at se mere." | `/bookinger` |
-| `patient_booking_reminder` | push, e-mail og SMS | patienten | dagen før en booket tid (14.8) | "Påmindelse: Du har en tandlægetid i morgen kl. {HH.MM}." | `/bookinger` |
+| `patient_booking_reminder` | push, e-mail og SMS | patienten | dagen før en booket tid (14.8) | "Påmindelse: Du har en tandlægetid {dag d. dato kl. HH.MM}." (ikke "i morgen": tiden kan ligge senere samme dag) | `/bookinger` |
 | `patient_booking_created` | e-mail og SMS | patienten | patienten booker (`book_slot()`). Ingen app-push (patienten har selv gjort det) | "Din tid er booket." | `/bookinger` |
 | `patient_booking_rescheduled` | e-mail og SMS | patienten | patienten flytter en tid. Tæller som booket: én bekræftelse med den nye tid, ingen aflysning | "Din tid er flyttet." | `/bookinger` |
 | `patient_booking_cancelled_self` | e-mail og SMS | patienten | patienten aflyser selv (ikke ved flytning) | "Du har aflyst din tid." | `/bookinger` |
