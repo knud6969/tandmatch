@@ -12,7 +12,7 @@ import type { PublicClinicProfileRecord, PublicClinicRecord } from "@/features/c
 import { type LatLng, RankingService } from "@/features/clinics/rankingService";
 import type { ServicesRepository } from "@/features/clinics/servicesRepository";
 
-const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
+export const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
 // De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og akutbehandlingen
 // til første akuttid.

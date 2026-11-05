@@ -4,14 +4,15 @@ import type { z } from "zod";
 import { DEFAULT_MAX_DISTANCE_KM } from "@/lib/clinics/constants/clinics";
 import type { availabilityQuerySchema, clinicProfileQuerySchema, clinicsQuerySchema } from "@/lib/clinics/schemas/clinics";
 import type { ClinicListDto, ClinicProfileDto, SlotDto } from "@/lib/clinics/types/clinics";
-import type { PublicReviewsDto, ReviewStats } from "@/lib/booking/types/reviews";
+import type { PublicReviewsDto } from "@/lib/booking/types/reviews";
 import { ApiError, notFound } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/features/clinics/availabilityRepository";
 import { ClinicDirectoryRepository, type PublicClinicRecord } from "@/features/clinics/clinicDirectoryRepository";
-import { ClinicListingService } from "@/features/clinics/clinicListingService";
+import { ClinicListingService, NO_REVIEWS } from "@/features/clinics/clinicListingService";
 import { ReviewsRepository } from "@/features/booking";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
+import { ClinicSlotsService } from "@/features/clinics/clinicSlotsService";
 import { AvailabilityService } from "@/features/clinics/availabilityService";
 import { type LatLng, RankingService } from "@/features/clinics/rankingService";
 
@@ -26,14 +27,13 @@ export type ClinicDirectoryDeps = {
   services: ServicesRepository;
   ranking: RankingService;
   slots: AvailabilityService;
+  slotService: ClinicSlotsService;
   listing: ClinicListingService;
 };
 
 function roundCoordinate(value: number): number {
   return Math.round(value * 100) / 100;
 }
-
-const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
 // Offentlig klinikoversigt, profil, ledige tider og anmeldelser (architecture 6.6, 6.7, 10.7). Åben for alle, også uden
 // session; bruger kun brugerens klient (anon-nøglen uden session) og aldrig service role. Alt data kommer fra public_*-
@@ -45,7 +45,7 @@ export class ClinicDirectoryController {
   private readonly availability: AvailabilityRepository;
   private readonly services: ServicesRepository;
   private readonly ranking: RankingService;
-  private readonly slots: AvailabilityService;
+  private readonly slotService: ClinicSlotsService;
   private readonly listing: ClinicListingService;
 
   constructor(
@@ -59,7 +59,10 @@ export class ClinicDirectoryController {
     this.availability = deps.availability ?? new AvailabilityRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.ranking = deps.ranking ?? new RankingService();
-    this.slots = deps.slots ?? new AvailabilityService();
+    const slots = deps.slots ?? new AvailabilityService();
+    this.slotService =
+      deps.slotService ??
+      new ClinicSlotsService({ directory: this.directory, availability: this.availability, services: this.services, slots });
     this.listing =
       deps.listing ??
       new ClinicListingService({
@@ -67,7 +70,7 @@ export class ClinicDirectoryController {
         availability: this.availability,
         services: this.services,
         ranking: this.ranking,
-        slots: this.slots,
+        slots,
       });
   }
 
@@ -118,24 +121,7 @@ export class ClinicDirectoryController {
 
   // GET /api/clinics/{id}/availability: ledige tider for en behandling. Kun verificerede klinikker (404 ellers).
   async availabilityFor(clinicId: string, query: AvailabilityQuery): Promise<{ slots: SlotDto[] }> {
-    const [service] = await this.services.requireActive([query.serviceId]);
-    const record = this.requireFull(await this.directory.findClinic(clinicId, [service.id]));
-
-    const range = this.slots.resolveRange(query.from, query.to);
-    if (!range.ok) throw new ApiError(400, "VALIDATION_ERROR", range.message);
-    const { from, to } = range;
-
-    const busy = (await this.availability.listBusyIntervals([clinicId], from, to)).get(clinicId) ?? [];
-    return {
-      slots: this.slots.slots({
-        openingHours: record.openingHours,
-        busy,
-        durationMin: this.slots.durationFor(record.prices, [service]),
-        isEmergency: service.category === "emergency",
-        from,
-        to,
-      }),
-    };
+    return this.slotService.slotsFor(clinicId, query.serviceId, query, notFound);
   }
 
   // GET /api/clinics/{id}/reviews: godkendte anmeldelser og statistik. 404 for ikke-verificerede klinikker.
