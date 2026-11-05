@@ -164,6 +164,10 @@ export async function cleanupDemo(admin: SupabaseClient, dryRun: boolean): Promi
       log(`Sletter ${otherLeads.length} henvendelser fra andre konti til demoklinikkerne ...`);
       mustOk(await admin.from('leads').delete().in('id', otherLeads.map((l) => l.id)), 'delete leads til demoklinikker');
     }
+    // Tabeller med fremmednøgle til clinics uden cascade: rækker fra ikke-demo-konti (favoritter) og klinikkens egne indstillinger.
+    mustOk(await admin.from('notification_outbox').delete().in('clinic_id', clinicIds), 'delete notification_outbox');
+    mustOk(await admin.from('favorite_clinics').delete().in('clinic_id', clinicIds), 'delete favorite_clinics');
+    mustOk(await admin.from('clinic_notification_settings').delete().in('clinic_id', clinicIds), 'delete clinic_notification_settings');
     mustOk(await admin.from('clinics').delete().in('id', clinicIds), 'delete clinics');
   }
   for (const id of clinicUserIds) {
