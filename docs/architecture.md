@@ -144,7 +144,7 @@ docs/                      denne oversigt, beslutninger, security og arbejdsplan
 | `booking` | bookinger, kalender, anmeldelser, svar, moderationsreglerne (8.5; admins side ligger i `admin`); flyt tid | `/klinik/kalender`, `/klinik/anmeldelser`, `/api/bookings/*`, `/api/reviews/*` (cron: `/api/cron/*` i `platform/cronController.ts` bruger booking via `index.ts`) |
 | `site` | forsiden og informationssiderne | `/`, `/om-os`, `/kontakt`, `/privatliv`, `/saadan-*`, `/for-klinikker` |
 | `admin` | klinikstatus og moderation af anmeldelser og klinikkers svar (rollen `admin`) | `/admin/*`, `/api/admin/*` |
-| (platform) | notifikationer: outbox, e-mail, app-push, web push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders` |
+| (platform) | notifikationer: outbox, e-mail, app-push, web push, påmindelser | `/api/cron/notifications`, `/api/cron/booking-reminders`, `/api/cron/cleanup-storage` (opbevaring af beskedbilleder og filkø, 2026-11-05) |
 
 ### 2.6 Sådan bygger du en ny funktion
 

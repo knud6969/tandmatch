@@ -252,8 +252,25 @@ test.describe("klinikkens indbakke og lead-kort", () => {
       await x.page.getByRole("button", { name: "Send afvisning" }).click();
       await expect(x.page.getByTestId("dit-svar")).toContainText("Du har afvist henvendelsen");
       await expect(x.page.getByTestId("dit-svar")).toContainText("Behandlingen kræver henvisning");
-      await expect(x.page.getByTestId("traad-lukket")).toBeVisible();
+      // H2: efter afvisningen ser klinikken kun status og sit eget svar, ikke patientens indhold, billeder eller tråd.
+      await expect(x.page.getByTestId("lukket-lead")).toBeVisible();
+      await expect(x.page.getByTestId("lukket-tekst")).toContainText("Du har afvist henvendelsen");
+      await expect(x.page.getByTestId("opsummering")).toHaveCount(0);
+      await expect(x.page.getByTestId("fakta")).toHaveCount(0);
+      await expect(x.page.getByTestId("beskedtraad")).toHaveCount(0);
       await expect(x.page.getByLabel("Skriv en besked")).toHaveCount(0);
+      await expectNoHorizontalScroll(x.page);
+      // Genindlæst (frisk læsning fra databasen) og i indbakken er indholdet stadig lukket.
+      await x.page.reload();
+      await expect(x.page.getByTestId("lukket-lead")).toBeVisible();
+      await expect(x.page.getByTestId("opsummering")).toHaveCount(0);
+      await expect(x.page.getByTestId("dit-svar")).toContainText("Behandlingen kræver henvisning");
+      await x.page.goto("/klinik");
+      const closedRow = x.page.locator(`[data-testid=lead-raekke][href="/klinik/lead/${leadId}"]`);
+      await expect(closedRow).toContainText("Afvist");
+      await expect(closedRow.getByTestId("lukket-raekke")).toContainText("Indholdet er ikke længere tilgængeligt");
+      await expect(closedRow.getByTestId("uddrag")).toHaveCount(0);
+      await expectNoHorizontalScroll(x.page);
 
       // Patienten får afvisningen med årsag og note, og tråden er lukket (API'et, som appen bruger).
       const leads = await (await patient.page.request.get(`/api/cases/${patient.caseId}/leads`)).text();

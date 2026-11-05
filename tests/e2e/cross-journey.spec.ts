@@ -97,9 +97,17 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await x.page.getByTestId("vedhaeft-input").setInputFiles({ name: "eksempel.jpg", mimeType: "image/jpeg", buffer: jpeg });
       await expect(x.page.getByTestId("vedhaeftede-billeder").getByRole("img")).toHaveCount(1);
       await expect(x.page.getByRole("button", { name: "Vedhæft billeder (1/3)" })).toBeVisible();
+      // M2: klinikken skal bekræfte sin egen erklæring (ikke forudafkrydset), før billedet kan sendes.
+      const confirmation = x.page.getByTestId("klinik-billedbekraeftelse");
+      await expect(confirmation).not.toBeChecked();
+      await expect(x.page.getByRole("button", { name: "Send besked" })).toBeDisabled();
+      await expect(x.page.getByText(/TandMatch indhenter ikke noget samtykke på klinikkens vegne/)).toBeVisible();
+      await expectNoHorizontalScroll(x.page);
+      await confirmation.check();
       await expectNoHorizontalScroll(x.page);
       await x.page.getByRole("button", { name: "Send besked" }).click();
       await expect(x.page.getByTestId("besked")).toHaveCount(3);
+      await expect(x.page.getByTestId("klinik-billedbekraeftelse")).toHaveCount(0);
       await expect(x.page.getByTestId("besked").nth(2).getByTestId("besked-billede")).toHaveCount(1);
       await expect(x.page.getByTestId("vedhaeftede-billeder")).toHaveCount(0);
       const withImage = await patient.get(`/api/leads/${leadId}/messages`);
