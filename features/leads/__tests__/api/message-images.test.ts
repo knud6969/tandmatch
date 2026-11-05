@@ -2,6 +2,7 @@
 // lokal Supabase. Klinikker og patienter er fiktive og ryddes til sidst.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   IMAGE_CONSENT_VERSION,
   PASSWORD,
@@ -15,6 +16,14 @@ import {
 } from "../../../../tests/api/helpers.ts";
 
 const admin = adminClient();
+const DB_URL = process.env.TEST_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const cronHeaders = { authorization: `Bearer ${process.env.CRON_SECRET}` };
+
+// Testdata mod den lokale database (message.created_at kan ellers ikke ændres, fordi triggeren beskytter feltet).
+function sql(query: string): void {
+  assert.match(DB_URL, /^postgresql:\/\/[^@]*@(127\.0\.0\.1|localhost):/, "kun lokal database");
+  execFileSync("psql", [DB_URL, "-q", "-c", query]);
+}
 const createdUserIds = new Set<string>();
 
 after(async () => {
@@ -68,10 +77,16 @@ async function send(p: Patient, clinics: Clinic[]): Promise<string[]> {
   return clinics.map((k) => r.body.leads.find((l: { clinic: { id: string } }) => l.clinic.id === k.id).id as string);
 }
 
-// Multipart med `count` billeder (eller de angivne filer) og valgfri tekst.
-function form(files: Blob[], body?: string): FormData {
+const CLINIC_CONSENT_VERSION = "clinic_message_images@v0-prototype";
+
+// Multipart med `count` billeder (eller de angivne filer) og valgfri tekst. `confirmed` er klinikkens egen erklæring (M2).
+function form(files: Blob[], body?: string, confirmed = false): FormData {
   const f = new FormData();
   if (body !== undefined) f.set("body", body);
+  if (confirmed) {
+    f.set("imageConsentConfirmed", "true");
+    f.set("imageConsentTextVersion", CLINIC_CONSENT_VERSION);
+  }
   files.forEach((file, i) => f.append("file", file, `billede-${i + 1}.jpg`));
   return f;
 }
@@ -133,7 +148,7 @@ describe("billeder i beskedtråden", () => {
     const k = await clinic();
     const [leadId] = await send(p, [k]);
     const path = `/api/leads/${leadId}/messages`;
-    const r = await k.c.postForm(path, form(await jpegs(1)));
+    const r = await k.c.postForm(path, form(await jpegs(1), undefined, true));
     assert.equal(r.status, 201, JSON.stringify(r.body));
     assert.equal(r.body.body, "");
     assert.equal(r.body.senderRole, "clinic");
@@ -188,7 +203,7 @@ describe("billeder i beskedtråden", () => {
     const y = await clinic();
     const [leadX, leadY] = await send(p, [x, y]);
 
-    assert.equal((await x.c.postForm(`/api/leads/${leadX}/messages`, form(await jpegs(1), "Fra klinikken"))).status, 201);
+    assert.equal((await x.c.postForm(`/api/leads/${leadX}/messages`, form(await jpegs(1), "Fra klinikken", true))).status, 201);
     assert.equal((await p.c.postForm(`/api/leads/${leadX}/messages`, form(await jpegs(1)))).status, 201);
     assert.equal((await p.c.post(`/api/leads/${leadX}/withdraw`)).status, 200);
     const patientClosed = await p.c.postForm(`/api/leads/${leadX}/messages`, form(await jpegs(1)));
@@ -213,7 +228,7 @@ describe("billeder i beskedtråden", () => {
     const [leadId] = await send(p, [k]);
     const path = `/api/leads/${leadId}/messages`;
     assert.equal((await p.c.postForm(path, form(await jpegs(2)))).status, 201);
-    assert.equal((await k.c.postForm(path, form(await jpegs(1), "Her er et eksempel"))).status, 201);
+    assert.equal((await k.c.postForm(path, form(await jpegs(1), "Her er et eksempel", true))).status, 201);
     assert.equal((await storedFiles(leadId)).length, 3);
 
     const consents = await p.c.get("/api/consents");
@@ -236,7 +251,7 @@ describe("billeder i beskedtråden", () => {
     const k = await clinic();
     const [leadId] = await send(p, [k]);
     assert.equal((await p.c.postForm(`/api/leads/${leadId}/messages`, form(await jpegs(1)))).status, 201);
-    assert.equal((await k.c.postForm(`/api/leads/${leadId}/messages`, form(await jpegs(1)))).status, 201);
+    assert.equal((await k.c.postForm(`/api/leads/${leadId}/messages`, form(await jpegs(1), undefined, true))).status, 201);
     assert.equal((await storedFiles(leadId)).length, 2);
     const r = await p.c.del("/api/patients/me", { confirm: "SLET" });
     assert.equal(r.status, 204, JSON.stringify(r.body));
@@ -244,6 +259,103 @@ describe("billeder i beskedtråden", () => {
     assert.deepEqual(await storedFiles(leadId), []);
     const { count } = await admin.from("message_images").select("id", { count: "exact", head: true }).eq("lead_id", leadId);
     assert.equal(count, 0);
+  });
+
+  it("klinikken skal bekræfte sin erklæring (M2): uden den afvises billederne, med den gemmes version og tidspunkt", async () => {
+    const p = await patient();
+    const k = await clinic();
+    const [leadId] = await send(p, [k]);
+    const path = `/api/leads/${leadId}/messages`;
+    for (const f of [
+      form(await jpegs(1), "Uden"),
+      (() => {
+        const g = form([], "Forkert version");
+        g.set("imageConsentConfirmed", "true");
+        g.set("imageConsentTextVersion", "clinic_message_images@gammel");
+        return g;
+      })(),
+    ]) {
+      if (f.getAll("file").length === 0) (await jpegs(1)).forEach((b) => f.append("file", b, "billede.jpg"));
+      const r = await k.c.postForm(path, f);
+      assert.equal(r.status, 400);
+      assert.equal(code(r), "CONSENT_CONFIRMATION_REQUIRED");
+    }
+    assert.deepEqual(await storedFiles(leadId), [], "intet er uploadet eller gemt");
+    const ok = await k.c.postForm(path, form(await jpegs(2), "Med bekræftelse", true));
+    assert.equal(ok.status, 201, JSON.stringify(ok.body));
+    const { data } = await admin.from("message_images").select("clinic_consent_text_version, clinic_consent_confirmed_at, consent_id").eq("lead_id", leadId);
+    assert.equal(data?.length, 2);
+    for (const row of data ?? []) {
+      assert.equal(row.clinic_consent_text_version, CLINIC_CONSENT_VERSION);
+      assert.ok(row.clinic_consent_confirmed_at);
+      assert.equal(row.consent_id, null, "klinikkens billeder har intet patientsamtykke");
+    }
+    // Patienten skal ikke sende nogen klinikerklæring.
+    const mine = await p.c.postForm(path, form(await jpegs(1), "Fra patienten"));
+    assert.equal(mine.status, 201, JSON.stringify(mine.body));
+    const patientRows = await admin.from("message_images").select("clinic_consent_text_version").eq("lead_id", leadId).not("consent_id", "is", null);
+    assert.deepEqual(patientRows.data, [{ clinic_consent_text_version: null }]);
+  });
+
+  it("afvist lead: klinikken ser hverken beskeder eller billeder, men patienten gør (H2)", async () => {
+    const p = await patient();
+    const k = await clinic();
+    const [leadId] = await send(p, [k]);
+    const path = `/api/leads/${leadId}/messages`;
+    assert.equal((await p.c.postForm(path, form(await jpegs(1), "Billede før afvisning"))).status, 201);
+    assert.equal((await k.c.get(path)).body.messages.length, 1, "før afvisningen");
+    assert.equal((await k.c.post(`/api/leads/${leadId}/decision`, { decision: "decline", reason: "other", note: "Ingen tid" })).status, 200);
+    assert.deepEqual((await k.c.get(path)).body.messages, [], "klinikken ser intet i tråden efter afvisningen");
+    assert.equal((await p.c.get(path)).body.messages.length, 1);
+    assert.equal((await storedFiles(leadId)).length, 1);
+  });
+
+  it("opbevaring (M3): cronjobbet sletter billeder 12 måneder efter sidste aktivitet i tråden, ikke før", async () => {
+    const p = await patient();
+    const k = await clinic();
+    const [oldLead, freshLead] = [await send(p, [k]), await (async () => {
+      const q = await patient();
+      return send(q, [k]);
+    })()].map((ids) => ids[0]);
+    const send1 = async (leadId: string, who: "p" | "k") => {
+      const c = who === "p" ? p.c : k.c;
+      const r = await c.postForm(`/api/leads/${leadId}/messages`, form(await jpegs(1), "Billede", who === "k"));
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+    };
+    await send1(oldLead, "p");
+    await send1(oldLead, "k");
+    assert.equal((await storedFiles(oldLead)).length, 2);
+    // Den friske tråd tilhører en anden patient; dens billede sendes af klinikken.
+    const freshThread = await k.c.postForm(`/api/leads/${freshLead}/messages`, form(await jpegs(1), "Nyt", true));
+    assert.equal(freshThread.status, 201, JSON.stringify(freshThread.body));
+
+    // Før fristen sker der intet.
+    const early = await new TestClient().post("/api/cron/cleanup-storage", {}, cronHeaders);
+    assert.equal(early.status, 200, JSON.stringify(early.body));
+    assert.equal((await storedFiles(oldLead)).length, 2);
+
+    // 13 måneder uden aktivitet i den ene tråd.
+    sql(
+      `alter table public.messages disable trigger messages_before_update;
+       update public.messages set created_at = now() - interval '13 months' where lead_id = '${oldLead}';
+       alter table public.messages enable trigger messages_before_update;
+       update public.message_images set created_at = now() - interval '13 months' where lead_id = '${oldLead}';`,
+    );
+    const r = await new TestClient().post("/api/cron/cleanup-storage", {}, cronHeaders);
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.deepEqual(Object.keys(r.body).sort(), ["failed", "purgedMessageImages", "removed"]);
+    assert.ok(r.body.purgedMessageImages >= 2);
+    assert.equal(r.body.failed, 0);
+    assert.deepEqual(await storedFiles(oldLead), [], "filerne i den gamle tråd er slettet");
+    assert.equal((await storedFiles(freshLead)).length, 1, "den friske tråd er urørt");
+    const { count } = await admin.from("message_images").select("id", { count: "exact", head: true }).eq("lead_id", oldLead);
+    assert.equal(count, 0);
+    const { count: queued } = await admin.from("pending_storage_paths").select("id", { count: "exact", head: true }).like("path", `messages/${oldLead}/%`);
+    assert.equal(queued, 0, "køen er tømt");
+    // Beskedteksten består; patienten ser en besked uden billeder.
+    const thread = (await p.c.get(`/api/leads/${oldLead}/messages`)).body.messages as Message[];
+    assert.equal(thread.length, 2);
+    assert.ok(thread.every((m) => m.images.length === 0 && m.body === "Billede"));
   });
 
   it("anonym og uden session kan ikke sende billeder", async () => {

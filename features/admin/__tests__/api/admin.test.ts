@@ -169,10 +169,10 @@ describe("admin: klinikker", () => {
     assert.equal(again.status, 409);
     assert.equal(code(again), "INVALID_STATUS_TRANSITION");
     assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "imported" })).status, 400);
-    assert.equal((await adm.post(`/api/admin/clinics/${fakeId}/status`, { status: "verified" })).status, 404);
-    assert.equal((await adm.post("/api/admin/clinics/ikke-et-id/status", { status: "verified" })).status, 404);
+    assert.equal((await adm.post(`/api/admin/clinics/${fakeId}/status`, { status: "verified", reason: "Kontrolleret" })).status, 404);
+    assert.equal((await adm.post("/api/admin/clinics/ikke-et-id/status", { status: "verified", reason: "Kontrolleret" })).status, 404);
     assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", reason: "x".repeat(501) })).status, 400);
-    assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", extra: 1 })).status, 400);
+    assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", reason: "Kontrolleret", extra: 1 })).status, 400);
 
     // H1: "Verificér" kræver en begrundelse.
     for (const body of [{ status: "verified" }, { status: "verified", reason: "   " }]) {
