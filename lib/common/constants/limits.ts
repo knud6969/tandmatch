@@ -38,9 +38,8 @@ export const CLEANUP_BATCH_SIZE = 200;
 // Beskedtråd (architecture 7.6). Samme døgnloft er håndhævet i databasen.
 export const MESSAGE_MAX_CHARS = 2000;
 export const MESSAGE_MAX_PER_DAY = 200;
-// Billeder i beskedtråden (features/leads/README.md 10.12). Samme tal i send_message_with_images() (migration 20261103000100).
+// Billeder i beskedtråden (features/leads/README.md 10.12). Samme tal pr. besked i send_message_with_images() (migration 20261103000100).
 export const MESSAGE_MAX_IMAGES = 3;
-export const MESSAGE_IMAGES_MAX_PER_DAY = 30;
 // Opbevaring af beskedbilleder: slettes så mange måneder efter sidste aktivitet i tråden (security M3). Samme standard i
 // purge_inactive_message_images() (migration 20261110000400). Stå i privatlivspolitikken (afsnit 5) og docs/security.md.
 export const MESSAGE_IMAGE_RETENTION_MONTHS = 12;

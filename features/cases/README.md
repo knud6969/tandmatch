@@ -245,7 +245,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | Chatbeskeder pr. IP pr. time | `CHAT_IP_LIMIT_PER_HOUR` (120) | 429 |
 | Opsummeringer pr. IP pr. time | 20 | 429 |
 | Beskeder i tråden | 2000 tegn, 200 pr. afsender pr. døgn | 400 / 429 `MESSAGE_LIMIT` |
-| Billeder i tråden (leads 10.12) | 3 pr. besked, max 4 MB hver; 30 pr. afsender pr. døgn (`MESSAGE_MAX_IMAGES`, `MESSAGE_IMAGES_MAX_PER_DAY`); 10 uploads pr. IP pr. time (scope `message-image-upload`) | 400 `IMAGE_LIMIT` / 413 / 429 `MESSAGE_IMAGE_LIMIT` / 429 `RATE_LIMITED` |
+| Billeder i tråden (leads 10.12) | 3 pr. besked, max 4 MB hver; 30 pr. afsender pr. døgn (`MESSAGE_MAX_IMAGES`; døgnloftet står kun i SQL); 10 uploads pr. IP pr. time (scope `message-image-upload`) | 400 `IMAGE_LIMIT` / 413 / 429 `MESSAGE_IMAGE_LIMIT` / 429 `RATE_LIMITED` |
 | Bookinger | 1 aktiv pr. lead; højst 5 bookinger i alt pr. lead (også aflyste), så book og aflys ikke kan gentages i det uendelige (security trin 6, M1; migration `20261027000100`). Bookinger aflyst af klinikken tæller ikke (besluttet 2026-10-18, security kompromis 20) (bygget i 7.1) | 409 / 409 `BOOKING_LIMIT` |
 | Akut-henvendelser pr. IP pr. time (`POST /api/emergency-leads`) | Samme scope og grænse som afsendelse af leads (`leads-send`, 30) | 429 `RATE_LIMITED` |
 | Bookinger pr. IP pr. time (`POST /api/leads/{id}/booking`, scope `booking`) | 30 | 429 `RATE_LIMITED` |
