@@ -9,16 +9,22 @@ import {
   CLINIC_LEAD_PATH,
   CLINIC_NOTIFICATION_SETTINGS_PATH,
   CLINIC_NOTIFICATION_TYPES,
+  INBOX_RESCHEDULED_BODY,
   NOTIFICATION_PAYLOAD_KEYS,
   NOTIFICATION_TITLE,
+  PATIENT_CONTACT_NOTIFICATION_TYPES,
+  PATIENT_CONTACT_TEXTS,
+  PATIENT_EMAIL_FOOTER,
   PATIENT_NOTIFICATION_TYPES,
   PATIENT_PUSH_TEXTS,
+  PATIENT_SMS_PREFIX,
 } from "@/lib/common/constants/notifications";
-import { formatDay, formatTime } from "@/lib/common/domain/format";
+import { formatDay, formatShortDateTime, formatTime } from "@/lib/common/domain/format";
 import type {
   ClinicNotificationType,
   NotificationPayload,
   NotificationType,
+  PatientContactNotificationType,
   PatientNotificationType,
   RenderedEmail,
   RenderedPush,
@@ -146,12 +152,54 @@ export function patientNotificationPath(type: PatientNotificationType, payload: 
       return `/sag/${need(payload.caseId, "caseId")}`;
     case "patient_new_message":
       return `/sag/${need(payload.caseId, "caseId")}/beskeder/${need(payload.leadId, "leadId")}`;
+    case "patient_review_reminder":
+      return `/anmeld/${need(payload.bookingId, "bookingId")}`;
     default:
       return "/bookinger";
   }
 }
 
-const APP_PATHS = [new RegExp(`^/sag/${UUID}$`), new RegExp(`^/sag/${UUID}/beskeder/${UUID}$`), /^\/bookinger$/];
+export function isPatientContactNotificationType(type: NotificationType): type is PatientContactNotificationType {
+  return (PATIENT_CONTACT_NOTIFICATION_TYPES as readonly string[]).includes(type);
+}
+
+const CONTACT_KIND: Record<PatientContactNotificationType, keyof typeof PATIENT_CONTACT_TEXTS> = {
+  patient_booking_created: "booked",
+  patient_booking_rescheduled: "booked", // en flyttet tid tæller som booket: én bekræftelse med den nye tid
+  patient_booking_confirmed: "booked",
+  patient_booking_cancelled: "cancelled",
+  patient_booking_cancelled_self: "cancelled",
+  patient_booking_reminder: "reminder",
+  patient_review_reminder: "review",
+};
+
+// Emne og brødtekst til patientens e-mail og SMS (platform 14.12). Generisk tekst og evt. tidspunktet; aldrig behandling,
+// klinik, navn eller sted. Tidspunktet udelades, hvis payload ikke har det (fx klinikkens aflysning).
+export function patientContactParts(type: PatientContactNotificationType, payload: NotificationPayload): { subject: string; body: string } {
+  const texts = PATIENT_CONTACT_TEXTS[CONTACT_KIND[type]];
+  const showTime = CONTACT_KIND[type] !== "review" && payload.startsAt !== undefined;
+  return { subject: texts.subject, body: showTime ? texts.body.replace("{tid}", when(need(payload.startsAt, "startsAt"))) : texts.bodyNoTime };
+}
+
+// E-mail til patienten: tekst og simpel HTML, ingen link, billeder eller sporing.
+export function renderPatientEmail(type: PatientContactNotificationType, payload: NotificationPayload): RenderedEmail {
+  const { subject, body } = patientContactParts(type, payload);
+  const text = `${body}\n\n${PATIENT_EMAIL_FOOTER}`;
+  const html =
+    `<!doctype html><html lang="da"><body style="font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;line-height:1.5">` +
+    `<p>${escapeHtml(body)}</p>` +
+    `<hr style="border:none;border-top:1px solid #ddd">` +
+    `<p style="font-size:13px;color:#555">${escapeHtml(PATIENT_EMAIL_FOOTER)}</p>` +
+    `</body></html>`;
+  return { subject, text, html };
+}
+
+// SMS til patienten: afsendernavnet foran brødteksten.
+export function renderPatientSms(type: PatientContactNotificationType, payload: NotificationPayload): string {
+  return `${PATIENT_SMS_PREFIX}${patientContactParts(type, payload).body}`;
+}
+
+const APP_PATHS = [new RegExp(`^/sag/${UUID}$`), new RegExp(`^/sag/${UUID}/beskeder/${UUID}$`), /^\/bookinger$/, new RegExp(`^/anmeld/${UUID}$`)];
 const CLINIC_PATHS = [new RegExp(`^/klinik/lead/${UUID}$`), /^\/klinik\/kalender$/];
 
 // Appen åbner kun stier fra denne liste (ingen vilkårlige links, ingen forespørgselsstreng).
@@ -162,4 +210,39 @@ export function isAllowedNotificationPath(path: unknown): path is string {
 // Det samme for web push på klinik-weben: service workeren åbner kun disse stier.
 export function isAllowedClinicNotificationPath(path: unknown): path is string {
   return typeof path === "string" && path.length <= 200 && CLINIC_PATHS.some((re) => re.test(path));
+}
+
+// Indholdet af en notifikation i klokken (platform 14.11), renderet af type og id'er. Titlen er klinikkens e-mailemne eller
+// patientens pushtekst; brødteksten er kun tidspunktet for bookingtyperne. Kaster, hvis payload mangler det, typen kræver.
+export type InboxContent = { title: string; body: string | null; path: string };
+
+export function renderInboxContent(type: NotificationType, payload: NotificationPayload): InboxContent {
+  if (isClinicNotificationType(type)) {
+    let body: string | null = null;
+    if (type === "clinic_booking_rescheduled") {
+      body = INBOX_RESCHEDULED_BODY.replace("{gammel}", when(need(payload.previousStartsAt, "previousStartsAt"))).replace(
+        "{ny}",
+        when(need(payload.startsAt, "startsAt")),
+      );
+    } else if (type !== "clinic_new_lead" && type !== "clinic_new_message") {
+      body = `${when(need(payload.startsAt, "startsAt"))}.`;
+    }
+    return { title: clinicParts(type, payload).subject, body, path: clinicNotificationPath(type, payload) };
+  }
+  const patientType = type as PatientNotificationType;
+  return { title: renderPatientPush(patientType, payload).body, body: null, path: patientNotificationPath(patientType, payload) };
+}
+
+// "lige nu", "5 min. siden", "3 t. siden", ellers dato og tid i dansk tid. `now` kan gives i tests.
+export function formatNotificationAge(createdAt: string, now: Date = new Date()): string {
+  const minutes = Math.floor((now.getTime() - new Date(createdAt).getTime()) / 60_000);
+  if (minutes < 1) return "lige nu";
+  if (minutes < 60) return `${minutes} min. siden`;
+  if (minutes < 60 * 24) return `${Math.floor(minutes / 60)} t. siden`;
+  return formatShortDateTime(createdAt);
+}
+
+// "99+" over 99, ellers tallet. Bruges af begge klokker.
+export function formatUnreadBadge(count: number): string {
+  return count > 99 ? "99+" : String(count);
 }
