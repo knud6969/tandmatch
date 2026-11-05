@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LEAD_DECLINE_REASON_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
-import { leadNeedsAction } from "@/lib/leads/domain/leads";
+import { CLINIC_LEAD_STATUS_LABEL, LEAD_DECLINE_REASON_LABEL } from "@/lib/leads/constants/leads";
+import { closedLeadText, leadNeedsAction } from "@/lib/leads/domain/leads";
 import type { ClinicLeadDetailDto, ClinicLeadListItemDto } from "@/lib/leads/types/leads";
 import { LeadBadges, leadFactLine } from "@/features/leads/components/lead-facts";
 import { LeadDecision } from "@/features/leads/components/lead-decision";
@@ -152,6 +152,29 @@ function NextLead({ remaining, justDecided }: { remaining: ClinicLeadListItemDto
   );
 }
 
+// Et lead uden indhold (security H2): trukket tilbage af patienten, afvist af klinikken (også clinic_left) eller delingssamtykket
+// er trukket tilbage uden booket tid. Klinikken ser kun status, modtagelsestidspunkt og sit eget svar, intet om patientens sag.
+function ClosedLeadBody({ lead, justDecided }: { lead: ClinicLeadDetailDto; justDecided: boolean }) {
+  const withdrawn = lead.status === "withdrawn";
+  const { data: list } = useClinicLeads();
+  const remaining = (list ?? []).filter((item) => item.id !== lead.id && leadNeedsAction(item));
+  return (
+    <div className="flex flex-col gap-4" data-testid="lukket-lead">
+      <BackLink />
+      <header className="flex flex-col gap-2">
+        <LeadBadges lead={lead} />
+        <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">Henvendelse</h1>
+      </header>
+      <Alert tone="info" title={withdrawn ? "Trukket tilbage" : CLINIC_LEAD_STATUS_LABEL[lead.status]}>
+        <p data-testid={withdrawn ? "tilbagetrukket" : "lukket-tekst"}>{closedLeadText(lead)}</p>
+      </Alert>
+      <p className="text-sm text-ink-muted">Modtaget {formatShortDateTime(lead.sentAt)}</p>
+      {!withdrawn && <DecisionSummary lead={lead} />}
+      {(justDecided || remaining.length > 0) && <NextLead remaining={remaining} justDecided={justDecided} />}
+    </div>
+  );
+}
+
 function LeadBody({ lead, justDecided, onDecided, onStale }: { lead: ClinicLeadDetailDto; justDecided: boolean; onDecided: (lead: ClinicLeadDetailDto) => void; onStale: () => void }) {
   const title = lead.services.map((s) => s.name).join(", ") || "Henvendelse";
   const pending = lead.status === "sent";
@@ -253,16 +276,8 @@ export function LeadCard({ leadId }: { leadId: string }) {
     );
   }
 
-  if (lead.status === "withdrawn") {
-    return (
-      <div className="flex flex-col gap-4">
-        <BackLink />
-        <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">Henvendelse</h1>
-        <Alert tone="info" title="Trukket tilbage">
-          <p data-testid="tilbagetrukket">{WITHDRAWN_LEAD_TEXT}</p>
-        </Alert>
-      </div>
-    );
+  if (!lead.contentOpen) {
+    return <ClosedLeadBody lead={lead} justDecided={decided !== null} />;
   }
 
   return (

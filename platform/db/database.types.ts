@@ -559,13 +559,13 @@ isOneToOne: false
                   ]
                 },"message_images": {
                   Row: {
-                    "bytes": number,"consent_id": string | null,"created_at": string,"height": number,"id": string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
+                    "bytes": number,"clinic_consent_confirmed_at": string | null,"clinic_consent_text_version": string | null,"consent_id": string | null,"created_at": string,"height": number,"id": string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
                   }
                   Insert: {
-                    "bytes": number,"consent_id"?: string | null,"created_at"?: string,"height": number,"id"?: string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
+                    "bytes": number,"clinic_consent_confirmed_at"?: string | null,"clinic_consent_text_version"?: string | null,"consent_id"?: string | null,"created_at"?: string,"height": number,"id"?: string,"lead_id": string,"message_id": string,"position": number,"storage_path": string,"width": number
                   }
                   Update: {
-                    "bytes"?: number,"consent_id"?: string | null,"created_at"?: string,"height"?: number,"id"?: string,"lead_id"?: string,"message_id"?: string,"position"?: number,"storage_path"?: string,"width"?: number
+                    "bytes"?: number,"clinic_consent_confirmed_at"?: string | null,"clinic_consent_text_version"?: string | null,"consent_id"?: string | null,"created_at"?: string,"height"?: number,"id"?: string,"lead_id"?: string,"message_id"?: string,"position"?: number,"storage_path"?: string,"width"?: number
                   }
                   Relationships: [
                     {
@@ -687,6 +687,19 @@ isOneToOne: true
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
+                  ]
+                },"pending_storage_paths": {
+                  Row: {
+                    "attempts": number,"bucket": string,"created_at": string,"id": string,"is_prefix": boolean,"path": string
+                  }
+                  Insert: {
+                    "attempts"?: number,"bucket": string,"created_at"?: string,"id"?: string,"is_prefix"?: boolean,"path": string
+                  }
+                  Update: {
+                    "attempts"?: number,"bucket"?: string,"created_at"?: string,"id"?: string,"is_prefix"?: boolean,"path"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"portfolio_items": {
                   Row: {
@@ -958,8 +971,23 @@ isOneToOne: false
 "admin_clean_reason":
 { Args: { "p_reason": string }; Returns: string
                            },
+"admin_clinic_owners":
+{ Args: { "p_clinic_ids": (string)[] }; Returns: {
+              "clinic_id": string,"owner_email": string
+            }[]
+                           },
 "admin_moderate":
 { Args: { "p_id": string,"p_kind": string,"p_reason"?: string,"p_status": Database["public"]['Enums']["moderation_status"] }; Returns: Database["public"]['Enums']["moderation_status"]
+                           },
+"admin_review_replies":
+{ Args: { "p_id"?: string,"p_status"?: Database["public"]['Enums']["moderation_status"] }; Returns: {
+              "clinic_id": string,"clinic_name": string,"created_at": string,"id": string,"moderated_at": string,"moderation_status": Database["public"]['Enums']["moderation_status"],"rejection_reason": string,"review_id": string,"review_text": string,"text": string
+            }[]
+                           },
+"admin_reviews":
+{ Args: { "p_id"?: string,"p_status"?: Database["public"]['Enums']["moderation_status"] }; Returns: {
+              "actual_price": number,"clinic_id": string,"clinic_name": string,"created_at": string,"id": string,"lacked_transparency": boolean,"moderated_at": string,"moderation_status": Database["public"]['Enums']["moderation_status"],"price_accuracy": Database["public"]['Enums']["price_accuracy"],"rejection_reason": string,"stars": number,"text": string,"transparency_comment": string
+            }[]
                            },
 "admin_set_clinic_status":
 { Args: { "p_clinic_id": string,"p_status": Database["public"]['Enums']["clinic_status"] }; Returns: undefined
@@ -1032,7 +1060,7 @@ isOneToOne: false
                            },
 "clinic_lead_detail":
 { Args: { "p_lead_id": string }; Returns: {
-              "booking_ends_at": string,"booking_hold_expires_at": string,"booking_id": string,"booking_service_id": string,"booking_service_name": string,"booking_starts_at": string,"booking_status": Database["public"]['Enums']["booking_status"],"can_mark_no_show": boolean,"city": string,"clinic_comment": string,"contact_email": string,"contact_name": string,"contact_phone": string,"decline_note": string,"decline_reason": Database["public"]['Enums']["lead_decline_reason"],"distance_km": number,"image_count": number,"is_emergency": boolean,"lead_id": string,"list_price_max": number,"list_price_min": number,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"quoted_price_max": number,"quoted_price_min": number,"requested_service_id": string,"requested_starts_at": string,"responded_at": string,"seen_at": string,"sent_at": string,"services": Json,"status": Database["public"]['Enums']["lead_status"],"summary_ai_assisted": boolean,"summary_text": string,"unread_messages": number,"withdrawn_at": string
+              "booking_ends_at": string,"booking_hold_expires_at": string,"booking_id": string,"booking_service_id": string,"booking_service_name": string,"booking_starts_at": string,"booking_status": Database["public"]['Enums']["booking_status"],"can_mark_no_show": boolean,"city": string,"clinic_comment": string,"contact_email": string,"contact_name": string,"contact_phone": string,"content_open": boolean,"decline_note": string,"decline_reason": Database["public"]['Enums']["lead_decline_reason"],"distance_km": number,"image_count": number,"is_emergency": boolean,"lead_id": string,"list_price_max": number,"list_price_min": number,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"quoted_price_max": number,"quoted_price_min": number,"requested_service_id": string,"requested_starts_at": string,"responded_at": string,"seen_at": string,"sent_at": string,"services": Json,"status": Database["public"]['Enums']["lead_status"],"summary_ai_assisted": boolean,"summary_text": string,"unread_messages": number,"withdrawn_at": string
             }[]
                            },
 "clinic_lead_images":
@@ -1055,7 +1083,7 @@ isOneToOne: false
                            },
 "clinic_leads":
 { Args: { "p_status"?: Database["public"]['Enums']["lead_status"] }; Returns: {
-              "city": string,"distance_km": number,"hold_expires_at": string,"image_count": number,"is_emergency": boolean,"lead_id": string,"list_price_max": number,"list_price_min": number,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"requested_starts_at": string,"seen_at": string,"sent_at": string,"service_names": (string)[],"status": Database["public"]['Enums']["lead_status"],"summary_excerpt": string,"unread_messages": number,"withdrawn_at": string
+              "city": string,"content_open": boolean,"distance_km": number,"hold_expires_at": string,"image_count": number,"is_emergency": boolean,"lead_id": string,"list_price_max": number,"list_price_min": number,"postal_code": string,"preferred_timeframe": Database["public"]['Enums']["case_timeframe"],"requested_starts_at": string,"seen_at": string,"sent_at": string,"service_names": (string)[],"status": Database["public"]['Enums']["lead_status"],"summary_excerpt": string,"unread_messages": number,"withdrawn_at": string
             }[]
                            },
 "clinic_mark_lead_seen":
@@ -1154,6 +1182,9 @@ isOneToOne: false
 "issue_claim_token":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"lead_content_open":
+{ Args: { "p_lead_id": string }; Returns: boolean
+                           },
 "mark_booking_no_show":
 { Args: { "p_booking_id": string }; Returns: undefined
                            },
@@ -1210,6 +1241,9 @@ isOneToOne: false
               "actual_price": number,"created_at": string,"lacked_transparency": boolean,"price_accuracy": Database["public"]['Enums']["price_accuracy"],"reply_created_at": string,"reply_text": string,"review_id": string,"stars": number,"text": string,"transparency_comment": string
             }[]
                            },
+"purge_inactive_message_images":
+{ Args: { "p_months"?: number }; Returns: number
+                           },
 "purge_notifications":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -1257,7 +1291,7 @@ isOneToOne: false
 { Args: { "p_case_id": string,"p_clinic_ids": (string)[],"p_contact_name"?: string,"p_contact_phone"?: string,"p_requested_service_id"?: string,"p_requested_starts_at"?: string }; Returns: number
                            },
 "send_message_with_images":
-{ Args: { "p_body": string,"p_images": Json,"p_lead_id": string,"p_message_id": string,"p_user_id": string }; Returns: string
+{ Args: { "p_body": string,"p_clinic_consent_version"?: string,"p_images": Json,"p_lead_id": string,"p_message_id": string,"p_user_id": string }; Returns: string
                            },
 "service_duration_min":
 { Args: { "p_clinic_id": string,"p_service_id": string }; Returns: number

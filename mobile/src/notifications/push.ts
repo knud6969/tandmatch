@@ -43,22 +43,36 @@ export async function registerForPush(): Promise<boolean> {
   }
 }
 
-// Ved app-start for en patient med konto: tokenet kan skifte, og `last_seen_at` opdateres. Ikke efter "Modtag notifikationer" slået fra.
+// Ved app-start for en patient med konto: tokenet kan skifte, og `last_seen_at` opdateres. Efter "Modtag notifikationer" slået fra
+// registreres der ikke; ligger tokenet stadig lokalt (afmeldingen mislykkedes), forsøges afmeldingen igen.
 export async function registerOnStart(): Promise<void> {
-  if (await getPushFlag("disabled")) return;
+  if (await getPushFlag("disabled")) {
+    await unregisterStoredToken();
+    return;
+  }
   await registerForPush();
 }
 
-// Kontakten "Modtag notifikationer" slået fra: afmeld tokenet og husk valget.
-export async function disablePush(): Promise<void> {
-  await setPushFlag("disabled", true);
+// Afmelder det gemte token. Det slettes lokalt først, når serveren har afmeldt det (security L3); ellers beholdes det, så
+// afmeldingen kan gentages. Returnerer true, når der intet token er tilbage.
+async function unregisterStoredToken(): Promise<boolean> {
   try {
     const token = await getPushToken();
-    if (token) await deletePushToken(token).catch(() => undefined);
-    await clearPushToken();
+    if (token) {
+      await deletePushToken(token);
+      await clearPushToken();
+    }
+    return true;
   } catch {
-    // Valget er husket; afmeldingen forsøges igen ved logud.
+    return false;
   }
+}
+
+// Kontakten "Modtag notifikationer" slået fra: afmeld tokenet og husk valget. Mislykkes afmeldingen, beholdes tokenet lokalt, og
+// den forsøges igen ved næste start og ved logud.
+export async function disablePush(): Promise<void> {
+  await setPushFlag("disabled", true);
+  await unregisterStoredToken();
 }
 
 export const dismissPushPrompt = () => setPushFlag("dismissed", true);

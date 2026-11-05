@@ -13,6 +13,15 @@ export class NotificationDeliveryError extends Error {
   }
 }
 
+// Tjenesten er ikke sat op (fx ingen Resend-nøgle i produktion): beskeden blev ikke sendt, og rækken markeres `skipped` med
+// koden, aldrig `sent` (security L4). Koden følger samme format som NotificationDeliveryError.
+export class NotificationSkippedError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+    this.name = "NotificationSkippedError";
+  }
+}
+
 // Resultat pr. modtager (push og web push). Aldrig noget om indholdet.
 export type DeliveryResult =
   | { status: "ok" }

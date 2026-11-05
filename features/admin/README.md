@@ -14,7 +14,7 @@ Afsnitsnumrene følger oversigten (`docs/architecture.md` 0.2). 6.4 og 10.14 er 
 
 ## 3. Hvad admin må
 
-Uændret fra identity 3: admin ser og ændrer klinikstatus og modererer anmeldelser og svar. Admin har **ingen** adgang til sager, chat, billeder, leads, bookinger, beskeder, notifikationer eller push-tokens (dataminimering), og ingen DTO til admin indeholder `patient_id`, patientens navn eller kontaktoplysninger. **Men databasen er løsere end DTO'erne:** SELECT-policyerne på `reviews` (alle kolonner, herunder `patient_id` og `booking_id`), `review_replies`, `clinics`, `profiles` og `terms_acceptances` giver i dag `is_admin()` direkte læseadgang. Det er en kendt afvigelse fra dataminimeringen **[ÅBEN]** (`docs/security.md`, "Hvem har adgang"); stramningen kommer i en senere PR. Alle skrivninger sker via `security definer`-funktioner, der selv tjekker `is_admin()`; UI og API er ikke grænsen.
+Uændret fra identity 3: admin ser og ændrer klinikstatus og modererer anmeldelser og svar. Admin har **ingen** adgang til sager, chat, billeder, leads, bookinger, beskeder, notifikationer eller push-tokens (dataminimering), og ingen DTO til admin indeholder `patient_id`, patientens navn eller kontaktoplysninger. **Fra migration `20261110000200` (security M1) har admin ingen direkte læseadgang til `reviews`, `review_replies`, `profiles` og `terms_acceptances`:** `is_admin()` er fjernet fra deres SELECT-policyer. Anmeldelser og svar læses gennem `admin_reviews()` og `admin_review_replies()` (5.3), som aldrig returnerer `patient_id`, `booking_id` eller patientnavn, og ejerens e-mail gennem `admin_clinic_owners()`. Admin læser stadig `clinics` direkte (virksomhedsdata; `clinics_guard()` bruger `is_admin()`). Alle skrivninger sker via `security definer`-funktioner, der selv tjekker `is_admin()`; UI og API er ikke grænsen.
 
 **Oprettelse af en admin** (gøres af brugeren): `npm run admin:create -- --email <e-mail>` (`scripts/create-admin.ts`, service role, 2.3 h) opretter en bruger med en tilfældig adgangskode og `role = 'patient'` i metadata (signup-triggeren accepterer kun `patient`/`clinic`), sætter derefter `profiles.role = 'admin'` og sletter `patients`-rækken, og udskriver kun, at det lykkedes (adgangskoden sættes via "Glemt adgangskode" på `/login`). Scriptet bruger miljøet i `.env.test.local` (lokal Supabase) og nægter en ikke-lokal URL uden `--allow-remote` (samme vagt som seed-scriptet, `readConfig()`); mod et fælles projekt køres det med det ønskede miljø og `--allow-remote`. Eksisterende e-mail giver en fejl.
 
@@ -47,7 +47,17 @@ RLS: SELECT kun `is_admin()`; ingen INSERT, UPDATE eller DELETE for klientroller
 | `admin_change_clinic_status(p_clinic_id uuid, p_status clinic_status, p_reason text default null)` | admin (`is_admin()` og `is_permanent_user()`, ellers `42501`) | Tilladte overgange: `registered → verified` ("Verificér") og `verified → registered` ("Sæt på pause"). Alt andet (fx `imported`, `removed`, samme status) giver `INVALID_STATUS_TRANSITION`; ukendt klinik `NOT_FOUND`; begrundelse over 500 tegn `22023`. Kalder internt `admin_set_clinic_status()` (som sætter transaktionsflaget, som `clinics_guard()` kræver, og `verified_at`), skriver én række i `admin_actions` og returnerer den nye status. `security definer`, `search_path = ''`, kun `authenticated` |
 | `admin_moderate(p_kind text, p_id uuid, p_status moderation_status, p_reason text default null)` | admin (som ovenfor) | `p_kind` er `review` eller `reply`. `p_status` er `approved` eller `rejected` (ikke `pending`). `rejected` kræver en begrundelse på 1-500 tegn (ellers `REASON_REQUIRED`). Sætter `moderation_status`, `moderated_by = auth.uid()`, `moderated_at = now()` og `rejection_reason` (`null` ved godkendelse). Også en godkendt anmeldelse kan afvises (fjernes fra offentligheden) og omvendt. Skriver én række i `admin_actions`. Ukendt id `NOT_FOUND`. Erstatter den aldrig byggede `moderate()` (platform 5.3) |
 
-Læsning sker med de eksisterende policies: admin har allerede SELECT på `clinics`, `reviews` og `review_replies` via `is_admin()` (platform 5.4). Repositories vælger eksplicitte kolonner og læser aldrig `reviews.patient_id`.
+Læsefunktioner (migration `20261110000200`; alle `security definer`, `search_path = ''`, kalder `assert_admin()`, kun `authenticated`):
+
+| Funktion | Returnerer |
+|---|---|
+| `admin_reviews(p_status moderation_status default null, p_id uuid default null)` | Anmeldelser (filtreret på status og/eller id; `null` = alle), ældste først, højst 200: `id`, `created_at`, `clinic_id`, `clinic_name`, `moderation_status`, `rejection_reason`, `moderated_at`, `stars`, `text`, `price_accuracy`, `actual_price`, `lacked_transparency`, `transparency_comment`. **Aldrig `patient_id` eller `booking_id`** |
+| `admin_review_replies(p_status moderation_status default null, p_id uuid default null)` | Klinikkers svar (samme filtre), med klinik, `review_id` og anmeldelsens tekst (afkortes i appen til højst 200 tegn) |
+| `admin_clinic_owners(p_clinic_ids uuid[])` | `clinic_id` og `owner_email` (fra `auth.users`) for klinikker med en ejer, højst 200 id'er. Bruges til at vise ejerens e-mail på `/admin/klinikker` |
+
+`admin_change_clinic_status()` kræver en begrundelse på 1-500 tegn ved `registered -> verified` (`REASON_REQUIRED`); ved `verified -> registered` er den valgfri. Automatisk verificering af nye klinikker (`20261102000100`) er uændret i demoen; den skal slås fra, og ejerskab dokumenteres, før rigtige brugere (`docs/security.md`, kompromis 30).
+
+Læsning af klinikker sker med den eksisterende policy (`is_admin()` på `clinics`). Repositories vælger eksplicitte kolonner og får aldrig `patient_id`.
 
 Notifikationer om moderation (fx til klinikken ved en ny godkendt anmeldelse) er [UDSKUDT].
 
@@ -64,7 +74,7 @@ Platform 5.6 punkt 60 (fil `tests/rls/65_admin.sql`).
 | Route | Indhold |
 |---|---|
 | `/admin/moderation` | To faner: **Anmeldelser** og **Klinikkers svar**. Filter: **Afventer** (standard), Godkendt, Afvist. Ét kort pr. element, ældste først: klinikkens navn, dato, for anmeldelser stjerner, tekst, prisnøjagtighed, evt. faktisk pris og gennemsigtighedskommentar; for svar svarets tekst og et uddrag af anmeldelsen (højst 200 tegn). Knapperne "Godkend" og "Afvis". "Afvis" åbner et felt til begrundelsen med fire hurtigvalg (`MODERATION_REJECTION_REASONS`, defineret i `lib/booking/constants/reviews.ts` og genbrugt via `lib/admin/constants/admin.ts`: "Personoplysninger om andre", "Injurierende indhold", "Helbredsoplysninger om andre", "Irrelevant indhold", 8.5) og fri tekst; begrundelsen gemmes (`rejection_reason` og `admin_actions`) men vises endnu hverken for patienten eller klinikken. Efter en handling forsvinder kortet fra filteret med kvitteringen "Godkendt" / "Afvist". Tom kø: "Der er intet at moderere." Ingen patientnavne eller -id'er |
-| `/admin/klinikker` | Søgefelt (navn, by eller CVR) og filter på status (Alle, Verificeret, Oprettet, Importeret, Fjernet; labels fra `CLINIC_STATUS_LABEL`). Tabel/liste: navn, postnummer og by, CVR, status, "har konto" (ja/nej), verificeret dato. Handlinger: "Verificér" (kun `registered`) og "Sæt på pause" (kun `verified`). Begge kræver bekræftelse med valgfri begrundelse; "Sæt på pause" viser konsekvensen (`CLINIC_PAUSE_CONSEQUENCE`): "Klinikken forsvinder fra oversigten og kan hverken modtage eller se henvendelser og bookinger, før den bliver verificeret igen. Patienternes henvendelser bliver liggende." Højst 200 rækker; ingen sidevisning [PROTOTYPE] |
+| `/admin/klinikker` | Søgefelt (navn, by eller CVR) og filter på status (Alle, Verificeret, Oprettet, Importeret, Fjernet; labels fra `CLINIC_STATUS_LABEL`). Tabel/liste: navn, postnummer og by, CVR, status, "har konto" (ja/nej), verificeret dato. Hver række viser ejerens e-mail (eller "Ingen konto"). Handlinger: "Verificér" (kun `registered`) og "Sæt på pause" (kun `verified`). Begge kræver bekræftelse; **"Verificér" kræver en begrundelse** (fx hvordan ejerskabet er kontrolleret), "Sæt på pause" har en valgfri; "Sæt på pause" viser konsekvensen (`CLINIC_PAUSE_CONSEQUENCE`): "Klinikken forsvinder fra oversigten og kan hverken modtage eller se henvendelser og bookinger, før den bliver verificeret igen. Patienternes henvendelser bliver liggende." Højst 200 rækker; ingen sidevisning [PROTOTYPE] |
 
 ## 10. API-kontrakter
 
@@ -76,7 +86,7 @@ Alle routes: `requireTerms()` og `requireRole(["admin"])`; andre roller får 403
 // lib/admin/types/admin.ts
 export type AdminClinicDto = {
   id: string; name: string; postalCode: string; city: string; cvr: string | null;
-  status: ClinicStatus; hasOwner: boolean; verifiedAt: string | null; createdAt: string;
+  status: ClinicStatus; hasOwner: boolean; ownerEmail: string | null; verifiedAt: string | null; createdAt: string;
   canVerify: boolean; canPause: boolean;      // status === "registered" / "verified"
 };
 type ModerationBase = {
@@ -90,6 +100,7 @@ export type AdminModerationItemDto =
 // lib/admin/schemas/admin.ts
 export const adminClinicsQuerySchema = z.object({ status: z.enum(CLINIC_STATUSES).optional(), q: z.string().trim().max(100).optional() });
 export const adminClinicStatusSchema = z.object({ status: z.enum(["verified", "registered"]), reason: z.string().trim().max(500).optional() }).strict();
+// Controlleren kræver en ikke-tom reason, når status er "verified" (400 REASON_REQUIRED); databasen kræver den også.
 export const adminModerationQuerySchema = z.object({ kind: z.enum(["review", "reply"]).default("review"), status: z.enum(MODERATION_STATUSES).default("pending") });
 export const adminModerateSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(1).max(500).optional() }).strict();
 ```

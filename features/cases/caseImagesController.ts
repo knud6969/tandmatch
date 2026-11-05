@@ -12,6 +12,7 @@ import { ConsentsRepository } from "@/features/identity";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type CaseImagesDeps = {
@@ -83,7 +84,8 @@ export class CaseImagesController {
         bytes: data.length,
       });
     } catch (err) {
-      await storage.remove([path]).catch(() => {});
+      // Filen har ingen række: lægges i køen, hvis sletningen fejler (M4).
+      await new StorageCleanupService(this.admin()).discard("case-images", [path]);
       throw err;
     }
 
@@ -91,12 +93,13 @@ export class CaseImagesController {
     return dto;
   }
 
-  // Sletter rækken og filen. Rækken først, så en fejl ved filen ikke efterlader et billede, der ikke kan vises.
+  // Sletter rækken og filen. Rækken først, så en fejl ved filen ikke efterlader et billede, der ikke kan vises; en trigger
+  // har da allerede lagt stien i pending_storage_paths (M4), så en fejl ved filen kun udskyder sletningen til cronjobbet.
   async delete(caseId: string, imageId: string): Promise<void> {
     await this.cases.requireOwnDraft(caseId);
     const image = await this.images.requireInCase(caseId, imageId);
     // 2.3 (c): rækken og filen slettes med service role efter ejer- og kladdetjek.
     await new CaseImagesRepository(this.admin()).delete(image.id);
-    await new CaseImageStorage(this.admin()).remove([image.storagePath]);
+    await new StorageCleanupService(this.admin()).discard("case-images", [image.storagePath]);
   }
 }

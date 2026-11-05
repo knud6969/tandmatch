@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { leadNeedsAction, summaryExcerpt } from "@/lib/leads/domain/leads";
-import { LEAD_SUMMARY_EXCERPT_CHARS } from "@/lib/leads/constants/leads";
+import { closedLeadText, leadNeedsAction, summaryExcerpt } from "@/lib/leads/domain/leads";
+import { CLOSED_LEAD_TEXT, LEAD_SUMMARY_EXCERPT_CHARS, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
 import { leadDeadlineText, leadFactLine } from "@/features/leads/components/lead-facts";
 import type { ClinicLeadListItemDto } from "@/lib/leads/types/leads";
 
@@ -23,6 +23,7 @@ const base: ClinicLeadListItemDto = {
   summaryExcerpt: "",
   listPrice: { min: 1200, max: 1800 },
   holdExpiresAt: null,
+  contentOpen: true,
 };
 
 describe("leadNeedsAction", () => {
@@ -32,9 +33,10 @@ describe("leadNeedsAction", () => {
   it("er sand for et besvaret lead med ulæste beskeder", () => {
     expect(leadNeedsAction({ status: "accepted", unreadMessages: 1 })).toBe(true);
     expect(leadNeedsAction({ status: "booked", unreadMessages: 2 })).toBe(true);
-    expect(leadNeedsAction({ status: "declined", unreadMessages: 1 })).toBe(true);
   });
-  it("er falsk for et besvaret lead uden ulæste og altid for et tilbagetrukket", () => {
+  it("er falsk for et besvaret lead uden ulæste og altid for et tilbagetrukket eller afvist (indholdet er lukket)", () => {
+    expect(leadNeedsAction({ status: "declined", unreadMessages: 0 })).toBe(false);
+    expect(leadNeedsAction({ status: "declined", unreadMessages: 2 })).toBe(false);
     expect(leadNeedsAction({ status: "accepted", unreadMessages: 0 })).toBe(false);
     expect(leadNeedsAction({ status: "withdrawn", unreadMessages: 0 })).toBe(false);
     expect(leadNeedsAction({ status: "withdrawn", unreadMessages: 3 })).toBe(false);
@@ -79,5 +81,13 @@ describe("indbakkens tekster", () => {
     expect(line).toContain("3,2 km");
     expect(line).toContain("Listepris 1.200–1.800 kr.");
     expect(line.split(" · ").length).toBe(3);
+  });
+});
+
+describe("closedLeadText", () => {
+  it("vælger teksten efter hvorfor indholdet er lukket", () => {
+    expect(closedLeadText({ status: "withdrawn" })).toBe(WITHDRAWN_LEAD_TEXT);
+    expect(closedLeadText({ status: "declined" })).toBe(CLOSED_LEAD_TEXT.declined);
+    expect(closedLeadText({ status: "accepted" })).toBe(CLOSED_LEAD_TEXT.other);
   });
 });

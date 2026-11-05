@@ -6,9 +6,17 @@ import { BaseRepository } from "@/platform/base/baseRepository";
 import { iso, isoOrNull } from "@/platform/db/mappers";
 import { notFound, reasonRequired } from "@/platform/middleware/http";
 
-type Clinic = { id: string; name: string };
-type ModerationFields = { id: string; created_at: string; moderation_status: ModerationStatus; rejection_reason: string | null; moderated_at: string | null; clinic: Clinic | null };
-// patient_id og booking_id vælges aldrig (dataminimering, admin 3).
+// Rækkerne fra admin_reviews() og admin_review_replies() (migration 20261110000200). Funktionerne returnerer aldrig patient_id,
+// booking_id eller patientens navn, så de kan ikke nå DTO'erne (dataminimering, admin 3).
+type ModerationFields = {
+  id: string;
+  created_at: string;
+  clinic_id: string;
+  clinic_name: string;
+  moderation_status: ModerationStatus;
+  rejection_reason: string | null;
+  moderated_at: string | null;
+};
 type ReviewRow = ModerationFields & {
   stars: number;
   text: string;
@@ -17,21 +25,18 @@ type ReviewRow = ModerationFields & {
   lacked_transparency: boolean | null;
   transparency_comment: string | null;
 };
-type ReplyRow = ModerationFields & { review_id: string; text: string; review: { text: string } | null };
-
-const BASE = "id, created_at, moderation_status, rejection_reason, moderated_at, clinic:clinics(id, name)";
-const REVIEW_COLUMNS = `${BASE}, stars, text, price_accuracy, actual_price, lacked_transparency, transparency_comment`;
-const REPLY_COLUMNS = `${BASE}, review_id, text, review:reviews(text)`;
+type ReplyRow = ModerationFields & { review_id: string; text: string; review_text: string };
 
 const excerpt = (text: string) => (text.length > ADMIN_EXCERPT_CHARS ? `${text.slice(0, ADMIN_EXCERPT_CHARS).trimEnd()}…` : text);
 
-// Admins læsning og moderation af anmeldelser og klinikkers svar (admin 5.3, 10.14). Brugerens JWT: admin har SELECT på reviews og
-// review_replies via is_admin(); skrivning sker kun gennem admin_moderate(), som selv tjekker rollen.
+// Admins læsning og moderation af anmeldelser og klinikkers svar (admin 5.3, 10.14). Brugerens JWT. Admin har ingen direkte
+// SELECT på reviews og review_replies (M1, migration 20261110000200): læsning går gennem admin_reviews() og
+// admin_review_replies(), og skrivning gennem admin_moderate(); alle tjekker selv rollen.
 export class AdminModerationRepository extends BaseRepository<ReviewRow | ReplyRow, AdminModerationItemDto> {
   private base(row: ModerationFields) {
     return {
       id: row.id,
-      clinic: row.clinic ?? { id: "", name: "" },
+      clinic: { id: row.clinic_id, name: row.clinic_name },
       createdAt: iso(row.created_at),
       moderationStatus: row.moderation_status,
       rejectionReason: row.rejection_reason,
@@ -53,32 +58,25 @@ export class AdminModerationRepository extends BaseRepository<ReviewRow | ReplyR
   }
 
   private replyDto(row: ReplyRow): AdminModerationItemDto {
-    return { ...this.base(row), kind: "reply", reviewId: row.review_id, text: row.text, reviewExcerpt: excerpt(row.review?.text ?? "") };
+    return { ...this.base(row), kind: "reply", reviewId: row.review_id, text: row.text, reviewExcerpt: excerpt(row.review_text) };
   }
 
-  // Ældste først, højst 200.
+  // Ældste først, højst 200 (begge dele afgøres af funktionerne).
   async list(kind: ModerationKind, status: ModerationStatus): Promise<AdminModerationItemDto[]> {
-    if (kind === "review") {
-      const rows = await this.runList<ReviewRow>(
-        this.db.from("reviews").select(REVIEW_COLUMNS).eq("moderation_status", status).order("created_at").order("id").limit(ADMIN_LIST_LIMIT),
-        "reviews: select fejlede",
-      );
-      return rows.map((row) => this.reviewDto(row));
-    }
-    const rows = await this.runList<ReplyRow>(
-      this.db.from("review_replies").select(REPLY_COLUMNS).eq("moderation_status", status).order("created_at").order("id").limit(ADMIN_LIST_LIMIT),
-      "review_replies: select fejlede",
-    );
-    return rows.map((row) => this.replyDto(row));
+    return this.fetch(kind, { p_status: status });
   }
 
   async require(kind: ModerationKind, id: string): Promise<AdminModerationItemDto> {
+    return this.requireRow((await this.fetch(kind, { p_id: id }))[0]);
+  }
+
+  private async fetch(kind: ModerationKind, args: { p_status?: ModerationStatus; p_id?: string }): Promise<AdminModerationItemDto[]> {
     if (kind === "review") {
-      const row = await this.run<ReviewRow>(this.db.from("reviews").select(REVIEW_COLUMNS).eq("id", id).maybeSingle(), "reviews: select fejlede");
-      return this.reviewDto(this.requireRow(row));
+      const rows = await this.rpc<ReviewRow[]>("admin_reviews", args);
+      return (rows ?? []).slice(0, ADMIN_LIST_LIMIT).map((row) => this.reviewDto(row));
     }
-    const row = await this.run<ReplyRow>(this.db.from("review_replies").select(REPLY_COLUMNS).eq("id", id).maybeSingle(), "review_replies: select fejlede");
-    return this.replyDto(this.requireRow(row));
+    const rows = await this.rpc<ReplyRow[]>("admin_review_replies", args);
+    return (rows ?? []).slice(0, ADMIN_LIST_LIMIT).map((row) => this.replyDto(row));
   }
 
   // Godkend eller afvis. 404 for ukendt id, 400 REASON_REQUIRED for en afvisning uden begrundelse.

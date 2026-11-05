@@ -41,6 +41,13 @@ export const EMERGENCY_DESCRIPTION_MAX = 1000;
 
 export const WITHDRAWN_LEAD_TEXT = "Patienten har trukket henvendelsen tilbage";
 
+// Et lead, klinikken ikke længere må se indholdet af (security H2): afvist af klinikken (også når klinikken forlod TandMatch),
+// eller delingssamtykket er trukket tilbage uden en booket tid. Klinikken ser kun, at og hvornår den selv svarede.
+export const CLOSED_LEAD_TEXT = {
+  declined: "Du har afvist henvendelsen. Indholdet er ikke længere tilgængeligt.",
+  other: "Indholdet er ikke længere tilgængeligt, fordi patienten har trukket sit samtykke til deling tilbage.",
+} as const;
+
 // Konsekvensen af at trække en henvendelse tilbage, som patienten ser før bekræftelsen.
 export const WITHDRAW_LEAD_CONSEQUENCE = "Klinikken ser kun, at henvendelsen er trukket tilbage, ikke din beskrivelse. Du kan vælge en anden klinik i stedet.";
 

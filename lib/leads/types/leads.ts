@@ -48,6 +48,7 @@ export type LeadExportDto = {
 
 // Lead, som klinikken ser det (architecture 4.4, 5.7, 10.9). Ingen patientidentitet: hverken navn, kontakt, id eller sags-id.
 // For et tilbagetrukket lead er kun id, status, sentAt og withdrawnAt udfyldt; resten er tomme værdier (false, [], null, 0).
+// For et afvist lead (og et lead med lukket indhold, contentOpen = false) er kun metadata og klinikkens eget svar udfyldt.
 export type ClinicLeadListItemDto = {
   id: string;
   status: LeadStatus;
@@ -68,6 +69,9 @@ export type ClinicLeadListItemDto = {
   listPrice: PriceRange | null;
   // Udløb for en reserveret akuttid ("Svar inden kl. HH:MM"); kun mens bookingen er held.
   holdExpiresAt: string | null;
+  // false for withdrawn, declined (også clinic_left) og et lead, hvis indhold er lukket (migration 20261110000100). Så er kun
+  // metadata og klinikkens eget svar udfyldt; indholdsfelterne er tomme værdier (false, [], null, 0, "").
+  contentOpen: boolean;
 };
 
 // Ydelsen, som klinikken ser den på et lead (clinic_lead_detail() returnerer ikke varighed og kategori-id).

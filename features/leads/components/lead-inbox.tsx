@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CLINIC_LEAD_STATUS_LABEL, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
-import { leadNeedsAction } from "@/lib/leads/domain/leads";
+import { CLINIC_LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
+import { closedLeadText, leadNeedsAction } from "@/lib/leads/domain/leads";
 import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/leads/types/leads";
 import { LeadBadges, leadFactLine, leadImagesText } from "@/features/leads/components/lead-facts";
 import { FilterChips } from "@/components/ui/filter-chips";
@@ -28,9 +28,10 @@ function matches(lead: ClinicLeadListItemDto, filter: Filter): boolean {
 }
 
 function LeadRow({ lead, selected }: { lead: ClinicLeadListItemDto; selected: boolean }) {
-  const withdrawn = lead.status === "withdrawn";
-  const title = withdrawn ? "Henvendelse" : lead.serviceNames.join(", ") || "Henvendelse";
-  const facts = withdrawn ? "" : leadFactLine(lead, [leadImagesText(lead.imageCount)]);
+  // Et tilbagetrukket eller afvist lead (contentOpen = false) vises uden indhold: kun status og tidspunkt (security H2).
+  const closed = !lead.contentOpen;
+  const title = closed ? "Henvendelse" : lead.serviceNames.join(", ") || "Henvendelse";
+  const facts = closed ? "" : leadFactLine(lead, [leadImagesText(lead.imageCount)]);
 
   return (
     <li>
@@ -45,8 +46,10 @@ function LeadRow({ lead, selected }: { lead: ClinicLeadListItemDto; selected: bo
       >
         <LeadBadges lead={lead} />
         <span className="text-base font-semibold leading-snug text-ink">{title}</span>
-        {withdrawn ? (
-          <span className="text-sm text-ink-muted">{WITHDRAWN_LEAD_TEXT}</span>
+        {closed ? (
+          <span className="text-sm text-ink-muted" data-testid="lukket-raekke">
+            {closedLeadText(lead)}
+          </span>
         ) : (
           <>
             {lead.summaryExcerpt && (

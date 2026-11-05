@@ -2,7 +2,7 @@ import { PUSH_TOKEN_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { deletePushTokenSchema, registerPushTokenSchema } from "@/lib/identity/schemas/push-tokens";
 import { noContent, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
-import { requireAccount, requireRole } from "@/platform/middleware/session";
+import { createAuthContext, requireAccount, requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { PushTokensController } from "@/features/identity/pushTokensController";
 
@@ -19,11 +19,13 @@ export const PUT = withApi(async (req) => {
   return noContent();
 });
 
-// Afmelding (ved logout). 204 altid, også når tokenet ikke findes eller tilhører en anden; sletter kun egne rækker.
+// Afmelding (ved logout og når notifikationer slås fra). 204 altid, også når tokenet ikke findes eller tilhører en anden; sletter
+// kun egne rækker. Undtaget fra vilkårs-gaten (security L3): kræver session og rolle, men ikke en gældende vilkårsaccept, så en
+// patient med en forældet accept stadig kan afmelde enheden. Afmelding giver ingen adgang til data og fjerner kun en enhed.
 export const DELETE = withApi(async (req) => {
-  const gate = await requireTerms();
-  const session = await requireRole("patient", { allowAnonymous: true, ctx: gate });
+  const ctx = await createAuthContext();
+  const session = await requireRole("patient", { allowAnonymous: true, ctx });
   const input = await readJson(req, deletePushTokenSchema);
-  await new PushTokensController(gate.supabase, session).remove(input.token);
+  await new PushTokensController(ctx.supabase, session).remove(input.token);
   return noContent();
 });

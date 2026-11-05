@@ -331,7 +331,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 | last_seen_at | timestamptz not null default now() | Opdateres, hver gang appen registrerer tokenet igen |
 
 - RLS: SELECT og DELETE kun `user_id = auth.uid()`; ingen INSERT eller UPDATE for klientroller (platform 5.4). Rækker skrives kun af `register_push_token(p_token, p_platform)` (`security definer`, `search_path = ''`, kun `authenticated`): kræver `is_permanent_user()` og `profiles.role = 'patient'` (ellers `42501`), et gyldigt token og en gyldig platform (ellers `22023`); sletter tokenet hos en anden bruger (samme telefon, ny konto), indsætter eller opdaterer egen række (`last_seen_at = now()`) og sletter de ældste ud over `MAX_PUSH_TOKENS_PER_USER` (5).
-- Tokenet fjernes, når patienten logger ud i appen (`DELETE /api/push-tokens` før `POST /api/auth/logout`, mobile 13.10), når kontoen slettes (cascade), og når Expo svarer `DeviceNotRegistered` (platform 14.5).
+- Appen beholder tokenet lokalt, til afmeldingen er lykkedes (ved fejl forsøges igen ved næste logud og app-start; L3). Tokenet fjernes, når patienten logger ud i appen (`DELETE /api/push-tokens` før `POST /api/auth/logout`, mobile 13.10), når kontoen slettes (cascade), og når Expo svarer `DeviceNotRegistered` (platform 14.5).
 - Tokens logges aldrig og sendes aldrig til klinikker.
 
 ## 10. API-kontrakter
@@ -361,6 +361,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 | GET `/api/patients/me/export` | patient eller anonym | | `{ exportedAt, cases, chat, leads, bookings, reviews, consents }` (GDPR art. 20). `chat` = egne AI-samtaler pr. sag. Billeder beskrives med metadata (`id`, `view`, `quality`, `description`, `createdAt`), uden sti eller URL | Bygget: `cases`, `chat` (3.3), `leads` (4.1, `LeadExportDto` uden beskeder og billeder), `bookings` (6.1, `BookingExportDto`: patientens egne bookinger med klinikkens navn, ydelse, effektiv status og de kontaktoplysninger patienten selv har angivet) og `consents` er bygget. `reviews` (6.2, `ReviewExportDto`: patientens egne anmeldelser inkl. `moderationStatus` og `rejectionReason`; klinikkens navn står i `bookings` under samme `bookingId`) er bygget |
 | GET/POST `/api/cron/cleanup-anonymous` | intern (`CRON_SECRET`) | | 200 `{ deletedSessions }`. Sletter `{case_id}/`-mapper og auth-brugeren | Bygget |
 | GET/POST `/api/cron/complete-bookings` | intern (`CRON_SECRET`) | | 200 `{ completed, releasedHolds }` (10.10) | Bygget (6.1) |
+| GET/POST `/api/cron/cleanup-storage` | intern (`CRON_SECRET`; undtaget fra vilkårs-gaten) | | 200 `{ purgedMessageImages, removed, failed }` (2026-11-05, security M3/M4). Sletter beskedbilleder 12 måneder efter sidste aktivitet i tråden (`purge_inactive_message_images()`) og tømmer `pending_storage_paths` (platform 4.3). Hver time | Bygget |
 
 **Tokens til appen** (2.4): har requesten `X-TandMatch-Client: mobile`, returnerer `POST /api/auth/login`, `POST /api/auth/signup` (kun `role: "patient"`; en klinik-signup fra appen giver 400 `VALIDATION_ERROR`), `POST /api/session/anonymous` (kun ved 201) og `POST /api/auth/convert` desuden `session: MobileSessionDto`, og der sættes ingen auth-cookies. Alle svar med tokens har `Cache-Control: no-store`. Adgangstokenet lever 3600 s; refresh-tokenet roterer med 10 s reuse-interval. `POST /api/auth/logout` med bearer tilbagekalder sessionen og svarer 204. Et ugyldigt eller udløbet bearer giver 401 `UNAUTHENTICATED` på alle routes med `createAuthContext()`, også hvis requesten har en cookie. `GET /api/me` virker med bearer som med cookie; appen afviser selv en konto med `role !== "patient"` ("Klinikker logger ind på weben").
 
@@ -429,7 +430,7 @@ export const deletePushTokenSchema = z.object({ token: z.string().min(1).max(250
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
 | PUT `/api/push-tokens` | patient med konto (`requireRole(["patient"])` og permanent) | `registerPushTokenSchema` | 204. Kalder `register_push_token()` med brugerens klient. 400 `VALIDATION_ERROR` (ugyldigt token eller platform); 401 uden session; 403 `ACCOUNT_REQUIRED` for anonyme; 403 `FORBIDDEN` for klinik og admin; 429 `RATE_LIMITED` (`enforceIpRateLimit("push-token", req, 30)`) |
-| DELETE `/api/push-tokens` | patient (også anonym; har i praksis ingen tokens) | `deletePushTokenSchema` | 204 altid, også når tokenet ikke findes eller tilhører en anden (sletter kun egne rækker via RLS; ingen opregning). 400 ved ugyldig body; 401 uden session |
+| DELETE `/api/push-tokens` | patient (også anonym; har i praksis ingen tokens). **Undtaget fra vilkårs-gaten** (2026-11-05, L3): kræver session og rolle, men ikke en gældende vilkårsaccept, så en enhed altid kan afmeldes | `deletePushTokenSchema` | 204 altid, også når tokenet ikke findes eller tilhører en anden (sletter kun egne rækker via RLS; ingen opregning). 400 ved ugyldig body; 401 uden session |
 
 Lag: `app/api/push-tokens/route.ts` → `new PushTokensController(gate.supabase, session)` (`register`, `remove`) → `PushTokensRepository` (`features/identity`, arver `BaseRepository`). Ingen service role. Begge routes er bag vilkårs-gaten.
 

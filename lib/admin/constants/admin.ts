@@ -28,6 +28,10 @@ export const CLINIC_PAUSE_CONSEQUENCE =
   "Klinikken forsvinder fra oversigten og kan hverken modtage eller se henvendelser og bookinger, før den bliver verificeret igen. Patienternes henvendelser bliver liggende.";
 export const CLINIC_VERIFY_CONSEQUENCE = "Klinikken vises i oversigten og kan modtage henvendelser og bookinger.";
 export const CLINIC_ACTION_REASON_LABEL = "Begrundelse (valgfri)";
+// "Verificér" kræver en begrundelse (H1): hvordan ejerskabet og CVR er kontrolleret. Den logges i admin_actions.
+export const CLINIC_VERIFY_REASON_LABEL = "Begrundelse (påkrævet): hvordan er ejerskabet og CVR kontrolleret?";
+export const CLINIC_OWNER_LABEL = "Ejer (login-e-mail)";
+export const CLINIC_NO_OWNER_TEXT = "Ingen konto";
 export const CLINIC_ACTION_CONFIRM_LABEL = "Bekræft";
 export const CLINIC_ACTION_CANCEL_LABEL = "Fortryd";
 export const CLINIC_HAS_ACCOUNT = { yes: "Ja", no: "Nej" } as const;

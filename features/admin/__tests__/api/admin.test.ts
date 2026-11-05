@@ -26,15 +26,16 @@ const MINUTE = 60_000;
 const HOUR = 3_600_000;
 const REVIEW_TEXT = "Rolig og grundig behandling, og vi fik god information undervejs.";
 
-type Clinic = { c: TestClient; id: string; name: string };
+type Clinic = { c: TestClient; id: string; name: string; email: string };
 type Patient = { c: TestClient; caseId: string; userId: string; email: string; serviceId: string };
 
 async function clinic(): Promise<Clinic> {
   const c = await newClientWithTerms();
   const name = `Admintest ${Math.random().toString(36).slice(2, 8)}`;
+  const email = uniqueEmail("klinik");
   const r = await c.post("/api/auth/signup", {
     role: "clinic",
-    email: uniqueEmail("klinik"),
+    email,
     password: PASSWORD,
     cvr: randomCvr(),
     clinicName: name,
@@ -47,7 +48,7 @@ async function clinic(): Promise<Clinic> {
   createdUserIds.add(r.body.userId);
   const id = (await c.get("/api/me")).body.clinic.id as string;
   assert.ifError((await service.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "verified" })).error);
-  return { c, id, name };
+  return { c, id, name, email };
 }
 
 async function patient(): Promise<Patient> {
@@ -147,6 +148,7 @@ describe("admin: klinikker", () => {
     assert.equal(row.canPause, true);
     assert.equal(row.canVerify, false);
     assert.equal("ownerId" in row, false);
+    assert.equal(row.ownerEmail, k.email, "ejerens login-e-mail vises (H1)");
     assert.equal((await adm.get(`/api/admin/clinics?q=${encodeURIComponent(k.name)}&status=imported`)).body.clinics.length, 0);
     assert.equal((await adm.get("/api/admin/clinics?status=bogus")).status, 400);
     // Søgetegn med betydning for filteret giver ingen fejl.
@@ -167,12 +169,19 @@ describe("admin: klinikker", () => {
     assert.equal(again.status, 409);
     assert.equal(code(again), "INVALID_STATUS_TRANSITION");
     assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "imported" })).status, 400);
-    assert.equal((await adm.post(`/api/admin/clinics/${fakeId}/status`, { status: "verified" })).status, 404);
-    assert.equal((await adm.post("/api/admin/clinics/ikke-et-id/status", { status: "verified" })).status, 404);
+    assert.equal((await adm.post(`/api/admin/clinics/${fakeId}/status`, { status: "verified", reason: "Kontrolleret" })).status, 404);
+    assert.equal((await adm.post("/api/admin/clinics/ikke-et-id/status", { status: "verified", reason: "Kontrolleret" })).status, 404);
     assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", reason: "x".repeat(501) })).status, 400);
-    assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", extra: 1 })).status, 400);
+    assert.equal((await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", reason: "Kontrolleret", extra: 1 })).status, 400);
 
-    const verified = await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified" });
+    // H1: "Verificér" kræver en begrundelse.
+    for (const body of [{ status: "verified" }, { status: "verified", reason: "   " }]) {
+      const noReason = await adm.post(`/api/admin/clinics/${k.id}/status`, body);
+      assert.equal(noReason.status, 400);
+      assert.equal(code(noReason), "REASON_REQUIRED");
+    }
+    assert.equal((await adm.get(`/api/admin/clinics?q=${encodeURIComponent(k.name)}`)).body.clinics[0].status, "registered", "uændret efter afvisningerne");
+    const verified = await adm.post(`/api/admin/clinics/${k.id}/status`, { status: "verified", reason: "CVR og ejer kontrolleret" });
     assert.equal(verified.status, 200);
     assert.equal(verified.body.status, "verified");
     assert.ok(verified.body.verifiedAt);
@@ -181,7 +190,7 @@ describe("admin: klinikker", () => {
     const { data: log } = await service.from("admin_actions").select("action, from_value, to_value, reason").eq("target_id", k.id).order("created_at");
     assert.deepEqual(log, [
       { action: "clinic_status", from_value: "verified", to_value: "registered", reason: "Mangler dokumentation" },
-      { action: "clinic_status", from_value: "registered", to_value: "verified", reason: null },
+      { action: "clinic_status", from_value: "registered", to_value: "verified", reason: "CVR og ejer kontrolleret" },
     ]);
   });
 });

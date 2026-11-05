@@ -58,7 +58,8 @@ type LeadRow = Pick<
 // Patientens læsning af egne leads: leadet og trådens beskeder (kun til at tælle ulæste: klinikkens, endnu ikke læst).
 type PatientLeadRow = LeadRow & { messages: { sender_role: "patient" | "clinic"; read_at: string | null }[] | null };
 
-// Rækker fra clinic_leads() og clinic_lead_detail() (architecture 5.7). Felter er null for et tilbagetrukket lead.
+// Rækker fra clinic_leads() og clinic_lead_detail() (architecture 5.7). Indholdsfelter er null, når content_open er false
+// (tilbagetrukket eller afvist lead, eller delingssamtykket trukket tilbage uden booket tid).
 // De genererede typer markerer ikke funktionernes kolonner som nullable, så formen angives her.
 type ClinicLeadListRow = {
   lead_id: string;
@@ -77,6 +78,7 @@ type ClinicLeadListRow = {
   unread_messages: number | null;
   list_price_min: number | null;
   list_price_max: number | null;
+  content_open: boolean | null;
 };
 // Kun i clinic_leads() (migration 20261101000200): uddraget (121 tegn) og en reserveret akuttids udløb.
 type ClinicLeadListOnlyRow = ClinicLeadListRow & { summary_excerpt: string | null; hold_expires_at: string | null };
@@ -406,6 +408,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
       summaryExcerpt: summaryExcerpt(extra.summary),
       listPrice: priceRange(row.list_price_min, row.list_price_max),
       holdExpiresAt: isoOrNull(extra.holdExpiresAt),
+      contentOpen: row.content_open ?? false,
     };
   }
 
@@ -466,7 +469,8 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     };
   }
 
-  // Billederne på et lead (clinic_lead_images): kun med patientens aktive samtykke og aldrig for et tilbagetrukket lead.
+  // Billederne på et lead (clinic_lead_images): kun med patientens aktive samtykke og kun mens indholdet er åbent (aldrig for et
+  // tilbagetrukket eller afvist lead).
   async listClinicImages(leadId: string): Promise<ClinicLeadImageRecord[]> {
     const rows = await this.rpc<ClinicLeadImageRow[]>("clinic_lead_images", { p_lead_id: leadId });
     return (rows ?? []).map((row) => ({

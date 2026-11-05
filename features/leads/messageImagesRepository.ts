@@ -16,6 +16,8 @@ export type NewMessageWithImages = {
   leadId: string;
   messageId: string;
   body: string;
+  // Kun fra en klinik: den bekræftede tekstversion (M2), gemmes på billederne sammen med tidspunktet.
+  clinicConsentVersion?: string;
   images: { id: string; width: number; height: number; bytes: number }[];
 };
 
@@ -49,12 +51,18 @@ export class MessageImagesRepository extends BaseRepository<ImageRow, MessageIma
     );
   }
 
+  // Kun service role (2.3 g, cronjobbet): sletter billeder i tråde uden aktivitet i `months` måneder (standard 12, M3). Triggeren
+  // lægger stierne i pending_storage_paths. Returnerer antal slettede billeder.
+  async purgeInactive(months: number): Promise<number> {
+    return (await this.rpc<number>("purge_inactive_message_images", { p_months: months })) ?? 0;
+  }
+
   // Kun service role (2.3 c): indsætter beskeden og billedrækkerne i én transaktion, efter at filerne er uploadet.
   // Funktionen tjekker selv deltager, åben tråd, lofter og patientens samtykke. Returnerer beskedens created_at.
   async sendWithImages(input: NewMessageWithImages): Promise<string> {
     const created = await this.rpc<string>(
       "send_message_with_images",
-      { p_user_id: input.userId, p_lead_id: input.leadId, p_message_id: input.messageId, p_body: input.body, p_images: input.images },
+      { p_user_id: input.userId, p_lead_id: input.leadId, p_message_id: input.messageId, p_body: input.body, p_images: input.images, p_clinic_consent_version: input.clinicConsentVersion ?? null },
       {
         // MESSAGE_IMAGE_LIMIT før IMAGE_LIMIT: fejlkoderne matches som delstrenge i rækkefølge.
         MESSAGE_IMAGE_LIMIT: new ApiError(429, "MESSAGE_IMAGE_LIMIT", MESSAGE_IMAGE_LIMIT_TEXT),

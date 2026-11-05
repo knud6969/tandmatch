@@ -13,8 +13,13 @@ export class MessageImageStorage extends BaseStorage {
     return `messages/${leadId.toLowerCase()}/${imageId.toLowerCase()}.jpg`;
   }
 
-  // Sletter alle billeder i en tråd (kontosletning).
+  // Mappen med alle billeder i en tråd (kontosletning).
+  static leadPrefix(leadId: string): string {
+    return `messages/${leadId.toLowerCase()}`;
+  }
+
+  // Sletter alle billeder i en tråd.
   removeLead(leadId: string): Promise<void> {
-    return this.removePrefix(`messages/${leadId.toLowerCase()}`);
+    return this.removePrefix(MessageImageStorage.leadPrefix(leadId));
   }
 }

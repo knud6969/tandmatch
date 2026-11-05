@@ -98,11 +98,18 @@ test.describe("admin", () => {
       await expect(row.getByRole("button", { name: "Verificér" })).toBeVisible();
       expect(sql(`select status from public.clinics where id = '${clinic.id}'`)).toBe("registered");
       expect((await patient.page.request.get(`/api/clinics/${clinic.id}`)).status()).toBe(404);
+      // H1: ejerens e-mail vises, og "Verificér" kræver en begrundelse.
+      await expect(row.getByTestId("admin-ejer")).toContainText("@");
       await row.getByRole("button", { name: "Verificér" }).click();
+      await expect(row.getByRole("button", { name: "Bekræft" })).toBeDisabled();
+      await row.getByLabel(/Begrundelse \(påkrævet\)/).fill("CVR og ejer kontrolleret i test");
+      await expect(row.getByRole("button", { name: "Bekræft" })).toBeEnabled();
+      await expectNoHorizontalScroll(page);
       await row.getByRole("button", { name: "Bekræft" }).click();
       await expect(row).toHaveAttribute("data-status", "verified");
       expect(sql(`select status from public.clinics where id = '${clinic.id}'`)).toBe("verified");
       expect(sql(`select count(*) from public.admin_actions where target_id = '${clinic.id}'`)).toBe("2");
+      expect(sql(`select reason from public.admin_actions where target_id = '${clinic.id}' and to_value = 'verified'`)).toBe("CVR og ejer kontrolleret i test");
     } finally {
       await cleanup(patient, [clinic]);
       await cleanupAdmin(admin);

@@ -129,10 +129,11 @@ export class LeadsController {
   }
 
 
-  // Detaljen med signerede billeder. Et tilbagetrukket lead har hverken billeder eller beskeder (5.7).
+  // Detaljen med signerede billeder. Et tilbagetrukket eller afvist lead (indholdet lukket, 5.7) har hverken billeder eller
+  // beskeder; databasen returnerer ingen billeder for det, så opslaget springes over.
   private async clinicDetail(leadId: string): Promise<ClinicLeadDetailDto> {
     const detail = await this.leads.requireClinicDetail(leadId);
-    if (detail.status === "withdrawn") return { ...detail, images: [] };
+    if (!detail.contentOpen) return { ...detail, images: [] };
     const records = await this.leads.listClinicImages(leadId);
     const signed = await this.imageUrls.toDtos(records);
     return {

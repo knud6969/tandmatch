@@ -294,6 +294,21 @@ describe("klinikkens beslutning", () => {
     assert.equal(mine.body.leads[0].status, "declined");
     assert.equal(mine.body.leads[0].declineReason, "no_capacity");
     assert.equal(mine.body.leads[0].declineNote, "Fuldt booket.", "patienten ser klinikkens note (review 1)");
+    // H2: klinikken ser efter afvisningen kun metadata og sit eget svar, ikke patientens indhold.
+    const closed = await k.c.get(`/api/leads/${leadId}`);
+    assert.equal(closed.status, 200);
+    assert.equal(closed.body.status, "declined");
+    assert.equal(closed.body.contentOpen, false);
+    assert.deepEqual(
+      { services: closed.body.services, serviceNames: closed.body.serviceNames, summaryText: closed.body.summaryText, summaryExcerpt: closed.body.summaryExcerpt, images: closed.body.images, imageCount: closed.body.imageCount, area: closed.body.area, listPrice: closed.body.listPrice },
+      { services: [], serviceNames: [], summaryText: "", summaryExcerpt: "", images: [], imageCount: 0, area: { postalCode: null, city: null }, listPrice: null },
+    );
+    assert.equal(closed.body.decision.declineReason, "no_capacity");
+    assert.equal(closed.body.decision.declineNote, "Fuldt booket.");
+    const row = (await k.c.get("/api/leads")).body.leads.find((l: { id: string }) => l.id === leadId);
+    assert.equal(row.contentOpen, false);
+    assert.deepEqual([row.serviceNames, row.summaryExcerpt, row.imageCount], [[], "", 0]);
+    assert.deepEqual((await k.c.get(`/api/leads/${leadId}/messages`)).body.messages, []);
     // Et besvaret lead kan ikke besvares igen
     const twice = await k.c.post(`/api/leads/${leadId}/decision`, { decision: "accept" });
     assert.equal(twice.status, 409);
@@ -431,9 +446,9 @@ describe("beskedtråd pr. lead", () => {
     const closedClinic = await k.c.post(path2, { body: "Efter afvisning" });
     assert.equal(closedClinic.status, 409);
     assert.equal(code(closedClinic), "THREAD_CLOSED");
-    // Eksisterende beskeder kan stadig læses af begge
+    // Eksisterende beskeder kan stadig læses af patienten; klinikken mister dem ved afvisningen (security H2)
     assert.equal((await p2.c.get(path2)).body.messages.length, 1);
-    assert.equal((await k.c.get(path2)).body.messages.length, 1);
+    assert.deepEqual((await k.c.get(path2)).body.messages, []);
   });
 
   it("døgnloftet giver MESSAGE_LIMIT (429), ikke THREAD_CLOSED, mens tråden er åben", async () => {

@@ -37,6 +37,16 @@ export const CONSENT_TYPE_LABEL: Record<ConsentType, string> = {
 // i platformen, men klinikkens erklæring som dataansvarlig. Juridisk gennemgang mangler [ÅBEN, 12.3].
 export const PORTFOLIO_CONSENT_TEXT_VERSION = "portfolio_consent@v0-prototype";
 
+// Klinikkens bekræftelse ved billeder i en beskedtråd (leads 10.12, security M2). Samme slags erklæring som porteføljen: klinikkens
+// egen som dataansvarlig, ikke et patientsamtykke i platformen, og derfor ikke i consents. Versionen og tidspunktet gemmes på
+// hvert billede (message_images). Teksten må ikke give patienten indtryk af, at nogen har samtykket til billedet; den siger
+// kun, hvad klinikken selv indestår for. Juridisk gennemgang mangler [ÅBEN, som porteføljeerklæringen].
+export const CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION = "clinic_message_images@v0-prototype";
+
 export const PORTFOLIO_CONSENT_TEXT =
   "Jeg bekræfter, at patienten på billedet har givet skriftligt samtykke til, at billedet vises offentligt på " +
   "klinikkens profil på TandMatch, og at billedet ikke viser ansigt eller andet, der kan identificere patienten.";
+
+export const CLINIC_MESSAGE_IMAGE_CONSENT_TEXT =
+  "Jeg bekræfter, at billederne er relevante for patientens behandling, at de kun viser denne patient, og at klinikken " +
+  "selv har det grundlag, der skal til for at sende dem. TandMatch indhenter ikke noget samtykke på klinikkens vegne.";

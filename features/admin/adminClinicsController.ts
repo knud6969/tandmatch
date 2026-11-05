@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { adminClinicStatusSchema, adminClinicsQuerySchema } from "@/lib/admin/schemas/admin";
 import type { AdminClinicDto } from "@/lib/admin/types/admin";
-import { forbidden } from "@/platform/middleware/http";
+import { forbidden, reasonRequired } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AdminClinicsRepository } from "@/features/admin/adminClinicsRepository";
 
@@ -26,9 +26,12 @@ export class AdminClinicsController {
     return { clinics: await this.clinics.list(query) };
   }
 
-  // "Verificér" (registered -> verified) og "Sæt på pause" (verified -> registered). 404; 409 INVALID_STATUS_TRANSITION.
+  // "Verificér" (registered -> verified) kræver en begrundelse (400 REASON_REQUIRED, H1); "Sæt på pause" (verified -> registered)
+  // har en valgfri. 404; 409 INVALID_STATUS_TRANSITION.
   async changeStatus(clinicId: string, input: StatusInput): Promise<AdminClinicDto> {
-    await this.clinics.changeStatus(clinicId, input.status, input.reason?.trim() || null);
+    const reason = input.reason?.trim() || null;
+    if (input.status === "verified" && !reason) throw reasonRequired();
+    await this.clinics.changeStatus(clinicId, input.status, reason);
     return this.clinics.require(clinicId);
   }
 }
