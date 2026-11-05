@@ -29,6 +29,7 @@ function Guarded() {
         <Stack.Screen name="anmeld/[bookingId]" />
         <Stack.Screen name="sag/[caseId]/beskeder/[leadId]" />
         <Stack.Screen name="akut" />
+        <Stack.Screen name="notifikationer" />
         <Stack.Screen name="sag/[caseId]/send" />
         <Stack.Screen name="sag/[caseId]/flow" options={{ gestureEnabled: false }} />
       </Stack.Protected>
