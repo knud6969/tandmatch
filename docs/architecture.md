@@ -33,10 +33,10 @@ Ejer: architect-agenten. Ændringshistorik: `git log -p -- docs/architecture.md 
 | 9.5 | `public-media` | `features/clinics/README.md` |
 | 10.1 | Delte typer | `platform/README.md` |
 | 10.14 | Admin (planlagt 2026-11-04) | `features/admin/README.md` |
-| 10.2-10.3, 10.15 | Auth, sessioner, konto, samtykker, push-tokens | `features/identity/README.md` |
+| 10.2-10.3, 10.15, 10.20 | Auth, sessioner, konto, samtykker, push-tokens, e-mail og telefon til notifikationer | `features/identity/README.md` |
 | 10.16 | Flyt tid (planlagt) | `features/booking/README.md` |
 | 10.17-10.19 | Favoritter, klinikkens statistik (planlagt), notifikationsindstillinger og web push (10.19, bygget) | `features/clinics/README.md` |
-| 14 | Notifikationer: outbox, e-mail, app-push, web push, påmindelser | `platform/README.md` |
+| 14 | Notifikationer: outbox, klokken (14.11), e-mail, SMS, app-push, web push, påmindelser | `platform/README.md` |
 | 10.4, 10.7, 10.8 | Katalog, klinikoversigt og profil, egen klinik | `features/clinics/README.md` |
 | 10.5, 10.6 | Sager og AI-chat | `features/cases/README.md` |
 | 10.9, 10.11, 10.12 | Leads, akutvej, beskeder | `features/leads/README.md` |

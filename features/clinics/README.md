@@ -222,6 +222,8 @@ Primærnøgle `(patient_id, clinic_id)`. RLS (platform 5.4): SELECT og DELETE `p
 
 ### 6.3 Klinikflade (`/klinik`, rolle `clinic`)
 
+**Bygget 2026-11-05:** notifikationsklokken står i headeren (`SiteHeader` i `components/ui`) for klinikker, mellem hilsenen og "Log ud" (platform 14.11): tal for ulæste, liste med de nyeste, tryk åbner leadet eller kalenderen og markerer som læst, "Marker alle som læst", polling hvert 30. sekund kun mens fanen er synlig. Den virker uanset e-mail- og browser-valgene under Klinikprofil → Notifikationer.
+
 [PROTOTYPE, 2026-10-25] Klinikker auto-verificeres ved oprettelse (`docs/beslutninger.md` 12.2), så banneret "Afventer verificering" vises ikke (`SHOW_VERIFICATION_BANNER = false` i `verification-banner.tsx`). Koden for `registered` står: en `registered` klinik kan sætte alt op, men indbakke og kalender er tomme, indtil den er verificeret.
 
 **Bygget (2026-11-04), PR C:** en femte fane **Statistik** (`/klinik/statistik`) mellem Anmeldelser og Klinikprofil; vandret rulning på smalle skærme er uændret.
