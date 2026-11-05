@@ -45,11 +45,22 @@ export function PrivacySections() {
             navn. Grundlag: aftale.
           </li>
           <li>
+            <strong>Gemte klinikker (favoritter):</strong> hvilke klinikker du har gemt, knyttet til din konto. Vises
+            aldrig for klinikkerne. Grundlag: aftale.
+          </li>
+          <li>
             <strong>Klinikker:</strong> login, CVR, klinikkens oplysninger og tandlægers navn, titel og billede.
             Grundlag: aftale.
           </li>
           <li>
-            <strong>Teknisk drift:</strong> en afkortet, krypteret identifikator af IP-adressen til beskyttelse mod
+            <strong>Klinikker, der ikke har oprettet sig:</strong> navn, adresse, CVR, kontaktoplysninger og
+            åbningstider er hentet fra offentlige erhvervsregistre (CVR) og vises i oversigten. Grundlag: berettiget
+            interesse. Oplysningerne kan indeholde en tandlæges navn. Du kan bede os fjerne dem ved at skrive til{" "}
+            <a className={mail} href="mailto:privatliv@tandmatch.dk">privatliv@tandmatch.dk</a>; vi gør det efter
+            anmodning.
+          </li>
+          <li>
+            <strong>Teknisk drift:</strong> et SHA-256-hash af IP-adressen (ikke selve adressen) til beskyttelse mod
             misbrug (begrænsning af antal forsøg). Grundlag: berettiget interesse i sikker drift.
           </li>
         </ul>
@@ -87,8 +98,14 @@ export function PrivacySections() {
           <li>De klinikker, du selv vælger at kontakte, i det omfang beskrevet ovenfor.</li>
           <li>Supabase, som hoster database, login og filer i EU (databehandler).</li>
           <li>OpenAI, som leverer AI-tjenesten (databehandler). Oplysninger kan blive behandlet uden for EU/EØS; overførslen sker på grundlag af EU’s standardkontraktbestemmelser eller tilsvarende gyldigt grundlag. Oplysningerne bruges ikke til at træne modeller.</li>
-          <li>Leverandør af hosting af serverne og leverandør af e-mail (nulstilling af adgangskode), begge databehandlere.</li>
-          <li>Resend, som sender e-mails om notifikationer til klinikker, Expo og Apple (Apple Push Notification service), som leverer korte beskeder til patienternes app, og browserens push-tjeneste (Google, Mozilla, Apple eller Microsoft) for klinikker, der slår notifikationer til i browseren. Alle er databehandlere.</li>
+          <li>Leverandør af hosting af serverne og leverandør af e-mail (nulstilling af adgangskode). Leverandørerne er ikke valgt endnu, og aftaler indgås, før rigtige oplysninger behandles.</li>
+          <li>Resend, som sender e-mails om notifikationer, Expo og Apple (Apple Push Notification service), som leverer korte beskeder til patienternes app, og browserens push-tjeneste (Google, Mozilla, Apple eller Microsoft) for klinikker, der slår notifikationer til i browseren. De modtager kun de korte, generiske beskeder beskrevet under Notifikationer. Vi har endnu ikke databehandleraftaler med dem.</li>
+          <li>
+            OpenStreetMap Nominatim, som slår en klinikkens adresse (vej, postnummer og by) op, når klinikken oprettes
+            eller ændrer adresse. Der sendes aldrig oplysninger om patienter. Og OpenFreeMap, som leverer kortet: når du
+            ser kortet på websiden, henter din browser kortfliser direkte fra OpenFreeMap, som dermed modtager din
+            IP-adresse og det kortudsnit, du ser. Det er offentlige tjenester, vi ikke har en databehandleraftale med.
+          </li>
         </ul>
         <p>Vi sælger ikke dine oplysninger og viser ingen reklamer.</p>
       </InfoSection>
