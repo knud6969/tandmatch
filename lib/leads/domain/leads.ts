@@ -1,4 +1,4 @@
-import { LEAD_ACTIVE_STATUSES, LEAD_SUMMARY_EXCERPT_CHARS } from "@/lib/leads/constants/leads";
+import { CLOSED_LEAD_TEXT, LEAD_ACTIVE_STATUSES, LEAD_SUMMARY_EXCERPT_CHARS, WITHDRAWN_LEAD_TEXT } from "@/lib/leads/constants/leads";
 import { MAX_ACTIVE_LEADS_PER_CASE, MAX_TOTAL_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import type { CaseRecordDto } from "@/lib/cases/types/cases";
 import type { ClinicLeadListItemDto, LeadStatus } from "@/lib/leads/types/leads";
@@ -44,10 +44,17 @@ export function canSendCase(
 }
 
 // "Kræver handling" i klinikkens indbakke (features/clinics/README.md 6.3): ubesvaret eller med ulæste beskeder fra patienten.
-// Et tilbagetrukket lead kræver aldrig handling.
+// Et tilbagetrukket eller afvist lead kræver aldrig handling (klinikken kan ikke læse beskederne på dem, security H2).
 export function leadNeedsAction(lead: Pick<ClinicLeadListItemDto, "status" | "unreadMessages">): boolean {
-  if (lead.status === "withdrawn") return false;
+  if (lead.status === "withdrawn" || lead.status === "declined") return false;
   return lead.status === "sent" || lead.unreadMessages > 0;
+}
+
+// Teksten på et lead, klinikken ikke må se indholdet af (contentOpen = false, security H2): tilbagetrukket, afvist
+// (også clinic_left) eller delingssamtykket trukket tilbage uden booket tid.
+export function closedLeadText(lead: Pick<ClinicLeadListItemDto, "status">): string {
+  if (lead.status === "withdrawn") return WITHDRAWN_LEAD_TEXT;
+  return lead.status === "declined" ? CLOSED_LEAD_TEXT.declined : CLOSED_LEAD_TEXT.other;
 }
 
 // Uddrag af opsummeringen til indbakkens række: højst `max` tegn (inkl. "…"), afkortet ved et ord, hvis det er muligt.

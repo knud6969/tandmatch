@@ -6,6 +6,9 @@ import {
   CLINIC_ACTION_CONFIRM_LABEL,
   CLINIC_ACTION_REASON_LABEL,
   CLINIC_HAS_ACCOUNT,
+  CLINIC_NO_OWNER_TEXT,
+  CLINIC_OWNER_LABEL,
+  CLINIC_VERIFY_REASON_LABEL,
   CLINIC_PAUSE_CONSEQUENCE,
   CLINIC_PAUSE_LABEL,
   CLINIC_VERIFY_CONSEQUENCE,
@@ -28,8 +31,8 @@ const STATUS_TONE: Record<AdminClinicDto["status"], BadgeTone> = { verified: "br
 
 type Change = "verified" | "registered";
 
-// Én klinik i admins liste: grunddata, status og de handlinger, statussen tillader. Begge handlinger kræver en bekræftelse med en
-// valgfri begrundelse; "Sæt på pause" viser konsekvensen først.
+// Én klinik i admins liste: grunddata, ejerens e-mail, status og de handlinger, statussen tillader. Begge handlinger kræver en
+// bekræftelse; "Verificér" kræver en begrundelse (H1), "Sæt på pause" har en valgfri og viser konsekvensen først.
 export function AdminClinicRow({ clinic, onChanged }: { clinic: AdminClinicDto; onChanged: (clinic: AdminClinicDto) => void }) {
   const [pending, setPending] = useState<Change | null>(null);
   const [reason, setReason] = useState("");
@@ -56,7 +59,7 @@ export function AdminClinicRow({ clinic, onChanged }: { clinic: AdminClinicDto; 
         <h2 className="break-words text-lg font-semibold text-ink">{clinic.name}</h2>
         <Badge tone={STATUS_TONE[clinic.status]}>{CLINIC_STATUS_LABEL[clinic.status]}</Badge>
       </div>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm text-ink-muted sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm text-ink-muted sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <dt className="font-semibold text-ink">By</dt>
           <dd>{clinic.postalCode} {clinic.city}</dd>
@@ -64,6 +67,10 @@ export function AdminClinicRow({ clinic, onChanged }: { clinic: AdminClinicDto; 
         <div>
           <dt className="font-semibold text-ink">CVR</dt>
           <dd>{clinic.cvr ?? "–"}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="font-semibold text-ink">{CLINIC_OWNER_LABEL}</dt>
+          <dd className="break-all" data-testid="admin-ejer">{clinic.ownerEmail ?? CLINIC_NO_OWNER_TEXT}</dd>
         </div>
         <div>
           <dt className="font-semibold text-ink">Har konto</dt>
@@ -78,10 +85,10 @@ export function AdminClinicRow({ clinic, onChanged }: { clinic: AdminClinicDto; 
       {pending ? (
         <div className="flex flex-col gap-3" role="group" aria-label={`${pending === "verified" ? CLINIC_VERIFY_LABEL : CLINIC_PAUSE_LABEL} ${clinic.name}`}>
           <Alert tone={pending === "verified" ? "info" : "warning"}>{pending === "verified" ? CLINIC_VERIFY_CONSEQUENCE : CLINIC_PAUSE_CONSEQUENCE}</Alert>
-          <TextArea label={CLINIC_ACTION_REASON_LABEL} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={ADMIN_REASON_MAX_CHARS} rows={2} />
+          <TextArea label={pending === "verified" ? CLINIC_VERIFY_REASON_LABEL : CLINIC_ACTION_REASON_LABEL} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={ADMIN_REASON_MAX_CHARS} rows={2} />
           <StatusMessage message={action.message} />
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant={pending === "verified" ? "primary" : "danger"} onClick={confirm} disabled={action.busy}>
+            <Button variant={pending === "verified" ? "primary" : "danger"} onClick={confirm} disabled={action.busy || (pending === "verified" && reason.trim() === "")}>
               {action.busy ? "Gemmer …" : CLINIC_ACTION_CONFIRM_LABEL}
             </Button>
             <Button variant="ghost" onClick={() => setPending(null)} disabled={action.busy}>

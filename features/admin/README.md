@@ -99,9 +99,8 @@ export type AdminModerationItemDto =
   | (ModerationBase & { kind: "reply"; reviewId: string; text: string; reviewExcerpt: string });
 // lib/admin/schemas/admin.ts
 export const adminClinicsQuerySchema = z.object({ status: z.enum(CLINIC_STATUSES).optional(), q: z.string().trim().max(100).optional() });
-export const adminClinicStatusSchema = z.object({ status: z.enum(["verified", "registered"]), reason: z.string().trim().max(500).optional() }).strict()
-  // + refine: reason er påkrævet (min 1), når status er "verified" (400 REASON_REQUIRED)
-;
+export const adminClinicStatusSchema = z.object({ status: z.enum(["verified", "registered"]), reason: z.string().trim().max(500).optional() }).strict();
+// Controlleren kræver en ikke-tom reason, når status er "verified" (400 REASON_REQUIRED); databasen kræver den også.
 export const adminModerationQuerySchema = z.object({ kind: z.enum(["review", "reply"]).default("review"), status: z.enum(MODERATION_STATUSES).default("pending") });
 export const adminModerateSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(1).max(500).optional() }).strict();
 ```

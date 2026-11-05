@@ -13,6 +13,7 @@ export type AdminClinicDto = {
   cvr: string | null;
   status: ClinicStatus;
   hasOwner: boolean;
+  ownerEmail: string | null; // login-e-mailen, hentet af admin_clinic_owners() (H1); null uden ejer
   verifiedAt: string | null;
   createdAt: string;
   canVerify: boolean; // status === "registered"
