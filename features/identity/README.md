@@ -411,7 +411,7 @@ export const putNotificationContactSchema = z.object({
 | GET `/api/patients/me/notification-contact` | patient med konto | – | 200 `{ email, phone }` (begge `null`, hvis intet er valgt). 403 `ACCOUNT_REQUIRED` for anonyme |
 | PUT `/api/patients/me/notification-contact` | patient med konto | `putNotificationContactSchema` | 200 `{ email, phone }`. 400 `VALIDATION_ERROR` ved ugyldig e-mail eller ugyldigt nummer |
 
-Lag: `app/api/patients/me/notification-contact/route.ts` → `NotificationContactController` → `NotificationContactRepository` (`BaseRepository`; upsert med brugerens klient). **Dataeksport (10.2):** feltet `notificationContact: { email, phone, updatedAt } | null`. **Sletning:** cascade fra kontoen. **Tests:** `features/identity/__tests__/api/notification-contact.test.ts` og RLS-punkt 62 (platform 5.6).
+Lag: `app/api/patients/me/notification-contact/route.ts` → `NotificationContactController` → `NotificationContactRepository` (`BaseRepository`; upsert med brugerens klient). **Dataeksport (10.2):** feltet `notificationContact: { email, phone, updatedAt } | null`. **Sletning:** cascade fra kontoen. **Tests:** `platform/__tests__/api/notification-inbox.test.ts` og RLS-punkt 62 (platform 5.6).
 
 ### 10.15 Push-tokens
 

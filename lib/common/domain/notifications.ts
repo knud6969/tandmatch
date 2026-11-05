@@ -230,7 +230,15 @@ export function renderInboxContent(type: NotificationType, payload: Notification
     return { title: clinicParts(type, payload).subject, body, path: clinicNotificationPath(type, payload) };
   }
   const patientType = type as PatientNotificationType;
-  return { title: renderPatientPush(patientType, payload).body, body: null, path: patientNotificationPath(patientType, payload) };
+  // Tidspunktet for booket, flyttet og aflyst (påmindelsen har det allerede i titlen; anmeldelsen og klinikkens svar har intet).
+  let body: string | null = null;
+  if (payload.startsAt && patientType !== "patient_booking_reminder" && patientType !== "patient_review_reminder") {
+    body =
+      patientType === "patient_booking_rescheduled" && payload.previousStartsAt
+        ? INBOX_RESCHEDULED_BODY.replace("{gammel}", when(payload.previousStartsAt)).replace("{ny}", when(payload.startsAt))
+        : `${when(payload.startsAt)}.`;
+  }
+  return { title: renderPatientPush(patientType, payload).body, body, path: patientNotificationPath(patientType, payload) };
 }
 
 // "lige nu", "5 min. siden", "3 t. siden", ellers dato og tid i dansk tid. `now` kan gives i tests.
