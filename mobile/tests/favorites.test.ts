@@ -31,6 +31,18 @@ describe("hjertet: optimistisk skift (13.12)", () => {
     expect(failure).toBeInstanceOf(Error);
   });
 
+  it("ruller kun den ene klinik tilbage, så et andet tryk undervejs består", async () => {
+    const api = { add: jest.fn(async () => Promise.reject(new Error("nej"))), remove: jest.fn() };
+    let latest: ReadonlySet<string> = new Set(["b"]);
+    const failure = await toggleFavorite(latest, "a", api, (next) => { latest = next; });
+    expect(failure).toBeInstanceOf(Error);
+    // Mens kaldet kørte, blev "c" gemt; fejlen på "a" må ikke fjerne den.
+    latest = new Set(["a", "b", "c"]);
+    const second = await toggleFavorite(new Set(["b"]), "a", api, (next) => { latest = next; }, () => latest);
+    expect(second).toBeInstanceOf(Error);
+    expect([...latest].sort()).toEqual(["b", "c"]);
+  });
+
   it("withFavorite ændrer ikke det oprindelige sæt", () => {
     const ids = new Set(["a"]);
     expect([...withFavorite(ids, "b", true)].sort()).toEqual(["a", "b"]);

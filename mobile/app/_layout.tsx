@@ -26,6 +26,8 @@ function Guarded() {
         <Stack.Screen name="sag/[caseId]/index" />
         <Stack.Screen name="sag/[caseId]/book/[leadId]" />
         <Stack.Screen name="bookinger" />
+        <Stack.Screen name="bookinger/[bookingId]/flyt" />
+        <Stack.Screen name="favoritter" />
         <Stack.Screen name="anmeld/[bookingId]" />
         <Stack.Screen name="sag/[caseId]/beskeder/[leadId]" />
         <Stack.Screen name="akut" />
