@@ -88,6 +88,22 @@ describe("PUT/DELETE /api/push-tokens", () => {
     assert.equal((await a.c.del("/api/push-tokens", {})).status, 400);
   });
 
+  it("DELETE virker uden en gældende vilkårsaccept (L3), mens PUT stadig kræver den", async () => {
+    const p = await patient();
+    const t = token();
+    assert.equal((await p.c.put("/api/push-tokens", { token: t, platform: "ios" })).status, 204);
+    // Vilkårsaccepten bliver forældet: rækken og cookien er væk.
+    assert.ifError((await admin.from("terms_acceptances").delete().eq("user_id", p.userId)).error);
+    p.c.cookies.delete("tm_terms");
+    const put = await p.c.put("/api/push-tokens", { token: token(), platform: "ios" });
+    assert.equal(put.status, 403);
+    assert.equal(put.body.error.code, "TERMS_REQUIRED");
+    assert.equal((await p.c.del("/api/push-tokens", { token: t })).status, 204);
+    assert.equal((await rows(t)).length, 0, "enheden er afmeldt uden vilkårsaccept");
+    // Uden session er afmeldingen stadig 401.
+    assert.equal((await (await newClientWithTerms()).del("/api/push-tokens", { token: t })).status, 401);
+  });
+
   it("dataeksporten har pushDevices uden selve tokenet", async () => {
     const p = await patient();
     const t = token();

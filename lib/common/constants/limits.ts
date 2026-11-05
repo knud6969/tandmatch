@@ -41,6 +41,12 @@ export const MESSAGE_MAX_PER_DAY = 200;
 // Billeder i beskedtråden (features/leads/README.md 10.12). Samme tal i send_message_with_images() (migration 20261103000100).
 export const MESSAGE_MAX_IMAGES = 3;
 export const MESSAGE_IMAGES_MAX_PER_DAY = 30;
+// Opbevaring af beskedbilleder: slettes så mange måneder efter sidste aktivitet i tråden (security M3). Samme standard i
+// purge_inactive_message_images() (migration 20261110000400). Stå i privatlivspolitikken (afsnit 5) og docs/security.md.
+export const MESSAGE_IMAGE_RETENTION_MONTHS = 12;
+
+// Oprydning af filer: antal poster i pending_storage_paths pr. kørsel af /api/cron/cleanup-storage.
+export const STORAGE_CLEANUP_BATCH_SIZE = 200;
 
 // Mindst så mange cifre i et telefonnummer. Databasens check (6-20 tilladte tegn) er løsere; TypeScript er strengere
 // (security trin 6, L2), så "(((((("-lignende værdier ikke kan gemmes. Bruges af lib/common/schemas/phone.ts.

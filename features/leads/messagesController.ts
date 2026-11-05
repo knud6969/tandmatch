@@ -7,9 +7,12 @@ import { MAX_IMAGE_UPLOAD_BYTES, MESSAGE_MAX_PER_DAY, SIGNED_URL_TTL_SECONDS } f
 import { messageWithImagesSchema, type sendMessageSchema } from "@/lib/leads/schemas/messages";
 import type { MessageDto, MessageImageDto, MessageSenderRole } from "@/lib/leads/types/messages";
 import { ApiError, forbidden, messageLimit, threadClosed } from "@/platform/middleware/http";
+import { CONSENT_CONFIRMATION_REQUIRED_TEXT } from "@/lib/common/constants/error-texts";
+import { CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import type { Session } from "@/platform/middleware/session";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 import { ConsentsRepository } from "@/features/identity";
 import { LeadsRepository } from "@/features/leads/leadsRepository";
 import { MessageImageStorage } from "@/features/leads/messageImageStorage";
@@ -94,7 +97,8 @@ export class MessagesController {
   async sendWithImages(leadId: string, readForm: MessageImagesForm): Promise<MessageDto> {
     const role = this.role;
     await this.requireWritable(leadId, role);
-    // Samme samtykke som ved upload i AI-chatten (features/cases/README.md 9.4). Klinikken giver intet samtykke.
+    // Samme samtykke som ved upload i AI-chatten (features/cases/README.md 9.4). Klinikken giver intet patientsamtykke, men skal
+    // bekræfte sin egen erklæring (nedenfor, M2).
     if (role === "patient") {
       await this.consents.requireCurrentActive("image_upload", "Du skal give samtykke til billeder (nyeste version), før du sender et billede.");
     }
@@ -103,6 +107,15 @@ export class MessagesController {
     const parsed = messageWithImagesSchema.safeParse(fields);
     if (!parsed.success) {
       throw new ApiError(400, "VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Beskeden er ugyldig.");
+    }
+
+    // M2: en klinik skal i samme afsendelse have afkrydset sin egen erklæring (den gældende tekstversion). Afvises, før noget behandles.
+    let clinicConsentVersion: string | undefined;
+    if (role === "clinic") {
+      if (parsed.data.imageConsentConfirmed !== "true" || parsed.data.imageConsentTextVersion !== CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION) {
+        throw new ApiError(400, "CONSENT_CONFIRMATION_REQUIRED", CONSENT_CONFIRMATION_REQUIRED_TEXT);
+      }
+      clinicConsentVersion = CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION;
     }
 
     const prepared: { id: string; data: Buffer; width: number; height: number }[] = [];
@@ -127,10 +140,12 @@ export class MessagesController {
         leadId,
         messageId,
         body: parsed.data.body,
+        clinicConsentVersion,
         images: prepared.map((image) => ({ id: image.id, width: image.width, height: image.height, bytes: image.data.length })),
       });
     } catch (error) {
-      await storage.remove(paths).catch(() => {});
+      // Filerne har ingen række: lægges i køen, hvis sletningen fejler (M4).
+      await new StorageCleanupService(this.admin()).discard("case-images", paths);
       throw error;
     }
 

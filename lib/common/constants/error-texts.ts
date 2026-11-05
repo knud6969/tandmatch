@@ -21,6 +21,7 @@ export const RETRY_TOMORROW = "Prøv igen i morgen.";
 export const CLINIC_NOT_VERIFIED_TEXT = "Din klinik kan ikke modtage henvendelser endnu.";
 export const THREAD_CLOSED_TEXT = "Samtalen er lukket, så der kan ikke skrives flere beskeder.";
 export const MESSAGE_LIMIT_TEXT = `Du har sendt for mange beskeder i dag. ${RETRY_TOMORROW}`;
+export const CONSENT_CONFIRMATION_REQUIRED_TEXT = "Bekræft først, at I har grundlaget for at sende billederne.";
 export const MESSAGE_IMAGE_LIMIT_TEXT = `Du har sendt for mange billeder i dag. ${RETRY_TOMORROW}`;
 
 // Booking og anmeldelse (architecture 10.10, 10.13).
@@ -84,6 +85,7 @@ export const API_ERROR_TEXTS: Record<string, string> = {
   THREAD_CLOSED: THREAD_CLOSED_TEXT,
   MESSAGE_LIMIT: MESSAGE_LIMIT_TEXT,
   MESSAGE_IMAGE_LIMIT: MESSAGE_IMAGE_LIMIT_TEXT,
+  CONSENT_CONFIRMATION_REQUIRED: CONSENT_CONFIRMATION_REQUIRED_TEXT,
   ALREADY_WITHDRAWN: "Samtykket er allerede trukket tilbage.",
   CLINIC_EXISTS: "Der findes allerede en klinik med dette CVR-nummer, som er knyttet til en konto. Kontakt os, hvis det er din klinik.",
   TRUSTPILOT_URL_REQUIRED: "Angiv linket til din Trustpilot-side, hvis du angiver score eller antal anmeldelser.",

@@ -7,11 +7,11 @@ import type { CaseDto, CaseListItemDto, CaseRecordDto } from "@/lib/cases/types/
 import { notDraft } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { BookingsRepository } from "@/features/booking";
-import { CaseImageStorage } from "@/features/cases/caseImageStorage";
 import { CaseImagesRepository } from "@/features/cases/caseImagesRepository";
 import { CaseServicesRepository } from "@/features/cases/caseServicesRepository";
 import { CasesRepository } from "@/features/cases/casesRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 import { LeadsRepository } from "@/features/leads";
 import { ServicesRepository } from "@/features/clinics";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
@@ -162,12 +162,13 @@ export class CasesController {
 
   // Sletter kladden og billedfilerne. Patienten har ingen DELETE-policy på cases (5.4), så sagen slettes med service
   // role efter ejer- og kladdetjekket ovenfor. Rækken slettes først, med betingelsen `status = 'draft'` (L4): en sag, der
-  // imellemtiden er sendt, kan så hverken miste rækken eller billedfilerne. Filerne slettes bagefter; en fejl dér efterlader
-  // kun forældreløse filer, som oprydningen tager.
+  // imellemtiden er sendt, kan så hverken miste rækken eller billedfilerne. En trigger lægger billedstierne i
+  // pending_storage_paths i samme transaktion som rækkerne forsvinder (security M4), så ingen fil kan blive forældreløs;
+  // filerne slettes straks bagefter, og lykkes det ikke, tømmer cronjobbet /api/cron/cleanup-storage køen.
   async delete(caseId: string): Promise<void> {
     await this.cases.requireOwnDraft(caseId);
     // 2.3 (c): sagen og billedfilerne slettes med service role, efter ejer- og kladdetjek.
     if (!(await new CasesRepository(this.admin()).deleteDraft(caseId))) throw notDraft();
-    await new CaseImageStorage(this.admin()).removeCase(caseId);
+    await new StorageCleanupService(this.admin()).discardPrefix("case-images", caseId);
   }
 }

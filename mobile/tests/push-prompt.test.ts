@@ -55,6 +55,26 @@ describe("logud og push", () => {
     expect(await getPushFlag("disabled")).toBe(false);
   });
 
+  it("beholder det lokale token, når afmeldingen fejler (L3), og sletter det, når den lykkes", async () => {
+    await savePushToken("ExponentPushToken[abcdefgh12345678]");
+    global.fetch = jest.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), method: init?.method ?? "GET", body: null });
+      return String(url).includes("push-tokens") ? new Response(JSON.stringify({ error: { code: "INTERNAL", message: "x" } }), { status: 500 }) : new Response(null, { status: 204 });
+    }) as typeof fetch;
+    await logout();
+    expect(calls.at(-1)?.url).toContain("/api/auth/logout");
+    expect(await getPushToken()).toBe("ExponentPushToken[abcdefgh12345678]");
+    // Næste forsøg lykkes: tokenet slettes lokalt.
+    calls = [];
+    await saveSession({ accessToken: "a3", refreshToken: "r3", expiresAt: new Date(Date.now() + 3600_000).toISOString() });
+    global.fetch = jest.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), method: init?.method ?? "GET", body: null });
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    await logout();
+    expect(await getPushToken()).toBeNull();
+  });
+
   it("logger ud, selv om afmeldingen fejler, og uden token kaldes DELETE ikke", async () => {
     await logout();
     expect(calls.map((c) => c.method)).toEqual(["POST"]);

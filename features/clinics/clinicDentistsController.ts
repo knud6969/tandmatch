@@ -11,6 +11,7 @@ import { lazyAdminClient } from "@/platform/db/admin";
 import { PortfolioRepository } from "@/features/clinics/portfolioRepository";
 import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 
 type CreateDentistInput = z.infer<typeof createDentistSchema>;
 type PatchDentistInput = z.infer<typeof patchDentistSchema>;
@@ -77,7 +78,7 @@ export class ClinicDentistsController {
     const portfolioPaths = await this.portfolio.listPathsForDentist(clinicId, dentistId);
     await this.dentists.delete(clinicId, dentistId);
     // 2.3 (d): sletning i public-media efter ejertjekket.
-    await new PublicMediaStorage(this.admin()).remove([
+    await new StorageCleanupService(this.admin()).discard("public-media", [
       PublicMediaStorage.dentistPhotoPath(clinicId, dentistId),
       ...portfolioPaths,
     ]);
@@ -99,7 +100,7 @@ export class ClinicDentistsController {
     try {
       version = await new ClinicDentistsRepository(this.admin()).setPhotoPath(this.session.userId, clinicId, dentistId, path);
     } catch (err) {
-      await storage.remove([path]).catch(() => {});
+      await new StorageCleanupService(this.admin()).discard("public-media", [path]);
       throw err;
     }
     return { photoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
@@ -111,6 +112,6 @@ export class ClinicDentistsController {
     // 2.3 (d): photo_path skrives af serveren (M1).
     await new ClinicDentistsRepository(this.admin()).setPhotoPath(this.session.userId, clinicId, dentistId, null);
     // 2.3 (d): sletning i public-media efter ejertjekket.
-    await new PublicMediaStorage(this.admin()).remove([PublicMediaStorage.dentistPhotoPath(clinicId, dentistId)]);
+    await new StorageCleanupService(this.admin()).discard("public-media", [PublicMediaStorage.dentistPhotoPath(clinicId, dentistId)]);
   }
 }

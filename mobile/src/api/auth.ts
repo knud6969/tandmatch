@@ -40,20 +40,25 @@ export async function convertAnonymous(input: ConvertInput): Promise<void> {
   await storeSession(await apiRequest<AuthResultDto>("/api/auth/convert", { method: "POST", json: input }));
 }
 
+// Afmelder enhedens push-token. Tokenet slettes lokalt først, når serveren har afmeldt det (security L3): lykkes afmeldingen
+// ikke, bliver det liggende på enheden, og den næste konto, der registrerer enheden, overtager det (register_push_token()).
 async function unregisterStoredPushToken(): Promise<void> {
   try {
     const token = await getPushToken();
-    if (token) await deletePushToken(token).catch(() => undefined);
+    if (token) {
+      await deletePushToken(token);
+      await clearPushToken();
+    }
     // Valgene nulstilles også uden gemt token, så næste konto på enheden starter uden den forriges "ikke nu" og "slået fra".
-    await clearPushToken();
     await setPushFlag("disabled", false);
     await setPushFlag("dismissed", false);
   } catch {
-    // Afmelding er best effort.
+    // Afmelding er best effort; tokenet er ikke slettet lokalt.
   }
 }
 
-// Log ud: kaldet tilbagekalder tokenet på serveren; tokens slettes lokalt, også hvis kaldet fejler (architecture 13.3).
+// Log ud: kaldet tilbagekalder tokenet på serveren; sessionens tokens slettes lokalt, også hvis kaldet fejler (architecture 13.3).
+// Push-tokenet beholdes lokalt, hvis afmeldingen fejler (L3).
 export async function logout(): Promise<void> {
   try {
     // Push-tokenet afmeldes, mens sessionen stadig gælder (mobile 13.10). Fejl stopper ikke logud.

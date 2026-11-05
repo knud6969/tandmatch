@@ -9,6 +9,7 @@ import { CaseImageStorage } from "@/features/cases";
 import { ConsentsRepository } from "@/features/identity/consentsRepository";
 import { lazyAdminClient } from "@/platform/db/admin";
 import { AccountDeletionService } from "@/features/identity/accountDeletionService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 
 type GrantConsentInput = { type: ConsentType; textVersion: string };
 
@@ -66,6 +67,8 @@ export class ConsentsController {
         // beskedbilleder under messages/, som ligger i samme bucket; features/leads/README.md 10.12).
         await new CaseImageStorage(this.admin()).remove(result.deletedImagePaths);
         await this.consents.confirmCleanup(consentId);
+        // Triggeren har også lagt stierne i pending_storage_paths (M4); de er slettet nu, så posterne fjernes.
+        await new StorageCleanupService(this.admin()).forget("case-images", result.deletedImagePaths);
       } catch (err) {
         // Ingen persondata logges, kun fejltypen. Samtykket er allerede trukket tilbage; prøv igen for at rydde filerne.
         console.error("withdraw_consent: oprydning af billedfiler fejlede:", err instanceof Error ? err.name : "ukendt");

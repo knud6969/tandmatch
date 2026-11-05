@@ -14,7 +14,7 @@ import {
 } from "@/lib/common/domain/notifications";
 import type { ClinicNotificationType, NotificationPayload, PatientContactNotificationType, PatientNotificationType } from "@/lib/common/types/notifications";
 import type { EmailService } from "@/platform/notifications/emailService";
-import { NotificationDeliveryError, type DeliveryResult } from "@/platform/notifications/notificationErrors";
+import { NotificationDeliveryError, NotificationSkippedError, type DeliveryResult } from "@/platform/notifications/notificationErrors";
 import type { ClaimedNotification, CompletionStatus, NotificationOutboxRepository } from "@/platform/notifications/notificationOutboxRepository";
 import type { PushService } from "@/platform/notifications/pushService";
 import type { SmsService } from "@/platform/notifications/smsService";
@@ -69,6 +69,7 @@ export class NotificationDispatcher {
       if (row.channel === "sms") return await this.sendSms(row, payload);
       return await this.sendPush(row, payload);
     } catch (error) {
+      if (error instanceof NotificationSkippedError) return { status: "skipped", code: error.code };
       if (error instanceof NotificationDeliveryError) return this.failure(error.code, error.retryable);
       // Render- eller programfejl: kan ikke lykkes ved et nyt forsøg.
       console.error("notifikation: fejl ved afsendelse", error instanceof Error ? error.name : "ukendt");

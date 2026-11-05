@@ -37,6 +37,12 @@ export function PrivacySections() {
             klinikker, du selv vælger.
           </li>
           <li>
+            <strong>Billeder i beskeder:</strong> du og klinikken kan sende billeder i tråden om din henvendelse. Dine
+            egne billeder kræver dit samtykke til billeder. Klinikkens billeder sendes på klinikkens eget ansvar og
+            grundlag; TandMatch indhenter ikke noget samtykke på klinikkens vegne. Klinikken ser ikke tråden, hvis den
+            har afvist din henvendelse.
+          </li>
+          <li>
             <strong>Booking:</strong> når du booker, får klinikken også dit navn, telefonnummer og din e-mail.
             Grundlag: aftale.
           </li>
@@ -88,6 +94,12 @@ export function PrivacySections() {
       <InfoSection title="5. Hvor længe vi opbevarer oplysningerne">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>Uden konto: chat, billeder og opsummering slettes automatisk 48 timer efter seneste aktivitet, eller når du selv sletter dem.</li>
+          <li>
+            Billeder i beskedtråde med en klinik (både dine og klinikkens) slettes automatisk 12 måneder efter den seneste
+            aktivitet i tråden. Trækker du dit samtykke til billeder tilbage, slettes dine egne billeder med det samme.
+            Klinikkens billeder af dig følger fristen, din kontosletning eller en anmodning til os. Beskedteksten bliver
+            stående.
+          </li>
           <li>Med konto: oplysningerne gemmes, til du sletter din sag eller konto. Sletter du kontoen, slettes også dine henvendelser, kommende bookinger og anmeldelser.</li>
           <li>Klinikker: ved sletning fjernes klinikkens filer og login. Kun navn og adresse bevares, så patienters historik stadig kan vises.</li>
           <li>Tekniske logfiler med misbrugsbeskyttelse gemmes kortvarigt.</li>

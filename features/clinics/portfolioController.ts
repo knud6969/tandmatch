@@ -12,6 +12,7 @@ import { PortfolioRepository } from "@/features/clinics/portfolioRepository";
 import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 
 // Felterne fra multipart-formen. Skemaet har allerede sikret bekræftelsen og tekstversionen (architecture 9.5).
 type CreatePortfolioInput = z.infer<typeof createPortfolioItemSchema>;
@@ -84,7 +85,7 @@ export class PortfolioController {
         consentTextVersion: input.consentTextVersion,
       });
     } catch (err) {
-      await storage.remove([path]).catch(() => {});
+      await new StorageCleanupService(this.admin()).discard("public-media", [path]);
       throw err;
     }
   }
@@ -95,12 +96,13 @@ export class PortfolioController {
     return this.portfolio.update(clinicId, itemId, input);
   }
 
-  // Sletter rækken og filen. Rækken først, så en fejl ved filen ikke efterlader et billede, der ikke kan vises.
+  // Sletter rækken og filen. Rækken først, så en fejl ved filen ikke efterlader et billede, der ikke kan vises; en trigger lægger
+  // stien i pending_storage_paths i samme transaktion (M4), så en fejl ved filen kun udskyder sletningen.
   async delete(itemId: string): Promise<void> {
     const clinicId = await this.requireClinicId();
     const path = await this.portfolio.requireOwnPath(clinicId, itemId);
     // 2.3 (d): sletning af række og fil i public-media efter ejertjekket.
     await new PortfolioRepository(this.admin()).delete(clinicId, itemId);
-    await new PublicMediaStorage(this.admin()).remove([path]);
+    await new StorageCleanupService(this.admin()).discard("public-media", [path]);
   }
 }

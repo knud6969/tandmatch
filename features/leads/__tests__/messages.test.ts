@@ -124,11 +124,11 @@ describe("MessagesRepository.create", () => {
 });
 
 describe("MessagesController.sendWithImages (10.12)", () => {
-  function imagesController(opts: { role?: string; status?: LeadStatus; consent?: boolean; failInsert?: boolean } = {}) {
+  function imagesController(opts: { role?: string; status?: LeadStatus; consent?: boolean; failInsert?: boolean; fields?: Record<string, string> } = {}) {
     const order: string[] = [];
     const readForm = vi.fn(async () => {
       order.push("form");
-      return { files: [new File([new Uint8Array([1])], "a.jpg")], fields: { body: "Hej" } };
+      return { files: [new File([new Uint8Array([1])], "a.jpg")], fields: { body: "Hej", ...opts.fields } };
     });
     const requireCurrentActive = vi.fn(async () => {
       order.push("consent");
@@ -156,7 +156,7 @@ describe("MessagesController.sendWithImages (10.12)", () => {
       admin: () => admin,
     };
     const session = { ...patient, role: opts.role ?? "patient" } as unknown as Session;
-    return { ctrl: new MessagesController({} as SupabaseClient, session, deps as never), readForm, order, requireCurrentActive, remove };
+    return { ctrl: new MessagesController({} as SupabaseClient, session, deps as never), readForm, order, requireCurrentActive, remove, rpc, upload: storageApi.upload, reencode: deps.processing.reencode };
   }
 
   it("tjekker samtykket, før formularen læses, og returnerer billeder med signerede URL'er", async () => {
@@ -175,10 +175,32 @@ describe("MessagesController.sendWithImages (10.12)", () => {
     expect(readForm).not.toHaveBeenCalled();
   });
 
-  it("klinikken behøver intet samtykke", async () => {
-    const { ctrl, readForm, requireCurrentActive } = imagesController({ role: "clinic" });
+  const CLINIC_CONFIRMED = { imageConsentConfirmed: "true", imageConsentTextVersion: "clinic_message_images@v0-prototype" };
+
+  it("klinikken behøver intet patientsamtykke, men skal bekræfte sin egen erklæring (M2)", async () => {
+    const { ctrl, readForm, requireCurrentActive, rpc } = imagesController({ role: "clinic", fields: CLINIC_CONFIRMED });
     await expect(ctrl.sendWithImages("l1", readForm)).resolves.toMatchObject({ senderRole: "clinic" });
     expect(requireCurrentActive).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith("send_message_with_images", expect.objectContaining({ p_clinic_consent_version: "clinic_message_images@v0-prototype" }));
+  });
+
+  it.each([
+    ["uden bekræftelse", {}],
+    ["med bekræftelse sat til false", { imageConsentConfirmed: "false", imageConsentTextVersion: "clinic_message_images@v0-prototype" }],
+    ["uden tekstversion", { imageConsentConfirmed: "true" }],
+    ["med en gammel tekstversion", { imageConsentConfirmed: "true", imageConsentTextVersion: "clinic_message_images@gammel" }],
+  ])("klinikken %s afvises, før billederne røres", async (_name, fields) => {
+    const { ctrl, readForm, rpc, upload, reencode } = imagesController({ role: "clinic", fields });
+    await expect(ctrl.sendWithImages("l1", readForm)).rejects.toMatchObject({ status: 400, code: "CONSENT_CONFIRMATION_REQUIRED" });
+    expect(reencode).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("patienten sender ingen klinikbekræftelse til databasen", async () => {
+    const { ctrl, readForm, rpc } = imagesController({ fields: CLINIC_CONFIRMED });
+    await ctrl.sendWithImages("l1", readForm);
+    expect(rpc).toHaveBeenCalledWith("send_message_with_images", expect.objectContaining({ p_clinic_consent_version: null }));
   });
 
   it("lukket tråd giver 409 før samtykke og formular", async () => {

@@ -10,10 +10,12 @@ import {
   PATIENT_SENDER_LABEL,
 } from "@/lib/leads/constants/messages";
 import { THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
+import { CLINIC_MESSAGE_IMAGE_CONSENT_TEXT, CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import { canSendMessage, isEmptyMessage, keepImageUrls, type ImageUrlCache } from "@/lib/leads/domain/messages";
 import type { MessageDto } from "@/lib/leads/types/messages";
 import { LoadError } from "@/components/ui/load-state";
 import { Button } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import { cx } from "@/components/ui/cx";
 import { StatusMessage } from "@/components/ui/status-message";
 import { TextArea } from "@/components/ui/text-area";
@@ -53,6 +55,8 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
   const [threadClosed, setThreadClosed] = useState(closed);
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // Klinikkens egen erklæring ved billeder (M2): ikke forudafkrydset, og nulstilles efter hver afsendelse.
+  const [imageConsent, setImageConsent] = useState(false);
   const [opened, setOpened] = useState<Opened | null>(null);
   const send = useAction();
   const listRef = useRef<HTMLUListElement>(null);
@@ -135,6 +139,7 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
     event.preventDefault();
     const text = body.trim();
     if (!canSendMessage(text, attachments.length)) return;
+    if (needsImageConsent && !imageConsent) return;
     const ok = await send.run(async () => {
       try {
         let created: MessageDto;
@@ -142,6 +147,10 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
           // Nedskaleres og genkodes i browseren (EXIF fjernes igen på serveren).
           const form = new FormData();
           if (text !== "") form.set("body", text);
+          if (viewer === "clinic") {
+            form.set("imageConsentConfirmed", "true");
+            form.set("imageConsentTextVersion", CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION);
+          }
           for (const attachment of attachments) form.append("file", await prepareImage(attachment.file));
           created = await apiRequest<MessageDto>(`/api/leads/${leadId}/messages`, { method: "POST", form });
         } else {
@@ -155,10 +164,14 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
     });
     if (ok) {
       setBody("");
+      setImageConsent(false);
       attachments.forEach((a) => URL.revokeObjectURL(a.preview));
       setAttachments([]);
     }
   }
+
+  // En klinik skal afkrydse sin erklæring, før den sender billeder; patienten har sit samtykke i kontoen.
+  const needsImageConsent = viewer === "clinic" && attachments.length > 0;
 
   const otherLabel = viewer === "clinic" ? PATIENT_SENDER_LABEL : CLINIC_SENDER_LABEL;
   const openedMessage = opened ? messages?.find((m) => m.id === opened.messageId) : undefined;
@@ -272,6 +285,15 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
               ))}
             </ul>
           )}
+          {needsImageConsent && (
+            <CheckboxField
+              label={CLINIC_MESSAGE_IMAGE_CONSENT_TEXT}
+              checked={imageConsent}
+              selected={imageConsent}
+              onChange={(e) => setImageConsent(e.target.checked)}
+              data-testid="klinik-billedbekraeftelse"
+            />
+          )}
           <StatusMessage message={send.message} />
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
@@ -293,7 +315,7 @@ export function MessageThread({ leadId, viewer, closed, hint, onRead }: MessageT
             >
               Vedhæft billeder ({attachments.length}/{MESSAGE_MAX_IMAGES})
             </Button>
-            <Button type="submit" disabled={send.busy || !canSendMessage(body, attachments.length)} className="w-full sm:w-fit">
+            <Button type="submit" disabled={send.busy || !canSendMessage(body, attachments.length) || (needsImageConsent && !imageConsent)} className="w-full sm:w-fit">
               {send.busy ? "Sender …" : "Send besked"}
             </Button>
           </div>

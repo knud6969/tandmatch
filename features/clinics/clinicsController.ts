@@ -23,6 +23,7 @@ import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 import { ServicesRepository } from "@/features/clinics/servicesRepository";
 import { AccountDeletionService } from "@/features/identity";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
+import { StorageCleanupService } from "@/platform/storageCleanupService";
 
 type PatchClinicInput = z.infer<typeof patchClinicSchema>;
 type PutPricesInput = z.infer<typeof putPricesSchema>;
@@ -215,7 +216,7 @@ export class ClinicsController {
     try {
       version = await new ClinicsRepository(this.admin()).setLogoPath(this.session.userId, clinic.id, path);
     } catch (err) {
-      await storage.remove([path]).catch(() => {});
+      await new StorageCleanupService(this.admin()).discard("public-media", [path]);
       throw err;
     }
     return { logoUrl: PublicMediaStorage.publicUrl(path, Date.parse(version)) };
