@@ -43,10 +43,11 @@ export async function convertAnonymous(input: ConvertInput): Promise<void> {
 async function unregisterStoredPushToken(): Promise<void> {
   try {
     const token = await getPushToken();
-    if (!token) return;
-    await deletePushToken(token).catch(() => undefined);
+    if (token) await deletePushToken(token).catch(() => undefined);
+    // Valgene nulstilles også uden gemt token, så næste konto på enheden starter uden den forriges "ikke nu" og "slået fra".
     await clearPushToken();
     await setPushFlag("disabled", false);
+    await setPushFlag("dismissed", false);
   } catch {
     // Afmelding er best effort.
   }

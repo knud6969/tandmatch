@@ -14,22 +14,22 @@ export function withFavorite(ids: ReadonlySet<string>, clinicId: string, saved: 
   return next;
 }
 
-// Skifter optimistisk: `apply` kaldes straks med det nye sæt, og med det gamle igen, hvis kaldet fejler. Returnerer fejlen (eller null),
-// så skærmen kan vise den.
+// Skifter optimistisk: `apply` kaldes straks med det nye sæt. Fejler kaldet, rulles kun denne klinik tilbage i det nyeste sæt
+// (`current`), så et andet tryk undervejs ikke fortrydes. Returnerer fejlen (eller null), så skærmen kan vise den.
 export async function toggleFavorite(
   ids: ReadonlySet<string>,
   clinicId: string,
   calls: FavoriteCalls,
   apply: (next: Set<string>) => void,
+  current: () => ReadonlySet<string> = () => ids,
 ): Promise<unknown> {
   const saved = !ids.has(clinicId);
-  const previous = new Set(ids);
   apply(withFavorite(ids, clinicId, saved));
   try {
     await (saved ? calls.add(clinicId) : calls.remove(clinicId));
     return null;
   } catch (error) {
-    apply(previous);
+    apply(withFavorite(current(), clinicId, !saved));
     return error;
   }
 }

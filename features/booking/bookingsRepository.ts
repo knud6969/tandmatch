@@ -83,6 +83,8 @@ const RESCHEDULE_ERRORS = (): Record<string, ApiError> => ({
   BOOKING_LIMIT: bookingLimit(),
   SLOT_TAKEN: slotTaken(),
   SLOT_UNAVAILABLE: slotUnavailable(),
+  // assert_slot_bookable() / service_duration_min(): klinikken tilbyder ikke længere ydelsen.
+  INVALID_SERVICE: serviceNotOnCase(),
 });
 
 const NO_SHOW_ERRORS = (): Record<string, ApiError> => ({

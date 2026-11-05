@@ -31,7 +31,7 @@ Alle, også besøgende uden session og anonyme patienter, skal acceptere **bruge
 
 ## 3. Roller og rettigheder
 
-Status: rollerne og rettighederne er bygget i databasen (trin 0). Klinikkens signup, opsætnings-API og opsætningssider er bygget (trin 1); patientens leads og sagssider er bygget (trin 4); klinikkens leads, indbakke og beskedtråd er bygget (trin 5); booking, kalender og anmeldelser er bygget (trin 6); akutvejen, `/patient/samtykker` og `/patient/konto` er bygget i trin 7; admin er [IKKE BYGGET].
+Status: rollerne og rettighederne er bygget i databasen (trin 0). Klinikkens signup, opsætnings-API og opsætningssider er bygget (trin 1); patientens leads og sagssider er bygget (trin 4); klinikkens leads, indbakke og beskedtråd er bygget (trin 5); booking, kalender og anmeldelser er bygget (trin 6); akutvejen, `/patient/samtykker` og `/patient/konto` er bygget i trin 7; admin, notifikationer, favoritter, flyt tid og statistik er bygget (trin 11).
 
 Rolle gemmes i `profiles.role` (`patient` | `clinic` | `admin`). Rollen sættes ved oprettelse og kan **ikke** ændres af brugeren. `admin` sættes manuelt i databasen.
 
@@ -75,11 +75,11 @@ Status ændres kun af admin (eller seed via `admin_set_clinic_status()`, 5.3). D
 | Svare offentligt på anmeldelse | | | | anmeldelser af egen klinik | |
 | Redigere profil, prisliste, åbningstider, blokeringer, tandlæger, portefølje, Trustpilot | | | egen patientprofil | egen klinik | |
 | Trække samtykke tilbage, slette egne data, eksportere data | | ja | ja | | |
-| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (UI [IKKE BYGGET]; planlagt 2026-11-04 i `features/admin`) |
-| **Planlagt (2026-11-04):** flytte en booket tid (booking 10.16) | | | egne, før starttid | nej (aflyser og skriver i tråden) | |
-| **Planlagt (2026-11-04):** gemme klinikker som favoritter (clinics 10.17) | | nej, skal oprette konto | ja | | |
-| **Planlagt (2026-11-04):** modtage notifikationer (platform 14) | | nej | push i appen | e-mail til login-adressen, valgbar pr. type | nej |
-| **Planlagt (2026-11-04):** se statistik (clinics 10.18) | | | | kun egen klinik | nej |
+| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (`/admin/moderation` og `/admin/klinikker` i `features/admin`) |
+| Flytte en booket tid (booking 10.16) | | | egne, før starttid | nej (aflyser og skriver i tråden) | |
+| Gemme klinikker som favoritter (clinics 10.17) | | nej, skal oprette konto | ja | | |
+| Modtage notifikationer (platform 14) | | nej | push i appen | e-mail til login-adressen, valgbar pr. type | nej |
+| Se statistik (clinics 10.18) | | | | kun egen klinik | nej |
 
 Bemærkninger:
 - En anonym session kan aldrig blive klinik eller admin. Klinikker opretter sig via `/opret/klinik`.
@@ -190,7 +190,7 @@ Alle, også besøgende uden session og anonyme patienter, skal acceptere **bruge
 
 ## 3. Roller og rettigheder
 
-Status: rollerne og rettighederne er bygget i databasen (trin 0). Klinikkens signup, opsætnings-API og opsætningssider er bygget (trin 1); patientens leads og sagssider er bygget (trin 4); klinikkens leads, indbakke og beskedtråd er bygget (trin 5); booking, kalender og anmeldelser er bygget (trin 6); akutvejen, `/patient/samtykker` og `/patient/konto` er bygget i trin 7; admin er [IKKE BYGGET].
+Status: rollerne og rettighederne er bygget i databasen (trin 0). Klinikkens signup, opsætnings-API og opsætningssider er bygget (trin 1); patientens leads og sagssider er bygget (trin 4); klinikkens leads, indbakke og beskedtråd er bygget (trin 5); booking, kalender og anmeldelser er bygget (trin 6); akutvejen, `/patient/samtykker` og `/patient/konto` er bygget i trin 7; admin, notifikationer, favoritter, flyt tid og statistik er bygget (trin 11).
 
 Rolle gemmes i `profiles.role` (`patient` | `clinic` | `admin`). Rollen sættes ved oprettelse og kan **ikke** ændres af brugeren. `admin` sættes manuelt i databasen.
 
@@ -234,11 +234,11 @@ Status ændres kun af admin (eller seed via `admin_set_clinic_status()`, 5.3). D
 | Svare offentligt på anmeldelse | | | | anmeldelser af egen klinik | |
 | Redigere profil, prisliste, åbningstider, blokeringer, tandlæger, portefølje, Trustpilot | | | egen patientprofil | egen klinik | |
 | Trække samtykke tilbage, slette egne data, eksportere data | | ja | ja | | |
-| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (UI [IKKE BYGGET]; planlagt 2026-11-04 i `features/admin`) |
-| **Planlagt (2026-11-04):** flytte en booket tid (booking 10.16) | | | egne, før starttid | nej (aflyser og skriver i tråden) | |
-| **Planlagt (2026-11-04):** gemme klinikker som favoritter (clinics 10.17) | | nej, skal oprette konto | ja | | |
-| **Planlagt (2026-11-04):** modtage notifikationer (platform 14) | | nej | push i appen | e-mail til login-adressen, valgbar pr. type | nej |
-| **Planlagt (2026-11-04):** se statistik (clinics 10.18) | | | | kun egen klinik | nej |
+| Moderere anmeldelser og svar, ændre klinikstatus | | | | | ja (`/admin/moderation` og `/admin/klinikker` i `features/admin`) |
+| Flytte en booket tid (booking 10.16) | | | egne, før starttid | nej (aflyser og skriver i tråden) | |
+| Gemme klinikker som favoritter (clinics 10.17) | | nej, skal oprette konto | ja | | |
+| Modtage notifikationer (platform 14) | | nej | push i appen | e-mail til login-adressen, valgbar pr. type | nej |
+| Se statistik (clinics 10.18) | | | | kun egen klinik | nej |
 
 Bemærkninger:
 - En anonym session kan aldrig blive klinik eller admin. Klinikker opretter sig via `/opret/klinik`.

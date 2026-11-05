@@ -1,4 +1,5 @@
-import * as Calendar from "expo-calendar";
+// Den gamle indgang: i expo-calendar 58 kaster hovedindgangens isAvailableAsync og createEventInCalendarAsync altid.
+import * as Calendar from "expo-calendar/legacy";
 import { bookingCalendarEvent } from "@/lib/booking/domain/calendar-event";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 

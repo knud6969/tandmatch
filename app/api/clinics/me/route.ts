@@ -1,6 +1,8 @@
 import { deleteAccountSchema } from "@/lib/identity/schemas/auth";
+import { CLINIC_PROFILE_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { patchClinicSchema } from "@/lib/clinics/schemas/clinics";
 import { jsonResponse, noContent, readJson, withApi } from "@/platform/middleware/http";
+import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { clearAuthCookies, requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
 import { ClinicsController } from "@/features/clinics/clinicsController";
@@ -15,6 +17,7 @@ export const GET = withApi(async () => {
 export const PATCH = withApi(async (req) => {
   const gate = await requireTerms();
   const session = await requireRole("clinic", { ctx: gate });
+  await enforceIpRateLimit("clinic-profile", req, CLINIC_PROFILE_IP_LIMIT_PER_HOUR);
   const input = await readJson(req, patchClinicSchema);
   const { supabase } = gate;
   return jsonResponse(await new ClinicsController(supabase, session).patch(input));

@@ -25,7 +25,12 @@ export function useFavorites() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasAccount) return;
+      if (!hasAccount) {
+        // Logget ud (eller anonym): ryd de gemte id'er, så næste konto ikke ser den forrige patients hjerter.
+        apply(new Set());
+        setLoaded(false);
+        return;
+      }
       let cancelled = false;
       getFavoriteIds()
         .then((list) => {
@@ -48,7 +53,7 @@ export function useFavorites() {
         return;
       }
       setError(null);
-      const failure = await toggleFavorite(latest.current, clinicId, { add: addFavorite, remove: removeFavorite }, apply);
+      const failure = await toggleFavorite(latest.current, clinicId, { add: addFavorite, remove: removeFavorite }, apply, () => latest.current);
       if (failure) setError(failure instanceof ApiRequestError ? failure.message : GENERIC_ERROR_TEXT);
     },
     [status, hasAccount, apply],

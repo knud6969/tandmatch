@@ -64,7 +64,7 @@ export const CLINIC_EMAIL_TEXTS = {
     body: "En patient har flyttet en tid fra {gammel} til {ny}.",
   },
   clinic_booking_reminder: {
-    subject: "Påmindelse: booket tid i morgen",
+    subject: "Påmindelse: booket tid",
     body: "I har en booket tid via TandMatch {tid}.",
   },
 } as const satisfies Record<(typeof CLINIC_NOTIFICATION_TYPES)[number], { subject: string; body: string }>;
@@ -82,7 +82,7 @@ export const PATIENT_PUSH_TEXTS = {
   patient_new_message: "Du har en ny besked fra klinikken.",
   patient_booking_confirmed: "Klinikken har bekræftet din tid.",
   patient_booking_cancelled: "Klinikken har aflyst din tid. Åbn appen for at se mere.",
-  patient_booking_reminder: "Påmindelse: Du har en tandlægetid i morgen kl. {tid}.",
+  patient_booking_reminder: "Påmindelse: Du har en tandlægetid {tid}.",
   patient_booking_created: "Din tid er booket.",
   patient_booking_rescheduled: "Din tid er flyttet.",
   patient_booking_cancelled_self: "Du har aflyst din tid.",
@@ -145,9 +145,9 @@ export const PATIENT_CONTACT_TEXTS = {
     bodyNoTime: "Din tid på TandMatch er aflyst. Se detaljer i appen.",
   },
   reminder: {
-    subject: "Påmindelse: du har en tid i morgen",
+    subject: "Påmindelse: du har en tid på TandMatch",
     body: "Du har en tid på TandMatch {tid}. Se detaljer i appen.",
-    bodyNoTime: "Du har en tid på TandMatch i morgen. Se detaljer i appen.",
+    bodyNoTime: "Du har en tid på TandMatch inden for et døgn. Se detaljer i appen.",
   },
   review: {
     subject: "Hvordan var dit besøg?",

@@ -16,7 +16,7 @@ export const MODERATION_EMPTY_TEXT = "Der er intet at moderere.";
 export const MODERATION_RECEIPT = { approved: "Godkendt", rejected: "Afvist" } as const;
 export const MODERATION_APPROVE_LABEL = "Godkend";
 export const MODERATION_REJECT_LABEL = "Afvis";
-export const MODERATION_REASON_LABEL = "Begrundelse (vises for patienten eller klinikken)";
+export const MODERATION_REASON_LABEL = "Begrundelse (gemmes til moderationsloggen, vises ikke for patienten eller klinikken)";
 export { MODERATION_REJECTION_REASONS };
 
 export const CLINIC_SEARCH_LABEL = "Søg på navn, by eller CVR";

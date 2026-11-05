@@ -3,7 +3,6 @@ import { StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CALENDAR_REMINDER_TEXT } from "@/lib/booking/domain/calendar-event";
 import { RESCHEDULE_BOOKING_CONSEQUENCE } from "@/lib/booking/constants/bookings";
-import { patientRescheduledFromText } from "@/lib/booking/domain/bookings";
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
 import { BOOKING_NOT_RESCHEDULABLE_TEXT } from "@/lib/common/constants/error-texts";
 import { formatDateTime } from "@/lib/common/domain/format";
@@ -122,7 +121,6 @@ function RescheduleContent() {
           Din tid er flyttet
         </Text>
         <BookingCard booking={moved} />
-        <Text style={styles.muted}>{patientRescheduledFromText(moved)}</Text>
         <AddToCalendarButton booking={moved} />
         <Text style={styles.muted}>{CALENDAR_REMINDER_TEXT}</Text>
         <Button label="Se mine bookinger" onPress={() => router.replace("/bookinger")} />

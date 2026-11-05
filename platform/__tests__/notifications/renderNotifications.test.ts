@@ -90,7 +90,7 @@ describe("renderPatientPush og stier", () => {
   }
 
   it("teksterne", () => {
-    expect(renderPatientPush("patient_booking_reminder", payload).body).toBe("Påmindelse: Du har en tandlægetid i morgen kl. 09.15.");
+    expect(renderPatientPush("patient_booking_reminder", payload).body).toBe("Påmindelse: Du har en tandlægetid tirsdag 10. november kl. 09.15.");
     expect(renderPatientPush("patient_lead_answered", {}).body).toBe("Klinikken har svaret på din henvendelse.");
     expect(patientNotificationPath("patient_lead_answered", payload)).toBe(`/sag/${CASE}`);
     expect(patientNotificationPath("patient_new_message", payload)).toBe(`/sag/${CASE}/beskeder/${LEAD}`);
