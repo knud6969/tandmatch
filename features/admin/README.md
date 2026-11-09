@@ -4,7 +4,7 @@
 
 - **Server:** `*Controller.ts`, `*Repository.ts`, direkte i mappen.
 - **Web-UI:** `components/`, `pages/` (flade `<navn>-page.tsx`, som `app/admin/**` videresender til).
-- **Grænseflade:** `index.ts` (tom i starten; ingen andre domæner bruger admin) og `ui.ts` (tom). Afvigelse: `features/booking/ui.ts` eksporterer også `MODERATION_TONE` (`utils/review-status.ts`), så adminsiden genbruger tonerne i stedet for at kopiere dem. Controllerne tjekker `session.role === "admin"` i constructoren (forsvar i dybden).
+- **Grænseflade:** ingen `index.ts` eller `ui.ts`, fordi ingen andre domæner bruger admin (lint kræver dem ikke). Afvigelse: `features/booking/ui.ts` eksporterer også `MODERATION_TONE` (`utils/review-status.ts`), så adminsiden genbruger tonerne i stedet for at kopiere dem. Controllerne tjekker `session.role === "admin"` i constructoren (forsvar i dybden).
 - **Tests:** `__tests__/` (unit) og `__tests__/api/` (API).
 - **Lint:** `admin` tilføjes til `DOMAINS` i `eslint.config.mjs`, så domænegrænserne (architecture 2.1) også gælder her.
 
