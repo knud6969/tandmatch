@@ -105,7 +105,7 @@ features/<domæne>/         ét domæne: identity, cases, clinics, leads, bookin
   <x>Repository.ts         eneste sted, der kalder Supabase (arver platform/base/BaseRepository)
   <x>Service.ts            delt logik (fx AI, rangering, ledige tider)
   ai/                      kun cases: AI-reglerne, prompts, guard og OpenAI-klient samlet ét sted (7.8)
-  components/ pages/ utils/  web-UI for domænet
+  components/ pages/ utils/  web-UI for domænet; pages/ er flad: én fil pr. side, <navn>-page.tsx (fx clinic-profile-page.tsx), som app/ re-eksporterer
   index.ts                 serverkode, som andre domæner må importere
   ui.ts                    klientsikre komponenter, som andre domæners UI må importere
   __tests__/               unit-tests; __tests__/api/ har API-testene

@@ -3,7 +3,7 @@
 Domænet dækker login, sessioner, vilkår, samtykker, patientprofil, eksport og sletning af konto.
 
 - **Server:** `*Controller.ts`, `*Repository.ts`/`*Storage.ts`, `*Service.ts` direkte i mappen.
-- **Web-UI:** `components/`, `pages/` (som `app/` videresender til) og `utils/`.
+- **Web-UI:** `components/`, `pages/` (flade `<navn>-page.tsx`, som `app/` videresender til) og `utils/`.
 - **Grænseflade:** andre domæner importerer kun `index.ts` (server) og `ui.ts` (klientsikre komponenter).
 - **Tests:** `__tests__/` (unit) og `__tests__/api/` (API).
 
@@ -162,7 +162,7 @@ Gældende tekstversioner: `ai_processing@v0-prototype`, `image_upload@v1-ai-disc
 Domænet dækker login, sessioner, vilkår, samtykker, patientprofil, eksport og sletning af konto.
 
 - **Server:** `*Controller.ts`, `*Repository.ts`/`*Storage.ts`, `*Service.ts` direkte i mappen.
-- **Web-UI:** `components/`, `pages/` (som `app/` videresender til) og `utils/`.
+- **Web-UI:** `components/`, `pages/` (flade `<navn>-page.tsx`, som `app/` videresender til) og `utils/`.
 - **Grænseflade:** andre domæner importerer kun `index.ts` (server) og `ui.ts` (klientsikre komponenter).
 - **Tests:** `__tests__/` (unit) og `__tests__/api/` (API).
 
