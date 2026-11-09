@@ -1,6 +1,6 @@
 // Demo-seed for TandMatch (architecture 2.3, 4, 11). KUN fiktive data og genererede pladsholderbilleder.
 //
-// Kører mod den LOKALE Supabase (`supabase start` + `supabase db reset`, som kører migrationerne, inkl. postnumrene i 20261028000400, og derefter supabase/seed.sql).
+// Kører mod den LOKALE Supabase (`supabase start` + `supabase db reset`, som kører migrationerne, inkl. postnumrene i 20261028000400).
 // Miljø (aldrig .env.local): npm run seed:demo bruger .env.test.local med
 //   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (fra `supabase status`).
 // Scriptet nægter at køre mod en ikke-lokal URL, medmindre --allow-remote gives.
