@@ -1,1 +1,1 @@
-export { default, metadata } from "@/features/site/pages/saadan-virker-det/page";
+export { default, metadata } from "@/features/site/pages/how-it-works-page";

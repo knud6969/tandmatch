@@ -1,1 +1,1 @@
-export { default, metadata } from "@/features/site/pages/kontakt/page";
+export { default, metadata } from "@/features/site/pages/contact-page";

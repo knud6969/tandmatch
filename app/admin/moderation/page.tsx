@@ -1,1 +1,1 @@
-export { default, metadata } from "@/features/admin/pages/moderation/page";
+export { default, metadata } from "@/features/admin/pages/admin-moderation-page";

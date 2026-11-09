@@ -3,7 +3,7 @@
 Domænet dækker sager, AI-chat, opsummering og billeder. AI-reglerne ligger samlet i `features/cases/ai/`.
 
 - **Server:** `*Controller.ts`, `*Repository.ts`/`*Storage.ts`, `*Service.ts` direkte i mappen.
-- **Web-UI:** `components/`, `pages/` (som `app/` videresender til) og `utils/`.
+- **Web-UI:** `components/`, `pages/` (flade `<navn>-page.tsx`, som `app/` videresender til) og `utils/`.
 - **Grænseflade:** andre domæner importerer kun `index.ts` (server) og `ui.ts` (klientsikre komponenter).
 - **Tests:** `__tests__/` (unit) og `__tests__/api/` (API).
 

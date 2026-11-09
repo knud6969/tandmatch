@@ -1,1 +1,1 @@
-export { default, metadata } from "@/features/admin/pages/klinikker/page";
+export { default, metadata } from "@/features/admin/pages/admin-clinics-page";

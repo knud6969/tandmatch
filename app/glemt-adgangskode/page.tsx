@@ -1,1 +1,1 @@
-export { default, metadata } from "@/features/identity/pages/glemt-adgangskode/page";
+export { default, metadata } from "@/features/identity/pages/forgot-password-page";

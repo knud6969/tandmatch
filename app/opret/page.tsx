@@ -1,1 +1,1 @@
-export { default } from "@/features/identity/pages/opret/page";
+export { default } from "@/features/identity/pages/signup-page";
