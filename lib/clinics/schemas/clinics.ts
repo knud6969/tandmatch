@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isoDateTime } from "@/lib/common/schemas/datetime";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 import { PORTFOLIO_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
@@ -179,7 +180,6 @@ export const putOpeningHoursSchema = z
   .strict();
 
 // Blokeringer (lukket, ferie, fuldt booket via eget system).
-const isoDateTime = z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." });
 
 export const createTimeBlockSchema = z
   .object({

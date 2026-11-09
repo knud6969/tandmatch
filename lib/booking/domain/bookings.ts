@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@/lib/common/domain/time";
 import { formatDayAtTime } from "@/lib/common/domain/format";
 import { CLINIC_CANCEL_REASON_PREFIX, NO_SHOW_GRACE_HOURS, PATIENT_CANCELLED_BY_LABEL } from "@/lib/booking/constants/bookings";
 import type { BookingCanceller, BookingStatus } from "@/lib/booking/types/bookings";
@@ -6,7 +7,6 @@ import type { BookingCanceller, BookingStatus } from "@/lib/booking/types/bookin
 // databasen. Reglerne spejler cancel_booking(), mark_booking_no_show() og effective_booking_status(); databasen er vogteren,
 // funktionerne her afgør kun, hvilke knapper DTO'erne tilbyder.
 
-const HOUR_MS = 60 * 60 * 1000;
 
 // Fristen for udeblivelse (og for at bookingen er gennemført): ends_at + 24 timer.
 export function graceEndsAt(endsAt: string | Date): Date {

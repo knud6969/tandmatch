@@ -22,6 +22,7 @@ import {
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Database, Tables } from "@/platform/db/database.types";
 import { iso, isoOrNull, toClinicBookingDto, type WithNulls } from "@/platform/db/mappers";
+import { INVALID_CONTACT_TEXT } from "@/lib/common/constants/error-texts";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type Functions = Database["public"]["Functions"];
@@ -64,7 +65,7 @@ const BOOK_ERRORS = (): Record<string, ApiError> => ({
   SLOT_TAKEN: slotTaken(),
   SLOT_UNAVAILABLE: slotUnavailable(),
   INVALID_SERVICE: serviceNotOnCase(),
-  INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", "Tjek navn og telefonnummer."),
+  INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", INVALID_CONTACT_TEXT),
 });
 
 const CANCEL_ERRORS = (): Record<string, ApiError> => ({

@@ -11,8 +11,9 @@ import type { AvailabilityService } from "@/features/clinics/availabilityService
 import type { PublicClinicProfileRecord, PublicClinicRecord } from "@/features/clinics/clinicDirectoryRepository";
 import { type LatLng, RankingService } from "@/features/clinics/rankingService";
 import type { ServicesRepository } from "@/features/clinics/servicesRepository";
+import { UNKNOWN_SERVICE_TEXT } from "@/lib/common/constants/error-texts";
 
-const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
+export const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
 // De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og akutbehandlingen
 // til første akuttid.
@@ -45,7 +46,7 @@ export class ClinicListingService {
     const catalog = (await this.deps.services.listGroups()).flatMap((group) => group.services);
     const selected = slugs.map((slug) => {
       const service = catalog.find((candidate) => candidate.slug === slug);
-      if (!service) throw new ApiError(400, "UNKNOWN_SERVICE", "En af behandlingerne findes ikke i kataloget.");
+      if (!service) throw new ApiError(400, "UNKNOWN_SERVICE", UNKNOWN_SERVICE_TEXT);
       return service;
     });
     // Uden valg måles første ledige tid for en undersøgelse (architecture 6.6).

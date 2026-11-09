@@ -49,6 +49,14 @@ export const RECOVERY_INVALID_TEXT = "Linket er ugyldigt, brugt eller udløbet. 
 export const RECOVERY_REQUIRED_TEXT = "Linket til at vælge en ny adgangskode er udløbet. Bed om et nyt link.";
 export const WEB_ONLY_TEXT = "Det kan kun gøres på TandMatch' webside.";
 
+// Serverbeskeder, der bruges flere steder (klienterne oversætter koden via API_ERROR_TEXTS).
+export const EMAIL_EXISTS_TEXT = "Der findes allerede en konto med denne e-mail.";
+export const UNKNOWN_SERVICE_TEXT = "En af behandlingerne findes ikke i kataloget.";
+export const IMAGE_TOO_LARGE_PROCESSED_TEXT = "Billedet er for stort efter behandling.";
+export const IMAGE_UPLOAD_TOO_LARGE_TEXT = "Billedet er for stort. Max 4 MB.";
+export const MISSING_FILE_TEXT = "Vedhæft et billede.";
+export const INVALID_CONTACT_TEXT = "Tjek navn og telefonnummer.";
+
 export const API_ERROR_TEXTS: Record<string, string> = {
   INVALID_CREDENTIALS: "E-mail eller adgangskode er forkert. Tjek oplysningerne og prøv igen.",
   EMAIL_EXISTS: "Der findes allerede en konto med denne e-mail. Prøv at logge ind i stedet.",

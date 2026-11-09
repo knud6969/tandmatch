@@ -93,7 +93,7 @@ export class AuthController {
       throw new ApiError(409, "ANONYMOUS_SESSION_ACTIVE", "Din samtale skal konverteres til en konto i stedet.");
     }
     if (this.session) {
-      throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
+      throw new ApiError(409, "ALREADY_AUTHENTICATED", API_ERROR_TEXTS.ALREADY_AUTHENTICATED);
     }
 
     const metadata = await this.signupMetadata(input);

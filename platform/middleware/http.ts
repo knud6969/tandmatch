@@ -1,26 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import type { ZodType } from "zod";
-import {
-  ALREADY_REPLIED_TEXT,
-  API_ERROR_TEXTS,
-  ALREADY_REVIEWED_TEXT,
-  BOOKING_LIMIT_TEXT,
-  FAVORITE_LIMIT_TEXT,
-  BOOKING_NOT_CANCELLABLE_TEXT,
-  BOOKING_NOT_RESCHEDULABLE_TEXT,
-  CLINIC_NOT_VERIFIED_TEXT,
-  GENERIC_ERROR_TEXT,
-  INVALID_STATUS_TRANSITION_TEXT,
-  LEAD_NOT_ACCEPTED_TEXT,
-  MESSAGE_LIMIT_TEXT,
-  NO_SHOW_WINDOW_CLOSED_TEXT,
-  REASON_REQUIRED_TEXT,
-  REVIEW_NOT_ALLOWED_TEXT,
-  SLOT_TAKEN_TEXT,
-  SLOT_UNAVAILABLE_TEXT,
-  THREAD_CLOSED_TEXT,
-} from "@/lib/common/constants/error-texts";
+import { ALREADY_REPLIED_TEXT, ALREADY_REVIEWED_TEXT, API_ERROR_TEXTS, BOOKING_LIMIT_TEXT, BOOKING_NOT_CANCELLABLE_TEXT, BOOKING_NOT_RESCHEDULABLE_TEXT, CLINIC_NOT_VERIFIED_TEXT, FAVORITE_LIMIT_TEXT, GENERIC_ERROR_TEXT, IMAGE_UPLOAD_TOO_LARGE_TEXT, INVALID_STATUS_TRANSITION_TEXT, LEAD_NOT_ACCEPTED_TEXT, MESSAGE_LIMIT_TEXT, MISSING_FILE_TEXT, NO_SHOW_WINDOW_CLOSED_TEXT, REASON_REQUIRED_TEXT, REVIEW_NOT_ALLOWED_TEXT, SLOT_TAKEN_TEXT, SLOT_UNAVAILABLE_TEXT, THREAD_CLOSED_TEXT } from "@/lib/common/constants/error-texts";
 
 // Fælles fejlformat (architecture 2.4). Meddelelser er på dansk og uden interne detaljer.
 export class ApiError extends Error {
@@ -140,7 +121,7 @@ export function rejectLargeImage(req: Request, maxBytes: number): void {
     throw new ApiError(411, "LENGTH_REQUIRED", "Billedets størrelse mangler. Prøv at uploade igen.");
   }
   if (Number(header) > maxBytes + 64 * 1024) {
-    throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+    throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_UPLOAD_TOO_LARGE_TEXT);
   }
 }
 
@@ -156,10 +137,10 @@ export function imageFileReader(req: Request, field: string, maxBytes: number): 
     }
     const file = form.get(field);
     if (!(file instanceof File)) {
-      throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+      throw new ApiError(400, "MISSING_FILE", MISSING_FILE_TEXT);
     }
     if (file.size > maxBytes) {
-      throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+      throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_UPLOAD_TOO_LARGE_TEXT);
     }
     return file;
   };
@@ -185,18 +166,18 @@ export function imagesFormReader(
     const fields: Record<string, string> = {};
     for (const [key, value] of form.entries()) {
       if (key === field) {
-        if (!(value instanceof File)) throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+        if (!(value instanceof File)) throw new ApiError(400, "MISSING_FILE", MISSING_FILE_TEXT);
         files.push(value);
       } else if (typeof value === "string") {
         fields[key] = value;
       }
     }
-    if (files.length === 0) throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+    if (files.length === 0) throw new ApiError(400, "MISSING_FILE", MISSING_FILE_TEXT);
     if (files.length > maxFiles) {
       throw new ApiError(400, "IMAGE_LIMIT", `Du kan højst vedhæfte ${maxFiles} billeder ad gangen.`);
     }
     if (files.some((file) => file.size > maxBytes)) {
-      throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+      throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_UPLOAD_TOO_LARGE_TEXT);
     }
     return { files, fields };
   };
@@ -230,10 +211,10 @@ export async function readImageForm<T>(
   }
   const file = form.get(fileField);
   if (!(file instanceof File)) {
-    throw new ApiError(400, "MISSING_FILE", "Vedhæft et billede.");
+    throw new ApiError(400, "MISSING_FILE", MISSING_FILE_TEXT);
   }
   if (file.size > maxBytes) {
-    throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort. Max 4 MB.");
+    throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_UPLOAD_TOO_LARGE_TEXT);
   }
   return { file, fields: parsed.data };
 }
@@ -283,6 +264,7 @@ export const ACCOUNT_REQUIRED_MESSAGES = {
   bookSlot: "Opret en konto for at booke en tid.",
   emergencyLead: "Opret en konto for at bestille en akuttid.",
   favorites: "Opret en konto for at gemme klinikker.",
+  pushTokens: "Opret en konto for at få notifikationer.",
   notificationContact: "Opret en konto for at få e-mail og SMS om dine tider.",
 } as const;
 

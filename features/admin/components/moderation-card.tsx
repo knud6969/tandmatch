@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin/constants/admin";
 import type { AdminModerationItemDto } from "@/lib/admin/types/admin";
 import { MODERATION_LABEL } from "@/lib/booking/constants/reviews";
+import { REASON_REQUIRED_TEXT } from "@/lib/common/constants/error-texts";
 import { formatDate } from "@/lib/common/domain/format";
 import { toClinicDate, toClinicMonth } from "@/lib/common/domain/time";
 import { MODERATION_TONE, ReviewDetails } from "@/features/booking/ui";
@@ -31,7 +32,7 @@ export function ModerationCard({ item, onDone }: { item: AdminModerationItemDto;
 
   async function decide(status: Decision) {
     if (status === "rejected" && reason.trim() === "") {
-      setReasonError("Skriv en begrundelse, når du afviser.");
+      setReasonError(REASON_REQUIRED_TEXT);
       return;
     }
     setReasonError(undefined);

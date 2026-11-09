@@ -13,6 +13,7 @@ import { lazyAdminClient } from "@/platform/db/admin";
 import { CaseImageUrlService } from "@/features/cases/caseImageUrlService";
 import { ImageProcessingService } from "@/platform/imageProcessingService";
 import { StorageCleanupService } from "@/platform/storageCleanupService";
+import { IMAGE_TOO_LARGE_PROCESSED_TEXT } from "@/lib/common/constants/error-texts";
 
 // Afhængigheder, der kan erstattes i tests (architecture 2.1.1).
 export type CaseImagesDeps = {
@@ -63,7 +64,7 @@ export class CaseImagesController {
     const file = await readFile();
     const { data, width, height } = await this.processing.reencode(Buffer.from(await file.arrayBuffer()));
     if (data.length > MAX_IMAGE_UPLOAD_BYTES) {
-      throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort efter behandling.");
+      throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_TOO_LARGE_PROCESSED_TEXT);
     }
 
     const id = randomUUID();

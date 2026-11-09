@@ -7,7 +7,7 @@ import { MAX_IMAGE_UPLOAD_BYTES, MESSAGE_MAX_PER_DAY, SIGNED_URL_TTL_SECONDS } f
 import { messageWithImagesSchema, type sendMessageSchema } from "@/lib/leads/schemas/messages";
 import type { MessageDto, MessageImageDto, MessageSenderRole } from "@/lib/leads/types/messages";
 import { ApiError, forbidden, messageLimit, threadClosed } from "@/platform/middleware/http";
-import { CONSENT_CONFIRMATION_REQUIRED_TEXT } from "@/lib/common/constants/error-texts";
+import { CONSENT_CONFIRMATION_REQUIRED_TEXT, IMAGE_TOO_LARGE_PROCESSED_TEXT } from "@/lib/common/constants/error-texts";
 import { CLINIC_MESSAGE_IMAGE_CONSENT_TEXT_VERSION } from "@/lib/identity/constants/consents";
 import type { Session } from "@/platform/middleware/session";
 import { lazyAdminClient } from "@/platform/db/admin";
@@ -122,7 +122,7 @@ export class MessagesController {
     for (const file of files) {
       const { data, width, height } = await this.processing.reencode(Buffer.from(await file.arrayBuffer()));
       if (data.length > MAX_IMAGE_UPLOAD_BYTES) {
-        throw new ApiError(413, "FILE_TOO_LARGE", "Billedet er for stort efter behandling.");
+        throw new ApiError(413, "FILE_TOO_LARGE", IMAGE_TOO_LARGE_PROCESSED_TEXT);
       }
       prepared.push({ id: randomUUID(), data, width, height });
     }

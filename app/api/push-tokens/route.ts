@@ -1,6 +1,6 @@
 import { PUSH_TOKEN_IP_LIMIT_PER_HOUR } from "@/lib/common/constants/limits";
 import { deletePushTokenSchema, registerPushTokenSchema } from "@/lib/identity/schemas/push-tokens";
-import { noContent, readJson, withApi } from "@/platform/middleware/http";
+import { ACCOUNT_REQUIRED_MESSAGES, noContent, readJson, withApi } from "@/platform/middleware/http";
 import { enforceIpRateLimit } from "@/platform/middleware/rateLimit";
 import { createAuthContext, requireAccount, requireRole } from "@/platform/middleware/session";
 import { requireTerms } from "@/platform/middleware/termsGate";
@@ -11,7 +11,7 @@ export const PUT = withApi(async (req) => {
   const gate = await requireTerms();
   const session = requireAccount(
     await requireRole("patient", { allowAnonymous: true, ctx: gate }),
-    "Opret en konto for at få notifikationer.",
+    ACCOUNT_REQUIRED_MESSAGES.pushTokens,
   );
   await enforceIpRateLimit("push-token", req, PUSH_TOKEN_IP_LIMIT_PER_HOUR);
   const input = await readJson(req, registerPushTokenSchema);

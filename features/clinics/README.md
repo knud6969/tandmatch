@@ -286,7 +286,7 @@ Rangeringen ligger i `RankingService` (`features/clinics/rankingService.ts`, ing
 
 ### 6.7 Ledige tider
 
-Beregnes i `AvailabilityService` (`features/clinics/availabilityService.ts`, ingen I/O, enhedstestet) ud fra data fra `AvailabilityRepository` (`public_clinics`/`public_clinic_profile` for åbningstider og priser, `public_busy_intervals()` for optaget tid). `book_slot()` gentager tjekket i databasen, så beregningen ikke er en sikkerhedsgrænse.
+Beregnes i `AvailabilityService` (`features/clinics/availabilityService.ts`, ingen I/O, enhedstestet) ud fra data fra `AvailabilityRepository` (`public_clinics`/`public_clinic_profile` for åbningstider og priser, `public_busy_intervals()` for optaget tid). `ClinicSlotsService` (`clinicSlotsService.ts`) henter dataene og kalder `AvailabilityService`; klinikoversigten og booking bruger den, så der kun er én beregning. `book_slot()` gentager tjekket i databasen, så beregningen ikke er en sikkerhedsgrænse.
 
 - **Input:** åbningsvinduer (lokal tid `Europe/Copenhagen`, inkl. `is_emergency`), optagede tidsrum, ydelsens varighed (klinikkens `duration_min`, ellers katalogets `default_duration_min`), om ydelsen er akut, tidsinterval.
 - **Slots:** starttider på hele kvarterer (`SLOT_STEP_MINUTES = 15`; minut 0/15/30/45, sekunder 0, lokal tid; kræves også af databasen) inden for et vindue, hvor `start + varighed` ligger helt i vinduet og ikke overlapper optaget tid. Almindelige ydelser kun i almindelige vinduer; akutydelser i begge.

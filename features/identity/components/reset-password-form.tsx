@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FormError } from "@/components/ui/form-error";
-import { Alert } from "@/components/ui/alert";
 import { Button, LinkButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { apiRequest } from "@/platform/ui-utils/api-client";
@@ -81,12 +80,12 @@ export function ResetPasswordForm({ link }: { link: RecoveryLink }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error && (
-        <Alert tone="danger" role="alert">
-          {error}{" "}
+        <FormError message={error}>
+          {" "}
           <LinkButton href="/glemt-adgangskode" variant="ghost" className="min-h-11 px-2">
             Bed om et nyt link
           </LinkButton>
-        </Alert>
+        </FormError>
       )}
       <TextField
         label="Ny adgangskode"

@@ -1,3 +1,4 @@
+import { API_ERROR_TEXTS } from "@/lib/common/constants/error-texts";
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
@@ -64,7 +65,7 @@ export class SessionController {
         throw unauthenticated();
       }
       if (!existing.isAnonymous) {
-        throw new ApiError(409, "ALREADY_AUTHENTICATED", "Du er allerede logget ind.");
+        throw new ApiError(409, "ALREADY_AUTHENTICATED", API_ERROR_TEXTS.ALREADY_AUTHENTICATED);
       }
       if (!(await this.consents.hasActive("ai_processing"))) {
         await this.consents.createMany([aiConsent(existing.userId)]);

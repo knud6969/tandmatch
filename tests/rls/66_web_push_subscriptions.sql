@@ -118,10 +118,14 @@ select tt.eq((select count(*)::int from public.web_push_subscriptions where user
 delete from public.notification_outbox;
 select tt.mk_case('pA', 'R1');
 select tt.mk_booking(tt.mk_lead('R1', 'Y', 'booked'), 'undersoegelse', now() + interval '20 hours', 'booked');
-update public.bookings set created_at = now() - interval '3 days';
+update public.bookings set created_at = now() - interval '3 days' where clinic_id = tt.cid('Y');
 delete from public.notification_outbox;
 select tt.as_service();
-select tt.eq(public.enqueue_booking_reminders(), 4, 'patient (push, e-mail, SMS) + klinik-e-mail; web push er ikke valgt');
+select public.enqueue_booking_reminders();
+select tt.as_postgres();
+-- Kun klinik Y tælles: demodata kan have egne tider inden for døgnet.
+select tt.eq((select count(*)::int from public.notification_outbox o join public.bookings b on b.id = o.booking_id where b.clinic_id = tt.cid('Y')), 4,
+             'patient (push, e-mail, SMS) + klinik-e-mail; web push er ikke valgt');
 select tt.as_user(tt.id('uY'));
 insert into public.clinic_notification_settings (clinic_id, web_push_booking_reminder) values (tt.cid('Y'), true);
 select tt.as_postgres();

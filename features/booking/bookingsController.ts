@@ -19,7 +19,7 @@ import { ClinicDirectoryRepository } from "@/features/clinics";
 import { ClinicsRepository } from "@/features/clinics";
 import { LeadsRepository } from "@/features/leads";
 import { ServicesRepository } from "@/features/clinics";
-import { AvailabilityService } from "@/features/clinics";
+import { AvailabilityService, ClinicSlotsService } from "@/features/clinics";
 
 type BookSlotInput = z.infer<typeof bookSlotSchema>;
 type LeadAvailabilityQuery = z.infer<typeof leadAvailabilityQuerySchema>;
@@ -37,6 +37,7 @@ export type BookingsDeps = {
   availability: AvailabilityRepository;
   services: ServicesRepository;
   slots: AvailabilityService;
+  slotService: ClinicSlotsService;
 };
 
 // Bookinger (architecture 10.10). Én controller for ressourcen, to roller.
@@ -52,6 +53,7 @@ export class BookingsController {
   private readonly availability: AvailabilityRepository;
   private readonly services: ServicesRepository;
   private readonly slots: AvailabilityService;
+  private readonly slotService: ClinicSlotsService;
 
   constructor(
     supabase: SupabaseClient,
@@ -65,6 +67,9 @@ export class BookingsController {
     this.availability = deps.availability ?? new AvailabilityRepository(supabase);
     this.services = deps.services ?? new ServicesRepository(supabase);
     this.slots = deps.slots ?? new AvailabilityService();
+    this.slotService =
+      deps.slotService ??
+      new ClinicSlotsService({ directory: this.directory, availability: this.availability, services: this.services, slots: this.slots });
   }
 
   // ---- Patienten ----
@@ -84,25 +89,7 @@ export class BookingsController {
 
   // Ledige tider hos en klinik for én behandling (fælles for availabilityForLead() og availabilityForBooking()).
   private async slotsFor(clinicId: string, serviceId: string, range: AvailabilityRange): Promise<{ slots: SlotDto[] }> {
-    const [service] = await this.services.requireActive([serviceId]);
-    const clinic = await this.directory.findClinic(clinicId, [service.id]);
-    if (!clinic || clinic.tier !== "full") {
-      throw clinicNotAvailable();
-    }
-    const resolved = this.slots.resolveRange(range.from, range.to);
-    if (!resolved.ok) throw new ApiError(400, "VALIDATION_ERROR", resolved.message);
-    const { from, to } = resolved;
-    const busy = (await this.availability.listBusyIntervals([clinicId], from, to)).get(clinicId) ?? [];
-    return {
-      slots: this.slots.slots({
-        openingHours: clinic.openingHours,
-        busy,
-        durationMin: this.slots.durationFor(clinic.prices, [service]),
-        isEmergency: service.category === "emergency",
-        from,
-        to,
-      }),
-    };
+    return this.slotService.slotsFor(clinicId, serviceId, range, clinicNotAvailable);
   }
 
   // Ledige tider til at flytte en booket tid: samme klinik og behandling som bookingen (10.16). 409 BOOKING_NOT_RESCHEDULABLE
