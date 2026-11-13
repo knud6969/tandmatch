@@ -88,15 +88,15 @@ select tt.eq((select public.admin_moderate('reply', current_setting('tt.reply'):
 select tt.as_postgres();
 select tt.eq((select moderation_status::text from public.review_replies where id = current_setting('tt.reply')::uuid), 'rejected', 'svar står som afvist');
 
--- Log
+-- Log (kun rækker fra denne transaktion: created_at = now(), så demodata og tidligere kørsler ikke tæller med)
 select tt.as_user(tt.id('admin'));
-select tt.eq((select count(*)::int from public.admin_actions where action = 'clinic_status'), 3, 'tre statusændringer logget');
-select tt.eq((select reason from public.admin_actions where action = 'clinic_status' and to_value = 'verified' and target_id = tt.cid('R')), 'Ejer bekræftet pr. telefon', 'begrundelsen ved verificering logges');
-select tt.eq((select count(*)::int from public.admin_actions where action = 'moderate_review'), 2, 'to anmeldelsesmoderationer logget');
-select tt.eq((select count(*)::int from public.admin_actions where action = 'moderate_reply'), 2, 'to svarmoderationer logget');
-select tt.eq((select reason from public.admin_actions where action = 'clinic_status' and to_value = 'registered' and target_id = tt.cid('Y')), 'Pause for test', 'begrundelsen er trimmet');
-select tt.eq((select from_value || '>' || to_value from public.admin_actions where action = 'moderate_review' and reason is null), 'rejected>approved', 'før- og efterværdi');
-select tt.ok((select bool_and(admin_id = tt.id('admin')) from public.admin_actions), 'admin_id er den kaldende');
+select tt.eq((select count(*)::int from public.admin_actions where created_at >= now() and action = 'clinic_status'), 3, 'tre statusændringer logget');
+select tt.eq((select reason from public.admin_actions where created_at >= now() and action = 'clinic_status' and to_value = 'verified' and target_id = tt.cid('R')), 'Ejer bekræftet pr. telefon', 'begrundelsen ved verificering logges');
+select tt.eq((select count(*)::int from public.admin_actions where created_at >= now() and action = 'moderate_review'), 2, 'to anmeldelsesmoderationer logget');
+select tt.eq((select count(*)::int from public.admin_actions where created_at >= now() and action = 'moderate_reply'), 2, 'to svarmoderationer logget');
+select tt.eq((select reason from public.admin_actions where created_at >= now() and action = 'clinic_status' and to_value = 'registered' and target_id = tt.cid('Y')), 'Pause for test', 'begrundelsen er trimmet');
+select tt.eq((select from_value || '>' || to_value from public.admin_actions where created_at >= now() and action = 'moderate_review' and reason is null), 'rejected>approved', 'før- og efterværdi');
+select tt.ok((select bool_and(admin_id = tt.id('admin')) from public.admin_actions where created_at >= now()), 'admin_id er den kaldende');
 select tt.denied('insert into public.admin_actions (action, target_id, from_value, to_value) values (''clinic_status'', gen_random_uuid(), ''a'', ''b'')', 'direkte INSERT afvises', '42501');
 select tt.denied('update public.admin_actions set reason = ''x''', 'direkte UPDATE afvises', '42501');
 select tt.denied('delete from public.admin_actions', 'direkte DELETE afvises', '42501');

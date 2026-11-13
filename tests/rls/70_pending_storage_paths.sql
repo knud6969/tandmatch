@@ -22,7 +22,8 @@ select tt.rows('select 1 from public.pending_storage_paths', 0, 'admin ser ikke 
 select tt.as_anon();
 select tt.rows('select 1 from public.pending_storage_paths', 0, 'anon ser ikke køen');
 select tt.as_service();
-select tt.rows('select 1 from public.pending_storage_paths', 1, 'service role ser køen');
+-- Kun testens egen sti, så rester i den lokale database ikke tæller med.
+select tt.rows('select 1 from public.pending_storage_paths where path = ''x/y.jpg''', 1, 'service role ser køen');
 select tt.allowed('delete from public.pending_storage_paths', 'service role kan tømme køen');
 select tt.denied('insert into public.pending_storage_paths (bucket, path) values (''andet'', ''a.jpg'')', 'ukendt bucket afvises');
 
