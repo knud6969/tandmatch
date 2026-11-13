@@ -24,6 +24,9 @@ async function bookableClinic(browser: Browser, testInfo: TestInfo, label: strin
   const hours = Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, opensAt: "08:00", closesAt: "17:00" }));
   const res = await clinic.page.request.put("/api/clinics/me/opening-hours", { data: { hours } });
   expect(res.ok(), await res.text()).toBeTruthy();
+  // Åbent på helligdage, så testen ikke afhænger af datoen (helligdage er ellers lukket, clinics 6.7).
+  const holidays = await clinic.page.request.patch("/api/clinics/me", { data: { openOnHolidays: true } });
+  expect(holidays.ok(), await holidays.text()).toBeTruthy();
   return clinic;
 }
 

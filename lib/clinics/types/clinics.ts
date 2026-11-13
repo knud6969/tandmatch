@@ -61,6 +61,8 @@ export type ClinicRecordDto = {
   logoPath: string | null;
   logoUpdatedAt: string | null;
   trustpilot: TrustpilotInfo;
+  // Åbent på helligdage (standard false: lukket, clinics 6.7).
+  openOnHolidays: boolean;
   updatedAt: string;
 };
 
@@ -96,7 +98,7 @@ export type ClinicProfileDto = ClinicListItemDto & {
 };
 
 // GET/PATCH /api/clinics/me: forhåndsvisning af den fulde profil uanset status (architecture 10.8).
-export type OwnClinicDto = ClinicProfileDto & { status: ClinicStatus; cvr: string; dentists: DentistDto[] };
+export type OwnClinicDto = ClinicProfileDto & { status: ClinicStatus; cvr: string; dentists: DentistDto[]; openOnHolidays: boolean };
 
 // GET /api/clinics: sorteret og filtreret af RankingService (architecture 6.6, 10.7). `criteria` er de kriterier,
 // patienten ser ved listen.

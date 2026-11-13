@@ -120,7 +120,7 @@ export function PortfolioEditor({ dentistId, dentistName, items, groups, verifie
       )}
 
       <form onSubmit={onUpload} noValidate className="flex flex-col gap-4 rounded-card border border-line bg-surface-muted p-4">
-        <h5 className="text-base font-semibold text-ink">Tilføj billede af {dentistName}s arbejde</h5>
+        <h5 className="text-base font-semibold text-ink">Tilføj billede af en behandling, {dentistName} har lavet</h5>
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`portfolio-file-${dentistId}`} className="text-sm font-semibold text-ink">
             Billede (JPEG eller PNG)
@@ -136,8 +136,8 @@ export function PortfolioEditor({ dentistId, dentistName, items, groups, verifie
         </div>
         <ServiceSelect groups={groups} value={serviceId} onChange={setServiceId} />
         <TextField
-          label="Billedtekst (valgfri)"
-          hint="Ingen navne eller andre personoplysninger."
+          label="Note til billedet (valgfri)"
+          hint="Fx hvad der er lavet. Ingen navne eller andre personoplysninger."
           maxLength={PORTFOLIO_CAPTION_MAX_CHARS}
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
@@ -194,7 +194,7 @@ function EditItem({ item, groups, busy, onSave, onCancel }: EditItemProps) {
       <img src={item.imageUrl} alt="" className="size-24 shrink-0 rounded-control object-cover" />
       <div className="flex flex-1 flex-col gap-4">
         <TextField
-          label="Billedtekst"
+          label="Note til billedet"
           hint="Ingen navne eller andre personoplysninger."
           maxLength={PORTFOLIO_CAPTION_MAX_CHARS}
           value={caption}

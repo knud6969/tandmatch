@@ -131,6 +131,8 @@ select c.id, d, '17:00'::time, '20:00'::time from public.clinics c, generate_ser
 -- Klinikkernes importstatus: fixtureklinikkerne er (overtagne) importerede (import_source sat), så sletning af
 -- ejeren bevarer grunddata. Tests af selvoprettede klinikker nulstiller import_source selv.
 update public.clinics set import_source = 'seed' where cvr like '100000__';
+-- Åbent på helligdage, så testene ikke afhænger af datoen (test 71 slår det fra for X).
+update public.clinics set open_on_holidays = true where cvr like '100000__';
 
 -- Valgte kategorier (kræves af prisreglen): forebyggelse og akut
 insert into public.clinic_service_groups (clinic_id, group_id)

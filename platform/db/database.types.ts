@@ -446,13 +446,13 @@ isOneToOne: false
                   ]
                 },"clinics": {
                   Row: {
-                    "address": string,"city": string,"created_at": string,"cvr": string | null,"description": string | null,"email": string | null,"id": string,"import_source": string | null,"lat": number | null,"lng": number | null,"logo_path": string | null,"logo_updated_at": string | null,"name": string,"owner_id": string | null,"owner_since": string | null,"phone": string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string | null,"trustpilot_review_count": number | null,"trustpilot_score": number | null,"trustpilot_updated_at": string | null,"trustpilot_url": string | null,"updated_at": string,"verified_at": string | null,"website": string | null
+                    "address": string,"city": string,"created_at": string,"cvr": string | null,"description": string | null,"email": string | null,"id": string,"import_source": string | null,"lat": number | null,"lng": number | null,"logo_path": string | null,"logo_updated_at": string | null,"name": string,"open_on_holidays": boolean,"owner_id": string | null,"owner_since": string | null,"phone": string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by": string | null,"trustpilot_review_count": number | null,"trustpilot_score": number | null,"trustpilot_updated_at": string | null,"trustpilot_url": string | null,"updated_at": string,"verified_at": string | null,"website": string | null
                   }
                   Insert: {
-                    "address": string,"city": string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name": string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
+                    "address": string,"city": string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name": string,"open_on_holidays"?: boolean,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code": string,"status": Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
                   }
                   Update: {
-                    "address"?: string,"city"?: string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name"?: string,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code"?: string,"status"?: Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
+                    "address"?: string,"city"?: string,"created_at"?: string,"cvr"?: string | null,"description"?: string | null,"email"?: string | null,"id"?: string,"import_source"?: string | null,"lat"?: number | null,"lng"?: number | null,"logo_path"?: string | null,"logo_updated_at"?: string | null,"name"?: string,"open_on_holidays"?: boolean,"owner_id"?: string | null,"owner_since"?: string | null,"phone"?: string | null,"postal_code"?: string,"status"?: Database["public"]['Enums']["clinic_status"],"trustpilot_entered_by"?: string | null,"trustpilot_review_count"?: number | null,"trustpilot_score"?: number | null,"trustpilot_updated_at"?: string | null,"trustpilot_url"?: string | null,"updated_at"?: string,"verified_at"?: string | null,"website"?: string | null
                   }
                   Relationships: [
                     {
@@ -1127,6 +1127,14 @@ isOneToOne: false
                            },
 "consume_summary_generation":
 { Args: { "p_case_id": string,"p_user_id": string }; Returns: number
+                           },
+"danish_holidays":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "day": string
+            }[]
+                           },
+"easter_sunday":
+{ Args: { "p_year": number }; Returns: string
                            },
 "effective_booking_status":
 { Args: { "p_ends_at": string,"p_hold_expires_at": string,"p_status": Database["public"]['Enums']["booking_status"] }; Returns: Database["public"]['Enums']["booking_status"]

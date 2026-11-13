@@ -101,6 +101,7 @@ export const patchClinicSchema = z
       .nullable()
       .optional(),
     trustpilotReviewCount: z.number().int("Antal anmeldelser skal være et helt tal.").min(0).max(10_000_000).nullable().optional(),
+    openOnHolidays: z.boolean().optional(),
   })
   .strict();
 
@@ -192,6 +193,9 @@ export const createTimeBlockSchema = z
   });
 
 export type NewTimeBlock = z.infer<typeof createTimeBlockSchema>;
+
+// Ændring af en blokering: samme felter som ved oprettelse (hele blokeringen sendes).
+export const updateTimeBlockSchema = createTimeBlockSchema;
 
 export const timeBlocksQuerySchema = z
   .object({

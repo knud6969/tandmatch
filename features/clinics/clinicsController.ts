@@ -123,6 +123,7 @@ export class ClinicsController {
       dentists: attachPortfolio(dentists, portfolio),
       status: clinic.status,
       cvr: clinic.cvr ?? "",
+      openOnHolidays: clinic.openOnHolidays,
     };
   }
 
@@ -197,6 +198,10 @@ export class ClinicsController {
   }
 
   // 404, hvis blokeringen ikke tilhører klinikken.
+  async updateTimeBlock(blockId: string, input: CreateTimeBlockInput): Promise<TimeBlockDto> {
+    return this.availability.updateTimeBlock(await this.requireClinicId(), blockId, input);
+  }
+
   async deleteTimeBlock(blockId: string): Promise<void> {
     await this.availability.deleteTimeBlock(await this.requireClinicId(), blockId);
   }

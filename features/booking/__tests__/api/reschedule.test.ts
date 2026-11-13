@@ -53,6 +53,8 @@ async function clinic(verified = true): Promise<Clinic> {
     // Åbent alle ugens dage 06-22, så der altid er ledige tider.
     const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ clinic_id: id, weekday, opens_at: "06:00", closes_at: "22:00" }));
     assert.ifError((await admin.from("clinic_opening_hours").insert(hours)).error);
+    // Åbent på helligdage, så testen ikke afhænger af datoen (helligdage er ellers lukket, clinics 6.7).
+    assert.ifError((await admin.from("clinics").update({ open_on_holidays: true }).eq("id", id)).error);
   }
   return { c, id, userId: r.body.userId };
 }

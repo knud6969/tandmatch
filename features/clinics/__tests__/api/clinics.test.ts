@@ -530,6 +530,39 @@ describe("egen klinik: blokeringer", () => {
     assert.deepEqual((await y.c.get("/api/clinics/me/time-blocks")).body.blocks, []);
     assert.equal((await x.c.get("/api/clinics/me/time-blocks")).body.blocks.length, 1);
     assert.equal((await y.c.del("/api/clinics/me/time-blocks/ikke-uuid")).status, 404);
+    // Heller ikke ændre den
+    const foreign = await y.c.patch(`/api/clinics/me/time-blocks/${block.body.id}`, { startsAt: "2030-07-01T08:00:00Z", endsAt: "2030-07-03T08:00:00Z" });
+    assert.equal(foreign.status, 404);
+  });
+
+  it("ændrer en blokering (PATCH) og validerer som ved oprettelse", async () => {
+    const { c } = await signupClinic();
+    const created = await c.post("/api/clinics/me/time-blocks", { startsAt: "2030-07-01T00:00:00+02:00", endsAt: "2030-07-08T00:00:00+02:00", note: "Ferie" });
+    const updated = await c.patch(`/api/clinics/me/time-blocks/${created.body.id}`, {
+      startsAt: "2030-07-01T00:00:00+02:00",
+      endsAt: "2030-07-15T00:00:00+02:00",
+      note: "Sommerferie",
+    });
+    assert.equal(updated.status, 200, JSON.stringify(updated.body));
+    assert.equal(updated.body.id, created.body.id);
+    assert.equal(updated.body.note, "Sommerferie");
+    assert.equal(Date.parse(updated.body.endsAt), Date.parse("2030-07-15T00:00:00+02:00"));
+    const bad = await c.patch(`/api/clinics/me/time-blocks/${created.body.id}`, { startsAt: "2030-07-15T00:00:00Z", endsAt: "2030-07-01T00:00:00Z" });
+    assert.equal(bad.status, 400);
+    assert.equal((await c.get("/api/clinics/me/time-blocks")).body.blocks[0].note, "Sommerferie");
+  });
+});
+
+describe("egen klinik: helligdage", () => {
+  it("er lukket som udgangspunkt og kan slås til og fra med PATCH /api/clinics/me", async () => {
+    const { c } = await signupClinic();
+    assert.equal((await c.get("/api/clinics/me")).body.openOnHolidays, false);
+    const open = await c.patch("/api/clinics/me", { openOnHolidays: true });
+    assert.equal(open.status, 200, JSON.stringify(open.body));
+    assert.equal(open.body.openOnHolidays, true);
+    assert.equal((await c.get("/api/clinics/me")).body.openOnHolidays, true);
+    assert.equal((await c.patch("/api/clinics/me", { openOnHolidays: "ja" })).status, 400);
+    assert.equal((await c.patch("/api/clinics/me", { openOnHolidays: false })).body.openOnHolidays, false);
   });
 });
 

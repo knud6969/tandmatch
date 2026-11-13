@@ -57,6 +57,8 @@ async function setUp(clinic: Clinic, prices: { service: { id: string; groupId: s
   assert.equal(put.status, 200, JSON.stringify(put.body));
   const oh = await clinic.c.put("/api/clinics/me/opening-hours", { hours });
   assert.equal(oh.status, 200, JSON.stringify(oh.body));
+  // Åbent på helligdage, så testen ikke afhænger af datoen (helligdage er ellers lukket, clinics 6.7).
+  assert.equal((await clinic.c.patch("/api/clinics/me", { openOnHolidays: true })).status, 200);
 }
 
 async function verify(clinicId: string) {

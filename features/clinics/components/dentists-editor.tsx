@@ -81,6 +81,8 @@ function toValues(dentist: DentistDto): DentistValues {
 
 function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: number; onAdded: (d: DentistDto) => void; hasDentists: boolean }) {
   const [values, setValues] = useState<DentistValues>({ fullName: "", title: "", bio: "" });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<FieldErrors<Field>>({ fields: {}, general: null });
   const formRef = useFocusInvalid(errors);
   const { busy, message, run } = useAction();
@@ -95,8 +97,24 @@ function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: nu
     setErrors({ fields: {}, general: null });
     await run(async () => {
       const created = await apiRequest<DentistDto>("/api/clinics/me/dentists", { method: "POST", body: parsed.data });
-      onAdded(created);
+      // Portrættet uploades bagefter (det kræver tandlægens id). Fejler det, er tandlægen stadig gemt, og portrættet kan
+      // uploades på kortet.
+      let photoUrl = created.photoUrl;
+      let photoFailed = false;
+      if (photoFile) {
+        try {
+          photoUrl = (await uploadImage<{ photoUrl: string }>(`/api/clinics/me/dentists/${created.id}/photo`, photoFile, { maxDimension: 1024 })).photoUrl;
+        } catch {
+          photoFailed = true;
+        }
+      }
+      onAdded({ ...created, photoUrl });
       setValues({ fullName: "", title: "", bio: "" });
+      setPhotoFile(null);
+      if (photoInput.current) photoInput.current.value = "";
+      return photoFailed
+        ? "Tandlægen er tilføjet, men portrættet kunne ikke uploades. Prøv igen på tandlægens kort."
+        : "Tandlægen er tilføjet. Nu kan du lægge billeder af behandlinger ind på tandlægens kort ovenfor.";
     });
   }
 
@@ -108,6 +126,20 @@ function AddDentist({ nextSortOrder, onAdded, hasDentists }: { nextSortOrder: nu
         <TextField label="Navn" name="fullName" autoComplete="off" value={values.fullName} onChange={(e) => setValues((v) => ({ ...v, fullName: e.target.value }))} error={errors.fields.fullName} required />
         <TextField label="Titel (valgfri)" name="title" placeholder="Fx Tandlæge eller Specialtandlæge i ortodonti" value={values.title} onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))} error={errors.fields.title} />
         <TextArea label="Kort præsentation (valgfri)" name="bio" maxLength={DENTIST_BIO_MAX_CHARS} value={values.bio} onChange={(e) => setValues((v) => ({ ...v, bio: e.target.value }))} error={errors.fields.bio} className="min-h-24" />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="new-dentist-photo" className="text-sm font-semibold text-ink">
+            Billede af tandlægen (valgfrit)
+          </label>
+          <input
+            ref={photoInput}
+            id="new-dentist-photo"
+            type="file"
+            accept={IMAGE_ACCEPT}
+            onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+            className="min-h-12 w-full rounded-control border border-field-border bg-surface px-3 py-2.5 text-base text-ink file:mr-3 file:rounded-control file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:font-semibold file:text-brand-800"
+          />
+        </div>
+        <p className="text-sm text-ink-muted">Når tandlægen er tilføjet, kan du lægge billeder af behandlinger, tandlægen har lavet, ind med en kort note til hvert billede.</p>
         <Button type="submit" disabled={busy} className="sm:self-start">
           {busy ? "Tilføjer …" : "Tilføj tandlæge"}
         </Button>

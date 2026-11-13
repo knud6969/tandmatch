@@ -167,30 +167,53 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     const future = new Date(Date.now() + 30 * 24 * 3600 * 1000);
     const pad = (n: number) => String(n).padStart(2, "0");
     const day = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}`;
-    await page.getByLabel("Fra", { exact: true }).fill(`${day}T10:00`);
-    await page.getByLabel("Til", { exact: true }).fill(`${day}T12:00`);
-    await page.getByLabel(/Note/).fill("E2E blokering");
+    const later = new Date(future.getTime() + 14 * 24 * 3600 * 1000);
+    const laterDay = `${later.getFullYear()}-${pad(later.getMonth() + 1)}-${pad(later.getDate())}`;
+    const blocks = page.getByTestId("blokering");
+    // Helligdage: lukket som udgangspunkt, med de næste helligdage vist.
+    await expect(page.getByRole("checkbox", { name: /Lukket på helligdage/ })).toBeChecked();
+    await expect(page.getByTestId("helligdage").locator("li")).toHaveCount(6);
+    // Første blokering: hele dage (en ferie).
+    await page.getByLabel("Fra og med", { exact: true }).fill(day);
+    await page.getByLabel("Til og med", { exact: true }).fill(day);
+    await page.getByLabel(/Note/).fill("E2E ferie");
     await page.getByRole("button", { name: "Blokér tid" }).click();
     await expect(page.getByText("Tiden er blokeret og gemt.")).toBeVisible();
-    await expect(page.getByText("E2E blokering")).toBeVisible();
+    await expect(blocks).toHaveCount(1);
+    await expect(blocks.first()).toContainText("Hele dagen");
+    // Endnu en blokering med klokkeslæt via "Tilføj flere".
+    await page.getByRole("button", { name: "+ Tilføj flere blokerede tider" }).click();
+    await page.getByRole("checkbox", { name: /Hele dage/ }).uncheck();
+    await page.getByLabel("Fra", { exact: true }).fill(`${laterDay}T10:00`);
+    await page.getByLabel("Til", { exact: true }).fill(`${laterDay}T12:00`);
+    await page.getByLabel(/Note/).fill("E2E kursus");
+    await page.getByRole("button", { name: "Blokér tid" }).click();
+    await expect(blocks).toHaveCount(2);
     await page.reload();
-    await expect(page.getByText("E2E blokering")).toBeVisible();
+    await expect(blocks).toHaveCount(2);
+    // Redigér den første: noten ændres.
+    await blocks.first().getByRole("button", { name: "Rediger" }).click();
+    await page.getByLabel(/Note/).fill("E2E sommerferie");
+    await page.getByRole("button", { name: "Gem ændringer" }).click();
+    await expect(page.getByText("Blokeringen er ændret og gemt.")).toBeVisible();
+    await expect(page.getByText("E2E sommerferie")).toBeVisible();
     if (mobile) await expectNoHorizontalScroll(page, "/klinik/aabningstider (blokering)");
-    await page.getByRole("button", { name: "Fjern" }).filter({ hasNot: page.locator("span.sr-only") }).last().click();
+    await blocks.last().getByRole("button", { name: "Fjern" }).click();
     await expect(page.getByText("Blokeringen er fjernet.")).toBeVisible();
+    await expect(blocks).toHaveCount(1);
 
     // 5. Tandlæge med portræt og porteføljebillede
     await visit(page, "/klinik/tandlaeger");
     await page.getByLabel("Navn").first().fill("Test Tandlæge");
     await page.getByLabel(/^Titel/).first().fill("Tandlæge");
-    await page.getByRole("button", { name: "Tilføj tandlæge" }).click();
-    await expect(page.getByRole("heading", { name: "Test Tandlæge", exact: true })).toBeVisible();
-
-    await page.getByLabel("Vælg portræt af Test Tandlæge").setInputFiles({
+    // Portrættet kan vælges allerede, når tandlægen oprettes.
+    await page.getByLabel("Billede af tandlægen (valgfrit)").setInputFiles({
       name: "portraet.png",
       mimeType: "image/png",
       buffer: placeholderPng(64, [200, 150, 120]),
     });
+    await page.getByRole("button", { name: "Tilføj tandlæge" }).click();
+    await expect(page.getByRole("heading", { name: "Test Tandlæge", exact: true })).toBeVisible();
     await expect(page.getByRole("img", { name: "Portræt af Test Tandlæge" })).toBeVisible();
 
     const upload = page.getByRole("button", { name: "Upload billede" });
@@ -200,16 +223,16 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
       mimeType: "image/png",
       buffer: placeholderPng(64, [100, 200, 160]),
     });
-    await page.getByLabel(/Billedtekst/).fill("Pladsholder");
+    await page.getByLabel(/Note til billedet/).fill("Pladsholder");
     await expect(upload).toBeDisabled(); // billede valgt, men samtykke mangler
     await page.getByRole("checkbox", { name: /samtykke/i }).check();
     await expect(upload).toBeEnabled();
     await upload.click();
     await expect(page.getByText(/Billedet er uploadet/)).toBeVisible();
     await expect(page.getByRole("img", { name: "Pladsholder" })).toBeVisible();
-    // Redigér billedtekst på porteføljebilledet
+    // Redigér noten på porteføljebilledet
     await page.getByRole("button", { name: /^Redigér/ }).click();
-    await page.getByLabel("Billedtekst", { exact: true }).fill("Rettet tekst");
+    await page.getByLabel("Note til billedet", { exact: true }).fill("Rettet tekst");
     await page.getByRole("button", { name: "Gem ændringer" }).click();
     await expect(page.getByRole("img", { name: "Rettet tekst" })).toBeVisible();
     if (mobile) await expectNoHorizontalScroll(page, "/klinik/tandlaeger");

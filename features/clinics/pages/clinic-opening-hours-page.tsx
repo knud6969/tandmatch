@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { OpeningHoursForm } from "@/features/clinics/components/opening-hours-form";
 import { ClinicSettingsNav } from "@/features/clinics/components/clinic-settings-nav";
 import { TimeBlocks } from "@/features/clinics/components/time-blocks";
+import { HolidayClosing } from "@/features/clinics/components/holiday-closing";
 import { Container } from "@/components/ui/container";
 import { PageIntro } from "@/components/ui/page-intro";
 
@@ -15,6 +16,7 @@ export default function OpeningHoursPage() {
         <p>Ugeskemaet giver patienterne ledige tider.</p>
       </PageIntro>
       <OpeningHoursForm />
+      <HolidayClosing />
       <TimeBlocks />
     </Container>
   );

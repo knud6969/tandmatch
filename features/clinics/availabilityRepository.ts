@@ -76,6 +76,21 @@ export class AvailabilityRepository extends BaseRepository {
     return this.blockToDto(this.requireRow(row));
   }
 
+  // Ændrer en blokering, der tilhører klinikken; 404 for alle andre (architecture 2.4).
+  async updateTimeBlock(clinicId: string, blockId: string, block: NewTimeBlock): Promise<TimeBlockDto> {
+    const row = await this.run<TimeBlockRow>(
+      this.db
+        .from("clinic_time_blocks")
+        .update({ starts_at: block.startsAt, ends_at: block.endsAt, note: block.note ?? null })
+        .eq("clinic_id", clinicId)
+        .eq("id", blockId)
+        .select(BLOCK_COLUMNS)
+        .maybeSingle(),
+      "clinic_time_blocks: update fejlede",
+    );
+    return this.blockToDto(this.requireRow(row));
+  }
+
   // Sletter en blokering, der tilhører klinikken; 404 for alle andre (architecture 2.4).
   async deleteTimeBlock(clinicId: string, blockId: string): Promise<void> {
     const rows = await this.runList<Pick<TimeBlockRow, "id">>(
