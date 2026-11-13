@@ -32,6 +32,7 @@ select tt.allowed(format('insert into public.clinic_notification_settings (clini
 
 -- Efter en ejer er slettet kan en anden ikke arve rækken uden at være ejer.
 select tt.as_postgres();
-select tt.eq((select count(*)::int from public.clinic_notification_settings), 2, 'to rækker i alt');
+-- Kun testklinikkernes rækker tælles, så demodata eller rester fra API-tests i den lokale database ikke påvirker testen.
+select tt.eq((select count(*)::int from public.clinic_notification_settings where clinic_id in (select tt.cid(n.name) from tt.clinic_names n)), 2, 'to rækker i alt for testklinikkerne');
 
 rollback;
