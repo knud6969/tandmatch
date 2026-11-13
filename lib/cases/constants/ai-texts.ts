@@ -33,7 +33,7 @@ export const OUT_OF_SCOPE_NOTICES: Record<OutOfScopeTopic, string> = {
 
 // Fast akut-henvisning ved emergency (architecture 7.3). Appen viser den i akut-blokken med knappen "Jeg har ondt" (akutvejen).
 export const EMERGENCY_REFERRAL_TEXT =
-  "Det, du beskriver, kan kræve hurtig hjælp. Tryk på “Jeg har ondt” for at se klinikker med en ledig akuttid, og søg hjælp så hurtigt som muligt.";
+  "Det, du beskriver, kan kræve hurtig hjælp. Tryk på “Jeg har ondt” for at se klinikker, der tager imod akutte patienter, og søg hjælp så hurtigt som muligt.";
 
 // Ved livstruende tegn (vejrtrækningsbesvær, udbredt hævelse i ansigt eller hals).
 export const LIFE_THREATENING_REFERRAL_TEXT =

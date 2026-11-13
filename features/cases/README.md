@@ -233,7 +233,7 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 | Aktive leads pr. sag (`sent`, `accepted`, `booked`) | 3 | 409 `LEAD_LIMIT` |
 | Leads i alt pr. sag (uanset status) | 10 | 409 `LEAD_TOTAL_LIMIT`; UI tilbyder at starte en ny sag |
 | Leads pr. patient pr. døgn (rullende 24 timer, uanset status og sag) | 15 | 429 `LEAD_DAILY_LIMIT` (mod spam til klinikkerne; security trin 4) |
-| Reservation af akuttid uden svar | 30 min (eller til starttid) | Reservationen frigives (4.2) |
+| Klinikkens foreslåede akuttid uden bekræftelse | 30 min (eller til starttid) | Reservationen frigives, og patienten kan booke en anden tid (4.2, leads 10.11) |
 | Frist for at markere udeblivelse | 24 timer efter sluttid | 409 `NO_SHOW_WINDOW_CLOSED` |
 | Timeout pr. OpenAI-kald | 30 s | 503 |
 | Kontekst til chat | seneste 20 beskeder | |
@@ -263,7 +263,7 @@ Lofterne tælles i databasen (triggers og funktionerne i 5.3). Konstanterne stå
 | Mindste varsel, akutydelse | 0 min | `bookings.ts`: `MIN_EMERGENCY_NOTICE_MIN` | `assert_slot_bookable()` |
 | Længst frem at booke | 60 dage | `bookings.ts`: `BOOKING_HORIZON_DAYS` | `assert_slot_bookable()` |
 | Frist for udeblivelse | 24 timer efter sluttid | `bookings.ts`: `NO_SHOW_GRACE_HOURS` | `effective_booking_status()`, `mark_booking_no_show()`, `complete_due_bookings()` |
-| Reservation af akuttid | 30 min (eller til starttid) | `bookings.ts`: `EMERGENCY_HOLD_MINUTES` | `send_leads()`, `effective_booking_status()`, `release_expired_holds()` |
+| Reservation af klinikkens foreslåede akuttid | 30 min (eller til starttid) | `bookings.ts`: `EMERGENCY_HOLD_MINUTES` | `clinic_decide_lead()`, `effective_booking_status()`, `release_expired_holds()` |
 | Aktive leads pr. sag | 3 | `limits.ts`: `MAX_ACTIVE_LEADS_PER_CASE` | `send_leads()`, trigger på `leads` |
 | Leads i alt pr. sag | 10 | `limits.ts`: `MAX_TOTAL_LEADS_PER_CASE` | `send_leads()`, trigger på `leads` |
 | Leads pr. patient pr. døgn | 15 | `limits.ts`: `MAX_LEADS_PER_PATIENT_DAY` | trigger `leads_daily_limit()` (BEFORE INSERT på `leads`, migration `20261022000100`) |

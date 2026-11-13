@@ -3,8 +3,7 @@ import { CLINIC_SORTS } from "@/lib/clinics/constants/clinics";
 import type { ClinicListItemDto, ClinicPriceDto } from "@/lib/clinics/types/clinics";
 import { RankingService } from "@/features/clinics/rankingService";
 
-const NOW = new Date("2026-10-14T08:00:00Z");
-const ranking = new RankingService(() => NOW);
+const ranking = new RankingService();
 
 let counter = 0;
 function clinic(name: string, overrides: Partial<ClinicListItemDto> = {}): ClinicListItemDto {
@@ -28,7 +27,7 @@ function clinic(name: string, overrides: Partial<ClinicListItemDto> = {}): Clini
     prices: [],
     priceForSelection: null,
     firstAvailableAt: null,
-    firstEmergencyAt: null,
+    takesEmergency: false,
     ...overrides,
   };
 }
@@ -92,14 +91,6 @@ describe("RankingService.rank: sorteringer", () => {
     expect(names(ranking.rank(list, { sort: "first_available" }))).toEqual(["C", "A", "B", "D"]);
   });
 
-  it("first_available på akutvejen bruger første akuttid", () => {
-    const list = [
-      clinic("A", { firstAvailableAt: "2026-10-14T09:00:00.000Z", firstEmergencyAt: "2026-10-14T20:00:00.000Z" }),
-      clinic("B", { firstAvailableAt: "2026-10-18T09:00:00.000Z", firstEmergencyAt: "2026-10-14T10:00:00.000Z" }),
-    ];
-    expect(names(ranking.rank(list, { sort: "first_available", filters: { emergency: true } }))).toEqual(["B", "A"]);
-  });
-
   it("ved lighed afgør navnet (dansk sortering), også blandt dem uden værdi", () => {
     const list = [clinic("Østerbro Tand", { distanceKm: 2 }), clinic("Aarhus Tand", { distanceKm: 2 }), clinic("Ålborg Tand"), clinic("Brønshøj Tand")];
     expect(names(ranking.rank(list, { sort: "distance" }))).toEqual(["Østerbro Tand", "Aarhus Tand", "Brønshøj Tand", "Ålborg Tand"]); // "aa" sorteres som "å", efter "ø"
@@ -156,14 +147,9 @@ describe("RankingService.rank: filtre", () => {
     expect(names(ranking.rank(list, { sort: "rating", filters: { minStars: 4 } }))).toEqual(["A"]);
   });
 
-  it("emergency: kun klinikker med akuttid inden for 48 timer", () => {
-    const list = [
-      clinic("A", { firstEmergencyAt: "2026-10-14T08:30:00.000Z" }),
-      clinic("B", { firstEmergencyAt: "2026-10-16T08:00:00.000Z" }), // nøjagtigt 48 timer
-      clinic("C", { firstEmergencyAt: "2026-10-16T08:00:01.000Z" }),
-      clinic("D", { firstEmergencyAt: null }),
-    ];
-    expect(names(ranking.rank(list, { sort: "first_available", filters: { emergency: true } }))).toEqual(["A", "B"]);
+  it("emergency: kun klinikker, der tager imod akutte patienter", () => {
+    const list = [clinic("A", { takesEmergency: true }), clinic("B", { takesEmergency: false }), clinic("C", { takesEmergency: true })];
+    expect(names(ranking.rank(list, { sort: "distance", filters: { emergency: true } }))).toEqual(["A", "C"]);
   });
 
   it("contactableOnly: kun verificerede klinikker", () => {
@@ -222,17 +208,16 @@ describe("RankingService: afstand, standardsortering og kriterier", () => {
     expect(Number.isInteger(km * 10)).toBe(true);
   });
 
-  it("vælger afstand som standard med position, ellers første ledige tid, og altid første ledige tid på akutvejen", () => {
-    expect(ranking.defaultSort({ hasOrigin: true, emergency: false })).toBe("distance");
-    expect(ranking.defaultSort({ hasOrigin: false, emergency: false })).toBe("first_available");
-    expect(ranking.defaultSort({ hasOrigin: true, emergency: true })).toBe("first_available");
+  it("vælger afstand som standard med position, ellers første ledige tid", () => {
+    expect(ranking.defaultSort({ hasOrigin: true })).toBe("distance");
+    expect(ranking.defaultSort({ hasOrigin: false })).toBe("first_available");
   });
 
   it("beskriver sortering og filtre i klartekst", () => {
     const lines = ranking.criteria("distance", { maxDistanceKm: 25, minStars: 4, emergency: true, contactableOnly: true });
     expect(lines[0]).toBe("Sortering: Nærmeste først");
     expect(lines).toContain("Højst 25 km væk");
-    expect(lines).toContain("Akuttid inden for 48 timer");
+    expect(lines).toContain("Kun klinikker, der tager imod akutte patienter");
     expect(lines).toContain("Kun klinikker, der kan kontaktes");
   });
 });

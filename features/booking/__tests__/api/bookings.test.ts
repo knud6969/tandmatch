@@ -52,8 +52,10 @@ async function clinic(verified = true): Promise<Clinic> {
     const { error } = await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "verified" });
     assert.ifError(error);
     // Åbent alle ugens dage 06-22, så der altid er ledige tider.
-    const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ clinic_id: id, weekday, opens_at: "06:00", closes_at: "22:00", is_emergency: false }));
+    const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ clinic_id: id, weekday, opens_at: "06:00", closes_at: "22:00" }));
     assert.ifError((await admin.from("clinic_opening_hours").insert(hours)).error);
+    // Åbent på helligdage, så testen ikke afhænger af datoen (helligdage er ellers lukket, clinics 6.7).
+    assert.ifError((await admin.from("clinics").update({ open_on_holidays: true }).eq("id", id)).error);
   }
   return { c, id, userId: r.body.userId };
 }
@@ -181,7 +183,12 @@ describe("ledige tider for et lead", () => {
     await k.c.post(`/api/leads/${leadId}/decision`, { decision: "accept" });
     const stranger = await patient();
     assert.equal((await stranger.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).status, 404);
-    assert.equal((await k.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).status, 403);
+    // Klinikken må kun hente tider til et forslag på et ubesvaret akut-lead (leads 10.11).
+    const clinicSide = await k.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`);
+    assert.equal(clinicSide.status, 409);
+    assert.equal(code(clinicSide), "LEAD_NOT_PENDING");
+    const otherClinic = await clinic();
+    assert.equal((await otherClinic.c.get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).status, 404);
     assert.equal((await (await newClientWithTerms()).get(`/api/leads/${leadId}/availability?serviceId=${p.serviceId}`)).status, 401);
   });
 });

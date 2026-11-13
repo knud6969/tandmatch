@@ -10,7 +10,7 @@ export type ClinicSort = (typeof CLINIC_SORTS)[number];
 // Kort om brugerens egen klinik, vist i GET /api/me (architecture 10.2).
 export type ClinicSummaryDto = { id: string; name: string; status: ClinicStatus };
 
-export type OpeningHoursDto = { weekday: Weekday; opensAt: string; closesAt: string; isEmergency: boolean };
+export type OpeningHoursDto = { weekday: Weekday; opensAt: string; closesAt: string };
 
 export type ClinicPriceDto = {
   serviceId: string;
@@ -61,6 +61,8 @@ export type ClinicRecordDto = {
   logoPath: string | null;
   logoUpdatedAt: string | null;
   trustpilot: TrustpilotInfo;
+  // Åbent på helligdage (standard false: lukket, clinics 6.7).
+  openOnHolidays: boolean;
   updatedAt: string;
 };
 
@@ -84,7 +86,8 @@ export type ClinicListItemDto = {
   prices: ClinicPriceDto[];
   priceForSelection: PriceRange | null;
   firstAvailableAt: string | null;
-  firstEmergencyAt: string | null;
+  // Klinikken tager imod akutte patienter: den har en pris på mindst én akutbehandling (kun tier "full").
+  takesEmergency: boolean;
 };
 
 export type ClinicProfileDto = ClinicListItemDto & {
@@ -95,7 +98,7 @@ export type ClinicProfileDto = ClinicListItemDto & {
 };
 
 // GET/PATCH /api/clinics/me: forhåndsvisning af den fulde profil uanset status (architecture 10.8).
-export type OwnClinicDto = ClinicProfileDto & { status: ClinicStatus; cvr: string; dentists: DentistDto[] };
+export type OwnClinicDto = ClinicProfileDto & { status: ClinicStatus; cvr: string; dentists: DentistDto[]; openOnHolidays: boolean };
 
 // GET /api/clinics: sorteret og filtreret af RankingService (architecture 6.6, 10.7). `criteria` er de kriterier,
 // patienten ser ved listen.

@@ -153,20 +153,21 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
     }
   });
 
-  test("akut-lead står før et nyere ikke-akut lead og viser fristen i rækken og på kortet uden kontakt", async ({ browser }, testInfo) => {
+  test("akut-lead står før et nyere ikke-akut lead; klinikken foreslår en tid, og kontakten forbliver skjult", async ({ browser }, testInfo) => {
     const x = await verifiedClinic(browser, testInfo, "akut");
     const urgent = await patientWithCase(browser, testInfo);
     const normal = await patientWithCase(browser, testInfo);
     try {
       const [urgentLead] = await sendTo(urgent, [x]);
       const [normalLead] = await sendTo(normal, [x]); // sendes senere, så den er nyest
+      // Gør det første lead til et akut-lead som send_emergency_lead() (akutydelse på sagen, kontakt på leadet, ingen tid), og
+      // giv klinikken åbent 06-23:45 alle dage, så der er tider at foreslå.
       sql(
         `set session_replication_role = replica; update public.cases set is_emergency = true where id = '${urgent.caseId}'; ` +
-          `update public.leads set requested_service_id = (select id from public.services where slug = 'blegning'), requested_starts_at = date_trunc('hour', now()) + interval '1 day' where id = '${urgentLead}'; ` +
-          `insert into public.bookings (lead_id, clinic_id, patient_id, service_id, starts_at, ends_at, status, hold_expires_at, contact_name, contact_phone, contact_email) ` +
-          `select l.id, l.clinic_id, c.patient_id, (select id from public.services where slug = 'blegning'), date_trunc('hour', now()) + interval '1 day', ` +
-          `date_trunc('hour', now()) + interval '1 day 30 minutes', 'held', now() + interval '20 minutes', '${AKUT_CONTACT}', '+45 12 34 56 78', 'akut@test.invalid' ` +
-          `from public.leads l join public.cases c on c.id = l.case_id where l.id = '${urgentLead}'`,
+          `insert into public.case_services (case_id, service_id) select '${urgent.caseId}', id from public.services where slug = 'akut_konsultation'; ` +
+          `update public.leads set requested_service_id = (select id from public.services where slug = 'akut_konsultation'), ` +
+          `contact_name = '${AKUT_CONTACT}', contact_phone = '+45 12 34 56 78' where id = '${urgentLead}'; ` +
+          `insert into public.clinic_opening_hours (clinic_id, weekday, opens_at, closes_at) select '${x.id}', d, '06:00', '23:45' from generate_series(1, 7) d`,
       );
 
       await x.page.goto("/klinik");
@@ -177,8 +178,8 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
       await expect(rows.first()).toHaveAttribute("href", `/klinik/lead/${urgentLead}`);
       await expect(rows.last()).toHaveAttribute("href", `/klinik/lead/${normalLead}`);
       await expect(rows.last()).not.toContainText("Akut");
-      await expect(rows.first().getByTestId("akut-frist")).toHaveText(/^Svar inden kl\. \d{2}\.\d{2}$/);
-      expect((await rows.first().innerText()).match(/Ønsker tid/g)).toHaveLength(1);
+      await expect(rows.first()).toContainText("Hurtigst muligt");
+      await expect(rows.first().getByTestId("akut-frist")).toHaveCount(0);
       expect(await x.page.locator("main").innerText()).not.toContain(AKUT_CONTACT);
       // Intet verificeringsbanner (og ingen grøn besked) for en verificeret klinik.
       await expect(x.page.getByText("Afventer verificering")).toHaveCount(0);
@@ -188,12 +189,20 @@ test.describe("lead-kort og indbakke: overblik og layout", () => {
       await rows.first().click();
       await x.page.waitForURL((url) => url.pathname === `/klinik/lead/${urgentLead}`);
       const card = x.page.locator("article");
-      await expect(card.getByTestId("akut-frist")).toHaveText(/^Svar inden kl\. \d{2}\.\d{2}$/);
-      await expect(card.getByText("Tiden bliver booket, når du accepterer")).toBeVisible();
-      await expect(card.getByTestId("fakta")).toContainText("Ønsker tid");
-      expect((await card.getByTestId("fakta").innerText()).match(/Ønsker tid/g)).toHaveLength(1);
+      await expect(card.getByRole("button", { name: "Accepter", exact: true })).toHaveCount(0);
+      await card.getByRole("button", { name: "Foreslå tid" }).click();
+      const time = card.getByLabel("Tid til patienten");
+      await expect(time.locator("option:not([disabled])").first()).toBeAttached();
+      const first = await time.locator("option:not([disabled])").first().getAttribute("value");
+      await time.selectOption(first!);
+      await expectNoHorizontalScroll(x.page);
+      await card.getByRole("button", { name: "Send forslag" }).click();
+
+      await expect(card.getByTestId("foreslaaet-tid")).toBeVisible();
+      await expect(card.getByTestId("akut-frist")).toHaveText(/^Venter på patienten til kl\. \d{2}\.\d{2}$/);
       await expect(card.getByTestId("kontakt-skjult")).toBeVisible();
       expect(await x.page.locator("main").innerText()).not.toContain(AKUT_CONTACT);
+      expect(sql(`select status from public.bookings where lead_id = '${urgentLead}'`)).toBe("held");
       await expectNoHorizontalScroll(x.page);
     } finally {
       await cleanup(urgent, [x]);

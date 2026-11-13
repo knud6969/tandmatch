@@ -13,7 +13,7 @@ type Props = {
   clinic: ClinicListItemDto;
   // Patienten har valgt behandlinger, så prisen for valget kan vises.
   hasServices: boolean;
-  // Akutfilteret er slået til: vis første akuttid i stedet for første ledige tid.
+  // Akutfilteret er slået til: vis, om klinikken tager imod akutte patienter, i stedet for første ledige tid.
   emergency: boolean;
   onPress: () => void;
   // Hjertet (gemte klinikker); udeladt, hvis skærmen ikke tilbyder det.
@@ -25,8 +25,7 @@ type Props = {
 export function ClinicCard({ clinic, hasServices, emergency, onPress, favorite }: Props) {
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
-  // Akutfilteret viser første akuttid; ellers første ledige tid.
-  const nextAt = emergency ? clinic.firstEmergencyAt : clinic.firstAvailableAt;
+  const nextAt = clinic.firstAvailableAt;
   // Samlet tekst til skærmlæseren, så kortet læses op som én sætning.
   const where = `${clinic.address}, ${clinic.postalCode} ${clinic.city}${clinic.distanceKm !== null ? `, ${formatKm(clinic.distanceKm)} væk` : ""}`;
 
@@ -76,16 +75,20 @@ export function ClinicCard({ clinic, hasServices, emergency, onPress, favorite }
                 {hasServices ? "Prisen for dit valg er ikke angivet i klinikkens prisliste" : `Vælg en behandling for at se prisen, ${PRICE_SOURCE}`}
               </Text>
             )}
-            <Text style={styles.body2}>
-              <Text style={styles.muted}>{emergency ? "Første akuttid: " : hasServices ? "Første ledige tid: " : "Første ledige tid (undersøgelse): "}</Text>
-              {nextAt ? (
-                <Text style={styles.strong}>{formatShortDateTime(nextAt)}</Text>
-              ) : (
-                <Text style={styles.muted}>
-                  {emergency ? `ingen akuttid de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage` : `ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}
-                </Text>
-              )}
-            </Text>
+            {emergency ? (
+              <Text style={styles.body2}>
+                {clinic.takesEmergency ? "Tager imod akutte patienter. Klinikken foreslår en tid." : "Tager ikke imod akutte patienter via TandMatch"}
+              </Text>
+            ) : (
+              <Text style={styles.body2}>
+                <Text style={styles.muted}>{hasServices ? "Første ledige tid: " : "Første ledige tid (undersøgelse): "}</Text>
+                {nextAt ? (
+                  <Text style={styles.strong}>{formatShortDateTime(nextAt)}</Text>
+                ) : (
+                  <Text style={styles.muted}>{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</Text>
+                )}
+              </Text>
+            )}
           </>
         ) : (
           <Text style={styles.muted}>{BASIC_CLINIC_FACTS_TEXT}</Text>

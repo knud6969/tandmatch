@@ -91,9 +91,9 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
 
       {booking.status === "held" && (
         <p className="text-sm text-ink-muted" data-testid="reservation">
-          Akuttid reserveret til patienten
-          {booking.holdExpiresAt ? `, udløber ${formatShortDateTime(booking.holdExpiresAt)}` : ""}. Svar på henvendelsen for at bekræfte eller frigive
-          tiden. Patientens kontaktoplysninger vises, når tiden er booket.
+          Akuttid foreslået til patienten
+          {booking.holdExpiresAt ? `, venter på bekræftelse til ${formatShortDateTime(booking.holdExpiresAt)}` : ""}. Bekræfter patienten ikke,
+          frigives tiden. Patientens kontaktoplysninger vises, når tiden er bekræftet.
         </p>
       )}
       {booking.contact && (
@@ -169,7 +169,7 @@ function BookingRow({ booking, onChanged }: { booking: ClinicBookingDto; onChang
   );
 }
 
-// Klinikkens kalender (architecture 6.3, 10.10): bookinger og reserverede akuttider pr. dag. Gennemført sættes automatisk
+// Klinikkens kalender (architecture 6.3, 10.10): bookinger og foreslåede akuttider pr. dag. Gennemført sættes automatisk
 // efter sluttid, så der er ingen knap til det.
 export function ClinicCalendar() {
   const { data, loading, error, errorCode, reload } = useLoad(loadBookings, { pollMs: BOOKINGS_POLL_MS });

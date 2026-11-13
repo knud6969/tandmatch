@@ -37,6 +37,13 @@ export function formatKm(km: number): string {
   return `${kmFormat.format(km)} km`;
 }
 
+// Fra ISO 8601 til en datetime-local-værdi ("YYYY-MM-DDTHH:MM") i browserens tidszone, fx til at redigere en blokering.
+export function toDateTimeLocal(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 // Omvendt: fra datetime-local til ISO 8601 (UTC). Ugyldig værdi returneres uændret, så zod kan afvise den.
 export function fromDateTimeLocal(value: string): string {
   const date = new Date(value);

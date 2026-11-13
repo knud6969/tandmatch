@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EMERGENCY_FILTER_HOURS } from "@/lib/clinics/constants/clinics";
 import { EMERGENCY_CALL_NUMBER, OUT_OF_HOURS_HELP_TEXT } from "@/lib/leads/constants/emergency";
 import type { ClinicListDto } from "@/lib/clinics/types/clinics";
 import { Alert } from "@/components/ui/alert";
@@ -98,7 +97,7 @@ export function ClinicDirectory() {
         </p>
         {filters.emergency && (
           <Alert tone="warning" title="Akut tandpine">
-            Her ser du klinikker med en ledig akuttid inden for {EMERGENCY_FILTER_HOURS} timer, sorteret efter den tidligste. Er det
+            Her ser du klinikker, der tager imod akutte patienter. Send en henvendelse, så foreslår klinikken en tid, den kan tage dig. Er det
             livstruende, eller har du svært ved at trække vejret eller synke, så ring {EMERGENCY_CALL_NUMBER}. {OUT_OF_HOURS_HELP_TEXT}
           </Alert>
         )}

@@ -4,7 +4,7 @@ import type { OpeningHoursDto } from "@/lib/clinics/types/clinics";
 import { colors, fontSize, spacing } from "~/theme";
 import { formatClock } from "@/lib/common/domain/format";
 
-// Åbningstider pr. ugedag. Akutvinduer er tider, hvor klinikken tager imod akutte patienter.
+// Åbningstider pr. ugedag.
 export function OpeningHours({ hours }: { hours: OpeningHoursDto[] }) {
   if (hours.length === 0) return <Text style={styles.muted}>Klinikken har ikke angivet åbningstider.</Text>;
   return (
@@ -15,7 +15,7 @@ export function OpeningHours({ hours }: { hours: OpeningHoursDto[] }) {
         const text =
           windows.length === 0
             ? "Lukket"
-            : windows.map((w) => `${formatClock(w.opensAt)}–${formatClock(w.closesAt)}${w.isEmergency ? " (akut)" : ""}`).join(", ");
+            : windows.map((w) => `${formatClock(w.opensAt)}–${formatClock(w.closesAt)}`).join(", ");
         return (
           <View key={weekday} style={styles.row} accessible accessibilityLabel={`${WEEKDAY_LABEL[weekday]}: ${text}`}>
             <Text style={styles.day}>{WEEKDAY_LABEL[weekday]}</Text>
@@ -23,7 +23,6 @@ export function OpeningHours({ hours }: { hours: OpeningHoursDto[] }) {
           </View>
         );
       })}
-      {hours.some((h) => h.isEmergency) ? <Text style={styles.muted}>Tider markeret “akut” er reserveret til akutte patienter.</Text> : null}
     </View>
   );
 }

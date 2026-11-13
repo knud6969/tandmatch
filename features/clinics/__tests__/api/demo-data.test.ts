@@ -1,7 +1,6 @@
 // Acceptkriterier for demodata (arbejdsplan 7.9): kører kun, når `npm run seed:demo` er kørt (ellers springes over).
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { EMERGENCY_FILTER_HOURS } from "../../../../lib/clinics/constants/clinics.ts";
 import { adminClient, newClientWithTerms } from "../../../../tests/api/helpers.ts";
 
 type Listed = { name: string; tier: string; canReceiveLeads: boolean; reviewStats: { priceAccuracyPct: number | null } | null };
@@ -53,17 +52,9 @@ describe("demodata fra seed:demo", { skip: !hasDemo && "demodata er ikke seedet"
     assert.deepEqual(sorted(await offering("tandreguleringsskinner")), ["Hellerup", "Nørrebro"]);
   });
 
-  it("onlyOffering fra 2100: undersøgelse giver alle fem verificerede; akut_konsultation med akutfilter giver Østerbro og Nørrebro", async () => {
+  it("onlyOffering fra 2100: undersøgelse giver alle fem verificerede; akutfilteret giver dem med pris på en akutbehandling", async () => {
     assert.deepEqual(sorted(await offering("undersoegelse")), ["Amager", "Hellerup", "Nørrebro", "Vesterbro", "Østerbro"]);
-    // Østerbro har akuttider hver dag 07-22, så den er altid med. Nørrebros akutvindue er kun hverdage 16-19 (seed-demo.ts), så den er
-    // kun med, når dens første akuttid ligger inden for akutfilterets vindue (EMERGENCY_FILTER_HOURS); i weekender kan den ligge senere.
-    const c = await newClientWithTerms();
-    const all = await c.get("/api/clinics?postalCode=2100&services=akut_konsultation&onlyOffering=true");
-    assert.equal(all.status, 200, JSON.stringify(all.body));
-    const nbro = (all.body.clinics as (Listed & { firstEmergencyAt: string | null })[]).find((x) => x.name.includes("Nørrebro"));
-    const first = nbro?.firstEmergencyAt ? new Date(nbro.firstEmergencyAt).getTime() : null;
-    const inWindow = first !== null && first <= Date.now() + EMERGENCY_FILTER_HOURS * 60 * 60 * 1000;
-    assert.deepEqual(sorted(await offering("akut_konsultation", "&emergency=true")), inWindow ? ["Nørrebro", "Østerbro"] : ["Østerbro"]);
+    assert.deepEqual(sorted(await offering("akut_konsultation", "&emergency=true")), sorted(await offering("akut_konsultation")));
   });
 
   it("onlyOffering uden behandlinger giver 400", async () => {

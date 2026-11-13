@@ -440,10 +440,10 @@ describe("egen klinik: åbningstider", () => {
     const { c } = await signupClinic();
     const r = await c.put("/api/clinics/me/opening-hours", {
       hours: [
-        { weekday: 2, opensAt: "13:00", closesAt: "16:00", isEmergency: false },
-        { weekday: 1, opensAt: "08:00", closesAt: "12:00", isEmergency: false },
-        { weekday: 1, opensAt: "12:00", closesAt: "16:00", isEmergency: false },
-        { weekday: 6, opensAt: "10:00", closesAt: "12:00", isEmergency: true },
+        { weekday: 2, opensAt: "13:00", closesAt: "16:00" },
+        { weekday: 1, opensAt: "08:00", closesAt: "12:00" },
+        { weekday: 1, opensAt: "12:00", closesAt: "16:00" },
+        { weekday: 6, opensAt: "10:00", closesAt: "12:00" },
       ],
     });
     assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -451,11 +451,11 @@ describe("egen klinik: åbningstider", () => {
       r.body.hours.map((h: { weekday: number; opensAt: string }) => `${h.weekday} ${h.opensAt}`),
       ["1 08:00", "1 12:00", "2 13:00", "6 10:00"],
     );
-    assert.equal(r.body.hours[3].isEmergency, true);
+    assert.equal("isEmergency" in r.body.hours[3], false, "akutvinduer findes ikke længere");
     assert.equal((await c.get("/api/clinics/me")).body.openingHours.length, 4);
 
     const replaced = await c.put("/api/clinics/me/opening-hours", {
-      hours: [{ weekday: 3, opensAt: "09:00", closesAt: "15:30", isEmergency: false }],
+      hours: [{ weekday: 3, opensAt: "09:00", closesAt: "15:30" }],
     });
     assert.equal(replaced.body.hours.length, 1);
     assert.equal(replaced.body.hours[0].closesAt, "15:30");
@@ -463,15 +463,15 @@ describe("egen klinik: åbningstider", () => {
 
   it("afviser overlap, omvendte tider og ugyldige værdier uden at ændre listen", async () => {
     const { c } = await signupClinic();
-    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00" }] });
     const bad: unknown[] = [
-      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "12:00", isEmergency: false }, { weekday: 1, opensAt: "11:00", closesAt: "14:00", isEmergency: true }] },
-      { hours: [{ weekday: 1, opensAt: "12:00", closesAt: "08:00", isEmergency: false }] },
-      { hours: [{ weekday: 1, opensAt: "09:00", closesAt: "09:00", isEmergency: false }] },
-      { hours: [{ weekday: 8, opensAt: "08:00", closesAt: "12:00", isEmergency: false }] },
-      { hours: [{ weekday: 1, opensAt: "8:00", closesAt: "12:00", isEmergency: false }] },
-      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "24:00", isEmergency: false }] },
-      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "12:00" }] },
+      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "12:00" }, { weekday: 1, opensAt: "11:00", closesAt: "14:00" }] },
+      { hours: [{ weekday: 1, opensAt: "12:00", closesAt: "08:00" }] },
+      { hours: [{ weekday: 1, opensAt: "09:00", closesAt: "09:00" }] },
+      { hours: [{ weekday: 8, opensAt: "08:00", closesAt: "12:00" }] },
+      { hours: [{ weekday: 1, opensAt: "8:00", closesAt: "12:00" }] },
+      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "24:00" }] },
+      { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "12:00", isEmergency: true }] }, // akutvinduer er fjernet
     ];
     for (const body of bad) assert.equal((await c.put("/api/clinics/me/opening-hours", body)).status, 400, JSON.stringify(body));
     const kept = await c.get("/api/clinics/me/opening-hours");
@@ -482,7 +482,7 @@ describe("egen klinik: åbningstider", () => {
   it("en klinik ser aldrig en andens åbningstider", async () => {
     const x = await signupClinic();
     const y = await signupClinic();
-    await x.c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await x.c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00" }] });
     assert.deepEqual((await y.c.get("/api/clinics/me/opening-hours")).body.hours, []);
   });
 });
@@ -530,6 +530,39 @@ describe("egen klinik: blokeringer", () => {
     assert.deepEqual((await y.c.get("/api/clinics/me/time-blocks")).body.blocks, []);
     assert.equal((await x.c.get("/api/clinics/me/time-blocks")).body.blocks.length, 1);
     assert.equal((await y.c.del("/api/clinics/me/time-blocks/ikke-uuid")).status, 404);
+    // Heller ikke ændre den
+    const foreign = await y.c.patch(`/api/clinics/me/time-blocks/${block.body.id}`, { startsAt: "2030-07-01T08:00:00Z", endsAt: "2030-07-03T08:00:00Z" });
+    assert.equal(foreign.status, 404);
+  });
+
+  it("ændrer en blokering (PATCH) og validerer som ved oprettelse", async () => {
+    const { c } = await signupClinic();
+    const created = await c.post("/api/clinics/me/time-blocks", { startsAt: "2030-07-01T00:00:00+02:00", endsAt: "2030-07-08T00:00:00+02:00", note: "Ferie" });
+    const updated = await c.patch(`/api/clinics/me/time-blocks/${created.body.id}`, {
+      startsAt: "2030-07-01T00:00:00+02:00",
+      endsAt: "2030-07-15T00:00:00+02:00",
+      note: "Sommerferie",
+    });
+    assert.equal(updated.status, 200, JSON.stringify(updated.body));
+    assert.equal(updated.body.id, created.body.id);
+    assert.equal(updated.body.note, "Sommerferie");
+    assert.equal(Date.parse(updated.body.endsAt), Date.parse("2030-07-15T00:00:00+02:00"));
+    const bad = await c.patch(`/api/clinics/me/time-blocks/${created.body.id}`, { startsAt: "2030-07-15T00:00:00Z", endsAt: "2030-07-01T00:00:00Z" });
+    assert.equal(bad.status, 400);
+    assert.equal((await c.get("/api/clinics/me/time-blocks")).body.blocks[0].note, "Sommerferie");
+  });
+});
+
+describe("egen klinik: helligdage", () => {
+  it("er lukket som udgangspunkt og kan slås til og fra med PATCH /api/clinics/me", async () => {
+    const { c } = await signupClinic();
+    assert.equal((await c.get("/api/clinics/me")).body.openOnHolidays, false);
+    const open = await c.patch("/api/clinics/me", { openOnHolidays: true });
+    assert.equal(open.status, 200, JSON.stringify(open.body));
+    assert.equal(open.body.openOnHolidays, true);
+    assert.equal((await c.get("/api/clinics/me")).body.openOnHolidays, true);
+    assert.equal((await c.patch("/api/clinics/me", { openOnHolidays: "ja" })).status, 400);
+    assert.equal((await c.patch("/api/clinics/me", { openOnHolidays: false })).body.openOnHolidays, false);
   });
 });
 
@@ -770,7 +803,7 @@ describe("sletning af klinikkonto", () => {
     const logo = await c.postForm("/api/clinics/me/logo", imageForm(img));
     const [a] = await serviceIds(c, 1);
     await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a, priceMin: 1, priceMax: 2, durationMin: 30 }] });
-    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00" }] });
     await c.patch("/api/clinics/me", { description: "Skal slettes", email: "privat@slettes.test", website: "https://slettes.test" });
 
     assert.equal((await c.del("/api/clinics/me", { confirm: "SLET" })).status, 204);
@@ -842,7 +875,7 @@ describe("sletning af klinikkonto", () => {
     }
     const [a] = await serviceIds(c, 1);
     await c.put("/api/clinics/me/prices", { prices: [{ serviceId: a, priceMin: 1, priceMax: 2, durationMin: 30 }] });
-    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }] });
+    await c.put("/api/clinics/me/opening-hours", { hours: [{ weekday: 1, opensAt: "08:00", closesAt: "16:00" }] });
     await c.post("/api/clinics/me/time-blocks", { startsAt: "2030-07-01T08:00:00Z", endsAt: "2030-07-02T08:00:00Z" });
     await c.patch("/api/clinics/me", {
       description: "Skal slettes",

@@ -16,7 +16,7 @@ TandMatch hjælper patienter med at finde den rigtige tandklinik til en fair pri
 5. Klinikken accepterer eller afviser. Har den accepteret, kan patienten **booke en tid** i klinikkens kalender.
 6. Efter besøget kan patienten skrive en anmeldelse.
 
-Har patienten ondt, er der en hurtig vej direkte til klinikker med en ledig akuttid.
+Har patienten ondt, er der en hurtig vej direkte til klinikker, der tager imod akutte patienter. Patienten sender én henvendelse uden at vælge tid, klinikken foreslår en tid, den kan presse patienten ind, og patienten bekræfter den.
 
 ## Sådan virker det for klinikken
 - Klinikken har **én konto**. Klinikkens tandlæger vises på profilen med billeder af deres arbejde.
@@ -36,7 +36,7 @@ Koden er organiseret efter funktion: hvert domæne (identity, cases, clinics, le
 - **AI'en:**
   - må stille spørgsmål, forklare behandlinger og give en **foreløbig vurdering**, men skal altid sige, at klinikken laver den endelige vurdering
   - nævner **aldrig priser** og **anbefaler aldrig en bestemt klinik**; priserne kommer fra klinikkernes prislister, og rækkefølgen af klinikker bestemmes af faste kriterier
-  - henviser straks til en akuttid ved tegn på noget akut
+  - henviser straks til akutvejen ved tegn på noget akut
   - har sine regler samlet ét sted i koden (`features/cases/ai/`), så de kan strammes ind senere. Det bliver nødvendigt for at overholde EU's regler om medicinsk udstyr (MDR), før rigtige patienter bruger platformen.
 - **Klinikker kan aldrig se hinandens leads, svar eller patienter.** Det sikres i databasen (Row Level Security), ikke kun i appen.
 - **Kontaktoplysninger:** al kontakt går gennem platformen. Klinikken ser først patientens navn og kontaktoplysninger, når leadet er accepteret og en tid er booket.

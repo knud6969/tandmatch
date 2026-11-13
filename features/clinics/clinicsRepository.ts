@@ -19,7 +19,7 @@ type PriceRow = Pick<Tables<"clinic_prices">, "service_id" | "price_min" | "pric
 
 const CLINIC_COLUMNS =
   "id, status, cvr, name, description, address, postal_code, city, lat, lng, phone, email, website, logo_path, logo_updated_at, " +
-  "trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_updated_at, trustpilot_entered_by, updated_at";
+  "trustpilot_url, trustpilot_score, trustpilot_review_count, trustpilot_updated_at, trustpilot_entered_by, open_on_holidays, updated_at";
 
 const PRICE_COLUMNS = "service_id, price_min, price_max, duration_min, note, services(slug, name, sort_order)";
 
@@ -44,6 +44,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
       logoPath: row.logo_path,
       logoUpdatedAt: row.logo_updated_at,
       trustpilot: trustpilotFromColumns(row),
+      openOnHolidays: row.open_on_holidays,
       updatedAt: row.updated_at,
     };
   }
@@ -108,6 +109,7 @@ export class ClinicsRepository extends BaseRepository<ClinicRow, ClinicRecordDto
         trustpilotUrl: "trustpilot_url",
         trustpilotScore: "trustpilot_score",
         trustpilotReviewCount: "trustpilot_review_count",
+        openOnHolidays: "open_on_holidays",
       },
       {
         update: (columns) => this.db.from("clinics").update(columns).eq("id", clinicId).select(CLINIC_COLUMNS).maybeSingle(),

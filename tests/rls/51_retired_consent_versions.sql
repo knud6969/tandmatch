@@ -25,7 +25,7 @@ select tt.mk_case('pC', 'R1');
 select tt.as_user(tt.id('pC'));
 select tt.ok(not public.has_active_consent('health_data_sharing'), 'v0 er ikke et gældende samtykke');
 select tt.denied(format('select public.send_leads(%L, array[%L]::uuid[])', tt.id('R1'), tt.cid('X')), 'send_leads afviser v0', 'CONSENT_REQUIRED');
-select tt.denied(format('select * from public.send_emergency_lead(%L, %L, %L, %L, %L, %L, null)', tt.cid('Z'), tt.svc('akut_konsultation'), tt.slot(3, 18),
+select tt.denied(format('select * from public.send_emergency_lead(%L, %L, %L, %L, %L, null)', tt.cid('Z'), tt.svc('akut_konsultation'),
                         'Jeg har slemme smerter i en kindtand.', 'Alma Test', '+45 12345678'), 'send_emergency_lead afviser v0', 'CONSENT_REQUIRED');
 -- Et v0-samtykke kan stadig trækkes tilbage
 select tt.allowed(format('select public.withdraw_consent(%L)', tt.consent('pC', 'health_data_sharing')), 'v0 kan trækkes tilbage');

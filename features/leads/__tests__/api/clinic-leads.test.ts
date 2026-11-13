@@ -227,23 +227,6 @@ describe("klinikkens leads: liste og detalje", () => {
     assert.ok(held.body.booking.holdExpiresAt);
     assert.ok(!JSON.stringify(held.body).includes("Lea Testesen"));
   });
-
-  it("accept af en lead med reservation gør tiden til en booking og viser kontakt", async () => {
-    const p = await patient();
-    const k = await clinic();
-    const [leadId] = await send(p, [k]);
-    await insertBooking(leadId, k, p, "held");
-    const r = await k.c.post(`/api/leads/${leadId}/decision`, { decision: "accept" });
-    assert.equal(r.status, 200, JSON.stringify(r.body));
-    assert.equal(r.body.status, "booked");
-    assert.equal(r.body.booking.status, "booked");
-    assert.equal(r.body.booking.holdExpiresAt, null);
-    assert.deepEqual(r.body.booking.contact, { name: "Lea Testesen", phone: "+45 12 34 56 78", email: p.email });
-    assert.ok(!JSON.stringify(r.body).includes(p.userId));
-    // Patientens userId i leadet er stadig skjult for andre klinikker
-    const other = await clinic();
-    assert.equal((await other.c.get(`/api/leads/${leadId}`)).status, 404);
-  });
 });
 
 describe("klinikkens beslutning", () => {

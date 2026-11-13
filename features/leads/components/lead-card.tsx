@@ -17,7 +17,7 @@ import { PriceWithSource } from "@/components/ui/price-with-source";
 import { clinicLeadHref } from "@/features/leads/utils/clinic-links";
 import { refreshClinicLeads, useClinicLeads, LEADS_POLL_MS } from "@/features/leads/utils/clinic-leads-store";
 import { apiRequest } from "@/platform/ui-utils/api-client";
-import { formatShortDateTime } from "@/lib/common/domain/format";
+import { formatShortDateTime, formatTime } from "@/lib/common/domain/format";
 import { useLoad } from "@/platform/ui-utils/use-load";
 
 function BackLink() {
@@ -93,6 +93,12 @@ function DecisionSummary({ lead }: { lead: ClinicLeadDetailDto }) {
       {decision.quotedPrice && (
         <p className="text-sm text-ink">
           <PriceWithSource price={decision.quotedPrice} source="præciseret pris" />
+        </p>
+      )}
+      {lead.status === "accepted" && lead.booking?.status === "held" && (
+        <p className="text-sm text-ink" data-testid="foreslaaet-tid">
+          Du har foreslået {formatShortDateTime(lead.booking.startsAt)}. Tiden er reserveret, til patienten bekræfter
+          {lead.booking.holdExpiresAt ? ` (senest kl. ${formatTime(lead.booking.holdExpiresAt)})` : ""}.
         </p>
       )}
       {lead.status === "accepted" && (!lead.booking || lead.booking.status === "cancelled") && (
@@ -210,7 +216,12 @@ function LeadBody({ lead, justDecided, onDecided, onStale }: { lead: ClinicLeadD
           data-testid="svarbjaelke"
         >
           {pending ? (
-            <LeadDecision leadId={lead.id} onDecided={onDecided} onStale={onStale} hasRequestedTime={lead.requestedStartsAt !== null} />
+            <LeadDecision
+              leadId={lead.id}
+              onDecided={onDecided}
+              onStale={onStale}
+              emergencyServiceId={lead.isEmergency ? (lead.services.find((s) => s.category === "emergency")?.id ?? null) : null}
+            />
           ) : (
             <NextLead remaining={remaining} justDecided={justDecided} />
           )}

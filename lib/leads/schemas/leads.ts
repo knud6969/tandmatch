@@ -12,6 +12,7 @@ import { MAX_ACTIVE_LEADS_PER_CASE } from "@/lib/common/constants/limits";
 import { contactNameSchema } from "@/lib/booking/schemas/bookings";
 import { postalCodeSchema } from "@/lib/clinics/schemas/clinics";
 import { phoneSchema } from "@/lib/common/schemas/phone";
+import { isoDateTime } from "@/lib/common/schemas/datetime";
 
 // Afsendelse af en sag til 1-3 klinikker (architecture 10.5). Loftet på aktive og samlede leads tjekkes i databasen.
 export const sendLeadsSchema = z
@@ -34,7 +35,8 @@ export const clinicLeadsQuerySchema = z.object({ status: z.enum(LEAD_STATUSES, "
 
 const price = z.number().int("Prisen skal være i hele kroner.").min(0, "Prisen kan ikke være negativ.").max(MAX_PRICE_DKK, "Prisen er for høj.");
 
-// Klinikkens beslutning (architecture 10.9). Præciseret pris er valgfri, men min og max hører sammen.
+// Klinikkens beslutning (architecture 10.9). Præciseret pris er valgfri, men min og max hører sammen. Et akut-lead accepteres
+// med en foreslået tid (`proposedStartsAt`, krævet af databasen for akut og forbudt ellers).
 // `clinic_left` kan ikke vælges: den sættes kun af systemet, når klinikkontoen slettes.
 export const leadDecisionSchema = z.discriminatedUnion("decision", [
   z
@@ -43,6 +45,7 @@ export const leadDecisionSchema = z.discriminatedUnion("decision", [
       comment: z.string().trim().max(LEAD_COMMENT_MAX_CHARS, `Kommentaren må højst være ${LEAD_COMMENT_MAX_CHARS} tegn.`).optional(),
       quotedPriceMin: price.optional(),
       quotedPriceMax: price.optional(),
+      proposedStartsAt: isoDateTime.optional(),
     })
     .strict()
     .refine((v) => (v.quotedPriceMin === undefined) === (v.quotedPriceMax === undefined), {
@@ -60,13 +63,12 @@ export const leadDecisionSchema = z.discriminatedUnion("decision", [
     .strict(),
 ]);
 
-// Akutvejen (architecture 10.11): sag, ydelse og reservation i ét kald. Ydelsen skal være en aktiv akutydelse; det tjekker
-// databasen. Tiden er en af tiderne fra GET /api/clinics/{id}/availability.
+// Akutvejen (architecture 10.11): sag, ydelse og lead i ét kald, uden tid. Klinikken foreslår tiden ved accept. Ydelsen skal
+// være en aktiv akutydelse; det tjekker databasen.
 export const emergencyLeadSchema = z
   .object({
     clinicId: z.uuid("Ugyldig klinik."),
     serviceId: z.uuid("Ugyldig behandling."),
-    startsAt: z.iso.datetime({ offset: true, message: "Angiv et gyldigt tidspunkt." }),
     description: z
       .string()
       .trim()

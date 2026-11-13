@@ -15,13 +15,13 @@ import { UNKNOWN_SERVICE_TEXT } from "@/lib/common/constants/error-texts";
 
 export const NO_REVIEWS: ReviewStats = { reviewCount: 0, avgStars: null, priceAccuracyPct: null, distribution: null };
 
-// De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og akutbehandlingen
-// til første akuttid.
+// De behandlinger en forespørgsel handler om: de valgte (priser og sum), dem første ledige tid måles for, og katalogets
+// akutbehandlinger (en klinik tager imod akutte patienter, når den har en pris på mindst én af dem).
 export type ListingPlan = {
   selected: ServiceDto[];
   appointment: ServiceDto[];
   appointmentIsEmergency: boolean;
-  emergency: ServiceDto | null;
+  emergencyIds: string[];
   priceServiceIds: string[];
 };
 
@@ -41,7 +41,7 @@ export type ClinicListingDeps = {
 export class ClinicListingService {
   constructor(private readonly deps: ClinicListingDeps) {}
 
-  // Slår de valgte behandlinger op i kataloget og vælger, hvad første ledige tid og første akuttid måles for.
+  // Slår de valgte behandlinger op i kataloget og vælger, hvad første ledige tid måles for.
   async plan(slugs: readonly string[]): Promise<ListingPlan> {
     const catalog = (await this.deps.services.listGroups()).flatMap((group) => group.services);
     const selected = slugs.map((slug) => {
@@ -52,19 +52,13 @@ export class ClinicListingService {
     // Uden valg måles første ledige tid for en undersøgelse (architecture 6.6).
     const examination = catalog.find((service) => service.slug === EXAMINATION_SERVICE_SLUG);
     const appointment = selected.length > 0 ? selected : examination ? [examination] : [];
-    // Akuttid: en valgt akutbehandling, ellers den korteste akutbehandling i kataloget.
-    const emergency =
-      selected.find((service) => service.category === "emergency") ??
-      catalog
-        .filter((service) => service.category === "emergency")
-        .sort((a, b) => a.defaultDurationMin - b.defaultDurationMin)[0] ??
-      null;
-    const priceServiceIds = [...new Set([...selected, ...appointment, ...(emergency ? [emergency] : [])].map((s) => s.id))];
+    const emergencyIds = catalog.filter((service) => service.category === "emergency").map((service) => service.id);
+    const priceServiceIds = [...new Set([...selected, ...appointment].map((s) => s.id).concat(emergencyIds))];
     return {
       selected,
       appointment,
       appointmentIsEmergency: appointment.some((service) => service.category === "emergency"),
-      emergency,
+      emergencyIds,
       priceServiceIds,
     };
   }
@@ -105,7 +99,7 @@ export class ClinicListingService {
       prices: [],
       priceForSelection: null,
       firstAvailableAt: null,
-      firstEmergencyAt: null,
+      takesEmergency: false,
     };
     // Basisniveau: grunddata og Trustpilot, ingen priser, anmeldelser eller statistik (architecture 6.6).
     if (record.tier !== "full") return base;
@@ -113,7 +107,6 @@ export class ClinicListingService {
     const selectedIds = plan.selected.map((service) => service.id);
     const busy: BusyInterval[] = context.busy.get(record.id) ?? [];
     const search = { openingHours: record.openingHours, busy, from: context.range.from, to: context.range.to };
-    const hasEmergencyHours = record.openingHours.some((window) => window.isEmergency);
     return {
       ...base,
       reviewStats: context.stats.get(record.id) ?? NO_REVIEWS,
@@ -126,10 +119,7 @@ export class ClinicListingService {
           durationMin: this.deps.slots.durationFor(record.prices, plan.appointment),
           isEmergency: plan.appointmentIsEmergency,
         })?.startsAt ?? null,
-      firstEmergencyAt:
-        plan.emergency && hasEmergencyHours
-          ? (this.deps.slots.firstSlot({ ...search, durationMin: this.deps.slots.durationFor(record.prices, [plan.emergency]), isEmergency: true })?.startsAt ?? null)
-          : null,
+      takesEmergency: record.prices.some((price) => plan.emergencyIds.includes(price.serviceId)),
     };
   }
 }

@@ -8,10 +8,10 @@ const NOW = new Date("2026-10-14T08:00:00Z");
 const at = (iso: string) => new Date(iso);
 const service = (now: Date = NOW) => new AvailabilityService(() => now);
 
-const weekdays = (opensAt: string, closesAt: string, isEmergency = false): OpeningWindow[] =>
-  [1, 2, 3, 4, 5].map((weekday) => ({ weekday: weekday as OpeningWindow["weekday"], opensAt, closesAt, isEmergency }));
+const weekdays = (opensAt: string, closesAt: string): OpeningWindow[] =>
+  [1, 2, 3, 4, 5].map((weekday) => ({ weekday: weekday as OpeningWindow["weekday"], opensAt, closesAt }));
 const everyDay = (opensAt: string, closesAt: string): OpeningWindow[] =>
-  [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday: weekday as OpeningWindow["weekday"], opensAt, closesAt, isEmergency: false }));
+  [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday: weekday as OpeningWindow["weekday"], opensAt, closesAt }));
 
 const starts = (slots: { startsAt: string }[]) => slots.map((slot) => slot.startsAt);
 
@@ -60,27 +60,12 @@ describe("AvailabilityService.slots: åbningsvinduer og varighed", () => {
   });
 });
 
-describe("AvailabilityService.slots: akutvinduer", () => {
-  const openingHours: OpeningWindow[] = [
-    ...weekdays("08:00", "16:00"),
-    { weekday: 6, opensAt: "10:00", closesAt: "12:00", isEmergency: true },
-    { weekday: 4, opensAt: "16:00", closesAt: "18:00", isEmergency: true },
-  ];
-  const saturday = { from: at("2026-10-17T00:00:00Z"), to: at("2026-10-17T23:59:00Z") };
-
-  it("almindelige ydelser bruger kun almindelige vinduer", () => {
-    expect(service().slots({ openingHours, busy: [], durationMin: 30, isEmergency: false, ...saturday })).toEqual([]);
-    const thursday = service().slots({ openingHours, busy: [], durationMin: 30, isEmergency: false, ...THURSDAY });
-    expect(thursday.at(-1)?.startsAt).toBe("2026-10-15T13:30:00.000Z"); // ikke akutvinduet 16:00-18:00
-  });
-
-  it("akutydelser bruger både akutte og almindelige vinduer", () => {
-    const sat = service().slots({ openingHours, busy: [], durationMin: 30, isEmergency: true, ...saturday });
-    expect(sat[0].startsAt).toBe("2026-10-17T08:00:00.000Z"); // 10:00 lokal
-    expect(sat).toHaveLength(7); // 10:00 … 11:30
-    const thursday = service().slots({ openingHours, busy: [], durationMin: 30, isEmergency: true, ...THURSDAY });
-    expect(thursday.at(-1)?.startsAt).toBe("2026-10-15T15:30:00.000Z"); // 17:30 lokal
-    expect(thursday).toHaveLength(31 + 7);
+describe("AvailabilityService.slots: akutydelser", () => {
+  it("bruger de almindelige åbningstider, men uden varsel", () => {
+    const now = at("2026-10-15T06:00:00Z"); // 08:00 lokal
+    const query = { openingHours: weekdays("08:00", "16:00"), busy: [], durationMin: 30, from: now, to: at("2026-10-16T00:00:00Z") };
+    expect(service(now).firstSlot({ ...query, isEmergency: true })?.startsAt).toBe("2026-10-15T06:00:00.000Z");
+    expect(service(now).firstSlot({ ...query, isEmergency: false })?.startsAt).toBe("2026-10-15T06:30:00.000Z");
   });
 });
 
@@ -191,7 +176,7 @@ describe("AvailabilityService: sommertid (Europe/Copenhagen)", () => {
 
   it("regner natten over skiftet med rigtig forløbet tid", () => {
     // Akutvindue 01:00-05:00 lokal den 29. marts 2026. Kl. 02:00-03:00 findes ikke; en time fra 01:30 lokal slutter 03:30.
-    const openingHours: OpeningWindow[] = [{ weekday: 7, opensAt: "01:00", closesAt: "05:00", isEmergency: true }];
+    const openingHours: OpeningWindow[] = [{ weekday: 7, opensAt: "01:00", closesAt: "05:00" }];
     const now = at("2026-03-28T12:00:00Z");
     const slots = service(now).slots({ openingHours, busy: [], durationMin: 60, isEmergency: true, from: at("2026-03-29T00:00:00Z"), to: at("2026-03-29T12:00:00Z") });
     expect(slots[0].startsAt).toBe("2026-03-29T00:00:00.000Z"); // 01:00 lokal

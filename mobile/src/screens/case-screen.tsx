@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { closeCase, getCase } from "~/api/cases";
 import { listCaseLeads, withdrawLead } from "~/api/leads";
+import { confirmBooking } from "~/api/bookings";
 import { AccountRequired } from "~/screens/account-required";
 import { LeadRow } from "~/components/case/lead-row";
 import { BackLink, Badge, Button, Card, confirmAction, LoadState, Screen, StatusMessage } from "~/components/ui";
@@ -38,11 +39,22 @@ function CaseContent() {
       data.reload(); // også ved LEAD_NOT_PENDING, så den nyeste status vises
     }
   });
+  // Bekræft klinikkens foreslåede akuttid; sagen hentes igen bagefter (også ved HOLD_EXPIRED).
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const confirm = useAction(async (bookingId: string) => {
+    setConfirmingId(bookingId);
+    try {
+      await confirmBooking(bookingId);
+    } finally {
+      setConfirmingId(null);
+      data.reload();
+    }
+  });
   const close = useAction(async () => {
     await closeCase(caseId);
     data.reload();
   });
-  const actionError = withdraw.error ?? close.error;
+  const actionError = withdraw.error ?? confirm.error ?? close.error;
 
   const askWithdraw = (leadId: string, clinicName: string) =>
     confirmAction({
@@ -82,6 +94,8 @@ function CaseContent() {
                   onMessages={() => router.push({ pathname: "/sag/[caseId]/beskeder/[leadId]", params: { caseId, leadId: lead.id } })}
                   onWithdraw={() => askWithdraw(lead.id, lead.clinic.name)}
                   withdrawing={withdrawingId === lead.id}
+                  onConfirm={(bookingId) => void confirm.run(bookingId)}
+                  confirming={confirmingId !== null && confirmingId === lead.booking?.id}
                 />
               ))
             )}

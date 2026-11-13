@@ -25,6 +25,7 @@ import {
   accountRequired,
   ApiError,
   clinicNotVerified,
+  leadNotPending,
   notFound,
   slotTaken,
   slotUnavailable,
@@ -178,8 +179,6 @@ const EMERGENCY_ERRORS = (): Record<string, ApiError> => ({
   INVALID_SERVICE: new ApiError(400, "UNKNOWN_SERVICE", "Vælg en akutbehandling."),
   INVALID_CONTACT: new ApiError(400, "VALIDATION_ERROR", INVALID_CONTACT_TEXT),
   UNKNOWN_POSTAL_CODE: new ApiError(400, "UNKNOWN_POSTAL_CODE", "Vi kender ikke postnummeret."),
-  SLOT_TAKEN: slotTaken(),
-  SLOT_UNAVAILABLE: slotUnavailable(),
 });
 
 // Fejl fra clinic_decide_lead() (architecture 5.3, 10.9). En fremmed klinik får NOT_FOUND, altså 404 (2.4).
@@ -188,12 +187,16 @@ const DECIDE_ERRORS = (): Record<string, ApiError> => {
   return {
     NOT_FOUND: notFound(),
     CLINIC_NOT_VERIFIED: clinicNotVerified(),
-    LEAD_NOT_PENDING: lead("LEAD_NOT_PENDING", "Henvendelsen afventer ikke svar længere, fx fordi patienten har trukket den tilbage."),
+    LEAD_NOT_PENDING: leadNotPending(),
     INVALID_COMMENT: invalid("Teksten er for lang."),
     INVALID_PRICE: invalid("Prisen er ugyldig. Laveste pris må ikke være højere end højeste pris."),
     DECLINE_REASON_REQUIRED: invalid("Vælg en begrundelse."),
     INVALID_DECLINE_REASON: invalid("Vælg en begrundelse."),
     INVALID_DECISION: invalid("Ugyldig beslutning."),
+    PROPOSED_TIME_REQUIRED: invalid("Vælg den tid, I kan tage patienten. En tid kan kun foreslås ved en akut henvendelse."),
+    INVALID_SERVICE: invalid("Akutbehandlingen findes ikke længere i kataloget."),
+    SLOT_TAKEN: slotTaken(),
+    SLOT_UNAVAILABLE: slotUnavailable(),
   };
 };
 
@@ -281,14 +284,13 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     return created ?? 0;
   }
 
-  // send_emergency_lead(): sag, ydelse, lead og reservation i ét kald (én transaktion, intet efterlades ved fejl).
+  // send_emergency_lead(): sag, ydelse og lead i ét kald (én transaktion, intet efterlades ved fejl). Ingen tid: klinikken foreslår den.
   async sendEmergency(input: EmergencyLeadInput): Promise<{ caseId: string; leadId: string }> {
     const rows = await this.rpc<{ case_id: string; lead_id: string }[]>(
       "send_emergency_lead",
       {
         p_clinic_id: input.clinicId,
         p_service_id: input.serviceId,
-        p_starts_at: input.startsAt,
         p_description: input.description,
         p_contact_name: input.contactName,
         p_contact_phone: input.contactPhone,
@@ -482,7 +484,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
     }));
   }
 
-  // clinic_decide_lead(): kun fra `sent`. Databasen tjekker ejer og verifikation og gør en gyldig reservation til en booking.
+  // clinic_decide_lead(): kun fra `sent`. Databasen tjekker ejer og verifikation; ved et akut-lead reserveres den foreslåede tid.
   async decideLead(leadId: string, input: LeadDecisionInput): Promise<void> {
     const args =
       input.decision === "accept"
@@ -492,6 +494,7 @@ export class LeadsRepository extends BaseRepository<PatientLeadRow> {
             p_comment: input.comment ?? null,
             p_quoted_min: input.quotedPriceMin ?? null,
             p_quoted_max: input.quotedPriceMax ?? null,
+            p_proposed_starts_at: input.proposedStartsAt ?? null,
           }
         : { p_lead_id: leadId, p_decision: "decline", p_decline_reason: input.reason, p_decline_note: input.note ?? null };
     await this.rpc("clinic_decide_lead", args, DECIDE_ERRORS());

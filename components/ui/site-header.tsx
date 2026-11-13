@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/features/identity/ui";
-import { Button, LinkButton } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/platform/ui-utils/api-client";
 import { unsubscribeBrowserPush } from "@/platform/ui-utils/web-push-client";
 import { AreaTabs } from "@/components/ui/area-tabs";
@@ -12,7 +12,7 @@ import { AREA_HOME, AREA_NAV, activeNavHref } from "@/lib/common/navigation/area
 import { useLeadsNeedingActionCount } from "@/features/leads/ui";
 import { NotificationBell } from "@/components/ui/notification-bell";
 
-// Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
+// Logget ud: kun logoet (login og oprettelse findes på forsiden). Logget ind: områdets navigation og log ud.
 export function SiteHeader() {
   const { state, refresh } = useSession();
   const pathname = usePathname();
@@ -64,16 +64,6 @@ export function SiteHeader() {
 
         <div className="flex min-h-11 items-center gap-1 sm:gap-2">
           {state.status === "loading" && <span className="sr-only">Indlæser login</span>}
-          {state.status === "ready" && !me && (
-            <>
-              <LinkButton href="/login" variant="ghost" className="min-h-11 px-3">
-                Log ind
-              </LinkButton>
-              <LinkButton href="/opret/klinik" variant="secondary" className="min-h-11 px-3">
-                Opret konto
-              </LinkButton>
-            </>
-          )}
           {me && (
             <>
               {greeting && (

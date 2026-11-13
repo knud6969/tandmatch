@@ -63,7 +63,7 @@ export function ClinicDirectoryScreen() {
   useEffect(() => {
     if (params.akut === "1") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFilters((f) => ({ ...f, emergency: true, sort: "first_available" }));
+      setFilters((f) => ({ ...f, emergency: true }));
       router.setParams({ akut: undefined });
     }
   }, [params.akut, router]);

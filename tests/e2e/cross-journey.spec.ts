@@ -20,16 +20,15 @@ async function testJpeg(): Promise<Buffer> {
 async function bookableClinic(browser: Browser, testInfo: TestInfo, label: string, emergency = false): Promise<ClinicHandle> {
   const clinic = await verifiedClinic(browser, testInfo, label);
   addListPrice(clinic.id);
+  // Akutklinikken har åbent 06-23:45 alle dage, så den altid har en tid at foreslå.
   const hours = Array.from({ length: 7 }, (_, i) =>
-    emergency
-      ? [
-          { weekday: i + 1, opensAt: "06:00", closesAt: "16:00", isEmergency: false },
-          { weekday: i + 1, opensAt: "16:00", closesAt: "23:45", isEmergency: true },
-        ]
-      : [{ weekday: i + 1, opensAt: "08:00", closesAt: "17:00", isEmergency: false }],
-  ).flat();
+    emergency ? { weekday: i + 1, opensAt: "06:00", closesAt: "23:45" } : { weekday: i + 1, opensAt: "08:00", closesAt: "17:00" },
+  );
   const res = await clinic.page.request.put("/api/clinics/me/opening-hours", { data: { hours } });
   expect(res.ok(), await res.text()).toBeTruthy();
+  // Åbent på helligdage, så testen ikke afhænger af datoen (helligdage er ellers lukket, clinics 6.7).
+  const holidays = await clinic.page.request.patch("/api/clinics/me", { data: { openOnHolidays: true } });
+  expect(holidays.ok(), await holidays.text()).toBeTruthy();
   return clinic;
 }
 
@@ -211,18 +210,14 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await expect(x.page.getByTestId("lead-raekke")).toHaveCount(1);
       await expect(x.page.getByTestId("ubesvarede")).toHaveText("1 henvendelse venter på svar");
 
-      // Appens akutvej: ledige tider og ét kald, der opretter sag, lead og reservation. Samtykke først.
+      // Appens akutvej: ét kald, der opretter sag og lead uden tid. Samtykke først.
       const consent = await emergency.post("/api/consents", { type: "health_data_sharing", textVersion: "health_data_sharing@v1-klinikker" });
       expect(consent.status, JSON.stringify(consent.body)).toBe(201);
       const all = (await emergency.get("/api/services")).body.groups.flatMap((g: { services: { id: string; category: string }[] }) => g.services);
       const serviceId = all.find((s: { category: string }) => s.category === "emergency").id as string;
-      const avail = await emergency.get(`/api/clinics/${x.id}/availability?serviceId=${serviceId}`);
-      expect(avail.status, JSON.stringify(avail.body)).toBe(200);
-      const slot = avail.body.slots[0].startsAt as string;
       const sent = await emergency.post("/api/emergency-leads", {
         clinicId: x.id,
         serviceId,
-        startsAt: slot,
         description: "Jeg har ondt i en kindtand og kan ikke sove.",
         contactName: PATIENT_NAME,
         contactPhone: PHONE,
@@ -235,23 +230,39 @@ test.describe("tværgående rejse: appens patient og klinik-weben", () => {
       await expect(x.page.getByTestId("ubesvarede")).toHaveText("2 henvendelser venter på svar");
       await expect(x.page.getByTestId("lead-raekke").first()).toContainText("Akut");
       await expect(x.page.getByTestId("lead-raekke").last()).not.toContainText("Akut");
-      // Akut-fristen for den reserverede tid står i rækken.
-      await expect(x.page.getByTestId("lead-raekke").first().getByTestId("akut-frist")).toHaveText(/^Svar inden kl\. \d{2}\.\d{2}$/);
+      await expect(x.page.getByTestId("lead-raekke").first()).toContainText("Hurtigst muligt");
       await expectNoHorizontalScroll(x.page);
-      // Klinikken ser hverken navn eller telefon, før tiden er booket.
+      // Klinikken ser hverken navn eller telefon, før tiden er bekræftet.
       expect(await x.page.locator("main").innerText()).not.toContain(PATIENT_NAME);
 
-      // Reservationen ses i kalenderen uden kontaktoplysninger.
+      // Klinikken foreslår en tid på weben; forslaget ses i kalenderen uden kontaktoplysninger.
+      await x.page.getByTestId("lead-raekke").first().click();
+      await x.page.getByRole("button", { name: "Foreslå tid" }).click();
+      const time = x.page.getByLabel("Tid til patienten");
+      await expect(time.locator("option:not([disabled])").first()).toBeAttached();
+      await time.selectOption((await time.locator("option:not([disabled])").first().getAttribute("value"))!);
+      await x.page.getByRole("button", { name: "Send forslag" }).click();
+      await expect(x.page.getByTestId("foreslaaet-tid")).toBeVisible();
       await x.page.goto("/klinik/kalender");
       await expect(x.page.getByTestId("reservation")).toBeVisible();
       await expect(x.page.getByTestId("kalender-kontakt")).toHaveCount(0);
 
+      // Appen bekræfter tiden; så ser klinikken navn og telefon i kalenderen.
+      const lead = (await emergency.get(`/api/cases/${sent.body.caseId}/leads`)).body.leads[0];
+      expect(lead.booking.status).toBe("held");
+      const confirmed = await emergency.post(`/api/bookings/${lead.booking.id}/confirm`, {});
+      expect(confirmed.status, JSON.stringify(confirmed.body)).toBe(200);
+      await x.page.reload();
+      await expect(x.page.getByTestId("kalender-kontakt")).toContainText(PATIENT_NAME);
+
       // Det almindelige lead trækkes tilbage fra appen; klinikken ser "Trukket tilbage" efter næste opdatering.
+      // Standardfilteret "Kræver handling" viser kun det almindelige lead; akut-tiden er bekræftet.
       await x.page.goto("/klinik");
-      await expect(x.page.getByTestId("lead-raekke")).toHaveCount(2);
+      await expect(x.page.getByTestId("lead-raekke")).toHaveCount(1);
+      await expect(x.page.getByTestId("ubesvarede")).toHaveText("1 henvendelse venter på svar");
       const withdrawn = await first.post(`/api/leads/${normalLeadId}/withdraw`, {});
       expect(withdrawn.status, JSON.stringify(withdrawn.body)).toBeLessThan(300);
-      await expect(x.page.getByTestId("ubesvarede")).toHaveText("1 henvendelse venter på svar", { timeout: POLL_TIMEOUT });
+      await expect(x.page.getByTestId("ubesvarede")).toHaveText("Ingen henvendelser venter på svar", { timeout: POLL_TIMEOUT });
       await x.page.getByRole("button", { name: /^Trukket tilbage/ }).click();
       const row = x.page.getByTestId("lead-raekke");
       await expect(row).toHaveCount(1);

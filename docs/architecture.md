@@ -54,7 +54,8 @@ Patient                                                              Klinik (én
             │     → opsummering, patienten retter og godkender
             ├── Klinikoversigt: liste + kort + filtre (pris, anmeldelser,
             │     prisnøjagtighed, afstand, første ledige tid)
-            └── Akut: klinikker sorteret efter første ledige akuttid
+            └── Akut: klinikker, der tager imod akutte patienter → én henvendelse
+                  uden tid → klinikken foreslår en tid → patienten bekræfter
   Vælg op til 3 klinikker → opret konto → samtykke til deling
                          → leads ──────────────────────────────→  Indbakke: ét kort pr. lead
                                                                     Accepter / Accepter med kommentar / Afvis

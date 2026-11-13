@@ -116,13 +116,14 @@ export class ClinicsController {
       prices,
       priceForSelection: null,
       firstAvailableAt: null,
-      firstEmergencyAt: null,
+      takesEmergency: false, // bruges kun i oversigten
       description: clinic.description,
       email: clinic.email,
       allPrices: prices,
       dentists: attachPortfolio(dentists, portfolio),
       status: clinic.status,
       cvr: clinic.cvr ?? "",
+      openOnHolidays: clinic.openOnHolidays,
     };
   }
 
@@ -197,6 +198,10 @@ export class ClinicsController {
   }
 
   // 404, hvis blokeringen ikke tilhører klinikken.
+  async updateTimeBlock(blockId: string, input: CreateTimeBlockInput): Promise<TimeBlockDto> {
+    return this.availability.updateTimeBlock(await this.requireClinicId(), blockId, input);
+  }
+
   async deleteTimeBlock(blockId: string): Promise<void> {
     await this.availability.deleteTimeBlock(await this.requireClinicId(), blockId);
   }

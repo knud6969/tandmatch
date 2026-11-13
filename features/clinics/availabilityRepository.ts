@@ -6,10 +6,10 @@ import { ApiError } from "@/platform/middleware/http";
 import { BaseRepository } from "@/platform/base/baseRepository";
 import type { Tables } from "@/platform/db/database.types";
 
-type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at" | "is_emergency">;
+type OpeningHoursRow = Pick<Tables<"clinic_opening_hours">, "weekday" | "opens_at" | "closes_at">;
 type TimeBlockRow = Pick<Tables<"clinic_time_blocks">, "id" | "starts_at" | "ends_at" | "note">;
 
-const HOURS_COLUMNS = "weekday, opens_at, closes_at, is_emergency";
+const HOURS_COLUMNS = "weekday, opens_at, closes_at";
 const BLOCK_COLUMNS = "id, starts_at, ends_at, note";
 
 // time-kolonner kommer som "HH:MM:SS"; API'et bruger "HH:MM".
@@ -23,7 +23,6 @@ export class AvailabilityRepository extends BaseRepository {
       weekday: row.weekday as Weekday, // check 1-7 i databasen
       opensAt: toHourMinute(row.opens_at),
       closesAt: toHourMinute(row.closes_at),
-      isEmergency: row.is_emergency,
     };
   }
 
@@ -73,6 +72,21 @@ export class AvailabilityRepository extends BaseRepository {
       {
         TIME_BLOCK_LIMIT: new ApiError(429, "TIME_BLOCK_LIMIT", `Du kan højst have ${MAX_TIME_BLOCKS_PER_CLINIC} blokerede tider.`),
       },
+    );
+    return this.blockToDto(this.requireRow(row));
+  }
+
+  // Ændrer en blokering, der tilhører klinikken; 404 for alle andre (architecture 2.4).
+  async updateTimeBlock(clinicId: string, blockId: string, block: NewTimeBlock): Promise<TimeBlockDto> {
+    const row = await this.run<TimeBlockRow>(
+      this.db
+        .from("clinic_time_blocks")
+        .update({ starts_at: block.startsAt, ends_at: block.endsAt, note: block.note ?? null })
+        .eq("clinic_id", clinicId)
+        .eq("id", blockId)
+        .select(BLOCK_COLUMNS)
+        .maybeSingle(),
+      "clinic_time_blocks: update fejlede",
     );
     return this.blockToDto(this.requireRow(row));
   }

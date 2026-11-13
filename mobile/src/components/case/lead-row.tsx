@@ -3,18 +3,28 @@ import { BOOKING_STATUS_LABEL } from "@/lib/booking/constants/bookings";
 import { LEAD_DECLINE_REASON_LABEL, LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import type { PatientLeadDto } from "@/lib/leads/types/leads";
 import { Badge, Button, Card } from "~/components/ui";
-import { colors, spacing, type } from "~/theme";
+import { colors, radius, spacing, type } from "~/theme";
 import { canMessageLead, canWithdrawLead, messagesLabel } from "~/utils/case-actions";
-import { canBookLead, declineText, leadTone } from "~/utils/case-view";
+import { canBookLead, declineText, leadTone, proposedBooking } from "~/utils/case-view";
 import { PRICE_FINAL_NOTE, PRICE_SOURCE } from "@/lib/clinics/constants/clinic-texts";
-import { formatDateTime, formatPriceRange } from "@/lib/common/domain/format";
+import { formatDateTime, formatPriceRange, formatTime } from "@/lib/common/domain/format";
 
 // Et lead på sagsskærmen: klinik, status og det klinikken har svaret (13.4). Priser vises altid med kilde.
-type Props = { lead: PatientLeadDto; onBook: () => void; onMessages: () => void; onWithdraw: () => void; withdrawing?: boolean };
+type Props = {
+  lead: PatientLeadDto;
+  onBook: () => void;
+  onMessages: () => void;
+  onWithdraw: () => void;
+  withdrawing?: boolean;
+  // Bekræft klinikkens foreslåede akuttid (leads 10.11).
+  onConfirm: (bookingId: string) => void;
+  confirming?: boolean;
+};
 
-// Under leadet: book, skriv til klinikken (med antal nye) og træk tilbage, mens klinikken ikke har svaret.
-export function LeadRow({ lead, onBook, onMessages, onWithdraw, withdrawing = false }: Props) {
+// Under leadet: bekræft en foreslået akuttid, book, skriv til klinikken (med antal nye) og træk tilbage, mens klinikken ikke har svaret.
+export function LeadRow({ lead, onBook, onMessages, onWithdraw, withdrawing = false, onConfirm, confirming = false }: Props) {
   const decline = declineText(lead);
+  const proposal = proposedBooking(lead);
   return (
     <Card>
       <View style={styles.head}>
@@ -55,7 +65,16 @@ export function LeadRow({ lead, onBook, onMessages, onWithdraw, withdrawing = fa
 
       {lead.status === "declined" && decline ? <Text style={styles.body}>{decline}</Text> : null}
 
-      {lead.booking ? (
+      {proposal ? (
+        <View style={styles.proposal}>
+          <Text style={styles.label}>Klinikken foreslår en tid</Text>
+          <Text style={styles.time}>{formatDateTime(proposal.startsAt)}</Text>
+          <Text style={styles.muted}>
+            {proposal.service.name}. Tiden er holdt til dig til kl. {formatTime(proposal.holdExpiresAt ?? proposal.startsAt)}. Klinikken ser dit navn og nummer, når du har bekræftet.
+          </Text>
+          <Button label="Bekræft tiden" accessibilityLabel={`Bekræft tiden hos ${lead.clinic.name}`} loading={confirming} onPress={() => onConfirm(proposal.id)} />
+        </View>
+      ) : lead.booking && lead.booking.status !== "held" ? (
         <View style={styles.fact}>
           <Text style={styles.label}>
             Booking: {BOOKING_STATUS_LABEL[lead.booking.status].toLowerCase()} · {lead.booking.service.name}
@@ -64,7 +83,14 @@ export function LeadRow({ lead, onBook, onMessages, onWithdraw, withdrawing = fa
         </View>
       ) : null}
 
-      {canBookLead(lead) ? <Button label="Book tid" accessibilityLabel={`Book tid hos ${lead.clinic.name}`} onPress={onBook} /> : null}
+      {canBookLead(lead) ? (
+        <Button
+          label={proposal ? "Vælg en anden tid" : "Book tid"}
+          accessibilityLabel={`${proposal ? "Vælg en anden tid" : "Book tid"} hos ${lead.clinic.name}`}
+          variant={proposal ? "secondary" : "primary"}
+          onPress={onBook}
+        />
+      ) : null}
       {canMessageLead(lead) ? (
         <Button
           label={messagesLabel(lead.unreadMessages)}
@@ -89,4 +115,6 @@ const styles = StyleSheet.create({
   strong: { fontWeight: "700" },
   label: { ...type.caption, fontWeight: "700", color: colors.ink },
   fact: { gap: spacing.xs },
+  proposal: { gap: spacing.xs, borderWidth: 1, borderColor: colors.brand600, borderRadius: radius.md, padding: spacing.md },
+  time: type.heading,
 });
