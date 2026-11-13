@@ -60,8 +60,10 @@ test.describe("klinikkernes indgang", () => {
     await expect(main.getByRole("link", { name: "Find en klinik" })).toHaveCount(0);
     await expectNoHorizontalScroll(page);
 
-    // Headerens "Opret konto" går direkte til klinikformularen; /opret omdirigerer dertil.
-    await page.getByRole("banner").getByRole("link", { name: "Opret konto" }).click();
+    // Headeren har ingen login-knapper; forsidens "Opret klinik" går til klinikformularen, og /opret omdirigerer dertil.
+    await expect(page.getByRole("banner").getByRole("link", { name: "Log ind" })).toHaveCount(0);
+    await expect(page.getByRole("banner").getByRole("link", { name: "Opret konto" })).toHaveCount(0);
+    await main.getByRole("link", { name: "Opret klinik" }).click();
     await expect(page).toHaveURL(/\/opret\/klinik$/);
     await page.goto("/opret");
     await expect(page).toHaveURL(/\/opret\/klinik$/);
@@ -114,9 +116,9 @@ test.describe("klinikkernes indgang", () => {
   test("login er for klinikker, og glemt adgangskode virker hele vejen", async ({ page }) => {
     const { email, userId } = await apiClinic(page);
     try {
-      // Fra forsiden (uden gate) via headeren til login (bag gaten) og tilbage efter accept.
+      // Fra forsiden (uden gate) til login (bag gaten) og tilbage efter accept.
       await page.goto("/");
-      await page.getByRole("banner").getByRole("link", { name: "Log ind" }).click();
+      await page.getByRole("main").getByRole("link", { name: "Log ind" }).click();
       await page.waitForURL(/\/vilkaar\/accepter/);
       await acceptTerms(page);
       await page.waitForURL((url) => url.pathname === "/login");
