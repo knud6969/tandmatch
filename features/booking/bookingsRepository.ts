@@ -11,6 +11,7 @@ import {
   bookingNotCancellable,
   bookingNotReschedulable,
   clinicNotAvailable,
+  holdExpired,
   leadNotAccepted,
   noShowWindowClosed,
   notFound,
@@ -72,6 +73,14 @@ const CANCEL_ERRORS = (): Record<string, ApiError> => ({
   NOT_FOUND: notFound(),
   INVALID_REASON: new ApiError(400, "VALIDATION_ERROR", CANCEL_REASON_INVALID),
   BOOKING_NOT_CANCELLABLE: bookingNotCancellable(),
+});
+
+// Fejl fra confirm_held_booking() (leads 10.11).
+const CONFIRM_ERRORS = (): Record<string, ApiError> => ({
+  ACCOUNT_REQUIRED: accountRequired(ACCOUNT_REQUIRED_MESSAGES.bookSlot),
+  NOT_FOUND: notFound(),
+  HOLD_EXPIRED: holdExpired(),
+  CLINIC_NOT_AVAILABLE: clinicNotAvailable(),
 });
 
 // Fejl fra reschedule_booking() (10.16). De fleste deler fabrikker med book_slot(); SAME_SLOT er et inputfejl (400).
@@ -244,6 +253,11 @@ export class BookingsRepository extends BaseRepository {
   async requireForClinic(bookingId: string): Promise<ClinicBookingDto> {
     const rows = await this.rpc<ClinicBookingRow[]>("clinic_booking", { p_booking_id: bookingId });
     return this.clinicRowToDto(this.requireRow(rows?.[0]));
+  }
+
+  // confirm_held_booking(): patienten bekræfter klinikkens foreslåede akuttid, mens reservationen gælder.
+  async confirmHeld(bookingId: string): Promise<void> {
+    await this.rpc("confirm_held_booking", { p_booking_id: bookingId }, CONFIRM_ERRORS());
   }
 
   // ---- Begge ----

@@ -19,4 +19,4 @@ export const CASE_TIMEFRAME_LABEL = {
 
 // Konsekvensen af at lukke en sag, som patienten ser før bekræftelsen (architecture 6.2).
 export const CLOSE_CASE_CONSEQUENCE =
-  "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og en reserveret akuttid frigives. Bookede tider består; du kan aflyse dem under Bookinger.";
+  "Henvendelser, som klinikken ikke har svaret på, og accepterede henvendelser uden booket tid trækkes tilbage, og en foreslået akuttid frigives. Bookede tider består; du kan aflyse dem under Bookinger.";

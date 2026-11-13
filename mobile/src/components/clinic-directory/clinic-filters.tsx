@@ -68,8 +68,8 @@ export function ClinicFilters({ filters, groups, onChange, onReset, onPickServic
       {positionError ? <StatusMessage message={positionError} tone="warning" /> : null}
       {filters.position ? <Text style={styles.muted}>Din position bruges kun til afstanden og gemmes ikke.</Text> : null}
 
-      <Checkbox checked={filters.emergency} onChange={(emergency) => onChange({ emergency, ...(emergency ? { sort: "first_available" } : {}) })} accessibilityLabel="Kun klinikker med akuttid inden for 48 timer">
-        <CheckboxText>Kun klinikker med akuttid (inden for 48 timer)</CheckboxText>
+      <Checkbox checked={filters.emergency} onChange={(emergency) => onChange({ emergency })} accessibilityLabel="Kun klinikker, der tager imod akutte patienter">
+        <CheckboxText>Kun klinikker, der tager imod akutte patienter</CheckboxText>
       </Checkbox>
 
       <Text style={styles.label}>Sortér efter</Text>

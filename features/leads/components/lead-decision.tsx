@@ -19,8 +19,9 @@ import { TextField } from "@/components/ui/text-field";
 import { apiRequest, ApiRequestError } from "@/platform/ui-utils/api-client";
 import { parseWholeKr } from "@/lib/common/domain/format";
 import { useAction } from "@/platform/ui-utils/use-action";
+import { ProposeTimeForm } from "@/features/leads/components/propose-time-form";
 
-type Mode = "idle" | "comment" | "decline";
+type Mode = "idle" | "comment" | "propose" | "decline";
 type ClinicDeclineReason = (typeof LEAD_CLINIC_DECLINE_REASONS)[number];
 
 type LeadDecisionProps = {
@@ -28,13 +29,14 @@ type LeadDecisionProps = {
   onDecided: (lead: ClinicLeadDetailDto) => void;
   // Leadet er ikke længere afventende (fx trukket tilbage, mens kortet var åbent): hent det igen.
   onStale: () => void;
-  // Akut-lead med en konkret ønsket tid: tiden bliver booket ved accept.
-  hasRequestedTime: boolean;
+  // Akut-lead: akutbehandlingen, som klinikken foreslår en tid til. Så accepteres der kun med en tid.
+  emergencyServiceId: string | null;
 };
 
 // Klinikkens beslutning (features/clinics/README.md 6.3) i lead-kortets faste bjælke. Accepter er ét tryk; Kommentar og Afvis
-// åbner en kort formular i bjælken. Afvisningsårsagen er ikke forvalgt: klinikken vælger aktivt. clinic_left kan ikke vælges.
-export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: LeadDecisionProps) {
+// åbner en kort formular i bjælken. Ved et akut-lead erstatter "Foreslå tid" de to accept-knapper (leads 10.11). Afvisningsårsagen
+// er ikke forvalgt: klinikken vælger aktivt. clinic_left kan ikke vælges.
+export function LeadDecision({ leadId, onDecided, onStale, emergencyServiceId }: LeadDecisionProps) {
   const [mode, setMode] = useState<Mode>("idle");
   const [comment, setComment] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -123,7 +125,25 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
       )}
       {!stale && <StatusMessage message={action.message} />}
 
-      {mode === "idle" && (
+      {mode === "idle" && emergencyServiceId !== null && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => open("propose")} disabled={action.busy} className="px-2">
+              Foreslå tid
+            </Button>
+            <Button variant="danger-outline" onClick={() => open("decline")} disabled={action.busy} className="px-2">
+              Afvis
+            </Button>
+          </div>
+          <p className="text-xs text-ink-muted">Akut: vælg en tid, I kan tage patienten. Patienten bekræfter den i appen.</p>
+        </>
+      )}
+
+      {mode === "propose" && emergencyServiceId !== null && (
+        <ProposeTimeForm leadId={leadId} serviceId={emergencyServiceId} busy={action.busy} onSubmit={post} onCancel={() => open("idle")} />
+      )}
+
+      {mode === "idle" && emergencyServiceId === null && (
         <>
           <div className="grid grid-cols-3 gap-2">
             <Button onClick={acceptPlain} disabled={action.busy} className="px-2">
@@ -137,9 +157,7 @@ export function LeadDecision({ leadId, onDecided, onStale, hasRequestedTime }: L
               Afvis
             </Button>
           </div>
-          <p className="text-xs text-ink-muted">
-            {hasRequestedTime ? "Tiden bliver booket, når du accepterer." : "Ved accept kan patienten booke en tid hos jer."}
-          </p>
+          <p className="text-xs text-ink-muted">Ved accept kan patienten booke en tid hos jer.</p>
         </>
       )}
 

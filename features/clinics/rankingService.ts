@@ -1,4 +1,4 @@
-import { CLINIC_SORT_LABEL, EMERGENCY_FILTER_HOURS } from "@/lib/clinics/constants/clinics";
+import { CLINIC_SORT_LABEL } from "@/lib/clinics/constants/clinics";
 import type { ClinicListItemDto, ClinicPriceDto, ClinicSort } from "@/lib/clinics/types/clinics";
 import type { PriceRange } from "@/lib/common/types/common";
 import { haversineKm, type LatLng } from "@/lib/clinics/domain/location";
@@ -14,7 +14,7 @@ export type RankingFilters = {
   maxDistanceKm?: number; // sættes kun, når patienten har en position; klinikker uden afstand falder så fra
   maxPrice?: number; // hele kroner, mod laveste pris for valget (sum af price_min)
   minStars?: number;
-  emergency?: boolean; // kun klinikker med akuttid inden for EMERGENCY_FILTER_HOURS
+  emergency?: boolean; // kun klinikker, der tager imod akutte patienter (takesEmergency)
   contactableOnly?: boolean; // kun verificerede klinikker
   onlyOffering?: boolean; // kun klinikker med pris på alle valgte behandlinger (priceForSelection !== null)
 };
@@ -27,9 +27,6 @@ type SortKey = { value: (clinic: ClinicListItemDto) => number | null; direction:
 const byName = (a: ClinicListItemDto, b: ClinicListItemDto) => a.name.localeCompare(b.name, "da");
 
 export class RankingService {
-  // `clock` gives i constructoren, så "akuttid inden for 48 timer" kan testes.
-  constructor(private readonly clock: () => Date = () => new Date()) {}
-
   // Afstand i km (Haversine), afrundet til én decimal.
   distanceKm(from: LatLng, to: LatLng): number {
     return Math.round(haversineKm(from, to) * 10) / 10;
@@ -51,22 +48,18 @@ export class RankingService {
     return { min, max };
   }
 
-  // Standardsortering (6.6): på akutvejen første ledige tid; ellers afstand, hvis patienten har en position; ellers
-  // første ledige tid.
-  defaultSort(options: { hasOrigin: boolean; emergency: boolean }): ClinicSort {
-    if (options.emergency) return "first_available";
+  // Standardsortering (6.6): afstand, hvis patienten har en position; ellers første ledige tid.
+  defaultSort(options: { hasOrigin: boolean }): ClinicSort {
     return options.hasOrigin ? "distance" : "first_available";
   }
 
   // Filtrerer og sorterer. Ændrer ikke indgangslisten.
   rank(clinics: readonly ClinicListItemDto[], options: RankingOptions): ClinicListItemDto[] {
     const filters = options.filters ?? {};
-    return this.sort(this.filter(clinics, filters), options.sort, filters.emergency === true);
+    return this.sort(this.filter(clinics, filters), options.sort);
   }
 
   filter(clinics: readonly ClinicListItemDto[], filters: RankingFilters): ClinicListItemDto[] {
-    const now = this.clock().getTime();
-    const emergencyUntil = now + EMERGENCY_FILTER_HOURS * 60 * 60 * 1000;
     return clinics.filter((clinic) => {
       if (filters.contactableOnly && !clinic.canReceiveLeads) return false;
       if (filters.onlyOffering && clinic.priceForSelection === null) return false;
@@ -81,17 +74,14 @@ export class RankingService {
         const stars = clinic.reviewStats?.avgStars ?? null;
         if (stars === null || stars < filters.minStars) return false;
       }
-      if (filters.emergency) {
-        const at = clinic.firstEmergencyAt === null ? null : Date.parse(clinic.firstEmergencyAt);
-        if (at === null || Number.isNaN(at) || at > emergencyUntil) return false;
-      }
+      if (filters.emergency && !clinic.takesEmergency) return false;
       return true;
     });
   }
 
-  // Sorterer efter ét kriterium (6.6). `emergency` bytter "første ledige tid" ud med første akuttid.
-  sort(clinics: readonly ClinicListItemDto[], sort: ClinicSort, emergency = false): ClinicListItemDto[] {
-    const keys = this.keysFor(sort, emergency);
+  // Sorterer efter ét kriterium (6.6).
+  sort(clinics: readonly ClinicListItemDto[], sort: ClinicSort): ClinicListItemDto[] {
+    const keys = this.keysFor(sort);
     return [...clinics].sort((a, b) => {
       for (const key of keys) {
         const x = key.value(a);
@@ -105,7 +95,7 @@ export class RankingService {
     });
   }
 
-  private keysFor(sort: ClinicSort, emergency: boolean): SortKey[] {
+  private keysFor(sort: ClinicSort): SortKey[] {
     const time = (value: string | null) => {
       if (value === null) return null;
       const ms = Date.parse(value);
@@ -124,7 +114,7 @@ export class RankingService {
       case "distance":
         return [{ value: (c) => c.distanceKm, direction: "asc" }];
       case "first_available":
-        return [{ value: (c) => time(emergency ? c.firstEmergencyAt : c.firstAvailableAt), direction: "asc" }];
+        return [{ value: (c) => time(c.firstAvailableAt), direction: "asc" }];
     }
   }
 
@@ -134,7 +124,7 @@ export class RankingService {
     if (filters.maxDistanceKm !== undefined) lines.push(`Højst ${filters.maxDistanceKm} km væk`);
     if (filters.maxPrice !== undefined) lines.push(`Pris fra højst ${filters.maxPrice.toLocaleString("da-DK")} kr.`);
     if (filters.minStars !== undefined) lines.push(`Mindst ${filters.minStars.toLocaleString("da-DK")} stjerner`);
-    if (filters.emergency) lines.push(`Akuttid inden for ${EMERGENCY_FILTER_HOURS} timer`);
+    if (filters.emergency) lines.push("Kun klinikker, der tager imod akutte patienter");
     if (filters.contactableOnly) lines.push("Kun klinikker, der kan kontaktes");
     if (filters.onlyOffering) lines.push("Kun klinikker med pris på alle valgte behandlinger");
     lines.push("Klinikker uden værdi for kriteriet står nederst");

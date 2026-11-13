@@ -1,27 +1,13 @@
 import type { PatientBookingDto } from "@/lib/booking/types/bookings";
-import type { SlotDto } from "@/lib/clinics/types/clinics";
 import { bookSlotSchema, contactNameSchema } from "@/lib/booking/schemas/bookings";
 import { phoneSchema } from "@/lib/common/schemas/phone";
 import { GENERIC_ERROR_TEXT } from "@/lib/common/constants/error-texts";
 import { ApiRequestError } from "~/api/client";
-import { dayKey, formatDayLabel } from "@/lib/common/domain/format";
 import { fieldErrorsFrom, type FieldErrors } from "~/utils/field-errors";
 
 // Booking: ledige tider pr. dag, formularen og fejlhåndtering (architecture 13.4, 10.10). Reglerne er lib's skemaer.
 
-export type SlotDay = { key: string; label: string; slots: SlotDto[] };
-
-// Grupperer ledige tider efter dag i dansk tid, i tidsrækkefølge.
-export function groupSlotsByDay(slots: SlotDto[]): SlotDay[] {
-  const days = new Map<string, SlotDay>();
-  for (const slot of [...slots].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
-    const key = dayKey(slot.startsAt);
-    const day = days.get(key) ?? { key, label: formatDayLabel(slot.startsAt), slots: [] };
-    day.slots.push(slot);
-    days.set(key, day);
-  }
-  return [...days.values()];
-}
+export { groupSlotsByDay, type SlotDay } from "@/lib/booking/domain/slots";
 
 export type BookingValues = { serviceId: string | null; startsAt: string | null; contactName: string; contactPhone: string };
 export type BookingField = "serviceId" | "startsAt" | "contactName" | "contactPhone";

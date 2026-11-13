@@ -33,7 +33,7 @@ export default function HowItWorksPage() {
       </InfoSection>
       <InfoSection title="Har du ondt?">
         <p>
-          Er der tegn på noget akut, henviser vi dig straks til klinikker med en ledig akuttid. Ved livstruende
+          Er der tegn på noget akut, henviser vi dig straks til klinikker, der tager imod akutte patienter. Klinikken foreslår en tid, som du bekræfter. Ved livstruende
           symptomer skal du ringe 112.
         </p>
       </InfoSection>

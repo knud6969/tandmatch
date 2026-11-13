@@ -6,14 +6,12 @@ import { requireTerms } from "@/platform/middleware/termsGate";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-// Ledige tider hos leadets klinik for en af sagens behandlinger (architecture 10.10). Kun for patienten bag et accepteret
-// lead; højst 14 dage pr. kald (6.7).
+// Ledige tider hos leadets klinik for en af sagens behandlinger (architecture 10.10), højst 14 dage pr. kald (6.7). Patienten
+// bag et accepteret lead; eller klinikken på et ubesvaret akut-lead, så den kan foreslå en tid (10.11).
 export const GET = withApi<Ctx>(async (req, { params }) => {
   const gate = await requireTerms();
-  const session = requireAccount(
-    await requireRole("patient", { allowAnonymous: true, ctx: gate }),
-    ACCOUNT_REQUIRED_MESSAGES.bookSlot,
-  );
+  const caller = await requireRole(["patient", "clinic"], { allowAnonymous: true, ctx: gate });
+  const session = caller.role === "patient" ? requireAccount(caller, ACCOUNT_REQUIRED_MESSAGES.bookSlot) : caller;
   const leadId = parseId((await params).id);
   const query = readQuery(req, leadAvailabilityQuerySchema, ["serviceId", "from", "to"]);
   return jsonResponse(await new BookingsController(gate.supabase, session).availabilityForLead(leadId, query));

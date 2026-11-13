@@ -10,7 +10,7 @@ export type ClinicSort = (typeof CLINIC_SORTS)[number];
 // Kort om brugerens egen klinik, vist i GET /api/me (architecture 10.2).
 export type ClinicSummaryDto = { id: string; name: string; status: ClinicStatus };
 
-export type OpeningHoursDto = { weekday: Weekday; opensAt: string; closesAt: string; isEmergency: boolean };
+export type OpeningHoursDto = { weekday: Weekday; opensAt: string; closesAt: string };
 
 export type ClinicPriceDto = {
   serviceId: string;
@@ -84,7 +84,8 @@ export type ClinicListItemDto = {
   prices: ClinicPriceDto[];
   priceForSelection: PriceRange | null;
   firstAvailableAt: string | null;
-  firstEmergencyAt: string | null;
+  // Klinikken tager imod akutte patienter: den har en pris på mindst én akutbehandling (kun tier "full").
+  takesEmergency: boolean;
 };
 
 export type ClinicProfileDto = ClinicListItemDto & {

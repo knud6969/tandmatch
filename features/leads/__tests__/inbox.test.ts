@@ -73,7 +73,7 @@ describe("indbakkens tekster", () => {
   it("viser akut-fristen som klokkeslæt i dansk tid", () => {
     expect(leadDeadlineText(null)).toBeNull();
     // 09:30 UTC er 11.30 dansk sommertid (oktober før skiftet).
-    expect(leadDeadlineText("2026-10-24T09:30:00Z")).toBe("Svar inden kl. 11.30");
+    expect(leadDeadlineText("2026-10-24T09:30:00Z")).toBe("Venter på patienten til kl. 11.30");
   });
   it("samler fakta på én linje med listepris og uden kontaktdata", () => {
     const line = leadFactLine(base);

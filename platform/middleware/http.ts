@@ -262,7 +262,7 @@ export const ACCOUNT_REQUIRED_MESSAGES = {
   sendLeads: "Opret en konto for at kontakte klinikker.",
   withdrawLead: "Opret en konto for at trække en henvendelse tilbage.",
   bookSlot: "Opret en konto for at booke en tid.",
-  emergencyLead: "Opret en konto for at bestille en akuttid.",
+  emergencyLead: "Opret en konto for at sende en akut henvendelse.",
   favorites: "Opret en konto for at gemme klinikker.",
   pushTokens: "Opret en konto for at få notifikationer.",
   notificationContact: "Opret en konto for at få e-mail og SMS om dine tider.",
@@ -296,6 +296,10 @@ export const aiUnavailable = () =>
   new ApiError(503, "AI_UNAVAILABLE", API_ERROR_TEXTS.AI_UNAVAILABLE);
 
 // Booking (architecture 10.10). Fabrikkerne bruges af både controllere og repositories.
+// Klinikken kan kun foreslå en tid på et ubesvaret akut-lead (leads 10.11).
+export const leadNotPending = () =>
+  conflict("LEAD_NOT_PENDING", "Henvendelsen afventer ikke svar længere, fx fordi patienten har trukket den tilbage.");
+
 export const leadNotAccepted = () =>
   conflict("LEAD_NOT_ACCEPTED", LEAD_NOT_ACCEPTED_TEXT);
 
@@ -307,6 +311,10 @@ export const serviceNotOnCase = () => new ApiError(400, "VALIDATION_ERROR", "Væ
 export const slotTaken = () => conflict("SLOT_TAKEN", SLOT_TAKEN_TEXT);
 
 export const slotUnavailable = () => conflict("SLOT_UNAVAILABLE", SLOT_UNAVAILABLE_TEXT);
+
+// Klinikkens foreslåede akuttid er udløbet eller allerede bekræftet (leads 10.11).
+export const holdExpired = () =>
+  conflict("HOLD_EXPIRED", "Tiden er ikke længere reserveret til dig. Book en anden tid, eller skriv til klinikken.");
 
 // Leadet har nået loftet på bookinger (architecture 7.6).
 export const bookingLimit = () => conflict("BOOKING_LIMIT", BOOKING_LIMIT_TEXT);

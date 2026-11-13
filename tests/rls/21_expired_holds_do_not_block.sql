@@ -1,4 +1,4 @@
--- Test 21: En held-akuttid ældre end 30 minutter (hold_expires_at i fortiden) blokerer ikke book_slot() for en anden
+-- Test 21: Klinikkens foreslåede akuttid (held) ældre end 30 minutter (hold_expires_at i fortiden) blokerer ikke book_slot() for en anden
 -- patient, vises ikke i public_busy_intervals() og har effektiv status cancelled, uden at complete_due_bookings() har kørt.
 -- release_expired_holds() kan ikke kaldes af authenticated.
 begin;
@@ -8,7 +8,9 @@ begin;
 select tt.mk_case('pB', 'SB_e');
 select tt.mk_case('pA', 'S_x');
 select tt.as_user(tt.id('pB'));
-select public.send_leads(tt.id('SB_e'), array[tt.cid('X')], tt.svc('akut_konsultation'), tt.slot(3, 18), 'Bo Test', '+45 87654321');
+select public.send_leads(tt.id('SB_e'), array[tt.cid('X')], tt.svc('akut_konsultation'), 'Bo Test', '+45 87654321');
+select tt.as_user(tt.id('uX'));
+select public.clinic_decide_lead(tt.lead('SB_e', 'X'), 'accept', p_proposed_starts_at => tt.slot(3, 18));
 select tt.as_postgres();
 select tt.mk_lead('S_x', 'X', 'accepted');
 
@@ -46,16 +48,20 @@ select tt.as_postgres();
 select tt.eq((select b.status::text from public.bookings b where b.lead_id = tt.lead('SB_e', 'X')), 'cancelled', 'book_slot() frigav den udløbne reservation');
 select tt.eq((select b.status::text from public.bookings b where b.lead_id = tt.lead('S_x', 'X')), 'booked', 'den nye booking er booked');
 
--- Samme for send_leads: en anden patient kan reservere den udløbne tid
+-- Samme for klinikkens forslag: et udløbet forslag blokerer ikke et nyt forslag til en anden patient
 select tt.mk_case('pB', 'SB_e2');
 select tt.mk_case('pA', 'S_e2');
 select tt.as_user(tt.id('pA'));
-select public.send_leads(tt.id('S_e2'), array[tt.cid('Y')], tt.svc('akut_konsultation'), tt.slot(3, 19), 'Alma Test', '+45 12345678');
+select public.send_leads(tt.id('S_e2'), array[tt.cid('Y')], tt.svc('akut_konsultation'), 'Alma Test', '+45 12345678');
+select tt.as_user(tt.id('pB'));
+select public.send_leads(tt.id('SB_e2'), array[tt.cid('Y')], tt.svc('akut_konsultation'), 'Bo Test', '+45 87654321');
+select tt.as_user(tt.id('uY'));
+select public.clinic_decide_lead(tt.lead('S_e2', 'Y'), 'accept', p_proposed_starts_at => tt.slot(3, 19));
 select tt.as_postgres();
 update public.bookings set hold_expires_at = now() - interval '1 second' where lead_id = tt.lead('S_e2', 'Y');
-select tt.as_user(tt.id('pB'));
-select tt.allowed(format('select public.send_leads(%L, array[%L]::uuid[], %L, %L, %L, %L)', tt.id('SB_e2'), tt.cid('Y'), tt.svc('akut_konsultation'), tt.slot(3, 19), 'Bo Test', '+45 87654321'),
-                  'udløbet reservation blokerer ikke send_leads()');
+select tt.as_user(tt.id('uY'));
+select tt.allowed(format('select public.clinic_decide_lead(%L, %L, p_proposed_starts_at => %L)', tt.lead('SB_e2', 'Y'), 'accept', tt.slot(3, 19)),
+                  'udløbet forslag blokerer ikke et nyt forslag');
 
 -- complete_due_bookings() er jobbet: kun service role, og det rydder resten
 select tt.as_service();

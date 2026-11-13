@@ -27,6 +27,11 @@ export function cancelBooking(bookingId: string): Promise<PatientBookingDto> {
   return apiRequest<PatientBookingDto>(`/api/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "POST", json: {} });
 }
 
+// Patienten bekræfter klinikkens foreslåede akuttid (leads 10.11; 409 HOLD_EXPIRED, når reservationen er udløbet).
+export function confirmBooking(bookingId: string): Promise<PatientBookingDto> {
+  return apiRequest<PatientBookingDto>(`/api/bookings/${encodeURIComponent(bookingId)}/confirm`, { method: "POST", json: {} });
+}
+
 // Ledige tider til at flytte en booket tid: samme klinik og behandling som bookingen (booking 10.16; højst 14 dage).
 export async function getBookingAvailability(bookingId: string): Promise<SlotDto[]> {
   const result = await apiRequest<{ slots: SlotDto[] }>(`/api/bookings/${encodeURIComponent(bookingId)}/availability`);

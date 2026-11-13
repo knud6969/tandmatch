@@ -2,7 +2,7 @@ import { MESSAGE_LIMIT_TEXT } from "@/lib/common/constants/error-texts";
 import type { MessageDto } from "@/lib/leads/types/messages";
 import type { ClinicListItemDto } from "@/lib/clinics/types/clinics";
 import type { ServiceGroupDto } from "@/lib/clinics/types/services";
-import { sendEmergencyLead, getClinicAvailability } from "~/api/emergency";
+import { sendEmergencyLead } from "~/api/emergency";
 import { closeCase } from "~/api/cases";
 import { withdrawLead } from "~/api/leads";
 import { cancelBooking } from "~/api/bookings";
@@ -182,47 +182,43 @@ describe("10.6 akutvejen", () => {
     expect(emergencyServices(groups).map((s) => s.slug)).toEqual(["akut_konsultation"]);
   });
 
-  it("bygger klinikforespørgslen med akut og tidligste tid, og postnummer kun hvis gyldigt", () => {
-    expect(emergencyClinicsQuery(null)).toBe("emergency=true&sort=first_available");
-    expect(emergencyClinicsQuery("abc")).toBe("emergency=true&sort=first_available");
-    expect(emergencyClinicsQuery("2100")).toBe("postalCode=2100&maxDistanceKm=50&emergency=true&sort=first_available");
+  it("bygger klinikforespørgslen med akut og standardsortering, og postnummer kun hvis gyldigt", () => {
+    expect(emergencyClinicsQuery(null)).toBe("emergency=true");
+    expect(emergencyClinicsQuery("abc")).toBe("emergency=true");
+    expect(emergencyClinicsQuery("2100")).toBe("postalCode=2100&maxDistanceKm=50&emergency=true");
   });
 
-  it("vælger kun verificerede klinikker med akuttid", () => {
+  it("vælger kun verificerede klinikker, der tager imod akutte patienter", () => {
     const list = [
-      { id: "1", canReceiveLeads: true, firstEmergencyAt: "2026-10-23T10:00:00Z" },
-      { id: "2", canReceiveLeads: false, firstEmergencyAt: "2026-10-23T10:00:00Z" },
-      { id: "3", canReceiveLeads: true, firstEmergencyAt: null },
+      { id: "1", canReceiveLeads: true, takesEmergency: true },
+      { id: "2", canReceiveLeads: false, takesEmergency: true },
+      { id: "3", canReceiveLeads: true, takesEmergency: false },
     ] as ClinicListItemDto[];
     expect(selectableEmergencyClinics(list).map((c) => c.id)).toEqual(["1"]);
   });
 
   it("validerer formularen med serverens skema", () => {
-    const ok = parseEmergency({ clinicId: UUID, serviceId: UUID, startsAt: "2026-10-23T10:00:00Z", description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" });
+    const ok = parseEmergency({ clinicId: UUID, serviceId: UUID, description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" });
     expect(ok.ok).toBe(true);
-    const bad = parseEmergency({ clinicId: UUID, serviceId: null, startsAt: null, description: "kort", contactName: "", contactPhone: "1" });
+    const bad = parseEmergency({ clinicId: UUID, serviceId: null, description: "kort", contactName: "", contactPhone: "1" });
     expect(bad.ok).toBe(false);
     if (!bad.ok) {
       expect(bad.errors.serviceId).toBe("Vælg en behandling.");
-      expect(bad.errors.startsAt).toBe("Vælg en ledig tid.");
       expect(bad.errors.description).toContain("mindst 10 tegn");
       expect(bad.errors.contactName).toBeTruthy();
       expect(bad.errors.contactPhone).toBeTruthy();
     }
   });
 
-  it("kalder availability og POST /api/emergency-leads", async () => {
-    responses.push(() => json(200, { slots: [] }), () => json(201, { caseId: "c", lead: {} }));
-    await getClinicAvailability(UUID, "s2");
-    await sendEmergencyLead({ clinicId: UUID, serviceId: UUID, startsAt: "2026-10-23T10:00:00Z", description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" });
-    expect(calls[0].url).toBe(`http://api.test/api/clinics/${UUID}/availability?serviceId=s2`);
-    expect(calls[1].url).toBe("http://api.test/api/emergency-leads");
+  it("kalder POST /api/emergency-leads uden tid", async () => {
+    responses.push(() => json(201, { caseId: "c", lead: {} }));
+    await sendEmergencyLead({ clinicId: UUID, serviceId: UUID, description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" });
+    expect(calls[0].url).toBe("http://api.test/api/emergency-leads");
   });
 
-  it("ACCOUNT_REQUIRED og SLOT_TAKEN vises på dansk", async () => {
-    const input = { clinicId: UUID, serviceId: UUID, startsAt: "2026-10-23T10:00:00Z", description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" };
-    responses.push(() => json(403, { error: { code: "ACCOUNT_REQUIRED", message: "x" } }), () => json(409, { error: { code: "SLOT_TAKEN", message: "x" } }));
+  it("ACCOUNT_REQUIRED vises på dansk", async () => {
+    const input = { clinicId: UUID, serviceId: UUID, description: "Voldsom tandpine i dag", contactName: "Anna", contactPhone: "12345678" };
+    responses.push(() => json(403, { error: { code: "ACCOUNT_REQUIRED", message: "x" } }));
     await expect(sendEmergencyLead(input)).rejects.toThrow("Opret en konto");
-    await expect(sendEmergencyLead(input)).rejects.toThrow("Den tid blev lige optaget");
   });
 });

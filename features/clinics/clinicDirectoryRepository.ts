@@ -15,7 +15,7 @@ import { PublicMediaStorage } from "@/features/clinics/publicMediaStorage";
 // pris for valget og første ledige tid på (architecture 10.7). `prices` er alle priser for de forespurgte behandlinger.
 export type PublicClinicRecord = Omit<
   ClinicListItemDto,
-  "distanceKm" | "reviewStats" | "priceForSelection" | "firstAvailableAt" | "firstEmergencyAt"
+  "distanceKm" | "reviewStats" | "priceForSelection" | "firstAvailableAt" | "takesEmergency"
 >;
 export type PublicClinicProfileRecord = PublicClinicRecord &
   Pick<ClinicProfileDto, "description" | "email" | "allPrices" | "dentists">;
@@ -60,7 +60,6 @@ export class ClinicDirectoryRepository extends BaseRepository<PublicClinicRow, P
       weekday: row.weekday,
       opensAt: row.opens_at,
       closesAt: row.closes_at,
-      isEmergency: row.is_emergency,
     }));
   }
 

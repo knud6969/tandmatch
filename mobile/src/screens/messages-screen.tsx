@@ -162,7 +162,7 @@ function MessagesContent() {
                     {sendError ? <StatusMessage message={sendError} tone="danger" /> : null}
                     <Text style={styles.hint}>Akut? Ring 112.</Text>
                     <Pressable accessibilityRole="link" onPress={() => router.push("/akut")} style={styles.link}>
-                      <Text style={styles.linkText}>Har du ondt? Find en akuttid</Text>
+                      <Text style={styles.linkText}>Har du ondt? Find en klinik med akuthjælp</Text>
                     </Pressable>
                     {images.notice ? <StatusMessage message={images.notice} tone="warning" /> : null}
                     {images.awaitingConsent ? (

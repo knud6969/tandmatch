@@ -11,7 +11,7 @@ import { DAY_MS } from "@/lib/common/domain/time";
 import type { bookingsQuerySchema, bookSlotSchema, cancelBookingSchema, leadAvailabilityQuerySchema, rescheduleBookingSchema } from "@/lib/booking/schemas/bookings";
 import type { ClinicBookingDto, PatientBookingDto } from "@/lib/booking/types/bookings";
 import type { SlotDto } from "@/lib/clinics/types/clinics";
-import { ApiError, bookingNotReschedulable, clinicNotAvailable, forbidden, leadNotAccepted, serviceNotOnCase } from "@/platform/middleware/http";
+import { ApiError, bookingNotReschedulable, clinicNotAvailable, forbidden, leadNotAccepted, leadNotPending, serviceNotOnCase } from "@/platform/middleware/http";
 import type { Session } from "@/platform/middleware/session";
 import { AvailabilityRepository } from "@/features/clinics";
 import { BookingsRepository } from "@/features/booking/bookingsRepository";
@@ -77,6 +77,7 @@ export class BookingsController {
   // Ledige tider hos leadets klinik for en af sagens ydelser. Kun for et accepteret lead (409 LEAD_NOT_ACCEPTED); fremmed
   // lead giver 404; en ydelse uden for sagen giver 400.
   async availabilityForLead(leadId: string, query: LeadAvailabilityQuery): Promise<{ slots: SlotDto[] }> {
+    if (this.role === "clinic") return this.availabilityForProposal(leadId, query);
     const lead = await this.leads.requireBookingContext(leadId);
     if (lead.status !== "accepted") {
       throw leadNotAccepted();
@@ -85,6 +86,16 @@ export class BookingsController {
       throw serviceNotOnCase();
     }
     return this.slotsFor(lead.clinicId, query.serviceId, query);
+  }
+
+  // Klinikkens egne ledige tider til at foreslå en akuttid (leads 10.11): kun for et ubesvaret akut-lead og dets akutbehandling.
+  // Et fremmed lead giver 404 (clinic_lead_detail()); et besvaret 409 LEAD_NOT_PENDING.
+  private async availabilityForProposal(leadId: string, query: LeadAvailabilityQuery): Promise<{ slots: SlotDto[] }> {
+    await this.clinics.requireOwnVerified(this.session.userId);
+    const [clinicId, lead] = await Promise.all([this.clinics.requireOwnId(this.session.userId), this.leads.requireClinicDetail(leadId)]);
+    if (lead.status !== "sent" || !lead.isEmergency) throw leadNotPending();
+    if (!lead.services.some((service) => service.id === query.serviceId)) throw serviceNotOnCase();
+    return this.slotsFor(clinicId, query.serviceId, query);
   }
 
   // Ledige tider hos en klinik for én behandling (fælles for availabilityForLead() og availabilityForBooking()).
@@ -108,6 +119,12 @@ export class BookingsController {
   // Booker en tid på et accepteret lead (409 SLOT_TAKEN, LEAD_NOT_ACCEPTED, SLOT_UNAVAILABLE, BOOKING_LIMIT). Telefonen gemmes på patienten.
   async book(leadId: string, input: BookSlotInput): Promise<PatientBookingDto> {
     return this.bookings.requireForPatient(await this.bookings.bookSlot(leadId, input));
+  }
+
+  // Bekræfter klinikkens foreslåede akuttid (held -> booked; 409 HOLD_EXPIRED). Fremmed booking giver 404.
+  async confirm(bookingId: string): Promise<PatientBookingDto> {
+    await this.bookings.confirmHeld(bookingId);
+    return this.bookings.requireForPatient(bookingId);
   }
 
   // ---- Begge roller ----

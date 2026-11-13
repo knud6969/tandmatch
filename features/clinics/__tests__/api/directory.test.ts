@@ -11,22 +11,19 @@ const createdUserIds = new Set<string>();
 const importedIds: string[] = [];
 const RUN = randomUUID().slice(0, 8);
 
-type Hour = { weekday: number; opensAt: string; closesAt: string; isEmergency: boolean };
+type Hour = { weekday: number; opensAt: string; closesAt: string };
 type Clinic = { c: TestClient; userId: string; clinicId: string };
 
-// Alle ugedage: almindeligt vindue 08:00-16:00 og akutvindue 16:00-23:45, så der altid er tider de næste dage.
-const DAILY_HOURS: Hour[] = [1, 2, 3, 4, 5, 6, 7].flatMap((weekday) => [
-  { weekday, opensAt: "08:00", closesAt: "16:00", isEmergency: false },
-  { weekday, opensAt: "16:00", closesAt: "23:45", isEmergency: true },
-]);
-const REGULAR_ONLY_HOURS: Hour[] = DAILY_HOURS.filter((h) => !h.isEmergency);
+// Alle ugedage 08:00-23:45, så der altid er tider de næste dage. Klinik B har kun 08:00-16:00.
+const DAILY_HOURS: Hour[] = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, opensAt: "08:00", closesAt: "23:45" }));
+const REGULAR_ONLY_HOURS: Hour[] = DAILY_HOURS.map((h) => ({ ...h, closesAt: "16:00" }));
 
 let EXAM: { id: string; slug: string; groupId: string };
 let OTHER: { id: string; slug: string; groupId: string };
 let EMERGENCY: { id: string; slug: string; groupId: string };
 
-let clinicA: Clinic; // verificeret, 2100, billig, med akutvindue
-let clinicB: Clinic; // verificeret, 8000, dyrere, uden akutvindue
+let clinicA: Clinic; // verificeret, 2100, billig, med pris på en akutbehandling
+let clinicB: Clinic; // verificeret, 8000, dyrere, uden akutbehandling
 let registered: Clinic;
 let removed: Clinic;
 let importedId: string;
@@ -97,7 +94,7 @@ async function insertImported(name: string, postalCode: string, city: string): P
   importedIds.push(id);
   const hours = await admin
     .from("clinic_opening_hours")
-    .insert([1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: id, weekday, opens_at: "09:00", closes_at: "17:00", is_emergency: false })));
+    .insert([1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: id, weekday, opens_at: "09:00", closes_at: "17:00" })));
   assert.ifError(hours.error);
   return id;
 }
@@ -168,7 +165,7 @@ type ListItem = {
   id: string; name: string; tier: string; canReceiveLeads: boolean; distanceKm: number | null;
   trustpilot: { enteredBy: string; score: number } | null; reviewStats: { reviewCount: number } | null; logoUrl: string | null;
   prices: { serviceId: string }[]; priceForSelection: { min: number; max: number } | null;
-  firstAvailableAt: string | null; firstEmergencyAt: string | null; openingHours: unknown[]; location: unknown;
+  firstAvailableAt: string | null; takesEmergency: boolean; openingHours: unknown[]; location: unknown;
 };
 
 async function list(query = ""): Promise<{ clinics: ListItem[]; sort: string; criteria: string[]; origin: { lat: number; lng: number } | null }> {
@@ -204,7 +201,7 @@ describe("GET /api/clinics: synlighed og niveauer", () => {
     assert.equal(item.reviewStats, null);
     assert.equal(item.logoUrl, null);
     assert.equal(item.firstAvailableAt, null);
-    assert.equal(item.firstEmergencyAt, null);
+    assert.equal(item.takesEmergency, false);
     assert.equal(item.trustpilot?.enteredBy, "admin");
     assert.equal(item.trustpilot?.score, 4.1);
     assert.equal(item.openingHours.length, 5);
@@ -212,7 +209,7 @@ describe("GET /api/clinics: synlighed og niveauer", () => {
     for (const hidden of ["cvr", "ownerId", "owner_id", "status", "email", "description"]) assert.equal(hidden in item, false, hidden);
   });
 
-  it("viser fuldt niveau for verificerede klinikker: priser, statistik, første ledige tid og akuttid", async () => {
+  it("viser fuldt niveau for verificerede klinikker: priser, statistik, første ledige tid og akuthjælp", async () => {
     const { clinics } = await list(`?services=${EXAM.slug},${OTHER.slug}`);
     const a = find(clinics, clinicA.clinicId)!;
     assert.equal(a.tier, "full");
@@ -222,10 +219,10 @@ describe("GET /api/clinics: synlighed og niveauer", () => {
     assert.equal(a.reviewStats?.reviewCount, 0);
     assert.equal(a.trustpilot?.enteredBy, "clinic");
     assert.ok(a.firstAvailableAt && !Number.isNaN(Date.parse(a.firstAvailableAt)));
-    assert.ok(a.firstEmergencyAt && !Number.isNaN(Date.parse(a.firstEmergencyAt)));
+    assert.equal(a.takesEmergency, true);
     const b = find(clinics, clinicB.clinicId)!;
     assert.deepEqual(b.priceForSelection, { min: 2800, max: 3500 });
-    assert.equal(b.firstEmergencyAt, null); // ingen akutvindue
+    assert.equal(b.takesEmergency, false); // ingen pris på en akutbehandling
     assert.ok(b.firstAvailableAt);
   });
 
@@ -349,13 +346,13 @@ describe("GET /api/clinics: filtre og sorteringer", () => {
     for (const id of mine()) assert.equal(find(r.clinics, id), undefined);
   });
 
-  it("emergency=true viser kun klinikker med akuttid inden for 48 timer", async () => {
+  it("emergency=true viser kun klinikker, der tager imod akutte patienter", async () => {
     const r = await list("?emergency=true");
     assert.equal(r.sort, "first_available");
     assert.ok(find(r.clinics, clinicA.clinicId));
     assert.equal(find(r.clinics, clinicB.clinicId), undefined);
     assert.equal(find(r.clinics, importedId), undefined);
-    assert.ok(r.criteria.some((line) => line.includes("Akuttid")));
+    assert.ok(r.criteria.includes("Kun klinikker, der tager imod akutte patienter"));
   });
 
   it("contactableOnly viser kun verificerede klinikker", async () => {
@@ -454,8 +451,6 @@ describe("GET /api/clinics/[id]/availability", () => {
     const from = new Date(Date.now() + 60_000);
     return `&from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(new Date(from.getTime() + days * 86_400_000).toISOString())}`;
   };
-  const localHour = (iso: string) =>
-    Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Copenhagen", hour: "2-digit", hourCycle: "h23" }).format(new Date(iso)));
 
   it("giver tider på hele kvarterer med klinikkens varighed", async () => {
     const c = await newClientWithTerms();
@@ -467,23 +462,12 @@ describe("GET /api/clinics/[id]/availability", () => {
       assert.equal(Date.parse(slot.endsAt) - Date.parse(slot.startsAt), 45 * 60_000);
       assert.equal(new Date(slot.startsAt).getUTCMinutes() % 15, 0);
     }
-    // En almindelig undersøgelse kun i almindelige vinduer (08:00-16:00): slutter senest 16:00 lokal.
-    for (const slot of slots) assert.ok(localHour(slot.startsAt) < 16, slot.startsAt);
   });
 
   it("bruger katalogets varighed, når klinikken ikke har en pris for behandlingen", async () => {
     const c = await newClientWithTerms();
     const r = await c.get(`/api/clinics/${clinicB.clinicId}/availability?serviceId=${EXAM.id}`);
     assert.equal(Date.parse(r.body.slots[0].endsAt) - Date.parse(r.body.slots[0].startsAt), 30 * 60_000);
-  });
-
-  it("lader akutbehandlinger bruge akutvinduerne, som almindelige behandlinger ikke må", async () => {
-    const c = await newClientWithTerms();
-    const emergency = await c.get(`/api/clinics/${clinicA.clinicId}/availability?serviceId=${EMERGENCY.id}${range(3)}`);
-    assert.equal(emergency.status, 200);
-    assert.ok(emergency.body.slots.some((s: { startsAt: string }) => localHour(s.startsAt) >= 16));
-    const regular = await c.get(`/api/clinics/${clinicA.clinicId}/availability?serviceId=${OTHER.id}${range(3)}`);
-    assert.ok(regular.body.slots.every((s: { startsAt: string }) => localHour(s.startsAt) < 16));
   });
 
   it("udelader tider, der overlapper en blokering", async () => {

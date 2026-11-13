@@ -116,7 +116,7 @@ export class ClinicsController {
       prices,
       priceForSelection: null,
       firstAvailableAt: null,
-      firstEmergencyAt: null,
+      takesEmergency: false, // bruges kun i oversigten
       description: clinic.description,
       email: clinic.email,
       allPrices: prices,

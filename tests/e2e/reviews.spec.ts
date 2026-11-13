@@ -23,7 +23,7 @@ const width = (page: Page) => page.viewportSize()!.width;
 async function bookableClinic(browser: Browser, testInfo: TestInfo, label: string): Promise<ClinicHandle> {
   const clinic = await verifiedClinic(browser, testInfo, label);
   addListPrice(clinic.id);
-  const hours = Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, opensAt: "08:00", closesAt: "17:00", isEmergency: false }));
+  const hours = Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, opensAt: "08:00", closesAt: "17:00" }));
   const res = await clinic.page.request.put("/api/clinics/me/opening-hours", { data: { hours } });
   expect(res.ok(), await res.text()).toBeTruthy();
   return clinic;

@@ -23,7 +23,8 @@ Afsnittene nedenfor er flyttet uændret fra `docs/architecture.md` (oversigten).
 | distance_km | numeric null | Snapshot ved afsendelse, til klinikkens visning |
 | list_price_min, list_price_max | integer null | Snapshot af klinikkens listepris for sagens bekræftede ydelser (sum), som patienten så ved afsendelse. `null` hvis en ydelse mangler i prislisten. Er prisoverslaget i anmeldelsen, hvis klinikken ikke angiver en præciseret pris (8.2) |
 | requested_service_id | uuid FK services null | Kun akutvejen: den ønskede akutydelse |
-| requested_starts_at | timestamptz null | Kun akutvejen: den tid, patienten har valgt. Reserveres straks som en `held`-booking i højst 30 minutter (eller til starttid, hvis den kommer før) og bliver `booked` ved accept (6.1) |
+| requested_starts_at | timestamptz null | Kun ældre akut-leads (før 2026-11-13), hvor patienten selv valgte tiden. Sættes ikke længere (migration `20261113000100`) |
+| contact_name, contact_phone | text null | Kun akutvejen (fra 2026-11-13): patientens navn og telefon fra akutformularen. Kun patienten kan læse leads (RLS); klinikken ser kontakten først via bookingen, når patienten har bekræftet tiden (5.5). Check: kun sat, når `requested_service_id` er sat |
 | seen_at | timestamptz null | Første gang klinikken åbner leadet |
 | responded_at | timestamptz null | |
 | clinic_comment | text null | "Accepter med kommentar", max 500 |
@@ -67,7 +68,7 @@ Tråden er åben, mens leadet er aktivt (`sent`, `accepted`, `booked`), så klin
 
 | Tidspunkt | Klinikken ser | Klinikken ser aldrig |
 |---|---|---|
-| Lead `sent`/`accepted` (og en `held` akuttid) | Bekræftede ydelser, godkendt opsummering (`summary_text`, `summary_ai_assisted`), godkendte billedbeskrivelser, billeder (kun med aktivt `image_upload`-samtykke), ønsket tidsrum, område (postnummer og by), afstand, listepris-snapshot, akutmarkering og ønsket akuttid | Navn, e-mail, telefon, `patient_id`, AI-chatten, andre klinikkers leads, om sagen er sendt til andre |
+| Lead `sent`/`accepted` (også med en foreslået `held` akuttid) | Bekræftede ydelser, godkendt opsummering (`summary_text`, `summary_ai_assisted`), godkendte billedbeskrivelser, billeder (kun med aktivt `image_upload`-samtykke), ønsket tidsrum, område (postnummer og by), afstand, listepris-snapshot, akutmarkering og ønsket akuttid | Navn, e-mail, telefon, `patient_id`, AI-chatten, andre klinikkers leads, om sagen er sendt til andre |
 | Booking `booked` eller `completed` (effektiv status) | Det samme plus `contact_name`, `contact_phone` og `contact_email` **for den booking** | `patient_id`, AI-chatten |
 | Booking `cancelled` eller `no_show` | Kontaktfelterne skjules igen | |
 | Beskedtråden (lead `sent`/`accepted`/`booked`, med indhold åbent) | Trådens beskeder og billeder, også dem patienten har vedhæftet i tråden (`message_images`) | `sender_id`, patientens profiloplysninger |
@@ -100,7 +101,7 @@ Alle kræver, at den kaldende ejer klinikken. Leads og bookinger kræver desuden
 
 Alle funktionerne returnerer kun leads med `sent_at >= clinics.owner_since` (og det, der hænger på dem). For leads med status `withdrawn` returnerer de kun id, status, `sent_at` og `withdrawn_at`; intet sagsindhold, ingen billeder, ingen beskeder. For leads med status `declined` (også `clinic_left`) returnerer de metadata (id, status, `sent_at`, `seen_at`, `responded_at`, akutmarkering og klinikkens eget svar), men intet sagsindhold, ingen billeder og ingen beskeder. Samme lukning gælder et `sent`/`accepted` lead, hvis patient har trukket delingssamtykket tilbage. Reglen er funktionen `lead_content_open(lead_id)` (migration `20261110000100`): status `sent`/`accepted`/`booked` og (`booked` eller aktivt `health_data_sharing`). `clinic_leads()` og `clinic_lead_detail()` returnerer desuden `content_open` (`false` for withdrawn, declined og lukket indhold). Beskeder læses via `clinic_lead_messages()` og markeres læst via `clinic_mark_messages_read()` (5.3).
 
-- `clinic_leads(p_status)`: egne leads, evt. filtreret på status, med status, ydelsesnavne, område, afstand, ønsket tidsrum, akutmarkering, ønsket akuttid, antal billeder, `sent_at`, `seen_at`, ulæste beskeder. Ingen `patient_id`, ingen `case_id`. Fra migration `20261101000200_clinic_leads_overview` også `summary_excerpt` (de første 121 tegn af den godkendte `summary_text`, så serveren kan se, om den er afkortet), `list_price_min`/`list_price_max` (listepris-snapshot) og `hold_expires_at` (udløb for leadets reserverede akuttid, kun når den nyeste aktive booking har effektiv status `held`; samme booking-valg som `clinic_lead_detail()`). Alle tre er `null` for et tilbagetrukket lead. Ingen kontaktfelter (kontakt står kun i `clinic_lead_detail()` og `clinic_bookings()`, 5.5). RLS og adgangsreglen er uændrede (ejer, `verified`, `sent_at >= owner_since`).
+- `clinic_leads(p_status)`: egne leads, evt. filtreret på status, med status, ydelsesnavne, område, afstand, ønsket tidsrum, akutmarkering, ønsket akuttid (kun ældre akut-leads), antal billeder, `sent_at`, `seen_at`, ulæste beskeder. Ingen `patient_id`, ingen `case_id`. Fra migration `20261101000200_clinic_leads_overview` også `summary_excerpt` (de første 121 tegn af den godkendte `summary_text`, så serveren kan se, om den er afkortet), `list_price_min`/`list_price_max` (listepris-snapshot) og `hold_expires_at` (udløb for leadets reserverede akuttid, kun når den nyeste aktive booking har effektiv status `held`; samme booking-valg som `clinic_lead_detail()`). Alle tre er `null` for et tilbagetrukket lead. Ingen kontaktfelter (kontakt står kun i `clinic_lead_detail()` og `clinic_bookings()`, 5.5). RLS og adgangsreglen er uændrede (ejer, `verified`, `sent_at >= owner_since`).
 - `clinic_lead_detail(lead_id)`: sagens godkendte indhold (ydelser, `summary_text`, `summary_ai_assisted`, ønsket tidsrum, område, akut), listepris-snapshot, egen beslutning, antal ulæste beskeder fra patienten (`unread_messages`, migration `20261025000100`) og den aktive eller seneste booking med `contact_*` efter reglen i 5.5.
 - `clinic_leads()` sorterer ubesvarede først, derefter akut (kun for leads, der ikke er trukket tilbage, så rækkefølgen ikke afslører akut-status for et tilbagetrukket lead; migration `20261025000100`), derefter nyeste.
 - `clinic_lead_images(lead_id)`: billedstier og godkendte beskrivelser, kun med aktivt `image_upload`-samtykke og kun mens indholdet er åbent (`lead_content_open`, ikke efter afvisning). Serveren signerer stierne (9.2).
@@ -151,7 +152,7 @@ export type ClinicLeadListItemDto = {
   // Fra 2026-10-24 (migration 20261101000200), til indbakkens række og akut-fristen:
   summaryExcerpt: string;              // højst 120 tegn af den godkendte opsummering, afkortet ved et ord med "…"; "" ved withdrawn
   listPrice: PriceRange | null;        // listepris-snapshot (flyttet hertil fra ClinicLeadDetailDto, som arver det)
-  holdExpiresAt: string | null;        // "Svar inden kl. HH:MM": udløb for en reserveret akuttid (kun effektiv status held)
+  holdExpiresAt: string | null;        // "Venter på patienten til kl. HH:MM": udløb for klinikkens foreslåede akuttid (kun effektiv status held)
   // Fra 2026-11-05 (migration 20261110000100): false for withdrawn, declined (også clinic_left) og et lead, hvis indhold er lukket.
   // Så er kun id, status, sentAt, seenAt, withdrawnAt, isEmergency og decision udfyldt; resten er tomme værdier.
   contentOpen: boolean;
@@ -179,33 +180,37 @@ Bygget i 5.1: `LeadsController` (`listForClinic`, `getForClinic`, `decide`) og `
 
 Patienten læser sine leads via `GET /api/cases/{id}/leads` (10.5).
 
-**Notifikationer (bygget).** Databasen lægger notifikationerne i outboxen, når et lead oprettes eller besvares (platform 14.4); leads-domænets kode ændres kun ved, at routes har `withApi(…, { notify: true })`: `POST /api/cases/{id}/leads` (10.5), `POST /api/emergency-leads` (10.11) og `POST /api/leads/{id}/decision`. Klinikken får "Ny henvendelse på TandMatch" med link til `/klinik/lead/<id>` (ved akut med "svar inden kl. HH.MM"); patienten får "Klinikken har svaret på din henvendelse." (eller "Klinikken har bekræftet din tid." ved accept af en reserveret akuttid). Ingen sagsindhold i nogen af dem. Tilbagetrækning og lukning af en sag giver ingen notifikation.
+**Notifikationer (bygget).** Databasen lægger notifikationerne i outboxen, når et lead oprettes eller besvares (platform 14.4); leads-domænets kode ændres kun ved, at routes har `withApi(…, { notify: true })`: `POST /api/cases/{id}/leads` (10.5), `POST /api/emergency-leads` (10.11) og `POST /api/leads/{id}/decision`. Klinikken får "Ny henvendelse på TandMatch" med link til `/klinik/lead/<id>`; patienten får "Klinikken har svaret på din henvendelse." (også når klinikken foreslår en akuttid). Bekræfter patienten tiden (`POST /api/bookings/{id}/confirm`), får klinikken `clinic_booking_created` som ved en almindelig booking. Ingen sagsindhold i nogen af dem. Tilbagetrækning og lukning af en sag giver ingen notifikation.
 
 ### 10.11 Akutvej
 
-Bygget i 7.3 (API'et) og 7.4 (siden `/akut`, 6.1).
+Bygget i 7.3 og 7.4; **vendt om 2026-11-13** (migration `20261113000100`): patienten vælger ikke en tid. Henvendelsen sendes til én klinik uden tid, klinikken foreslår en tid, den kan tage patienten, og patienten bekræfter den. Klinikkens åbningstider har ingen akutvinduer længere; akutbehandlinger bruger de almindelige åbningstider uden varsel.
 
 ```ts
 // lib/leads/schemas/leads.ts (zod 4)
 export const emergencyLeadSchema = z.object({
   clinicId: z.uuid(),
   serviceId: z.uuid(),                        // skal være en aktiv ydelse med kategori "emergency" (tjekkes i databasen)
-  startsAt: z.iso.datetime({ offset: true }), // en af tiderne fra GET /api/clinics/{id}/availability
   description: z.string().trim().min(10).max(1000),   // EMERGENCY_DESCRIPTION_MIN/MAX i lib/leads/constants/leads.ts
   contactName: contactNameSchema,             // samme som bookingen (2-100)
   contactPhone: phoneSchema,                  // mindst 8 cifre
   postalCode: postalCodeSchema.optional(),    // ellers patientens postnummer
 }).strict();
 
+// leadDecisionSchema, accept: + proposedStartsAt?: ISO-tidspunkt (krævet for et akut-lead, forbudt ellers; tjekkes i databasen)
+
 // lib/leads/types/leads.ts
-export type EmergencyLeadCreatedDto = { caseId: string; lead: PatientLeadDto };   // lead.booking.status === "held"
+export type EmergencyLeadCreatedDto = { caseId: string; lead: PatientLeadDto };   // lead.booking === null
 ```
 
 | Metode og route | Rolle | Input | Output |
 |---|---|---|---|
-| POST `/api/emergency-leads` | patient med konto (anonyme: 403 `ACCOUNT_REQUIRED`), gældende `health_data_sharing` (4.3) | `emergencyLeadSchema` | 201 `EmergencyLeadCreatedDto` med `lead.booking.status = "held"` og `holdExpiresAt`. Kalder `send_emergency_lead()` (5.3), som i én transaktion opretter sagen (`is_emergency`, `summary_text = description` godkendt af patienten, ydelsen bekræftet) og kalder `send_leads(…, requested_*, contact_*)`, der reserverer tiden. 400 `VALIDATION_ERROR` (også ugyldig kontakt), 400 `UNKNOWN_SERVICE` (ikke en aktiv akutydelse), 400 `UNKNOWN_POSTAL_CODE`; 403 `ACCOUNT_REQUIRED`, `CONSENT_REQUIRED`; 409 `SLOT_TAKEN`, `SLOT_UNAVAILABLE`, `CLINIC_NOT_AVAILABLE`; 429 `LEAD_DAILY_LIMIT`, `RATE_LIMITED` (`enforceIpRateLimit("leads-send", req, LEADS_SEND_IP_LIMIT_PER_HOUR)`) |
+| POST `/api/emergency-leads` | patient med konto (anonyme: 403 `ACCOUNT_REQUIRED`), gældende `health_data_sharing` (4.3) | `emergencyLeadSchema` | 201 `EmergencyLeadCreatedDto` med `lead.booking = null`. Kalder `send_emergency_lead()` (5.3), som i én transaktion opretter sagen (`is_emergency`, `summary_text = description` godkendt af patienten, ydelsen bekræftet) og kalder `send_leads(…, requested_service_id, contact_*)`, der gemmer kontakten på leadet. 400 `VALIDATION_ERROR` (også ugyldig kontakt og en `startsAt`), 400 `UNKNOWN_SERVICE` (ikke en aktiv akutydelse), 400 `UNKNOWN_POSTAL_CODE`; 403 `ACCOUNT_REQUIRED`, `CONSENT_REQUIRED`; 409 `CLINIC_NOT_AVAILABLE`; 429 `LEAD_DAILY_LIMIT`, `RATE_LIMITED` (`enforceIpRateLimit("leads-send", req, LEADS_SEND_IP_LIMIT_PER_HOUR)`) |
+| GET `/api/leads/{id}/availability?serviceId=&from=&to=` | klinik (verificeret ejer) | akutbehandlingen på leadet | `{ slots }`: klinikkens egne ledige tider (samme `AvailabilityService` som oversigten), kun mens akut-leadet er ubesvaret; ellers 409 `LEAD_NOT_PENDING`. Fremmed lead 404. (Patientens brug af ruten er uændret, 10.10.) |
+| POST `/api/leads/{id}/decision` | klinik | `{ decision: "accept", proposedStartsAt, comment? }` | Akut: tiden tjekkes (`assert_slot_bookable()`) og reserveres som `held` med kontakten fra leadet og `hold_expires_at = least(now() + 30 min, starts_at)` (`EMERGENCY_HOLD_MINUTES`); leadet bliver `accepted`. 400 `VALIDATION_ERROR` uden tid (eller med tid på et almindeligt lead); 409 `SLOT_TAKEN`, `SLOT_UNAVAILABLE` |
+| POST `/api/bookings/{id}/confirm` | patient (ejer af bookingen) | `{}` | `PatientBookingDto` med `status = "booked"`; leadet bliver `booked`, og klinikken ser nu navn og telefon (5.5). 409 `HOLD_EXPIRED`, når reservationen er udløbet eller allerede bekræftet; fremmed booking 404. Kalder `confirm_held_booking()` |
 
-Lag: `app/api/emergency-leads/route.ts` → `new LeadsController(gate.supabase, session).sendEmergency(input)` → `ConsentsRepository.requireCurrentActive("health_data_sharing", …)` (ellers 403; 4.3) → `LeadsRepository.sendEmergency(input)` (ét RPC-kald, fejlkoderne oversættes i repositoriet med de eksisterende fabrikker i `platform/middleware/http.ts`) → `PatientLeadDto` bygges som i `listForCase` (samme mapper, `BookingsRepository.currentByLead()`), ingen kopi. Ingen ny controller. Efter afsendelsen følger leadet de almindelige regler: klinikken accepterer (tiden bliver `booked`) eller afviser (tiden frigives), patienten kan trække det tilbage (10.5), og efter udløb bliver en accept til `accepted` uden booking (10.9).
+Lag: `app/api/emergency-leads/route.ts` → `new LeadsController(gate.supabase, session).sendEmergency(input)` → `ConsentsRepository.requireCurrentActive("health_data_sharing", …)` (ellers 403; 4.3) → `LeadsRepository.sendEmergency(input)` (ét RPC-kald) → `PatientLeadDto` bygges som i `listForCase`. Forslaget: `LeadDecision` på lead-kortet viser ved et akut-lead "Foreslå tid" og "Afvis" i stedet for de tre knapper; `ProposeTimeForm` henter klinikkens ledige tider de næste 3 dage og sender `proposedStartsAt` (og evt. en kommentar). Bekræftelsen: `BookingsController.confirm()` → `BookingsRepository.confirmHeld()`. Vælger patienten i stedet en anden tid med `book_slot()`, frigives forslaget. Udløber forslaget, forbliver leadet `accepted`, og patienten booker selv (10.10).
 
 ### 10.12 Beskeder
 

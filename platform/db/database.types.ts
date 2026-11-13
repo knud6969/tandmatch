@@ -528,13 +528,13 @@ isOneToOne: false
                   ]
                 },"leads": {
                   Row: {
-                    "case_id": string,"clinic_comment": string | null,"clinic_id": string,"created_at": string,"decline_note": string | null,"decline_reason": Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km": number | null,"id": string,"list_price_max": number | null,"list_price_min": number | null,"quoted_price_max": number | null,"quoted_price_min": number | null,"requested_service_id": string | null,"requested_starts_at": string | null,"responded_at": string | null,"seen_at": string | null,"sent_at": string,"status": Database["public"]['Enums']["lead_status"],"withdrawn_at": string | null
+                    "case_id": string,"clinic_comment": string | null,"clinic_id": string,"contact_name": string | null,"contact_phone": string | null,"created_at": string,"decline_note": string | null,"decline_reason": Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km": number | null,"id": string,"list_price_max": number | null,"list_price_min": number | null,"quoted_price_max": number | null,"quoted_price_min": number | null,"requested_service_id": string | null,"requested_starts_at": string | null,"responded_at": string | null,"seen_at": string | null,"sent_at": string,"status": Database["public"]['Enums']["lead_status"],"withdrawn_at": string | null
                   }
                   Insert: {
-                    "case_id": string,"clinic_comment"?: string | null,"clinic_id": string,"created_at"?: string,"decline_note"?: string | null,"decline_reason"?: Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km"?: number | null,"id"?: string,"list_price_max"?: number | null,"list_price_min"?: number | null,"quoted_price_max"?: number | null,"quoted_price_min"?: number | null,"requested_service_id"?: string | null,"requested_starts_at"?: string | null,"responded_at"?: string | null,"seen_at"?: string | null,"sent_at"?: string,"status"?: Database["public"]['Enums']["lead_status"],"withdrawn_at"?: string | null
+                    "case_id": string,"clinic_comment"?: string | null,"clinic_id": string,"contact_name"?: string | null,"contact_phone"?: string | null,"created_at"?: string,"decline_note"?: string | null,"decline_reason"?: Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km"?: number | null,"id"?: string,"list_price_max"?: number | null,"list_price_min"?: number | null,"quoted_price_max"?: number | null,"quoted_price_min"?: number | null,"requested_service_id"?: string | null,"requested_starts_at"?: string | null,"responded_at"?: string | null,"seen_at"?: string | null,"sent_at"?: string,"status"?: Database["public"]['Enums']["lead_status"],"withdrawn_at"?: string | null
                   }
                   Update: {
-                    "case_id"?: string,"clinic_comment"?: string | null,"clinic_id"?: string,"created_at"?: string,"decline_note"?: string | null,"decline_reason"?: Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km"?: number | null,"id"?: string,"list_price_max"?: number | null,"list_price_min"?: number | null,"quoted_price_max"?: number | null,"quoted_price_min"?: number | null,"requested_service_id"?: string | null,"requested_starts_at"?: string | null,"responded_at"?: string | null,"seen_at"?: string | null,"sent_at"?: string,"status"?: Database["public"]['Enums']["lead_status"],"withdrawn_at"?: string | null
+                    "case_id"?: string,"clinic_comment"?: string | null,"clinic_id"?: string,"contact_name"?: string | null,"contact_phone"?: string | null,"created_at"?: string,"decline_note"?: string | null,"decline_reason"?: Database["public"]['Enums']["lead_decline_reason"] | null,"distance_km"?: number | null,"id"?: string,"list_price_max"?: number | null,"list_price_min"?: number | null,"quoted_price_max"?: number | null,"quoted_price_min"?: number | null,"requested_service_id"?: string | null,"requested_starts_at"?: string | null,"responded_at"?: string | null,"seen_at"?: string | null,"sent_at"?: string,"status"?: Database["public"]['Enums']["lead_status"],"withdrawn_at"?: string | null
                   }
                   Relationships: [
                     {
@@ -1056,7 +1056,7 @@ isOneToOne: false
             }[]
                            },
 "clinic_decide_lead":
-{ Args: { "p_comment"?: string,"p_decision": string,"p_decline_note"?: string,"p_decline_reason"?: Database["public"]['Enums']["lead_decline_reason"],"p_lead_id": string,"p_quoted_max"?: number,"p_quoted_min"?: number }; Returns: undefined
+{ Args: { "p_comment"?: string,"p_decision": string,"p_decline_note"?: string,"p_decline_reason"?: Database["public"]['Enums']["lead_decline_reason"],"p_lead_id": string,"p_proposed_starts_at"?: string,"p_quoted_max"?: number,"p_quoted_min"?: number }; Returns: undefined
                            },
 "clinic_lead_detail":
 { Args: { "p_lead_id": string }; Returns: {
@@ -1115,6 +1115,9 @@ isOneToOne: false
                            },
 "confirm_consent_cleanup":
 { Args: { "p_consent_id": string }; Returns: undefined
+                           },
+"confirm_held_booking":
+{ Args: { "p_booking_id": string }; Returns: undefined
                            },
 "consume_anonymous_ai_call":
 { Args: { "p_user_id": string }; Returns: string
@@ -1283,12 +1286,12 @@ isOneToOne: false
 { Args: { "p_review_id": string }; Returns: boolean
                            },
 "send_emergency_lead":
-{ Args: { "p_clinic_id": string,"p_contact_name": string,"p_contact_phone": string,"p_description": string,"p_postal_code"?: string,"p_service_id": string,"p_starts_at": string }; Returns: {
+{ Args: { "p_clinic_id": string,"p_contact_name": string,"p_contact_phone": string,"p_description": string,"p_postal_code"?: string,"p_service_id": string }; Returns: {
               "case_id": string,"lead_id": string
             }[]
                            },
 "send_leads":
-{ Args: { "p_case_id": string,"p_clinic_ids": (string)[],"p_contact_name"?: string,"p_contact_phone"?: string,"p_requested_service_id"?: string,"p_requested_starts_at"?: string }; Returns: number
+{ Args: { "p_case_id": string,"p_clinic_ids": (string)[],"p_contact_name"?: string,"p_contact_phone"?: string,"p_requested_service_id"?: string }; Returns: number
                            },
 "send_message_with_images":
 { Args: { "p_body": string,"p_clinic_consent_version"?: string,"p_images": Json,"p_lead_id": string,"p_message_id": string,"p_user_id": string }; Returns: string

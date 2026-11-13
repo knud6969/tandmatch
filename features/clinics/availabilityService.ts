@@ -16,14 +16,14 @@ import type { BusyInterval, OpeningHoursDto, SlotDto } from "@/lib/clinics/types
 // ikke er en sikkerhedsgrænse.
 
 // Åbningsvinduer i lokal tid (Europe/Copenhagen). Samme form som OpeningHoursDto.
-export type OpeningWindow = Pick<OpeningHoursDto, "weekday" | "opensAt" | "closesAt" | "isEmergency">;
+export type OpeningWindow = Pick<OpeningHoursDto, "weekday" | "opensAt" | "closesAt">;
 
 
 export type SlotQuery = {
   openingHours: readonly OpeningWindow[];
   busy: readonly BusyInterval[];
   durationMin: number;
-  isEmergency: boolean; // akutydelser må bruge både almindelige og akutte vinduer
+  isEmergency: boolean; // akutydelser har intet varsel (MIN_EMERGENCY_NOTICE_MIN)
   from: Date; // første mulige starttid (inklusiv)
   to: Date; // sidste mulige starttid (eksklusiv)
   limit?: number;
@@ -107,7 +107,6 @@ export class AvailabilityService {
 
     const windowsByDay = new Map<number, { opens: number; closes: number }[]>();
     for (const window of query.openingHours) {
-      if (window.isEmergency && !query.isEmergency) continue; // almindelige ydelser kun i almindelige vinduer
       const list = windowsByDay.get(window.weekday) ?? [];
       list.push({ opens: toMinutes(window.opensAt), closes: toMinutes(window.closesAt) });
       windowsByDay.set(window.weekday, list);

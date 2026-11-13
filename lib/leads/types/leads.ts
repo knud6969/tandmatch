@@ -67,7 +67,7 @@ export type ClinicLeadListItemDto = {
   summaryExcerpt: string;
   // Listepris-snapshot, som patienten så ved afsendelse.
   listPrice: PriceRange | null;
-  // Udløb for en reserveret akuttid ("Svar inden kl. HH:MM"); kun mens bookingen er held.
+  // Udløb for klinikkens foreslåede akuttid, mens patienten bekræfter; kun mens bookingen er held.
   holdExpiresAt: string | null;
   // false for withdrawn, declined (også clinic_left) og et lead, hvis indhold er lukket (migration 20261110000100). Så er kun
   // metadata og klinikkens eget svar udfyldt; indholdsfelterne er tomme værdier (false, [], null, 0, "").
@@ -92,5 +92,5 @@ export type ClinicLeadDetailDto = ClinicLeadListItemDto & {
   booking: ClinicBookingDto | null;
 };
 
-// POST /api/emergency-leads (architecture 10.11). lead.booking.status er altid "held".
+// POST /api/emergency-leads (architecture 10.11). lead.booking er null: klinikken foreslår tiden ved accept.
 export type EmergencyLeadCreatedDto = { caseId: string; lead: PatientLeadDto };

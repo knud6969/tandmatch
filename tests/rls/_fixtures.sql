@@ -122,11 +122,11 @@ select public.admin_set_clinic_status(tt.cid(n.name), 'verified')
 -- R forbliver 'registered': [PROTOTYPE] signup auto-verificerer (prototype_auto_verify_clinics()), så den sættes tilbage her.
 select public.admin_set_clinic_status(tt.cid('R'), 'registered');
 
--- Åbningstider: alle ugens dage 08-17 (almindelig) og 17-20 (akutvindue)
-insert into public.clinic_opening_hours (clinic_id, weekday, opens_at, closes_at, is_emergency)
-select c.id, d, '08:00'::time, '17:00'::time, false from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__'
+-- Åbningstider: alle ugens dage 08-17 og 17-20 (to vinduer, så en tid hen over 17:00 ikke kan bookes)
+insert into public.clinic_opening_hours (clinic_id, weekday, opens_at, closes_at)
+select c.id, d, '08:00'::time, '17:00'::time from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__'
 union all
-select c.id, d, '17:00'::time, '20:00'::time, true from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__';
+select c.id, d, '17:00'::time, '20:00'::time from public.clinics c, generate_series(1, 7) d where c.cvr like '100000__';
 
 -- Klinikkernes importstatus: fixtureklinikkerne er (overtagne) importerede (import_source sat), så sletning af
 -- ejeren bevarer grunddata. Tests af selvoprettede klinikker nulstiller import_source selv.

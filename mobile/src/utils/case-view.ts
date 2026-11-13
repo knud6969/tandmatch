@@ -37,6 +37,13 @@ export const caseRoute = (item: Pick<CaseListItemDto, "id" | "status">) =>
 // Kun et accepteret lead kan bookes (et booket lead har allerede sin tid).
 export const canBookLead = (lead: Pick<PatientLeadDto, "status" | "clinic">) => lead.status === "accepted" && !lead.clinic.removed;
 
+// Klinikkens foreslåede akuttid, som patienten kan bekræfte, mens reservationen gælder (leads 10.11).
+export function proposedBooking(lead: Pick<PatientLeadDto, "status" | "booking">, now: Date = new Date()) {
+  const booking = lead.booking;
+  if (lead.status !== "accepted" || booking?.status !== "held" || !booking.holdExpiresAt) return null;
+  return Date.parse(booking.holdExpiresAt) > now.getTime() ? booking : null;
+}
+
 // Afvisningsårsagen på et lead, med klinikkens note, hvis der er en.
 export function declineText(lead: Pick<PatientLeadDto, "declineReason" | "declineNote">): string | null {
   if (!lead.declineReason) return null;

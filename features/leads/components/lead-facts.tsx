@@ -2,7 +2,7 @@ import { CASE_TIMEFRAME_LABEL } from "@/lib/cases/constants/cases";
 import { CLINIC_LEAD_STATUS_LABEL } from "@/lib/leads/constants/leads";
 import type { ClinicLeadListItemDto } from "@/lib/leads/types/leads";
 import { Badge } from "@/components/ui/badge";
-import { formatCount, formatKm, formatPriceRange, formatShortDateTime, formatTime } from "@/lib/common/domain/format";
+import { formatCount, formatKm, formatPriceRange, formatTime } from "@/lib/common/domain/format";
 import { LEAD_STATUS_TONE } from "@/features/leads/utils/lead-status";
 
 // Fælles for indbakkens rækker og lead-kortet: det klinikken skal bruge for at vurdere en henvendelse. Ingen patientidentitet.
@@ -16,9 +16,9 @@ function leadDistanceText(lead: Pick<ClinicLeadListItemDto, "distanceKm">): stri
   return lead.distanceKm === null ? null : formatKm(lead.distanceKm);
 }
 
-// Den rene tid: akut-leads har en konkret ønsket tid; øvrige har et tidsrum.
-function leadTimeText(lead: Pick<ClinicLeadListItemDto, "requestedStartsAt" | "preferredTimeframe">): string | null {
-  if (lead.requestedStartsAt) return `Ønsker tid ${formatShortDateTime(lead.requestedStartsAt)}`;
+// Den ønskede tid: akut-leads skal have en tid hurtigst muligt (klinikken foreslår den); øvrige har et tidsrum.
+function leadTimeText(lead: Pick<ClinicLeadListItemDto, "isEmergency" | "preferredTimeframe">): string | null {
+  if (lead.isEmergency) return "Hurtigst muligt";
   return lead.preferredTimeframe ? CASE_TIMEFRAME_LABEL[lead.preferredTimeframe] : null;
 }
 
@@ -31,9 +31,9 @@ function leadListPriceText(lead: Pick<ClinicLeadListItemDto, "listPrice">): stri
   return lead.listPrice ? `Listepris ${formatPriceRange(lead.listPrice.min, lead.listPrice.max)}` : null;
 }
 
-// Fristen for en reserveret akuttid: klinikken skal svare, før reservationen udløber.
+// Klinikkens foreslåede akuttid er reserveret, til patienten bekræfter (eller reservationen udløber).
 export function leadDeadlineText(holdExpiresAt: string | null): string | null {
-  return holdExpiresAt ? `Svar inden kl. ${formatTime(holdExpiresAt)}` : null;
+  return holdExpiresAt ? `Venter på patienten til kl. ${formatTime(holdExpiresAt)}` : null;
 }
 
 // Fakta på én linje: område · afstand · tid · listepris (og evt. mere fra den, der viser dem).
@@ -61,7 +61,7 @@ function DeadlineBadge({ holdExpiresAt }: { holdExpiresAt: string | null }) {
   const text = leadDeadlineText(holdExpiresAt);
   if (!text) return null;
   return (
-    <Badge tone="danger">
+    <Badge tone="warning">
       <span data-testid="akut-frist">{text}</span>
     </Badge>
   );
@@ -73,7 +73,7 @@ export function LeadBadges({ lead, showStatus = true }: { lead: ClinicLeadListIt
       {isUnopenedLead(lead) && <UnopenedDot />}
       {showStatus && <Badge tone={LEAD_STATUS_TONE[lead.status]}>{CLINIC_LEAD_STATUS_LABEL[lead.status]}</Badge>}
       {lead.isEmergency && <Badge tone="danger">Akut</Badge>}
-      {lead.status === "sent" && <DeadlineBadge holdExpiresAt={lead.holdExpiresAt} />}
+      {lead.status === "accepted" && <DeadlineBadge holdExpiresAt={lead.holdExpiresAt} />}
       {lead.unreadMessages > 0 && (
         <Badge tone="brand">{formatCount(lead.unreadMessages, "ulæst besked", "ulæste beskeder")}</Badge>
       )}

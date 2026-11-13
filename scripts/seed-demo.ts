@@ -394,63 +394,63 @@ const IMPORTED: ImportedSpec[] = [
 
 type VerifiedSpec = {
   key: string; cvr: string; name: string; address: string; postalCode: string; location: DemoLocation; city: string; phone: string; email: string;
-  description: string; factor: number; saturday: boolean; emergencyWindow: boolean; hue: number;
-  // Akutvindue alle ugens dage (07-22, uden for de almindelige åbningstider), så /akut aldrig er tom inden for 48 timer.
-  emergencyAllWeek?: boolean;
+  description: string; factor: number; saturday: boolean; hue: number;
+  // Lange åbningstider på hverdage (07-20), så klinikken næsten altid har en tid at foreslå en akut patient.
+  longHours?: boolean;
   trustpilot?: { url: string; score: number; count: number };
   dentists: { name: string; title: string; bio: string }[];
 };
 
 const VERIFIED: VerifiedSpec[] = [
   { key: 'v0', cvr: '90001001', name: 'Demo Tandklinik Nørrebro', address: 'Nørrebrogade 60', postalCode: '2200', location: { lat: 55.690236, lng: 12.555317 }, city: 'København N', phone: '+45 00 00 10 01',
-    email: 'klinik-v0@demo.tandmatch.test', description: 'Fiktiv demoklinik i København med fokus på tandregulering, kosmetisk tandpleje og akuttider.', factor: 1.15, saturday: false, emergencyWindow: true, hue: 200,
+    email: 'klinik-v0@demo.tandmatch.test', description: 'Fiktiv demoklinik i København med fokus på tandregulering, kosmetisk tandpleje og akut hjælp.', factor: 1.15, saturday: false, hue: 200,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v0.dk', score: 4.5, count: 120 },
     dentists: [
       { name: 'Anne Demosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge. Arbejder med kosmetiske behandlinger.' },
       { name: 'Rasmus Eksempel', title: 'Specialtandlæge i ortodonti', bio: 'Fiktiv specialtandlæge til demoformål.' },
     ] },
   { key: 'v1', cvr: '90001002', name: 'Demo Tandlægerne Aarhus', address: 'Søndergade 30', postalCode: '8000', location: { lat: 56.154779, lng: 10.206809 }, city: 'Aarhus C', phone: '+45 00 00 10 02',
-    email: 'klinik-v1@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aarhus med almindelig og kosmetisk tandpleje.', factor: 1.0, saturday: false, emergencyWindow: true, hue: 150,
+    email: 'klinik-v1@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aarhus med almindelig og kosmetisk tandpleje.', factor: 1.0, saturday: false, hue: 150,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v1.dk', score: 4.2, count: 64 },
     dentists: [
       { name: 'Camilla Testesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Mikkel Fiktiv', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v2', cvr: '90001003', name: 'Demo Tandcenter Odense', address: 'Vestergade 40', postalCode: '5000', location: { lat: 55.395531, lng: 10.385503 }, city: 'Odense C', phone: '+45 00 00 10 03',
-    email: 'klinik-v2@demo.tandmatch.test', description: 'Fiktiv demoklinik i Odense med åbent om lørdagen.', factor: 0.9, saturday: true, emergencyWindow: false, hue: 30,
+    email: 'klinik-v2@demo.tandmatch.test', description: 'Fiktiv demoklinik i Odense med åbent om lørdagen.', factor: 0.9, saturday: true, hue: 30,
     dentists: [
       { name: 'Louise Prøvesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Jens Modelsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v3', cvr: '90001004', name: 'Demo Tandklinik Aalborg', address: 'Bispensgade 20', postalCode: '9000', location: { lat: 57.04944, lng: 9.918769 }, city: 'Aalborg', phone: '+45 00 00 10 04',
-    email: 'klinik-v3@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aalborg.', factor: 0.95, saturday: false, emergencyWindow: false, hue: 300,
+    email: 'klinik-v3@demo.tandmatch.test', description: 'Fiktiv demoklinik i Aalborg.', factor: 0.95, saturday: false, hue: 300,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v3.dk', score: 3.9, count: 31 },
     dentists: [
       { name: 'Sara Skabelon', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Peter Pladsholder', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v4', cvr: '90001005', name: 'Demo Tandklinik Østerbro', address: 'Østerbrogade 80', postalCode: '2100', location: { lat: 55.700185, lng: 12.577711 }, city: 'København Ø', phone: '+45 00 00 10 05',
-    email: 'klinik-v4@demo.tandmatch.test', description: 'Fiktiv demoklinik på Østerbro med almen tandpleje og akuttider alle ugens dage.', factor: 1.05, saturday: false, emergencyWindow: false, emergencyAllWeek: true, hue: 180,
+    email: 'klinik-v4@demo.tandmatch.test', description: 'Fiktiv demoklinik på Østerbro med almen tandpleje, lange åbningstider og akut hjælp.', factor: 1.05, saturday: false, longHours: true, hue: 180,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v4.dk', score: 4.6, count: 98 },
     dentists: [
       { name: 'Freja Østerbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Oliver Akutsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v5', cvr: '90001006', name: 'Demo Tandlægerne Vesterbro', address: 'Vesterbrogade 50', postalCode: '1620', location: { lat: 55.672586, lng: 12.554393 }, city: 'København V', phone: '+45 00 00 10 06',
-    email: 'klinik-v5@demo.tandmatch.test', description: 'Fiktiv demoklinik på Vesterbro med fokus på børn, familie og tandlægeskræk.', factor: 0.95, saturday: false, emergencyWindow: false, hue: 330,
+    email: 'klinik-v5@demo.tandmatch.test', description: 'Fiktiv demoklinik på Vesterbro med fokus på børn, familie og tandlægeskræk.', factor: 0.95, saturday: false, hue: 330,
     dentists: [
       { name: 'Ida Vesterbrosen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Noah Prøvesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v6', cvr: '90001007', name: 'Demo Tandcenter Amager', address: 'Amagerbrogade 100', postalCode: '2300', location: { lat: 55.659496, lng: 12.605906 }, city: 'København S', phone: '+45 00 00 10 07',
-    email: 'klinik-v6@demo.tandmatch.test', description: 'Fiktiv demoklinik på Amager med fokus på implantater, kirurgi og proteser. Åbent om lørdagen.', factor: 0.85, saturday: true, emergencyWindow: false, hue: 100,
+    email: 'klinik-v6@demo.tandmatch.test', description: 'Fiktiv demoklinik på Amager med fokus på implantater, kirurgi og proteser. Åbent om lørdagen.', factor: 0.85, saturday: true, hue: 100,
     trustpilot: { url: 'https://dk.trustpilot.com/review/demo-eksempel-v6.dk', score: 4.0, count: 45 },
     dentists: [
       { name: 'Hannah Amagersen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Victor Skitsesen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
     ] },
   { key: 'v7', cvr: '90001008', name: 'Demo Tandklinik Hellerup', address: 'Strandvejen 90', postalCode: '2900', location: { lat: 55.731348, lng: 12.576179 }, city: 'Hellerup', phone: '+45 00 00 10 08',
-    email: 'klinik-v7@demo.tandmatch.test', description: 'Fiktiv demoklinik i Hellerup med fokus på kosmetisk tandpleje og tandregulering med skinner.', factor: 1.25, saturday: false, emergencyWindow: false, hue: 260,
+    email: 'klinik-v7@demo.tandmatch.test', description: 'Fiktiv demoklinik i Hellerup med fokus på kosmetisk tandpleje og tandregulering med skinner.', factor: 1.25, saturday: false, hue: 260,
     dentists: [
       { name: 'Sebastian Hellerupsen', title: 'Tandlæge', bio: 'Fiktiv tandlæge til demoformål.' },
       { name: 'Alma Demosen', title: 'Specialtandlæge i protetik', bio: 'Fiktiv specialtandlæge til demoformål.' },
@@ -550,7 +550,7 @@ async function seed(config: Config): Promise<void> {
     ) as { id: string };
     if (spec.weekdayHours) {
       mustOk(await admin.from('clinic_opening_hours').insert(
-        [1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: row.id, weekday, opens_at: '08:00', closes_at: '16:00', is_emergency: false })),
+        [1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: row.id, weekday, opens_at: '08:00', closes_at: '16:00' })),
       ), 'åbningstider (importeret)');
     }
   }
@@ -590,17 +590,10 @@ async function seed(config: Config): Promise<void> {
       note: p.slug === 'undersoegelse' ? 'Inkl. 2 røntgenbilleder' : null,
     }))), 'prisliste');
 
-    const hours: Record<string, unknown>[] = [1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: clinicId, weekday, opens_at: '08:00', closes_at: '16:00', is_emergency: false }));
-    if (spec.emergencyAllWeek) {
-      // Akutvinduer 07-08 og 16-22 på hverdage (omkring de almindelige tider; vinduer må ikke overlappe) og 07-22 i weekenden.
-      for (const weekday of [1, 2, 3, 4, 5]) {
-        hours.push({ clinic_id: clinicId, weekday, opens_at: '07:00', closes_at: '08:00', is_emergency: true });
-        hours.push({ clinic_id: clinicId, weekday, opens_at: '16:00', closes_at: '22:00', is_emergency: true });
-      }
-      for (const weekday of [6, 7]) hours.push({ clinic_id: clinicId, weekday, opens_at: '07:00', closes_at: '22:00', is_emergency: true });
-    }
-    if (spec.saturday) hours.push({ clinic_id: clinicId, weekday: 6, opens_at: '09:00', closes_at: '13:00', is_emergency: false });
-    if (spec.emergencyWindow) for (const weekday of [1, 2, 3, 4, 5]) hours.push({ clinic_id: clinicId, weekday, opens_at: '16:00', closes_at: '19:00', is_emergency: true });
+    // Hverdage 08-16 (v4 dog 07-20), lørdag for dem med lørdagsåbent; søndag er altid lukket.
+    const [opens, closes] = spec.longHours ? ['07:00', '20:00'] : ['08:00', '16:00'];
+    const hours: Record<string, unknown>[] = [1, 2, 3, 4, 5].map((weekday) => ({ clinic_id: clinicId, weekday, opens_at: opens, closes_at: closes }));
+    if (spec.saturday) hours.push({ clinic_id: clinicId, weekday: 6, opens_at: '09:00', closes_at: '13:00' });
     mustOk(await admin.from('clinic_opening_hours').insert(hours), 'åbningstider');
 
     if (spec.key === 'v1' || spec.key === 'v2') {
@@ -824,7 +817,7 @@ async function seed(config: Config): Promise<void> {
   await accept(v3, sofieLead, null, [fMin, fMax]);
   await insertPastBooking(v3, p2, sofieLead, 'fyldning', plusMinutes(new Date(), -150), 'booked');
 
-  // --- Emil: udeblivelse (no_show) og en reserveret akuttid (held) ---------------------------------------
+  // --- Emil: udeblivelse (no_show), et ubesvaret akut-lead og en bekræftet akuttid ------------------------
   const emilCase = await createCase({
     patient: p3, services: ['undersoegelse'], timeframe: 'flexible', summary: 'Jeg ønsker en almindelig undersøgelse.',
   }, true);
@@ -836,20 +829,25 @@ async function seed(config: Config): Promise<void> {
   const emergencyCase = await createCase({
     patient: p3, services: ['akut_konsultation'], timeframe: 'asap', emergency: true, summary: 'Jeg har kraftig tandpine siden i går og har brug for hjælp hurtigst muligt.',
   }, true);
-  const heldDay = nextWeekday(1);
+  // Ubesvaret akut-lead hos v0: klinikken kan foreslå en tid fra indbakken.
   mustOk(await p3.client.rpc('send_leads', {
     p_case_id: emergencyCase, p_clinic_ids: [v0.clinicId], p_requested_service_id: sid('akut_konsultation'),
-    p_requested_starts_at: localToUtc(heldDay, 16, 30).toISOString(), p_contact_name: PATIENTS[3].fullName, p_contact_phone: PATIENTS[3].phone,
-  }), 'akut-lead med reservation');
+    p_contact_name: PATIENTS[3].fullName, p_contact_phone: PATIENTS[3].phone,
+  }), 'ubesvaret akut-lead');
 
-  // Akut-lead hos v4, som klinikken accepterer straks: der findes altid en booket akuttid (kalender, sag og indbakke).
-  // Går gennem send_emergency_lead() som akutvejen i appen (sag + reservation), og accepten laves af klinikkens egen session.
+  // Akut-lead hos v4 gennem send_emergency_lead() som akutvejen i appen. Klinikken foreslår en tid (egen session), og patienten
+  // bekræfter den, så der altid findes en booket akuttid (kalender, sag og indbakke).
   const v4Emergency = must(await p3.client.rpc('send_emergency_lead', {
-    p_clinic_id: v4.clinicId, p_service_id: sid('akut_konsultation'), p_starts_at: localToUtc(nextWeekday(1), 17, 0).toISOString(),
+    p_clinic_id: v4.clinicId, p_service_id: sid('akut_konsultation'),
     p_description: 'Jeg har ondt i en kindtand og har brug for en akuttid hurtigst muligt.',
     p_contact_name: PATIENTS[3].fullName, p_contact_phone: PATIENTS[3].phone, p_postal_code: PATIENTS[3].postalCode,
   }), 'akut-lead hos v4') as { case_id: string; lead_id: string }[];
-  await accept(v4, v4Emergency[0].lead_id, 'Vi har en akuttid til dig. Kom som aftalt.', null);
+  mustOk(await v4.client.rpc('clinic_decide_lead', {
+    p_lead_id: v4Emergency[0].lead_id, p_decision: 'accept', p_comment: 'Vi kan tage dig her. Bekræft tiden i appen.',
+    p_proposed_starts_at: localToUtc(nextWeekday(1), 17, 0).toISOString(),
+  }), 'foreslå akuttid');
+  const proposed = must(await admin.from('bookings').select('id').eq('lead_id', v4Emergency[0].lead_id).eq('status', 'held').single(), 'foreslået tid') as { id: string };
+  mustOk(await p3.client.rpc('confirm_held_booking', { p_booking_id: proposed.id }), 'bekræft akuttid');
 
   // --- Laura: kladde uden leads --------------------------------------------------------------------------
   await createCase({ patient: p4, services: ['retainer'], timeframe: 'flexible', summary: 'Min retainer er knækket.' }, false);
@@ -870,9 +868,9 @@ async function seed(config: Config): Promise<void> {
   log('    patient1 (Mette, 2200): hovedforløb med billeder, beskedtråd, accepteret lead (v0) med kommende booking, afvist (v1) og tilbagetrukket (v7) lead, ubesvaret hos v3.');
   log('    patient2 (Jonas, 8000): accepteret lead uden booking og et ubesvaret lead.');
   log('    patient3 (Sofie, 5000): booking der lige er slut (kan ikke anmeldes endnu).');
-  log('    patient4 (Emil, 2100): akutvejen: en reserveret akuttid hos v0 (udløber efter 30 minutter) og en booket akuttid hos v4; desuden en udeblivelse.');
+  log('    patient4 (Emil, 2100): akutvejen: et ubesvaret akut-lead hos v0 (klinikken kan foreslå en tid) og en bekræftet akuttid hos v4; desuden en udeblivelse.');
   log('    patient5 (Laura, 9000): kladde uden leads.');
-  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 har akuttider alle ugens dage. Alle aktive behandlinger tilbydes af mindst 2 af dem. Profiler (beskrivelse/prisniveau): v0 regulering/kosmetik, v4 bred almen+akut, v5 børn, v6 implantater/kirurgi, v7 kosmetik+skinner.');
+  log('    Fra 2100: v0, v4, v5, v6 og v7 er verificerede inden for 50 km; v0, v4 og v5 har prisnøjagtighed; v4 har åbent 07-20 på hverdage og tager imod akutte patienter. Alle aktive behandlinger tilbydes af mindst 2 af dem. Profiler (beskrivelse/prisniveau): v0 regulering/kosmetik, v4 bred almen+akut, v5 børn, v6 implantater/kirurgi, v7 kosmetik+skinner.');
 }
 
 // Standardvarighed fra kataloget (bruges til prislistens varighed og forhistorik).

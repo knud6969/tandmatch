@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { EMERGENCY_FILTER_HOURS, MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
+import { MAX_SELECTED_SERVICES } from "@/lib/clinics/constants/clinics";
 import type { ServiceGroupDto } from "@/lib/clinics/types/services";
 import { FormError } from "@/components/ui/form-error";
 import { Button } from "@/components/ui/button";
@@ -216,11 +216,11 @@ export function ClinicFilters({ filters, onChange, onReset, groups, activeCount 
           </SelectField>
           <CheckboxField
             label="Akut"
-            description={`Kun klinikker med akuttid inden for ${EMERGENCY_FILTER_HOURS} timer`}
+            description="Kun klinikker, der tager imod akutte patienter"
             selected={filters.emergency}
             checked={filters.emergency}
             onChange={(event) =>
-              onChange({ emergency: event.target.checked, sort: event.target.checked ? "first_available" : null })
+              onChange({ emergency: event.target.checked })
             }
           />
           <CheckboxField

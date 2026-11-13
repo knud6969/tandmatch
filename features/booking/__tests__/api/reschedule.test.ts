@@ -51,7 +51,7 @@ async function clinic(verified = true): Promise<Clinic> {
     const { error } = await admin.rpc("admin_set_clinic_status", { p_clinic_id: id, p_status: "verified" });
     assert.ifError(error);
     // Åbent alle ugens dage 06-22, så der altid er ledige tider.
-    const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ clinic_id: id, weekday, opens_at: "06:00", closes_at: "22:00", is_emergency: false }));
+    const hours = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ clinic_id: id, weekday, opens_at: "06:00", closes_at: "22:00" }));
     assert.ifError((await admin.from("clinic_opening_hours").insert(hours)).error);
   }
   return { c, id, userId: r.body.userId };

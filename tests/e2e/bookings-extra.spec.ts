@@ -22,7 +22,7 @@ const width = (page: Page) => page.viewportSize()!.width;
 async function bookableClinic(browser: Browser, testInfo: TestInfo, label: string): Promise<ClinicHandle> {
   const clinic = await verifiedClinic(browser, testInfo, label);
   addListPrice(clinic.id);
-  const hours = Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, opensAt: "08:00", closesAt: "17:00", isEmergency: false }));
+  const hours = Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, opensAt: "08:00", closesAt: "17:00" }));
   const res = await clinic.page.request.put("/api/clinics/me/opening-hours", { data: { hours } });
   expect(res.ok(), await res.text()).toBeTruthy();
   return clinic;
@@ -90,7 +90,7 @@ test.describe("booking: supplerende dækning (6.6)", () => {
     }
   });
 
-  test("reserveret akuttid (held) vises i kalenderen med udløb og uden kontakt", async ({ browser }, testInfo) => {
+  test("foreslået akuttid (held) vises i kalenderen med frist og uden kontakt", async ({ browser }, testInfo) => {
     const clinic = await bookableClinic(browser, testInfo, "held");
     const patient = await patientWithCase(browser, testInfo);
     try {
@@ -105,7 +105,7 @@ test.describe("booking: supplerende dækning (6.6)", () => {
       const row = clinic.page.getByTestId("kalender-booking");
       await expect(row).toHaveCount(1);
       await expect(row).toContainText("Reserveret");
-      await expect(clinic.page.getByTestId("reservation")).toContainText(/udløber/);
+      await expect(clinic.page.getByTestId("reservation")).toContainText(/venter på bekræftelse/);
       await expect(clinic.page.getByTestId("kalender-kontakt")).toHaveCount(0);
       const html = await clinic.page.content();
       for (const secret of ["Hemmelig Patient", "99 88 77 66", "hemmelig-patient@example.com", me]) expect(html).not.toContain(secret);

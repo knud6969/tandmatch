@@ -10,7 +10,7 @@ const { RankingService } = await import("@/features/clinics/rankingService");
 
 // Torsdag 15. oktober 2026, 08:00 lokal.
 const NOW = new Date("2026-10-15T06:00:00Z");
-const weekdays = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday: weekday as 1, opensAt: "08:00", closesAt: "16:00", isEmergency: false }));
+const weekdays = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday: weekday as 1, opensAt: "08:00", closesAt: "16:00" }));
 
 const exam = { id: "s-exam", slug: "undersoegelse", name: "Undersøgelse", category: "general", defaultDurationMin: 30 };
 const emergency = { id: "s-akut", slug: "akut_konsultation", name: "Akut", category: "emergency", defaultDurationMin: 30 };
@@ -55,7 +55,7 @@ describe("ClinicListingService", () => {
     const plan = await listing.plan([]);
     expect(plan.selected).toEqual([]);
     expect(plan.appointment.map((s) => s.slug)).toEqual(["undersoegelse"]);
-    expect(plan.emergency?.slug).toBe("akut_konsultation");
+    expect(plan.emergencyIds).toEqual(["s-akut"]);
     const records = [record("full", "a")];
     const context = await listing.contextFor(records);
     const item = listing.toListItem(records[0], plan, context, null);

@@ -42,7 +42,7 @@ export function HomeEntries({ onDescribe, onFindClinic, onEmergency }: Props) {
       <View style={styles.list}>
         <EntryRow title="Find en klinik" onPress={onFindClinic} />
         <View style={styles.divider} />
-        <EntryRow title="Jeg har ondt" text="Klinikker med ledig akuttid. Ved livstruende symptomer ring 112." onPress={onEmergency} />
+        <EntryRow title="Jeg har ondt" text="Klinikker, der tager imod akutte patienter. Ved livstruende symptomer ring 112." onPress={onEmergency} />
       </View>
     </View>
   );

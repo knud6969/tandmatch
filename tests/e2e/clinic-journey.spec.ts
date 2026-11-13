@@ -152,15 +152,17 @@ test("klinikrejsen: opret, sæt op, tilføj tandlæge og slet kontoen", async ({
     await expect(groupBoxes.first()).not.toBeChecked();
     await expect(page.getByLabel("Pris fra (kr.)")).toHaveCount(0);
 
-    // 4. Åbningstider med akutvindue og blokeret tid
+    // 4. Åbningstider og blokeret tid (ingen akutvinduer og ingen "Hverdage"-knap længere)
     await visit(page, "/klinik/aabningstider");
-    await page.getByRole("button", { name: /^Hverdage/ }).click();
-    await page.getByLabel("Mandag: Akutvindue").first().check();
+    await expect(page.getByRole("button", { name: /^Hverdage/ })).toHaveCount(0);
+    await expect(page.getByText("Akutvindue")).toHaveCount(0);
+    await page.getByRole("button", { name: "+ Tilføj tidsrum" }).first().click();
+    await page.getByRole("button", { name: "Kopiér mandag til tirsdag-fredag" }).click();
     if (mobile) await expectNoHorizontalScroll(page, "/klinik/aabningstider");
     await page.getByRole("button", { name: "Gem åbningstider" }).click();
     await expect(page.getByText(/Gemt kl\./).first()).toBeVisible();
     await page.reload();
-    await expect(page.getByLabel("Mandag: Akutvindue").first()).toBeChecked();
+    await expect(page.getByLabel("Fredag: Åbner")).toHaveValue("08:00");
 
     const future = new Date(Date.now() + 30 * 24 * 3600 * 1000);
     const pad = (n: number) => String(n).padStart(2, "0");

@@ -151,7 +151,6 @@ const openingHoursRowSchema = z
     weekday: z.literal(WEEKDAYS, "Ugedagen skal være 1-7."),
     opensAt: timeOfDaySchema,
     closesAt: timeOfDaySchema,
-    isEmergency: z.boolean(),
   })
   .strict()
   .refine((row) => row.opensAt < row.closesAt, { message: "Åbningstiden skal ligge før lukketiden." });
@@ -329,7 +328,6 @@ export const publicOpeningHoursJsonSchema = z.array(
     weekday: z.literal(WEEKDAYS),
     opens_at: z.string(),
     closes_at: z.string(),
-    is_emergency: z.boolean(),
   }),
 );
 

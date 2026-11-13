@@ -143,33 +143,37 @@ select tt.ok(not exists (select 1 from public.notification_outbox o where o.payl
                                  or o.payload::text like '%12345678%'), 'ingen navne, telefon eller årsag i payload');
 
 -- ---------------------------------------------------------------------------------------------------------
--- Akut: nyt lead med holdExpiresAt, accept (held -> booked) giver kun patient_booking_confirmed, afvisning giver ingen booking-række
+-- Akut: nyt lead uden frist; klinikkens forslag (held) giver patient_lead_answered og ingen booking-række; patientens
+-- bekræftelse (held -> booked) giver clinic_booking_created; afvisning giver ingen booking-række
 -- ---------------------------------------------------------------------------------------------------------
 select tt.as_user(tt.id('pB'));
-select * from public.send_emergency_lead(tt.cid('Z'), tt.svc('akut_konsultation'), tt.slot(3, 18), 'Jeg har slemme smerter i en kindtand.', 'Bo Test', '+45 87654321', '2100');
-select * from public.send_emergency_lead(tt.cid('W'), tt.svc('akut_konsultation'), tt.slot(3, 18), 'Jeg har slemme smerter i en kindtand.', 'Bo Test', '+45 87654321', '2100');
+select * from public.send_emergency_lead(tt.cid('Z'), tt.svc('akut_konsultation'), 'Jeg har slemme smerter i en kindtand.', 'Bo Test', '+45 87654321', '2100');
+select * from public.send_emergency_lead(tt.cid('W'), tt.svc('akut_konsultation'), 'Jeg har slemme smerter i en kindtand.', 'Bo Test', '+45 87654321', '2100');
 select tt.as_postgres();
 create temp table akut as
-  select l.id as lead_id, l.clinic_id, l.case_id, l.sent_at, l.requested_starts_at from public.leads l join public.cases c on c.id = l.case_id where c.is_emergency;
+  select l.id as lead_id, l.clinic_id, l.case_id from public.leads l join public.cases c on c.id = l.case_id where c.is_emergency;
 grant select on akut to public;
 select tt.eq(tt.n('clinic_new_lead', (select lead_id from akut where clinic_id = tt.cid('Z'))), 1, 'akut: clinic_new_lead');
-select tt.eq((select (o.payload ->> 'holdExpiresAt')::timestamptz from public.notification_outbox o where o.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z'))),
-             (select date_trunc('second', least(sent_at + interval '30 minutes', requested_starts_at)) from akut where clinic_id = tt.cid('Z')), 'holdExpiresAt');
-select tt.eq((select date_trunc('second', b.hold_expires_at) from public.bookings b where b.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z'))),
-             (select (o.payload ->> 'holdExpiresAt')::timestamptz from public.notification_outbox o where o.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z'))),
-             'holdExpiresAt svarer til bookingens hold_expires_at');
-select tt.eq(tt.n('clinic_booking_created'), 2, 'held-bookinger giver ingen clinic_booking_created (kun de to fra før)');
+select tt.ok((select not (o.payload ? 'holdExpiresAt') from public.notification_outbox o where o.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z'))),
+             'akut: ingen holdExpiresAt (der er ingen reservation ved afsendelse)');
 
 select tt.as_user(tt.id('uZ'));
-select public.clinic_decide_lead((select lead_id from akut where clinic_id = tt.cid('Z')), 'accept');
+select public.clinic_decide_lead((select lead_id from akut where clinic_id = tt.cid('Z')), 'accept', p_proposed_starts_at => tt.slot(3, 18));
 select tt.as_user(tt.id('uW'));
 select public.clinic_decide_lead((select lead_id from akut where clinic_id = tt.cid('W')), 'decline', null, null, null, 'no_capacity');
 select tt.as_postgres();
-select tt.eq(tt.n('patient_booking_confirmed', (select lead_id from akut where clinic_id = tt.cid('Z'))), 1, 'akut accept giver patient_booking_confirmed');
-select tt.eq(tt.n('patient_lead_answered', (select lead_id from akut where clinic_id = tt.cid('Z'))), 0, 'og ikke patient_lead_answered');
+select tt.eq(tt.n('patient_lead_answered', (select lead_id from akut where clinic_id = tt.cid('Z'))), 1, 'forslaget giver patient_lead_answered');
+select tt.eq(tt.n('clinic_booking_created'), 2, 'et forslag (held) giver ingen clinic_booking_created (kun de to fra før)');
 select tt.eq(tt.n('patient_lead_answered', (select lead_id from akut where clinic_id = tt.cid('W'))), 1, 'akut afvisning giver patient_lead_answered');
-select tt.eq(tt.n('patient_booking_cancelled', (select lead_id from akut where clinic_id = tt.cid('W'))), 0, 'og ingen patient_booking_cancelled for held -> cancelled');
-select tt.eq(tt.n('clinic_booking_cancelled'), 1, 'ingen clinic_booking_cancelled for held -> cancelled');
+
+select tt.as_user(tt.id('pB'));
+select public.confirm_held_booking((select b.id from public.bookings b where b.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z'))));
+select tt.as_postgres();
+select tt.eq(tt.n('clinic_booking_created', (select lead_id from akut where clinic_id = tt.cid('Z'))), 1, 'bekræftelsen giver clinic_booking_created');
+select tt.eq((select count(*)::int from public.notification_outbox o where o.type = 'patient_booking_created'
+               and o.lead_id = (select lead_id from akut where clinic_id = tt.cid('Z')) and o.channel = 'email'), 1, 'og patient_booking_created (e-mail; ingen push for egen handling)');
+select tt.eq(tt.n('patient_booking_confirmed'), 0, 'patient_booking_confirmed bruges ikke længere');
+select tt.eq(tt.n('clinic_booking_cancelled'), 1, 'ingen ny clinic_booking_cancelled');
 
 -- ---------------------------------------------------------------------------------------------------------
 -- Ingen række: tilbagetrækning, luk sag, udløbet reservation

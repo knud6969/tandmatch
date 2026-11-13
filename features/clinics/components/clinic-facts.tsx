@@ -10,7 +10,7 @@ type FactsProps = {
   clinic: ClinicListItemDto;
   // Patienten har valgt behandlinger, så prisen for valget kan vises.
   hasServices: boolean;
-  // Akutfilteret er slået til: vis første akuttid i stedet for første ledige tid.
+  // Akutfilteret er slået til: vis, om klinikken tager imod akutte patienter.
   emergency: boolean;
 };
 
@@ -18,7 +18,7 @@ type FactsProps = {
 export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
   const full = clinic.tier === "full";
   const stats = clinic.reviewStats;
-  const nextAt = emergency ? clinic.firstEmergencyAt : clinic.firstAvailableAt;
+  const nextAt = clinic.firstAvailableAt;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -51,13 +51,19 @@ export function ClinicFacts({ clinic, hasServices, emergency }: FactsProps) {
         </p>
       )}
 
-      {full && (
+      {full && emergency && (
         <p className="text-sm text-ink">
-          <span className="text-ink-muted">{emergency ? "Første akuttid: " : hasServices ? "Første ledige tid: " : "Første ledige tid (undersøgelse): "}</span>
+          {clinic.takesEmergency ? "Tager imod akutte patienter. Klinikken foreslår en tid, når den har set din henvendelse." : "Tager ikke imod akutte patienter via TandMatch"}
+        </p>
+      )}
+
+      {full && !emergency && (
+        <p className="text-sm text-ink">
+          <span className="text-ink-muted">{hasServices ? "Første ledige tid: " : "Første ledige tid (undersøgelse): "}</span>
           {nextAt ? (
             <span className="font-semibold">{formatShortDateTime(nextAt)}</span>
           ) : (
-            <span className="text-ink-muted">{emergency ? `ingen akuttid de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage` : `ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
+            <span className="text-ink-muted">{`ingen ledige tider de næste ${FIRST_AVAILABLE_SEARCH_DAYS} dage`}</span>
           )}
         </p>
       )}
