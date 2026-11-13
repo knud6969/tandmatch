@@ -12,7 +12,7 @@ import { AREA_HOME, AREA_NAV, activeNavHref } from "@/lib/common/navigation/area
 import { useLeadsNeedingActionCount } from "@/features/leads/ui";
 import { NotificationBell } from "@/components/ui/notification-bell";
 
-// Logget ud: knapper til login og oprettelse. Logget ind: områdets navigation og log ud.
+// Logget ud: knapper til login og oprettelse (ikke på forsiden, der selv har dem). Logget ind: områdets navigation og log ud.
 export function SiteHeader() {
   const { state, refresh } = useSession();
   const pathname = usePathname();
@@ -64,7 +64,7 @@ export function SiteHeader() {
 
         <div className="flex min-h-11 items-center gap-1 sm:gap-2">
           {state.status === "loading" && <span className="sr-only">Indlæser login</span>}
-          {state.status === "ready" && !me && (
+          {state.status === "ready" && !me && pathname !== "/" && (
             <>
               <LinkButton href="/login" variant="ghost" className="min-h-11 px-3">
                 Log ind
